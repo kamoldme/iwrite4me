@@ -118,10 +118,21 @@ router.post('/', async (req, res) => {
     }
   }
 
+  // Make title unique (Windows-style: "Title (1)", "Title (2)")
+  let baseTitle = (title || '').trim() || 'Untitled';
+  const userDocs = await findMany('documents.json', d => d.userId === req.user.id && !d.deleted);
+  const existingTitles = new Set(userDocs.map(d => d.title));
+  let finalTitle = baseTitle;
+  if (existingTitles.has(finalTitle)) {
+    let n = 1;
+    while (existingTitles.has(`${baseTitle} (${n})`)) n++;
+    finalTitle = `${baseTitle} (${n})`;
+  }
+
   const doc = {
     id: uuid(),
     userId: req.user.id,
-    title: (title || '').trim() || 'Untitled',
+    title: finalTitle,
     content: content || '',
     mode: mode || 'normal',
     prompt: prompt || '',
@@ -230,7 +241,18 @@ router.patch('/:id', async (req, res) => {
   if (!doc) return res.status(404).json({ error: 'Document not found' });
 
   const updates = {};
-  if (req.body.title !== undefined) updates.title = (req.body.title || '').trim() || 'Untitled';
+  if (req.body.title !== undefined) {
+    let baseTitle = (req.body.title || '').trim() || 'Untitled';
+    const userDocs = await findMany('documents.json', d => d.userId === req.user.id && !d.deleted && d.id !== req.params.id);
+    const existingTitles = new Set(userDocs.map(d => d.title));
+    let finalTitle = baseTitle;
+    if (existingTitles.has(finalTitle)) {
+      let n = 1;
+      while (existingTitles.has(`${baseTitle} (${n})`)) n++;
+      finalTitle = `${baseTitle} (${n})`;
+    }
+    updates.title = finalTitle;
+  }
   if (req.body.content !== undefined) {
     updates.content = req.body.content;
     updates.wordCount = req.body.content.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length;
