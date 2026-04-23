@@ -325,10 +325,15 @@ const API = {
     return this.request('/support');
   },
 
-  async submitSupportTicket(subject, message, type) {
+  async submitSupportTicket(subject, message, type, image) {
+    const body = { subject, message, type };
+    if (image && image.base64 && image.mime) {
+      body.imageBase64 = image.base64;
+      body.imageMime = image.mime;
+    }
     return this.request('/support', {
       method: 'POST',
-      body: JSON.stringify({ subject, message, type })
+      body: JSON.stringify(body)
     });
   },
 

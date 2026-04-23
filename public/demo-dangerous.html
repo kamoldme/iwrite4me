@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iWrite — Dangerous Mode Demo</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Archivo:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-card: #161616;
+    --bg-elevated: #1a1a1a;
+    --text: #ffffff;
+    --text-muted: rgba(255,255,255,0.5);
+    --text-dim: rgba(255,255,255,0.32);
+    --accent: #4ade80;
+    --danger: #ef4444;
+    --border: rgba(255,255,255,0.08);
+    --font: 'Instrument Sans', system-ui, sans-serif;
+    --font-display: 'Archivo', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    position: relative;
+  }
+
+  /* Ambient green glow baseline */
+  .stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 40%, rgba(74,222,128,0.08), transparent 60%);
+    pointer-events: none;
+  }
+
+  /* The laptop-ish editor frame */
+  .editor {
+    position: relative;
+    width: 100%;
+    max-width: 720px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,0.7),
+      0 10px 30px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+    overflow: hidden;
+    transition: box-shadow 300ms ease, border-color 300ms ease;
+  }
+
+  /* Danger vignette overlay — drives the "red panic" effect */
+  .editor::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 0 rgba(239,68,68,0), inset 0 0 80px 0 rgba(239,68,68,0);
+    transition: box-shadow 400ms ease;
+    z-index: 2;
+  }
+
+  .editor.danger-gentle::after {
+    box-shadow:
+      inset 0 0 0 1px rgba(239,68,68,0.3),
+      inset 0 0 60px 0 rgba(239,68,68,0.15);
+  }
+  .editor.danger-intense::after {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(239,68,68,0.6),
+      inset 0 0 120px 10px rgba(239,68,68,0.28);
+    animation: dangerPulse 900ms ease-in-out infinite;
+  }
+  .editor.danger-intense {
+    border-color: rgba(239,68,68,0.4);
+  }
+
+  @keyframes dangerPulse {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.08); }
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elevated);
+    position: relative;
+    z-index: 3;
+  }
+  .traffic {
+    display: flex;
+    gap: 7px;
+  }
+  .dot {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: #333;
+  }
+  .dot:nth-child(1) { background: #ff5f57; }
+  .dot:nth-child(2) { background: #febc2e; }
+  .dot:nth-child(3) { background: #28c841; }
+
+  .mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(239,68,68,0.12);
+    color: var(--danger);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+  .mode-badge::before {
+    content: '';
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--danger);
+    box-shadow: 0 0 8px var(--danger);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
+
+  .timer {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 50px;
+    text-align: right;
+    transition: color 200ms ease;
+  }
+  .editor.danger-gentle .timer { color: #f59e0b; }
+  .editor.danger-intense .timer { color: var(--danger); }
+
+  /* Writing area */
+  .page {
+    padding: 48px 42px 56px;
+    min-height: 320px;
+    position: relative;
+    z-index: 3;
+    background: var(--bg-card);
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 18px;
+    letter-spacing: -0.01em;
+  }
+  .title::after {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 2px;
+    background: var(--accent);
+    margin-top: 10px;
+    border-radius: 2px;
+  }
+
+  .prose {
+    font-family: var(--font);
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--text);
+    letter-spacing: 0.002em;
+    min-height: 140px;
+    word-break: break-word;
+  }
+
+  .char {
+    display: inline-block;
+    white-space: pre;
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 350ms ease, transform 350ms ease, filter 350ms ease;
+  }
+  .char.fading {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(2px);
+  }
+
+  .caret {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: var(--accent);
+    vertical-align: text-bottom;
+    margin-left: 1px;
+    animation: blink 1s steps(2) infinite;
+    box-shadow: 0 0 8px rgba(74,222,128,0.7);
+    transition: background 200ms ease, box-shadow 200ms ease;
+  }
+  .editor.danger-gentle .caret { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,0.7); }
+  .editor.danger-intense .caret { background: var(--danger); box-shadow: 0 0 12px rgba(239,68,68,0.9); }
+
+  @keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  /* Footer: word count + status */
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-elevated);
+    font-size: 12px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    position: relative;
+    z-index: 3;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 200ms ease;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    transition: background 200ms ease, box-shadow 200ms ease;
+  }
+  .editor.danger-gentle .status-dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+  .editor.danger-intense .status-dot { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+  .editor.danger-gentle .status { color: #f59e0b; }
+  .editor.danger-intense .status { color: var(--danger); }
+
+  /* Floating hint caption below editor */
+  .hint {
+    position: absolute;
+    bottom: -46px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 400ms ease, color 300ms ease;
+    pointer-events: none;
+  }
+  .hint.visible { opacity: 1; }
+  .editor.danger-intense ~ .hint-wrap .hint { color: var(--danger); }
+
+  /* Shake on critical */
+  .editor.shake {
+    animation: shake 220ms ease-in-out;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+
+  @media (max-width: 640px) {
+    .page { padding: 36px 24px 40px; }
+    .prose { font-size: 15px; }
+    .title { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="demo-wrap" style="position: relative;">
+      <div class="editor" id="editor">
+        <div class="topbar">
+          <div class="traffic">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+          <div class="mode-badge">Dangerous</div>
+          <div class="timer" id="timer">6.0s</div>
+        </div>
+        <div class="page">
+          <div class="title">Untitled</div>
+          <div class="prose" id="prose"><span class="caret" id="caret"></span></div>
+        </div>
+        <div class="footer">
+          <span id="wordcount">0 words</span>
+          <span class="status"><span class="status-dot"></span><span id="status-label">Writing</span></span>
+        </div>
+      </div>
+      <div class="hint-wrap">
+        <div class="hint" id="hint">Stop typing and your words vanish.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const prose = document.getElementById('prose');
+  const caret = document.getElementById('caret');
+  const timerEl = document.getElementById('timer');
+  const wordEl = document.getElementById('wordcount');
+  const statusEl = document.getElementById('status-label');
+  const editor = document.getElementById('editor');
+  const hint = document.getElementById('hint');
+
+  // Story beats: [text to add, typing speed (ms/char), after-pause (ms)]
+  // Special commands:
+  //   { pause: ms, dangerFrom: ms, shake?: boolean }  - pause with optional danger buildup
+  //   { delete: n, speed: ms }                         - delete last n chars one at a time
+  //   { hint: text, show?: bool }                      - show/hide floating hint
+  //   { status: label, mode: 'writing'|'gentle'|'intense' }
+  //   { wait: ms }                                     - idle wait (no danger)
+
+  const script = [
+    { hint: 'Watch what happens when you stop typing.', show: true },
+    { type: 'If I stop typing right now, ', speed: 55 },
+    { type: 'this sentence disappears', speed: 60 },
+    { hint: '', show: false },
+    { pause: 6000, dangerFrom: 0, statusArc: true },
+    { delete: 23, speed: 90, shakeAt: 10 },
+    { hint: 'You can save it by typing again.', show: true },
+    { wait: 500 },
+    { type: 'never dies', speed: 70 },
+    { type: '.', speed: 180 },
+    { status: 'Saved', mode: 'writing' },
+    { hint: 'iWrite — write or lose it.', show: true },
+    { wait: 2800 },
+    { hint: '', show: false },
+    { reset: true },
+  ];
+
+  const text = { value: '' };
+
+  function render() {
+    // Rebuild prose: spans for each char, then caret
+    const chars = text.value.split('');
+    const html = chars.map(c => `<span class="char">${c === ' ' ? '&nbsp;' : escapeHtml(c)}</span>`).join('');
+    prose.innerHTML = html + '<span class="caret" id="caret"></span>';
+    updateWordCount();
+  }
+
+  function escapeHtml(c) {
+    return c.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  function updateWordCount() {
+    const n = text.value.trim().split(/\s+/).filter(Boolean).length;
+    wordEl.textContent = n + (n === 1 ? ' word' : ' words');
+  }
+
+  function setMode(mode) {
+    editor.classList.remove('danger-gentle', 'danger-intense');
+    if (mode === 'gentle') editor.classList.add('danger-gentle');
+    else if (mode === 'intense') editor.classList.add('danger-intense');
+  }
+
+  function setStatus(label, mode) {
+    statusEl.textContent = label;
+    if (mode) setMode(mode);
+  }
+
+  function setHint(text, show) {
+    if (text) hint.textContent = text;
+    hint.classList.toggle('visible', !!show);
+  }
+
+  function setTimer(sec) {
+    timerEl.textContent = sec.toFixed(1) + 's';
+  }
+
+  async function type(str, speed) {
+    setStatus('Writing', 'writing');
+    setTimer(6.0);
+    for (const ch of str) {
+      text.value += ch;
+      const span = document.createElement('span');
+      span.className = 'char';
+      span.innerHTML = ch === ' ' ? '&nbsp;' : escapeHtml(ch);
+      // Insert before caret so caret stays at the end
+      const caretEl = prose.querySelector('.caret');
+      prose.insertBefore(span, caretEl);
+      updateWordCount();
+      await sleep(speed + Math.random() * 30);
+    }
+  }
+
+  async function pause(totalMs, { statusArc } = {}) {
+    // Simulate the real danger mode: 3 phases
+    // Phase 1 (0-40%): safe — status "Writing"
+    // Phase 2 (40-70%): "Slowing down..." gentle red
+    // Phase 3 (70-100%): "DELETING" intense red, shake at end
+    const start = Date.now();
+    setStatus('Idle', 'writing');
+    while (true) {
+      const elapsed = Date.now() - start;
+      const remaining = Math.max(0, totalMs - elapsed);
+      setTimer(remaining / 1000);
+      const ratio = elapsed / totalMs;
+      if (ratio < 0.4) {
+        setStatus('Idle', 'writing');
+      } else if (ratio < 0.7) {
+        setStatus('Slowing down…', 'gentle');
+      } else {
+        setStatus('Deleting in…', 'intense');
+      }
+      if (elapsed >= totalMs) break;
+      await sleep(60);
+    }
+    // Final shake at threshold
+    editor.classList.add('shake');
+    setTimeout(() => editor.classList.remove('shake'), 240);
+    setTimer(0);
+  }
+
+  async function deleteChars(n, speed, shakeAt) {
+    setStatus('Deleting', 'intense');
+    for (let i = 0; i < n; i++) {
+      const spans = prose.querySelectorAll('.char');
+      if (spans.length === 0) break;
+      const last = spans[spans.length - 1];
+      last.classList.add('fading');
+      if (shakeAt && i === shakeAt) {
+        editor.classList.add('shake');
+        setTimeout(() => editor.classList.remove('shake'), 220);
+      }
+      // Wait briefly then commit: remove DOM node, trim text, next iteration
+      await sleep(speed);
+      if (last.parentNode) last.parentNode.removeChild(last);
+      text.value = text.value.slice(0, -1);
+      updateWordCount();
+    }
+  }
+
+  function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  async function runScript() {
+    for (const step of script) {
+      if (step.type !== undefined) {
+        await type(step.type, step.speed || 60);
+      } else if (step.pause) {
+        await pause(step.pause, { statusArc: step.statusArc });
+      } else if (step.delete) {
+        await deleteChars(step.delete, step.speed || 80, step.shakeAt);
+      } else if (step.wait) {
+        await sleep(step.wait);
+      } else if (step.hint !== undefined) {
+        setHint(step.hint, step.show);
+      } else if (step.status) {
+        setStatus(step.status, step.mode || 'writing');
+        setTimer(6.0);
+      } else if (step.reset) {
+        text.value = '';
+        render();
+        setStatus('Writing', 'writing');
+        setTimer(6.0);
+        await sleep(800);
+      }
+    }
+    // Loop forever
+    runScript();
+  }
+
+  // Start
+  render();
+  setTimer(6.0);
+  // Small intro delay so the page settles before it begins
+  setTimeout(runScript, 700);
+})();
+</script>
+</body>
+</html>

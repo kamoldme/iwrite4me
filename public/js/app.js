@@ -1036,7 +1036,7 @@ const App = {
     if (view === 'settings') this.loadProfile();
     if (view === 'my-profile') this.loadMyProfile();
     if (view === 'friends') this.loadFriends();
-    if (view === 'support') this.loadSupport();
+    if (view === 'support') { this.loadSupport(); this.initSupportImageUpload(); }
     if (view === 'analytics') this.loadAnalytics();
     if (view === 'upgrade') this.loadUpgrade();
     if (view === 'user-profile' && username) this.loadUserProfile(username);
@@ -1791,7 +1791,6 @@ const App = {
     }
     const editorEl = document.getElementById('editor-container');
     if (editorEl) editorEl.classList.remove('has-docked-research');
-    this._aiChatHistory = [];
   },
 
   _switchResearchTab(tab) {
@@ -1970,10 +1969,42 @@ const App = {
     if (hint) hint.style.display = '';
   },
 
+  _aiChatStorageKey() {
+    const uid = this.user?.id || 'anon';
+    return `iwrite_ai_chat_${uid}`;
+  },
+
+  _loadAIChatHistory() {
+    try {
+      const raw = localStorage.getItem(this._aiChatStorageKey());
+      const saved = raw ? JSON.parse(raw) : [];
+      const fromStorage = Array.isArray(saved) ? saved.filter(m => m.role === 'user' || m.role === 'ai') : [];
+      if (!this._aiChatHistory || fromStorage.length > this._aiChatHistory.filter(m => m.role === 'user' || m.role === 'ai').length) {
+        this._aiChatHistory = fromStorage;
+      }
+    } catch {
+      if (!this._aiChatHistory) this._aiChatHistory = [];
+    }
+    return this._aiChatHistory;
+  },
+
+  _saveAIChatHistory() {
+    try {
+      const keepable = (this._aiChatHistory || []).filter(m => m.role === 'user' || m.role === 'ai').slice(-60);
+      localStorage.setItem(this._aiChatStorageKey(), JSON.stringify(keepable));
+    } catch {}
+  },
+
+  clearAIChatHistory() {
+    this._aiChatHistory = [];
+    try { localStorage.removeItem(this._aiChatStorageKey()); } catch {}
+    this._renderAIChat();
+  },
+
   _renderAIChat() {
     const chat = document.getElementById('research-ai-chat');
     if (!chat) return;
-    const history = this._aiChatHistory || [];
+    const history = this._loadAIChatHistory();
     if (!history.length) {
       chat.innerHTML = '<div class="research-chat-empty">Ask anything. History stays during this session.</div>';
       return;
@@ -2077,7 +2108,7 @@ const App = {
     const question = input.value.trim();
     if (!question) return;
 
-    this._aiChatHistory = this._aiChatHistory || [];
+    this._loadAIChatHistory();
     const priorHistory = this._aiChatHistory.filter(m => m.role === 'user' || m.role === 'ai');
     this._aiChatHistory.push({ role: 'user', text: question });
     this._aiChatHistory.push({ role: 'loading' });
@@ -2090,6 +2121,7 @@ const App = {
       const res = await API.researchAsk(question, priorHistory);
       this._aiChatHistory.pop();
       this._aiChatHistory.push({ role: 'ai', text: res.answer });
+      this._saveAIChatHistory();
       this._renderAIChat();
       this._refreshResearchQuota();
     } catch (e) {
@@ -2098,6 +2130,7 @@ const App = {
         ? (e.message || 'Weekly limit reached')
         : (e.message || 'AI request failed');
       this._aiChatHistory.push({ role: 'error', text: msg });
+      this._saveAIChatHistory();
       this._renderAIChat();
       if (e.status === 429) this._refreshResearchQuota();
     } finally {
@@ -6434,12 +6467,95 @@ const App = {
             </span>
           </div>
           <p class="ticket-body">${this._esc(t.message)}</p>
+          ${t.image && t.image.base64 ? `<div class="ticket-image-wrap"><img class="ticket-image-user" src="data:${this._esc(t.image.mime || 'image/png')};base64,${t.image.base64}" onclick="App.openSupportLightbox(this.src)" alt="Attachment"></div>` : ''}
           ${t.adminReply ? `<div class="ticket-reply"><span class="ticket-reply-label">Reply</span> ${this._esc(t.adminReply)}</div>` : ''}
         </div>`;
       }).join('');
     } catch {
       list.innerHTML = '<div class="empty-state"><p>Failed to load tickets.</p></div>';
     }
+  },
+
+  _supportImage: null,
+
+  initSupportImageUpload() {
+    if (this._supportImageInit) return;
+    this._supportImageInit = true;
+    const drop = document.getElementById('support-image-drop');
+    const input = document.getElementById('support-image-input');
+    const removeBtn = document.getElementById('support-image-remove');
+    if (!drop || !input) return;
+
+    drop.addEventListener('click', (e) => {
+      if (e.target.closest('.support-image-remove')) return;
+      input.click();
+    });
+    input.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) this._handleSupportImage(file);
+      input.value = '';
+    });
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragging'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('dragging'));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('dragging');
+      const file = e.dataTransfer.files[0];
+      if (file) this._handleSupportImage(file);
+    });
+    removeBtn?.addEventListener('click', (e) => { e.stopPropagation(); this._clearSupportImage(); });
+
+    this._supportPasteHandler = (e) => {
+      const view = document.getElementById('view-support');
+      if (!view || view.style.display === 'none') return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) { this._handleSupportImage(file); e.preventDefault(); break; }
+        }
+      }
+    };
+    document.addEventListener('paste', this._supportPasteHandler);
+  },
+
+  _handleSupportImage(file) {
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+      this.toast('Only PNG, JPG, or WebP images allowed', 'error');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.toast('Image must be under 2MB', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      this._supportImage = { mime: file.type, base64: String(dataUrl).split(',')[1] };
+      document.getElementById('support-image-thumb').src = dataUrl;
+      document.getElementById('support-image-empty').style.display = 'none';
+      document.getElementById('support-image-preview').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+  },
+
+  openSupportLightbox(src) {
+    const overlay = document.createElement('div');
+    overlay.className = 'support-lightbox';
+    overlay.innerHTML = `<img src="${src}" alt="Attachment"><button class="support-lightbox-close" aria-label="Close">&times;</button>`;
+    const close = () => overlay.remove();
+    overlay.addEventListener('click', (e) => { if (e.target === overlay || e.target.classList.contains('support-lightbox-close')) close(); });
+    const escHandler = (e) => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); } };
+    document.addEventListener('keydown', escHandler);
+    document.body.appendChild(overlay);
+  },
+
+  _clearSupportImage() {
+    this._supportImage = null;
+    document.getElementById('support-image-thumb').src = '';
+    document.getElementById('support-image-empty').style.display = 'flex';
+    document.getElementById('support-image-preview').style.display = 'none';
   },
 
   async submitSupportTicket() {
@@ -6450,14 +6566,19 @@ const App = {
       this.toast('Please fill in subject and message', 'error');
       return;
     }
+    const btn = document.getElementById('support-submit-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
     try {
-      await API.submitSupportTicket(subject, message, type);
+      await API.submitSupportTicket(subject, message, type, this._supportImage);
       document.getElementById('support-subject').value = '';
       document.getElementById('support-message').value = '';
+      this._clearSupportImage();
       this.toast('Ticket submitted!', 'success');
       this.loadSupport();
     } catch (err) {
       this.toast(err.message || 'Failed to submit', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit Ticket'; }
     }
   },
 

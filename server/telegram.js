@@ -377,15 +377,24 @@ function notifySessionFailed(user, doc, stats) {
 
 function notifySupportTicket(user, ticket) {
   const typeEmoji = { bug: '🐛', feedback: '💬', suggestion: '💡' };
-  send(
+  const text =
     `🎫 <b>New Support Ticket</b>\n\n` +
     `From: ${esc(user.name)} (@${esc(user.username)})\n` +
     `Type: ${typeEmoji[ticket.type] || '📩'} ${esc(ticket.type)}\n` +
     `Subject: ${esc(ticket.subject)}\n` +
-    `Message: ${esc((ticket.message || '').slice(0, 300))}${ticket.message && ticket.message.length > 300 ? '...' : ''}\n\n` +
+    `Message: ${esc((ticket.message || '').slice(0, 300))}${ticket.message && ticket.message.length > 300 ? '...' : ''}` +
+    `${ticket.image ? '\n📎 Image attached ↑' : ''}\n\n` +
     `<i>Reply to this message to respond to the user</i>\n` +
-    `<code>ticket:${ticket.id}</code>`
-  );
+    `<code>ticket:${ticket.id}</code>`;
+
+  if (ticket.image && ticket.image.base64 && bot && chatId) {
+    const buf = Buffer.from(ticket.image.base64, 'base64');
+    bot.sendPhoto(chatId, buf, { caption: `🎫 Ticket: ${esc(ticket.subject)}`, parse_mode: 'HTML' })
+      .then(() => send(text))
+      .catch(err => { console.error('[Telegram] sendPhoto error:', err.message); send(text); });
+    return;
+  }
+  send(text);
 }
 
 function notifyStripeSubscription(user, details) {

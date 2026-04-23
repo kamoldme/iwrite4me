@@ -150,6 +150,12 @@
     .ticket-body { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
     .ticket-reply-area { margin-top: 8px; }
     .ticket-reply-area textarea { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elevated); color: var(--text-primary); font-size: 13px; font-family: var(--font-sans); min-height: 60px; resize: vertical; }
+    .ticket-image-wrap { margin-bottom: 8px; }
+    .ticket-image { max-width: 220px; max-height: 160px; border-radius: 8px; border: 1px solid var(--border); cursor: zoom-in; display: block; }
+    .ticket-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .ticket-lightbox img { max-width: 95vw; max-height: 92vh; border-radius: 8px; }
+    .ticket-lightbox-close { position: absolute; top: 16px; right: 20px; background: rgba(255,255,255,0.15); color: #fff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 22px; cursor: pointer; }
+    .ticket-lightbox-close:hover { background: rgba(255,255,255,0.25); }
 
     /* Search */
     .admin-search {
@@ -2478,6 +2484,7 @@
               </div>
             </div>
             <div class="ticket-body">${esc(t.message)}</div>
+            ${t.image && t.image.base64 ? `<div class="ticket-image-wrap"><img class="ticket-image" src="data:${esc(t.image.mime || 'image/png')};base64,${t.image.base64}" onclick="openTicketLightbox(this.src)" alt="Attachment"></div>` : ''}
             ${t.adminReply ? `<div style="padding:8px 12px;background:var(--accent-soft);border-radius:8px;font-size:13px;margin-bottom:8px"><strong>Your reply:</strong> ${esc(t.adminReply)}</div>` : ''}
             ${!t.adminReply ? `<div class="ticket-reply-area">
               <textarea id="reply-${t.id}" placeholder="Write a reply..."></textarea>
@@ -2528,6 +2535,16 @@
         toast('Ticket deleted', 'success');
         loadSupport();
       } catch { toast('Failed', 'error'); }
+    }
+
+    function openTicketLightbox(src) {
+      const overlay = document.createElement('div');
+      overlay.className = 'ticket-lightbox';
+      overlay.innerHTML = `<img src="${src}" alt="Attachment"><button class="ticket-lightbox-close" aria-label="Close">&times;</button>`;
+      const close = () => overlay.remove();
+      overlay.addEventListener('click', (e) => { if (e.target === overlay || e.target.classList.contains('ticket-lightbox-close')) close(); });
+      document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
+      document.body.appendChild(overlay);
     }
 
     // ===== DUELS =====
