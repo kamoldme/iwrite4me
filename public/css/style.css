@@ -11493,15 +11493,30 @@ a.lb-name-link .lb-username {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 1px 5px;
-  border-radius: 8px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none !important;
+  color: inherit;
+  padding: 0;
+}
+.plan-badge-pill {
+  padding: 1px 6px;
+  border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent);
-  flex-shrink: 0;
+  line-height: 1.4;
 }
-.plan-badge.pro {
+.plan-badge.pro .plan-badge-pill {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #000;
+}
+.plan-badge.pro .plan-badge-pill.plan-badge-sub {
+  background: var(--accent-soft);
+  color: var(--accent);
+  text-transform: none;
+  letter-spacing: 0.2px;
 }
 
 /* Reusable inline PRO badge — used in friends list, activity feed, duels */

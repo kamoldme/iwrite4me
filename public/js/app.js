@@ -1003,20 +1003,21 @@ const App = {
     const badge = document.getElementById('plan-badge');
     if (badge) {
       const isPro = this.user.plan === 'premium';
+      const pill = (txt, cls = '') => `<span class="plan-badge-pill${cls ? ' ' + cls : ''}">${txt}</span>`;
       if (isPro && this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite') {
         const expiresAt = new Date(this.user.planExpiresAt);
         const daysLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
         if (daysLeft <= 7 && daysLeft > 0) {
-          badge.textContent = `Pro · ${daysLeft}d left`;
+          badge.innerHTML = pill('PRO') + pill(`${daysLeft}d left`, 'plan-badge-sub');
         } else if (daysLeft <= 0) {
-          badge.textContent = 'Pro · Expired';
+          badge.innerHTML = pill('PRO') + pill('Expired', 'plan-badge-sub');
         } else {
-          badge.textContent = 'Pro';
+          badge.innerHTML = pill('PRO');
         }
       } else if (isPro && this.user.planExpiresAt === 'infinite') {
-        badge.textContent = 'Pro ∞';
+        badge.innerHTML = pill('PRO') + pill('∞', 'plan-badge-sub');
       } else {
-        badge.textContent = isPro ? 'Pro' : 'Free';
+        badge.innerHTML = pill(isPro ? 'PRO' : 'Free');
       }
       badge.className = 'plan-badge' + (isPro ? ' pro' : '');
     }
