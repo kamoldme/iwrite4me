@@ -2307,6 +2307,37 @@ const App = {
         deathCustomBtn.appendChild(badge);
       }
     }
+    // Tab Timer presets: 10s free, everything else Pro
+    document.querySelectorAll('#tab-timer-presets .time-preset[data-seconds]').forEach(btn => {
+      const secs = parseInt(btn.dataset.seconds);
+      const oldBadge = btn.querySelector('.timer-pro-badge');
+      if (oldBadge) oldBadge.remove();
+      btn.style.opacity = '';
+      if (!isPro && secs !== 10) {
+        btn.style.position = 'relative';
+        btn.style.opacity = '0.7';
+        const badge = document.createElement('span');
+        badge.className = 'timer-pro-badge';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.textContent = 'PRO';
+        btn.appendChild(badge);
+      }
+    });
+    const tabCustomBtn = document.getElementById('tab-timer-custom-btn');
+    if (tabCustomBtn) {
+      const oldBadge = tabCustomBtn.querySelector('.timer-pro-badge');
+      if (oldBadge) oldBadge.remove();
+      tabCustomBtn.style.opacity = '';
+      if (!isPro) {
+        tabCustomBtn.style.position = 'relative';
+        tabCustomBtn.style.opacity = '0.7';
+        const badge = document.createElement('span');
+        badge.className = 'timer-pro-badge';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.textContent = 'PRO';
+        tabCustomBtn.appendChild(badge);
+      }
+    }
     // +1m / +5m add-time buttons: Pro only
     document.querySelectorAll('.editor-add-time-btn').forEach(btn => {
       if (btn.id === 'duel-add-time-btn') return;
