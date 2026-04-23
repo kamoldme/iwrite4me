@@ -856,6 +856,12 @@ const App = {
     // Editor toolbar: audio dropdown — stop propagation inside so it stays open
     const audioBtn = document.getElementById('editor-audio-btn');
     const audioDrop = document.getElementById('editor-audio-dropdown');
+    // Move dropdown to <body> so it escapes .editor-container's stacking context
+    // (.editor-container is position:fixed z-index:2000, which caps everything inside
+    // regardless of inner z-index — drawer at 2500 would cover the dropdown otherwise)
+    if (audioDrop.parentElement !== document.body) {
+      document.body.appendChild(audioDrop);
+    }
     audioBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const willOpen = audioDrop.style.display === 'none';
