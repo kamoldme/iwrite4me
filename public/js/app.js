@@ -858,7 +858,13 @@ const App = {
     const audioDrop = document.getElementById('editor-audio-dropdown');
     audioBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      audioDrop.style.display = audioDrop.style.display === 'none' ? 'block' : 'none';
+      const willOpen = audioDrop.style.display === 'none';
+      if (willOpen) {
+        const r = audioBtn.getBoundingClientRect();
+        audioDrop.style.top = (r.bottom + 6) + 'px';
+        audioDrop.style.right = (window.innerWidth - r.right) + 'px';
+      }
+      audioDrop.style.display = willOpen ? 'block' : 'none';
     });
     audioDrop.addEventListener('click', (e) => {
       e.stopPropagation(); // Don't close when clicking inside the dropdown
