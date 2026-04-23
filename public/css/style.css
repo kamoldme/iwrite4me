@@ -11518,6 +11518,19 @@ a.lb-name-link .lb-username {
   text-transform: none;
   letter-spacing: 0.2px;
 }
+button.plan-badge-pill.plan-badge-days {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: 1px 8px;
+  transition: filter 0.15s;
+}
+button.plan-badge-pill.plan-badge-days:hover { filter: brightness(1.15); }
+.plan-badge-days-num { font-size: 13px; font-weight: 800; }
+.plan-badge-days-label { font-size: 9px; font-weight: 700; }
 
 /* Reusable inline PRO badge — used in friends list, activity feed, duels */
 .pro-inline-badge {

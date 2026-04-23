@@ -1004,13 +1004,14 @@ const App = {
     if (badge) {
       const isPro = this.user.plan === 'premium';
       const pill = (txt, cls = '') => `<span class="plan-badge-pill${cls ? ' ' + cls : ''}">${txt}</span>`;
+      const daysPill = (n, label = 'left') => `<button type="button" class="plan-badge-pill plan-badge-sub plan-badge-days" title="Manage Subscription"><span class="plan-badge-days-num">${n}</span><span class="plan-badge-days-label">d ${label}</span></button>`;
       if (isPro && this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite') {
         const expiresAt = new Date(this.user.planExpiresAt);
         const daysLeft = Math.ceil((expiresAt - new Date()) / (1000 * 60 * 60 * 24));
         if (daysLeft <= 7 && daysLeft > 0) {
-          badge.innerHTML = pill('PRO') + pill(`${daysLeft}d left`, 'plan-badge-sub');
+          badge.innerHTML = pill('PRO') + daysPill(daysLeft);
         } else if (daysLeft <= 0) {
-          badge.innerHTML = pill('PRO') + pill('Expired', 'plan-badge-sub');
+          badge.innerHTML = pill('PRO') + `<button type="button" class="plan-badge-pill plan-badge-sub plan-badge-days" title="Manage Subscription">Expired</button>`;
         } else {
           badge.innerHTML = pill('PRO');
         }
@@ -1019,6 +1020,8 @@ const App = {
       } else {
         badge.innerHTML = pill(isPro ? 'PRO' : 'Free');
       }
+      const daysBtn = badge.querySelector('.plan-badge-days');
+      if (daysBtn) daysBtn.addEventListener('click', (e) => { e.stopPropagation(); this.openPricing(); });
       badge.className = 'plan-badge' + (isPro ? ' pro' : '');
     }
 
