@@ -603,12 +603,12 @@ const Editor = {
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
     this.tabWarningTimer.textContent = this.tabGracePeriod;
-    document.title = `🔴 Come back! ${this.tabGracePeriod}s left`;
+    document.title = `🔴 ${this.tabGracePeriod}s left. Come back!`;
     this.tabCountdown = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = Math.max(0, this.tabGracePeriod - elapsed);
       this.tabWarningTimer.textContent = remaining;
-      document.title = `🔴 Come back! ${remaining}s left`;
+      document.title = `🔴 ${remaining}s left. Come back!`;
       if (remaining <= 0) {
         this.abandonSession();
       }
