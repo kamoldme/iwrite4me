@@ -3152,7 +3152,18 @@ const App = {
 
   // ===== HOVER CARD =====
   _hoverCardEl: null,
-  _hoverCardTimeout: null,
+  _hoverCardShowTimeout: null,
+  _hoverCardHideTimeout: null,
+  _hoverCardLink: null,
+
+  _scheduleHideHoverCard() {
+    clearTimeout(this._hoverCardShowTimeout);
+    clearTimeout(this._hoverCardHideTimeout);
+    this._hoverCardHideTimeout = setTimeout(() => {
+      if (this._hoverCardEl) this._hoverCardEl.style.display = 'none';
+      this._hoverCardLink = null;
+    }, 150);
+  },
 
   _initHoverCards() {
     if (this._hoverCardEl) return;
@@ -3162,35 +3173,49 @@ const App = {
     document.body.appendChild(card);
     this._hoverCardEl = card;
 
-    card.addEventListener('mouseenter', () => clearTimeout(this._hoverCardTimeout));
-    card.addEventListener('mouseleave', () => {
-      this._hoverCardTimeout = setTimeout(() => { card.style.display = 'none'; }, 200);
+    card.addEventListener('mouseenter', () => {
+      clearTimeout(this._hoverCardHideTimeout);
     });
+    card.addEventListener('mouseleave', () => this._scheduleHideHoverCard());
 
     // Delegate hover events on username links
-    document.addEventListener('mouseenter', async (e) => {
-      const link = e.target.closest('.username-link');
+    document.addEventListener('mouseenter', (e) => {
+      const link = e.target.closest && e.target.closest('.username-link');
       if (!link) return;
       const username = link.dataset.username;
       if (!username) return;
-      clearTimeout(this._hoverCardTimeout);
-      this._hoverCardTimeout = setTimeout(async () => {
+      clearTimeout(this._hoverCardHideTimeout);
+      clearTimeout(this._hoverCardShowTimeout);
+      this._hoverCardLink = link;
+      this._hoverCardShowTimeout = setTimeout(async () => {
+        // Only show if user is still hovering this exact link
+        if (this._hoverCardLink !== link || !link.matches(':hover')) return;
         try {
           let data = this._profileCache[username];
           if (!data) {
             data = await API.request(`/profiles/${encodeURIComponent(username)}`);
             this._profileCache[username] = data;
           }
+          if (this._hoverCardLink !== link || !link.matches(':hover')) return;
           this._showHoverCard(data, link);
         } catch {}
       }, 300);
     }, true);
 
     document.addEventListener('mouseleave', (e) => {
-      const link = e.target.closest('.username-link');
+      const link = e.target.closest && e.target.closest('.username-link');
       if (!link) return;
-      this._hoverCardTimeout = setTimeout(() => { card.style.display = 'none'; }, 200);
+      this._scheduleHideHoverCard();
     }, true);
+
+    // Safety net: if pointer leaves the page entirely, hide card
+    document.addEventListener('mouseleave', () => this._scheduleHideHoverCard());
+    window.addEventListener('blur', () => {
+      clearTimeout(this._hoverCardShowTimeout);
+      clearTimeout(this._hoverCardHideTimeout);
+      if (this._hoverCardEl) this._hoverCardEl.style.display = 'none';
+      this._hoverCardLink = null;
+    });
   },
 
   _showHoverCard(profile, anchor) {
