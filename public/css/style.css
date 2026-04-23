@@ -7057,8 +7057,12 @@ body.editor-active .mobile-sidebar-toggle {
   justify-content: flex-end;
   z-index: 2550;
 }
-#editor-audio-btn { position: relative; z-index: 3000; }
-.editor-container.has-docked-research .editor-toolbar-right { position: relative; z-index: 3000; }
+#editor-audio-btn {
+  position: fixed !important;
+  top: 14px;
+  right: 18px;
+  z-index: 99999 !important;
+}
 
 /* Word limit indicator for free tier */
 .word-limit-indicator {
@@ -7303,15 +7307,14 @@ body.editor-active .mobile-sidebar-toggle {
 
 /* ===== EDITOR AUDIO DROPDOWN ===== */
 .editor-audio-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
+  position: fixed;
+  top: 52px;
+  right: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
-  z-index: 3000;
+  z-index: 99999;
   min-width: 220px;
   padding: 8px 0;
 }
