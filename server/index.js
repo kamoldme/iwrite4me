@@ -230,6 +230,17 @@ app.post('/api/admin/maintenance', (req, res) => {
 });
 
 // Health check
+app.get('/api/version', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const v = fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim();
+    res.json({ version: v });
+  } catch (e) {
+    res.json({ version: 'unknown' });
+  }
+});
+
 app.get('/api/health', async (req, res) => {
   try {
     const { pool } = require('./utils/storage');
@@ -307,6 +318,8 @@ app.use('/api/duels', require('./routes/duels'));
 app.use('/api/stripe', require('./routes/stripe').router);
 app.use('/api/profiles', require('./routes/profiles'));
 app.use('/api/follow', require('./routes/follow'));
+app.use('/api/prompts', require('./routes/prompts').router);
+app.use('/api/research', require('./routes/research'));
 
 const { findOne, findMany, insertOne, updateOne } = require('./utils/storage');
 const bcrypt = require('bcryptjs');
@@ -676,11 +689,13 @@ app.use((req, res) => {
 
 // Initialize database and start
 const { initDB } = require('./utils/storage');
+const { seedPromptsIfEmpty } = require('./utils/seedPrompts');
 
 async function start() {
   // Seed admin account
   try {
     await initDB();
+    await seedPromptsIfEmpty();
     const adminPass = process.env.ADMIN_PASSWORD || 'Admin1234';
     const admin = await findOne('users.json', u => u.email === 'admin@iwrite4.me');
     if (!admin) {

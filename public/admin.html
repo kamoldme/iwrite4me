@@ -288,7 +288,7 @@
         <div class="admin-sidebar-header">
           <a href="/" class="logo">iWrite4.me</a>
           <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
-            <span class="version-tag" style="margin-top:0">v2.5.67</span>
+            <span class="version-tag" id="version-tag" style="margin-top:0">v...</span>
             <div class="admin-label" style="margin-top:0">Admin Panel</div>
           </div>
         </div>
@@ -336,6 +336,10 @@
           <button class="admin-nav-item" data-tab="subscriptions">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             Subscriptions
+          </button>
+          <button class="admin-nav-item" data-tab="prompts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v12H5.17L4 17.17V4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="12" x2="13" y2="12"/></svg>
+            Prompts
           </button>
         </nav>
         <div class="admin-sidebar-footer">
@@ -728,6 +732,51 @@
             <div id="referrals-list"></div>
           </div>
         </div>
+
+        <!-- PROMPTS -->
+        <div id="tab-prompts" style="display:none">
+          <div class="admin-page-title">Writing Prompts</div>
+          <div class="admin-card" style="padding:20px;margin-bottom:20px">
+            <h3 style="font-size:14px;font-weight:600;margin-bottom:12px">Add New Prompt</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+              <div style="flex:1;min-width:300px">
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Prompt text</label>
+                <textarea id="prompt-text-input" rows="2" placeholder="e.g. Describe a challenge you overcame..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text-primary);font-size:13px;resize:vertical"></textarea>
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Category</label>
+                <select id="prompt-category-input" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text-primary);font-size:13px">
+                  <option value="ielts">IELTS Writing</option>
+                  <option value="college">College Admissions</option>
+                  <option value="self">Explore Myself / Life</option>
+                  <option value="creative">Creative</option>
+                  <option value="random">Random</option>
+                </select>
+              </div>
+              <button class="admin-btn admin-btn-primary" onclick="createPrompt()" style="padding:8px 16px">Add</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="prompt-filter-row">
+            <button class="admin-btn admin-btn-primary prompt-filter-btn" data-filter="all" onclick="filterPrompts('all')">All</button>
+            <button class="admin-btn admin-btn-ghost prompt-filter-btn" data-filter="ielts" onclick="filterPrompts('ielts')">IELTS</button>
+            <button class="admin-btn admin-btn-ghost prompt-filter-btn" data-filter="college" onclick="filterPrompts('college')">College</button>
+            <button class="admin-btn admin-btn-ghost prompt-filter-btn" data-filter="self" onclick="filterPrompts('self')">Self</button>
+            <button class="admin-btn admin-btn-ghost prompt-filter-btn" data-filter="creative" onclick="filterPrompts('creative')">Creative</button>
+            <button class="admin-btn admin-btn-ghost prompt-filter-btn" data-filter="random" onclick="filterPrompts('random')">Random</button>
+          </div>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Prompt</th>
+                <th>Category</th>
+                <th>Used</th>
+                <th>Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="prompts-tbody"></tbody>
+          </table>
+        </div>
       </main>
     </div>
   </div>
@@ -982,6 +1031,7 @@
       if (tabEl) tabEl.style.display = 'block';
       localStorage.setItem('iwrite_admin_tab', tabName);
       if (tabName === 'stories') loadStoriesAdmin();
+      if (tabName === 'prompts') loadPrompts();
     }
 
     document.querySelectorAll('[data-tab]').forEach(btn => {
@@ -1246,6 +1296,24 @@
           <div class="admin-stat-card"><div class="label">Pro Users</div><div class="value" style="color:var(--xp-color)">${stats.premiumUsers}</div></div>
           <div class="admin-stat-card"><div class="label">Open Tickets</div><div class="value" style="color:var(--warning)">${stats.openTickets}</div></div>
           <div class="admin-stat-card"><div class="label">Log Entries</div><div class="value">${stats.totalLogs}</div></div>
+          ${(() => {
+            const ai = stats.aiUsage || { used: 0, capacity: 0, activeUsers: 0, week: '' };
+            const pct = ai.capacity > 0 ? Math.min(100, Math.round((ai.used / ai.capacity) * 100)) : 0;
+            const barColor = pct >= 80 ? 'var(--danger)' : pct >= 50 ? 'var(--warning)' : 'var(--accent, #3b82f6)';
+            return `
+            <div class="admin-stat-card" style="grid-column:span 2;min-width:280px">
+              <div class="label">Gemini AI · Weekly Usage</div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px">
+                <div class="value" style="color:${barColor}">${ai.used.toLocaleString()}</div>
+                <div style="font-size:14px;color:var(--text-muted)">/ ${ai.capacity.toLocaleString()}</div>
+                <div style="margin-left:auto;font-size:12px;color:var(--text-muted)">${pct}%</div>
+              </div>
+              <div style="height:8px;background:var(--bg-tertiary, rgba(255,255,255,0.06));border-radius:999px;overflow:hidden;margin-top:8px">
+                <div style="height:100%;width:${pct}%;background:${barColor};transition:width 400ms"></div>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px">${ai.activeUsers} user${ai.activeUsers === 1 ? '' : 's'} asked this week · ${ai.week}</div>
+            </div>`;
+          })()}
         `;
 
         const logs = await adminRequest('/admin/logs');
@@ -2776,6 +2844,86 @@
       }).join('');
     }
 
+    // ===== PROMPTS TAB =====
+    let _allPrompts = [];
+    let _promptFilter = 'all';
+    const PROMPT_CAT_LABEL = { ielts: 'IELTS', college: 'College', self: 'Self', creative: 'Creative', random: 'Random' };
+
+    async function loadPrompts() {
+      try {
+        const data = await adminRequest('/prompts/admin/all');
+        _allPrompts = data.prompts || [];
+        renderPrompts();
+      } catch (e) { toast('Failed to load prompts: ' + e.message, 'error'); }
+    }
+
+    function filterPrompts(filter) {
+      _promptFilter = filter;
+      document.querySelectorAll('.prompt-filter-btn').forEach(b => {
+        b.className = 'admin-btn ' + (b.dataset.filter === filter ? 'admin-btn-primary' : 'admin-btn-ghost') + ' prompt-filter-btn';
+      });
+      renderPrompts();
+    }
+
+    function renderPrompts() {
+      const tbody = document.getElementById('prompts-tbody');
+      const list = _promptFilter === 'all' ? _allPrompts : _allPrompts.filter(p => p.category === _promptFilter);
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">No prompts</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(p => `
+        <tr>
+          <td style="max-width:500px;font-size:12px">${esc(p.text)}</td>
+          <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent)">${PROMPT_CAT_LABEL[p.category] || p.category}</span></td>
+          <td>${p.usedCount || 0}</td>
+          <td><label style="cursor:pointer"><input type="checkbox" ${p.active !== false ? 'checked' : ''} onchange="togglePromptActive('${p.id}', this.checked)"></label></td>
+          <td class="actions">
+            <button class="admin-btn admin-btn-ghost" onclick="editPromptPrompt('${p.id}')" style="padding:4px 10px;font-size:12px">Edit</button>
+            <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--danger)" onclick="deletePrompt('${p.id}')">Delete</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    async function createPrompt() {
+      const text = document.getElementById('prompt-text-input').value.trim();
+      const category = document.getElementById('prompt-category-input').value;
+      if (!text) { toast('Enter prompt text', 'error'); return; }
+      try {
+        await adminRequest('/prompts/admin', { method: 'POST', body: JSON.stringify({ text, category }) });
+        document.getElementById('prompt-text-input').value = '';
+        toast('Prompt added', 'success');
+        loadPrompts();
+      } catch (e) { toast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function togglePromptActive(id, active) {
+      try {
+        await adminRequest('/prompts/admin/' + id, { method: 'PATCH', body: JSON.stringify({ active }) });
+      } catch (e) { toast('Failed: ' + e.message, 'error'); loadPrompts(); }
+    }
+
+    async function deletePrompt(id) {
+      if (!confirm('Delete this prompt?')) return;
+      try {
+        await adminRequest('/prompts/admin/' + id, { method: 'DELETE' });
+        toast('Deleted', 'success');
+        loadPrompts();
+      } catch (e) { toast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function editPromptPrompt(id) {
+      const p = _allPrompts.find(x => x.id === id);
+      if (!p) return;
+      const newText = prompt('Edit prompt text:', p.text);
+      if (newText == null || !newText.trim() || newText.trim() === p.text) return;
+      try {
+        await adminRequest('/prompts/admin/' + id, { method: 'PATCH', body: JSON.stringify({ text: newText.trim() }) });
+        toast('Updated', 'success');
+        loadPrompts();
+      } catch (e) { toast('Failed: ' + e.message, 'error'); }
+    }
+
     async function loadPromoCodes() {
       try {
         const codes = await adminRequest('/admin/promo-codes');
@@ -2956,6 +3104,12 @@
         }
       }, { passive: true });
     }
+
+    // Fetch shared version
+    fetch('/api/version').then(r => r.json()).then(d => {
+      const el = document.getElementById('version-tag');
+      if (el && d.version) el.textContent = 'v' + d.version;
+    }).catch(() => {});
 
     // ===== INIT =====
     if (adminToken) {

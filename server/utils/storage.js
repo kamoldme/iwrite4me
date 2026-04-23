@@ -22,7 +22,8 @@ const TABLE_MAP = {
   'story-likes.json': 'story_likes',
   'story-comment-likes.json': 'story_comment_likes',
   'notifications.json': 'notifications',
-  'app-settings.json': 'app_settings'
+  'app-settings.json': 'app_settings',
+  'prompts.json': 'prompts'
 };
 
 function getTable(filename) {

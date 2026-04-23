@@ -11,6 +11,10 @@ const Editor = {
   _heartbeatInterval: null,
   lastKeystroke: null,
   dangerThreshold: 6000,
+  dangerVariant: 'classic',
+  heartsTotal: 3,
+  heartsLeft: 3,
+  _chillExpiring: false,
   tabLeftTime: null,
   tabGracePeriod: 10,
   abandoned: false,
@@ -94,25 +98,31 @@ const Editor = {
     // Custom danger threshold (Pro feature)
     if (opts.dangerThreshold) this.dangerThreshold = opts.dangerThreshold;
     if (opts.tabGracePeriod) this.tabGracePeriod = opts.tabGracePeriod;
+    this.dangerVariant = (mode === 'dangerous' && opts.dangerVariant === 'chill') ? 'chill' : 'classic';
+    this.heartsTotal = 3;
+    this.heartsLeft = 3;
+    this._chillExpiring = false;
     if (typeof CommentSystem !== 'undefined') CommentSystem.destroy();
 
     try {
-      const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic);
+      const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic, this.dangerVariant);
       this.documentId = doc.id;
     } catch {
       App.toast('Failed to create document', 'error');
       return;
     }
 
-    // Enter fullscreen for both normal and dangerous modes
+    // Enter fullscreen for Time + Dangerous (Zen has no tab-lock)
     this._fullscreenActive = false;
-    try {
-      const el = document.documentElement;
-      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-      if (req) {
-        await req.call(el).then(() => { this._fullscreenActive = true; }).catch(() => {});
-      }
-    } catch(e) {}
+    if (mode !== 'zen') {
+      try {
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+        if (req) {
+          await req.call(el).then(() => { this._fullscreenActive = true; }).catch(() => {});
+        }
+      } catch(e) {}
+    }
 
     if (mode === 'dangerous') {
       await this.runCountdown();
@@ -123,7 +133,6 @@ const Editor = {
 
     this.container.classList.add('active');
     document.body.classList.add('editor-active');
-    this.titleInput.value = '';
     this.textarea.innerHTML = '';
     this.textarea.contentEditable = 'true';
     this.textarea.focus();
@@ -142,7 +151,8 @@ const Editor = {
     const earlyUsed = (App.user.earlyCompletesMonth === currentMonth) ? (App.user.earlyCompletes || 0) : 0;
     const earlyLimit = App.user.plan === 'premium' ? 15 : 3;
     const atWordLimit = this.getWordCount() >= this.getWordLimit();
-    if (earlyUsed >= earlyLimit && !maintenanceActive && !atWordLimit) {
+    const isUnlimited = this.duration === 0;
+    if (earlyUsed >= earlyLimit && !maintenanceActive && !atWordLimit && !isUnlimited) {
       saveBtn.classList.add('btn-disabled');
       saveBtn.style.opacity = '0.4';
     } else {
@@ -168,7 +178,7 @@ const Editor = {
     document.getElementById('status-bar').style.display = 'flex';
     this.titleInput.readOnly = false;
 
-    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous' : 'Normal';
+    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous' : mode === 'zen' ? 'Zen' : mode === 'research' ? 'Research' : 'Time';
     this.modeBadge.className = `editor-mode-badge ${mode}`;
     // Show session controls (swap add-time buttons for duel mode)
     document.getElementById('editor-timer').style.display = '';
@@ -183,7 +193,27 @@ const Editor = {
     if (mode === 'dangerous') {
       this.container.classList.add('dangerous-active');
       this.dangerProgress.style.display = 'none';
+      this._renderHearts();
       this.startDangerMode();
+    } else {
+      const h = document.getElementById('editor-hearts');
+      if (h) h.style.display = 'none';
+    }
+
+    if (mode === 'research') {
+      // Auto-open and dock the research sidebar
+      setTimeout(() => {
+        if (typeof App !== 'undefined' && App._openResearch) {
+          App._openResearch();
+          const drawer = document.getElementById('research-drawer');
+          const editorEl = document.getElementById('editor-container');
+          if (drawer && !drawer.classList.contains('docked')) {
+            drawer.classList.add('docked');
+            if (editorEl) editorEl.classList.add('has-docked-research');
+            try { localStorage.setItem('iwrite_research_docked', '1'); } catch {}
+          }
+        }
+      }, 100);
     }
 
     this.timerInterval = setInterval(() => this.updateTimer(), 100);
@@ -391,6 +421,64 @@ const Editor = {
       document.execCommand('insertText', false, '  ');
       return;
     }
+    // ArrowDown: if at the last line of a blockquote → exit the quote into a new line.
+    // If at the last line of the editor (nothing below) → append a new empty line.
+    if (e.key === 'ArrowDown' && !e.shiftKey) {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount && sel.isCollapsed) {
+        const range = sel.getRangeAt(0);
+
+        // Helper: is caret effectively at the end of `container` (only whitespace/empty after)?
+        const isAtEndOf = (container) => {
+          if (!container) return false;
+          try {
+            const after = document.createRange();
+            after.setStart(range.endContainer, range.endOffset);
+            after.setEnd(container, container.childNodes.length);
+            const remaining = after.toString().replace(/\u200B/g, '');
+            return remaining.replace(/\s+/g, '') === '';
+          } catch {
+            return false;
+          }
+        };
+
+        // Find enclosing blockquote, if any
+        let node = sel.anchorNode;
+        let bq = null;
+        while (node && node !== Editor.textarea) {
+          if (node.nodeName === 'BLOCKQUOTE') { bq = node; break; }
+          node = node.parentNode;
+        }
+
+        if (bq && isAtEndOf(bq)) {
+          e.preventDefault();
+          const newDiv = document.createElement('div');
+          newDiv.innerHTML = '<br>';
+          bq.parentNode.insertBefore(newDiv, bq.nextSibling);
+          const r = document.createRange();
+          r.setStart(newDiv, 0);
+          r.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(r);
+          Editor.updateFormatButtons && Editor.updateFormatButtons();
+          return;
+        }
+
+        if (isAtEndOf(Editor.textarea)) {
+          e.preventDefault();
+          const newDiv = document.createElement('div');
+          newDiv.innerHTML = '<br>';
+          Editor.textarea.appendChild(newDiv);
+          const r = document.createRange();
+          r.setStart(newDiv, 0);
+          r.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(r);
+          Editor.updateFormatButtons && Editor.updateFormatButtons();
+          return;
+        }
+      }
+    }
     // Keyboard shortcuts for formatting
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
       switch (e.key.toLowerCase()) {
@@ -497,8 +585,9 @@ const Editor = {
     clearInterval(this._focusCheckInterval);
     this._focusCheckInterval = setInterval(() => {
       if (!Editor.active || Editor.abandoned) return;
-      // If the tab is hidden OR the window doesn't have focus, trigger leave
-      if (document.hidden || !document.hasFocus()) {
+      // Debounce: ignore transient !hasFocus right after a real return (Chrome tab-switch animation)
+      const justReturned = Editor._lastTabReturn && (Date.now() - Editor._lastTabReturn < 1500);
+      if (document.hidden || (!document.hasFocus() && !justReturned)) {
         if (!Editor.tabCountdown) Editor.onTabLeave();
       } else {
         // Tab is visible and focused — clear any countdown
@@ -509,9 +598,11 @@ const Editor = {
 
   onTabLeave() {
     if (this.abandoned || !this.active) return;
+    if (this.mode === 'zen') return;
     if (this.tabCountdown) return;
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
+    this.tabWarningTimer.textContent = this.tabGracePeriod;
     document.title = `🔴 Come back! ${this.tabGracePeriod}s left`;
     this.tabCountdown = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.tabLeftTime) / 1000);
@@ -551,6 +642,8 @@ const Editor = {
       clearInterval(this.tabCountdown);
       this.tabCountdown = null;
     }
+    // Mark return time so _startFocusCheck can debounce transient !hasFocus during tab-switch
+    this._lastTabReturn = Date.now();
     // Tab countdown ended but session is still active — restore the session title
     if (this.active && !this.abandoned) {
       document.title = '✍️ Writing in progress…';
@@ -680,9 +773,93 @@ const Editor = {
       }
 
       if (elapsed >= total) {
-        this.failDangerMode();
+        if (this.dangerVariant === 'chill') {
+          this.handleChillExpire();
+        } else {
+          this.failDangerMode();
+        }
       }
     }, 50);
+  },
+
+  _renderHearts() {
+    const wrap = document.getElementById('editor-hearts');
+    if (!wrap) return;
+    if (this.dangerVariant !== 'chill') { wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    const hearts = wrap.querySelectorAll('.heart');
+    hearts.forEach((h, i) => {
+      h.classList.remove('broken', 'shattering');
+      if (i >= this.heartsLeft) h.classList.add('broken');
+    });
+  },
+
+  handleChillExpire() {
+    if (this._chillExpiring) return;
+    this._chillExpiring = true;
+
+    // Out of hearts → classic fail
+    if (this.heartsLeft <= 1) {
+      // Shatter last heart visually, then fail
+      const wrap = document.getElementById('editor-hearts');
+      if (wrap) {
+        const hearts = wrap.querySelectorAll('.heart');
+        const idx = this.heartsLeft - 1;
+        if (hearts[idx]) hearts[idx].classList.add('shattering');
+      }
+      this.heartsLeft = 0;
+      setTimeout(() => this.failDangerMode(), 380);
+      return;
+    }
+
+    // Otherwise: shatter one heart + delete last sentence, keep going
+    const wrap = document.getElementById('editor-hearts');
+    const idx = this.heartsLeft - 1;
+    if (wrap) {
+      const hearts = wrap.querySelectorAll('.heart');
+      if (hearts[idx]) {
+        hearts[idx].classList.add('shattering');
+        setTimeout(() => {
+          hearts[idx].classList.remove('shattering');
+          hearts[idx].classList.add('broken');
+        }, 400);
+      }
+    }
+    this.heartsLeft -= 1;
+
+    this._deleteLastChunk();
+
+    // Reset keystroke + vignette so timer restarts
+    this.lastKeystroke = Date.now();
+    this.vignette.classList.remove('active');
+    this.vignette.style.opacity = 0;
+    this.updateWordCount();
+    this._chillExpiring = false;
+
+    if (typeof App !== 'undefined' && App.toast) {
+      App.toast(`💔 40% of your writing lost. ${this.heartsLeft} heart${this.heartsLeft === 1 ? '' : 's'} left.`, 'warning');
+    }
+  },
+
+  _deleteLastChunk() {
+    const ta = this.textarea;
+    if (!ta) return;
+    const text = ta.innerText || '';
+    if (!text.trim()) return;
+    // Drop the last 40% of words
+    const words = text.trim().split(/\s+/);
+    const dropCount = Math.max(1, Math.ceil(words.length * 0.4));
+    const keptWords = words.slice(0, Math.max(0, words.length - dropCount));
+    ta.innerText = keptWords.join(' ');
+    // Move cursor to end
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(ta);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch {}
   },
 
   async failDangerMode() {
@@ -1140,8 +1317,9 @@ const Editor = {
     // Bypass when word limit is reached — user can't write more, don't punish them
     const maintenanceActive = App._maintActive;
     const atWordLimit = this.getWordCount() >= this.getWordLimit();
-    const isEarly = !timerExpired && !this._isTimerExpired() && !atWordLimit;
-    if (isEarly && !maintenanceActive) {
+    const isUnlimited = this.duration === 0;
+    const isEarly = !timerExpired && !this._isTimerExpired() && !atWordLimit && !isUnlimited;
+    if (isEarly && !maintenanceActive && this.mode !== 'zen') {
       const user = App.user;
       const currentMonth = new Date().toISOString().slice(0, 7); // "2026-03"
       const usedThisMonth = (user.earlyCompletesMonth === currentMonth) ? (user.earlyCompletes || 0) : 0;
@@ -1172,7 +1350,7 @@ const Editor = {
     }
 
     this.active = false;
-    this._earlyComplete = isEarly;
+    this._earlyComplete = (this.mode === 'zen' || isUnlimited) ? false : isEarly;
     this.cleanup();
 
     const wordCount = this.getWordCount();
@@ -1194,16 +1372,16 @@ const Editor = {
     const baseXP = Math.floor(wordCount * 0.5);
     const timeBonus = Math.floor(duration / 60) * 2;
     const modeBonus = this.mode === 'dangerous' ? Math.floor(baseXP * 0.5) : 0;
-    const xpEarned = baseXP + timeBonus + modeBonus;
-
-    await API.updateDocument(this.documentId, {
-      title: this.titleInput.value,
-      content: this.textarea.innerHTML
-    });
+    const xpEarned = this.mode === 'zen' ? 0 : baseXP + timeBonus + modeBonus;
 
     let result;
     try {
-      result = await API.completeSession(this.documentId, { wordCount, duration, xpEarned, earlyComplete: !!this._earlyComplete });
+      result = await API.completeSession(this.documentId, {
+        wordCount, duration, xpEarned,
+        earlyComplete: !!this._earlyComplete,
+        title: this.titleInput.value,
+        content: this.textarea.innerHTML
+      });
     } catch {
       this.container.classList.remove('active'); document.body.classList.remove('editor-active');
       App.loadDashboard();
@@ -1490,7 +1668,7 @@ const Editor = {
       const rect = range.getBoundingClientRect();
       popup.style.display = 'flex';
       popup.style.left = Math.max(8, rect.left + rect.width / 2 - popup.offsetWidth / 2) + 'px';
-      popup.style.top = (rect.top - popup.offsetHeight - 8) + 'px';
+      popup.style.top = (rect.top - popup.offsetHeight - 14) + 'px';
     };
 
     // Show popup on mouseup (after selection is final) instead of selectionchange
@@ -1778,8 +1956,13 @@ const Editor = {
     clearInterval(this._heartbeatInterval);
     if (this._duelPollInterval) clearInterval(this._duelPollInterval);
     this._clearSessionState();
+    if (typeof App !== 'undefined' && typeof App._closeResearch === 'function') {
+      try { App._closeResearch(); } catch {}
+    }
     this.container.classList.remove('dangerous-active');
     this.dangerProgress.style.display = 'none';
+    const heartsEl = document.getElementById('editor-hearts');
+    if (heartsEl) heartsEl.style.display = 'none';
     this.vignette.classList.remove('active');
     this.vignette.style.opacity = 0;
     this.textarea.classList.remove('fading');
@@ -1821,36 +2004,22 @@ const Editor = {
   },
 
   async abort() {
-    // Active writing session
+    // Active writing session — back arrow always abandons without saving
     if (this.active) {
-      // Check if early complete is available (always allowed at word limit)
-      const user = App.user;
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      const usedThisMonth = (user.earlyCompletesMonth === currentMonth) ? (user.earlyCompletes || 0) : 0;
-      const earlyMax = user.plan === 'premium' ? 15 : 3;
-      const atWordLimit = this.getWordCount() >= this.getWordLimit();
-      const canEarlyComplete = atWordLimit || usedThisMonth < earlyMax;
-
-      if (canEarlyComplete) {
-        const ok = await App.showConfirm('Are you sure? Leaving will save your current progress but end the session early.');
-        if (ok) this.completeSession();
-      } else {
-        const ok = await App.showConfirm('Your early complete limit is reached. Leaving now will DELETE your writing and it won\'t be saved. Are you sure?');
-        if (ok) {
-          // Abandon without saving
-          this.active = false;
-          this.cleanup();
-          if (this.documentId) {
-            try { await API.abandonDocument(this.documentId, 'user_left_no_saves'); } catch {}
-          }
-          document.getElementById('status-bar').style.display = 'none';
-          document.getElementById('word-limit-indicator').style.display = 'none';
-          this.container.classList.remove('active');
-          document.body.classList.remove('editor-active');
-          App.switchView('documents');
-          App.toast('Session abandoned — writing was not saved', 'warning');
-        }
+      const ok = await App.showConfirm('Are you sure? Leaving will discard your writing — it won\'t be saved.');
+      if (!ok) return;
+      this.active = false;
+      this.cleanup();
+      if (this.documentId) {
+        try { await API.abandonDocument(this.documentId, 'user_left_no_saves'); } catch {}
       }
+      document.getElementById('status-bar').style.display = 'none';
+      const wordLimitEl = document.getElementById('word-limit-indicator');
+      if (wordLimitEl) wordLimitEl.style.display = 'none';
+      this.container.classList.remove('active');
+      document.body.classList.remove('editor-active');
+      App.switchView('documents');
+      App.toast('Session abandoned — writing was not saved', 'warning');
       return;
     }
 
@@ -1878,17 +2047,25 @@ const Editor = {
 
   // ── Copy blocking during active sessions ──
   _onCopyBlock(e) {
-    if (Editor.active) {
-      e.preventDefault();
-      e.stopPropagation();
-      App.toast('Copying is disabled during sessions', 'error');
+    if (!Editor.active) return;
+    // Allow copy from the research drawer (AI chat + Wiki results)
+    const drawer = document.getElementById('research-drawer');
+    if (drawer) {
+      const sel = window.getSelection && window.getSelection();
+      const anchor = sel && sel.anchorNode;
+      if (anchor && drawer.contains(anchor.nodeType === 1 ? anchor : anchor.parentNode)) return;
+      if (e.target && drawer.contains(e.target)) return;
     }
+    e.preventDefault();
+    e.stopPropagation();
+    App.toast('Copying is disabled during sessions', 'error');
   },
 
   _onContextMenuBlock(e) {
-    if (Editor.active) {
-      e.preventDefault();
-    }
+    if (!Editor.active) return;
+    const drawer = document.getElementById('research-drawer');
+    if (drawer && e.target && drawer.contains(e.target)) return;
+    e.preventDefault();
   },
 
   _blockCopy() {

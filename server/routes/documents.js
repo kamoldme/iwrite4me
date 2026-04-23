@@ -95,7 +95,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { title, content, mode, prompt } = req.body;
+  const { title, content, mode, prompt, dangerVariant } = req.body;
 
   // Monthly session limit (invisible): free 200/month, pro 300/month
   const user = await findOne('users.json', u => u.id === req.user.id);
@@ -135,6 +135,7 @@ router.post('/', async (req, res) => {
     title: finalTitle,
     content: content || '',
     mode: mode || 'normal',
+    dangerVariant: (mode === 'dangerous') ? (dangerVariant === 'chill' ? 'chill' : 'classic') : null,
     prompt: prompt || '',
     wordCount: (content || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length,
     xpEarned: 0,
@@ -280,7 +281,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 router.post('/:id/complete', async (req, res) => {
-  const { wordCount, duration, xpEarned, earlyComplete } = req.body;
+  const { wordCount, duration, xpEarned, earlyComplete, content, title } = req.body;
   const doc = await findOne('documents.json', d => d.id === req.params.id && d.userId === req.user.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
 
@@ -311,47 +312,74 @@ router.post('/:id/complete', async (req, res) => {
     }
   }
 
-  await updateOne('documents.json', d => d.id === req.params.id, {
+  const completeUpdates = {
     wordCount: wordCount || doc.wordCount,
     duration: duration || 0,
     xpEarned: xpEarned || 0,
+    completed: true,
+    completedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
-  });
+  };
+  if (content !== undefined) completeUpdates.content = content;
+  if (title !== undefined) {
+    let baseTitle = (title || '').trim() || 'Untitled';
+    const userDocs = await findMany('documents.json', d => d.userId === req.user.id && !d.deleted && d.id !== req.params.id);
+    const existingTitles = new Set(userDocs.map(d => d.title));
+    let finalTitle = baseTitle;
+    if (existingTitles.has(finalTitle)) {
+      let n = 1;
+      while (existingTitles.has(`${baseTitle} (${n})`)) n++;
+      finalTitle = `${baseTitle} (${n})`;
+    }
+    completeUpdates.title = finalTitle;
+  }
+  await updateOne('documents.json', d => d.id === req.params.id, completeUpdates);
 
   const user = await findOne('users.json', u => u.id === req.user.id);
   const today = new Date().toISOString().split('T')[0];
   const lastDate = user.lastWritingDate;
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-  let newStreak;
-  let newTreeStage;
-  if (lastDate === today) {
-    // already wrote today — no streak or tree change
-    newStreak = user.streak;
-    newTreeStage = streakToTreeStage(newStreak);
-  } else if (lastDate === yesterday) {
-    // streak continues
-    newStreak = user.streak + 1;
-    newTreeStage = streakToTreeStage(newStreak);
-  } else {
-    // streak broken — tree resets from the beginning
-    newStreak = 1;
-    newTreeStage = streakToTreeStage(1);
+  const isZen = doc.mode === 'zen';
+
+  let newStreak = user.streak;
+  let newTreeStage = user.treeStage;
+  if (!isZen) {
+    if (lastDate === today) {
+      newStreak = user.streak;
+      newTreeStage = streakToTreeStage(newStreak);
+    } else if (lastDate === yesterday) {
+      newStreak = user.streak + 1;
+      newTreeStage = streakToTreeStage(newStreak);
+    } else {
+      newStreak = 1;
+      newTreeStage = streakToTreeStage(1);
+    }
   }
 
   const totalWords = (user.totalWords || 0) + (wordCount || 0);
 
-  const newXP = user.xp + (xpEarned || 0);
-  const updatedUser = await updateOne('users.json', u => u.id === req.user.id, {
+  const effectiveXP = isZen ? 0 : (xpEarned || 0);
+  const newXP = user.xp + effectiveXP;
+  const userUpdates = {
     xp: newXP,
     level: calcLevel(newXP),
-    streak: newStreak,
-    longestStreak: Math.max(user.longestStreak, newStreak),
-    lastWritingDate: today,
-    treeStage: newTreeStage,
     totalWords,
     totalSessions: (user.totalSessions || 0) + 1
-  });
+  };
+  if (!isZen) {
+    userUpdates.streak = newStreak;
+    userUpdates.longestStreak = Math.max(user.longestStreak, newStreak);
+    userUpdates.lastWritingDate = today;
+    userUpdates.treeStage = newTreeStage;
+  }
+  if (doc.mode === 'dangerous') {
+    const existingAchievements = user.achievements || [];
+    if (!existingAchievements.includes('danger_zone')) {
+      userUpdates.achievements = [...existingAchievements, 'danger_zone'];
+    }
+  }
+  const updatedUser = await updateOne('users.json', u => u.id === req.user.id, userUpdates);
 
   // Generate activities for friends feed
   try {

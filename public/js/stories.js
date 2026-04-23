@@ -432,6 +432,9 @@
       this.stopStoryAudio();
       this.closeStoryAudioDropdown();
       this.setStoriesMode('feed');
+      window.scrollTo(0, 0);
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) mainContent.scrollTop = 0;
       const detailEl = document.getElementById('story-detail');
       if (detailEl) detailEl.innerHTML = '';
       this.renderStoriesFeed();
@@ -442,6 +445,9 @@
       this.storySelectedId = id;
       this.storyEditingId = options.openEditor ? id : null;
       this.setStoriesMode(options.openEditor ? 'compose' : 'read');
+      window.scrollTo(0, 0);
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) mainContent.scrollTop = 0;
 
       if (detailEl) {
         detailEl.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:8px auto 18px"></div><p>Loading story...</p></div>';
@@ -996,8 +1002,8 @@
         }
         const rect = range.getBoundingClientRect();
         const editorRect = editor.closest('.story-composer-shell').getBoundingClientRect();
-        let top = rect.top - editorRect.top - toolbar.offsetHeight - 8;
-        if (top < 0) top = rect.bottom - editorRect.top + 8;
+        let top = rect.top - editorRect.top - toolbar.offsetHeight - 14;
+        if (top < 0) top = rect.bottom - editorRect.top + 14;
         const left = rect.left - editorRect.left + (rect.width / 2) - (toolbar.offsetWidth / 2);
         toolbar.style.top = `${top}px`;
         toolbar.style.left = `${Math.max(0, left)}px`;

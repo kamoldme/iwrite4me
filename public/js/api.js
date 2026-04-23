@@ -58,10 +58,10 @@ const API = {
     return this.request('/documents');
   },
 
-  async createDocument(title, content, mode, prompt) {
+  async createDocument(title, content, mode, prompt, dangerVariant) {
     return this.request('/documents', {
       method: 'POST',
-      body: JSON.stringify({ title, content, mode, prompt: prompt || '' })
+      body: JSON.stringify({ title, content, mode, prompt: prompt || '', dangerVariant: dangerVariant || null })
     });
   },
 
@@ -461,5 +461,35 @@ const API = {
   logout() {
     this.clearToken();
     window.location.href = '/app';
+  },
+
+  async promptQuota() {
+    return this.request('/prompts/quota');
+  },
+
+  async nextPrompt(category) {
+    return this.request('/prompts/next', {
+      method: 'POST',
+      body: JSON.stringify({ category: category || 'random' })
+    });
+  },
+
+  async researchQuota() {
+    return this.request('/research/quota');
+  },
+
+  async researchWiki(query) {
+    return this.request(`/research/wiki?q=${encodeURIComponent(query)}`);
+  },
+
+  async researchWikiFull(title) {
+    return this.request(`/research/wiki/full?title=${encodeURIComponent(title)}`);
+  },
+
+  async researchAsk(question, history) {
+    return this.request('/research/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question, history: history || [] })
+    });
   }
 };

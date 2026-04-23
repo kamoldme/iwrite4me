@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGSXDSW496"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-LGSXDSW496');
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>iWrite4.me — Dashboard</title>
@@ -8,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/iWrite logo.png">
-  <link rel="stylesheet" href="/css/style.css?v=51">
+  <link rel="stylesheet" href="/css/style.css?v=86">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -48,7 +56,7 @@
         <div class="sidebar-header">
           <div style="display:flex;flex-direction:column">
             <a href="/" class="logo">iWrite4.me</a>
-            <span class="version-tag">v2.5.78</span>
+            <span class="version-tag" id="version-tag">v...</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div class="streak-indicator" id="streak-badge" style="display:none;cursor:pointer" onclick="App.openStreakPopup()">
@@ -710,29 +718,6 @@
             </button>
           </div>
 
-          <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin-top:40px;margin-bottom:16px">Release Notes</h3>
-          <div class="release-notes-list">
-            <button class="release-note-btn" onclick="App.openHelpTopic('v2.2')">
-              <span class="release-note-version">v2.2</span>
-              <span class="release-note-desc">Share My Progress, Writing Analytics &amp; Security Improvements</span>
-            </button>
-            <button class="release-note-btn" onclick="App.openHelpTopic('v2.0')">
-              <span class="release-note-version">v2.0</span>
-              <span class="release-note-desc">Usernames, Streak Leaderboard, Smart Search &amp; Pro Word Limits</span>
-            </button>
-            <button class="release-note-btn" onclick="App.openHelpTopic('v1.2')">
-              <span class="release-note-version">v1.2</span>
-              <span class="release-note-desc">Early Complete Limits, Online Writers &amp; Mobile Polish</span>
-            </button>
-            <button class="release-note-btn" onclick="App.openHelpTopic('v1.1')">
-              <span class="release-note-version">v1.1</span>
-              <span class="release-note-desc">Writing Duels, Friends System &amp; Document Sharing</span>
-            </button>
-            <button class="release-note-btn" onclick="App.openHelpTopic('v1.0')">
-              <span class="release-note-version">v1.0</span>
-              <span class="release-note-desc">Launch — Write It or Lose It, XP, Streaks &amp; Writing Tree</span>
-            </button>
-          </div>
         </div>
 
         <!-- HELP TOPIC POPUP -->
@@ -754,7 +739,7 @@
           <input type="text" class="editor-title-input" id="editor-title" placeholder="Give your writing a title..." value="">
         </div>
         <div class="editor-toolbar-center">
-          <span class="editor-mode-badge normal" id="editor-mode-badge">Normal</span>
+          <span class="editor-mode-badge normal" id="editor-mode-badge">Time</span>
           <div class="editor-timer" id="editor-timer">--:--</div>
           <button class="editor-timer-toggle" id="editor-timer-toggle" title="Hide timer">
             <svg id="timer-eye-open" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -765,6 +750,11 @@
             <button class="editor-add-time-btn" id="add-time-5" title="Add 5 minutes">+5m</button>
           </div>
           <button class="editor-add-time-btn duel-add-time-btn" id="duel-add-time-btn" onclick="Editor.addExtraTime()" title="Add 5 minutes" style="display:none">+5m</button>
+          <div class="editor-hearts" id="editor-hearts" style="display:none">
+            <span class="heart" data-idx="0">❤</span>
+            <span class="heart" data-idx="1">❤</span>
+            <span class="heart" data-idx="2">❤</span>
+          </div>
         </div>
         <div class="editor-toolbar-right">
           <div class="editor-font-size-controls" style="display:inline-flex;align-items:center;gap:2px;margin-right:6px">
@@ -776,6 +766,9 @@
           </button>
           <button class="doc-action-btn" id="editor-fullscreen-btn" title="Toggle fullscreen" style="width:30px;height:30px;flex-shrink:0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          </button>
+          <button class="doc-action-btn" id="editor-research-btn" title="Research — Wikipedia + AI" style="width:30px;height:30px;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           </button>
           <button class="doc-action-btn" id="editor-audio-btn" title="Background audio" style="width:30px;height:30px;flex-shrink:0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -930,6 +923,51 @@
     <!-- YouTube iframe container (hidden) -->
     <div id="yt-player-container" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden"></div>
 
+    <!-- RESEARCH DRAWER -->
+    <div class="research-drawer" id="research-drawer">
+      <div class="research-drawer-header">
+        <span class="research-drawer-title">Research</span>
+        <button class="research-drawer-close" id="research-drawer-close" title="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="research-tabs">
+        <button class="research-tab active" data-rtab="wiki">Search</button>
+        <button class="research-tab" data-rtab="ai">Ask AI</button>
+      </div>
+      <div class="research-quota" id="research-quota"></div>
+
+      <!-- Ask AI composer — lives at the top right after the tabs so it's always visible -->
+      <div id="gem-box">
+        <textarea id="gem-input" placeholder="Message Gemini..." rows="1"></textarea>
+        <button id="gem-send" type="button" aria-label="Send">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+
+      <!-- WIKI TAB -->
+      <div class="research-pane" data-rpane="wiki">
+        <div class="research-input-row">
+          <input type="text" class="research-input" id="research-wiki-input" placeholder="Search Wikipedia + DuckDuckGo..." maxlength="120">
+          <button class="research-submit-btn" id="research-wiki-btn">Search</button>
+        </div>
+        <div class="research-hint">Free and unlimited. Click any Wikipedia result for the full article.</div>
+        <div class="research-results" id="research-wiki-results"></div>
+        <div class="research-detail" id="research-wiki-detail" style="display:none">
+          <button class="research-back-btn" id="research-wiki-back" title="Back to results">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Back to results</span>
+          </button>
+          <div class="research-detail-body" id="research-wiki-detail-body"></div>
+        </div>
+      </div>
+
+      <!-- AI TAB -->
+      <div class="research-pane research-pane-ai" data-rpane="ai" style="display:none">
+        <div class="research-chat" id="research-ai-chat"></div>
+      </div>
+    </div>
+
     <!-- TAB WARNING -->
     <div class="tab-warning" id="tab-warning">
       <h2>Come back!</h2>
@@ -939,40 +977,104 @@
 
     <!-- SESSION START MODAL -->
     <div class="modal-overlay" id="session-modal">
-      <div class="modal">
-        <h2>New Session</h2>
-        <p>Set your timer and choose your mode. Once started, there's no going back.</p>
-        <div class="modal-field">
-          <label>What are you writing about?</label>
-          <textarea id="session-topic-input" class="session-topic-input" rows="2" placeholder="Paste your essay question, topic, or just a few words about what you want to focus on..."></textarea>
-        </div>
-        <div class="modal-field">
-          <label>Target Word Count <span class="label-hint">(optional)</span></label>
-          <input type="number" id="session-target-words" class="session-target-input" min="50" max="50000" placeholder="e.g. 500">
-        </div>
-        <div class="modal-field">
-          <label>Session Duration</label>
-          <!-- Normal mode presets -->
-          <div class="time-presets" id="time-presets">
-            <button class="time-preset" data-minutes="5">5 min</button>
-            <button class="time-preset" data-minutes="15">15 min</button>
-            <button class="time-preset active" data-minutes="30">30 min</button>
-            <button class="time-preset" data-minutes="45">45 min</button>
-            <button class="time-preset" data-minutes="60">60 min</button>
-            <button class="time-preset" data-minutes="0">Unlimited</button>
-            <button class="time-preset time-preset-add" id="time-preset-add-btn" title="Custom time">+</button>
+      <div class="session-modal-wrapper" id="session-modal-wrapper">
+        <!-- LEFT PANEL: mode chooser + shared fields -->
+        <div class="modal session-main-panel">
+          <h2>New Session</h2>
+          <p>Pick a mode and start writing.</p>
+          <div class="modal-field">
+            <label>What are you writing about?</label>
+            <div class="topic-input-wrap">
+              <textarea id="session-topic-input" class="session-topic-input" rows="2" placeholder="Paste your essay question, topic, or just a few words about what you want to focus on..."></textarea>
+              <button type="button" class="prompt-generate-btn" id="prompt-generate-btn" title="Generate a writing prompt" aria-label="Generate a prompt">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.88 4.62L18.5 8.5l-4.62 1.88L12 15l-1.88-4.62L5.5 8.5l4.62-1.88L12 2z"/><path d="M19 15l.94 2.31L22 18l-2.06.69L19 21l-.94-2.31L16 18l2.06-.69L19 15z"/></svg>
+              </button>
+              <div class="prompt-popover" id="prompt-popover" style="display:none">
+                <div class="prompt-popover-header">Pick a category</div>
+                <div class="prompt-popover-chips">
+                  <button type="button" class="prompt-chip" data-category="ielts">IELTS Writing</button>
+                  <button type="button" class="prompt-chip" data-category="college">College Admissions</button>
+                  <button type="button" class="prompt-chip" data-category="self">Explore Myself / Life</button>
+                  <button type="button" class="prompt-chip" data-category="creative">Creative</button>
+                  <button type="button" class="prompt-chip" data-category="random">🎲 Random</button>
+                </div>
+                <div class="prompt-popover-quota" id="prompt-popover-quota"></div>
+              </div>
+            </div>
           </div>
-          <!-- Danger mode presets (shown only in dangerous mode) -->
-          <div class="time-presets" id="danger-time-presets" style="display:none">
-            <button class="time-preset" data-minutes="3">3 min</button>
-            <button class="time-preset active" data-minutes="5">5 min</button>
-            <button class="time-preset" data-minutes="10">10 min</button>
-            <button class="time-preset" data-minutes="20">20 min</button>
-            <button class="time-preset time-preset-add" id="danger-custom-time-btn" title="Custom time">+</button>
+          <div class="modal-field">
+            <label>Target Word Count <span class="label-hint">(optional)</span></label>
+            <input type="number" id="session-target-words" class="session-target-input" min="50" max="50000" placeholder="e.g. 500">
           </div>
-          <!-- Death Timer — inactivity threshold for dangerous mode -->
-          <div id="death-timer-section" style="display:none">
-            <div style="display:flex;align-items:center;gap:8px;margin-top:12px;margin-bottom:8px">
+          <div class="modal-field">
+            <label>Writing Mode</label>
+            <div class="mode-selector">
+              <div class="mode-option" data-mode="zen">
+                <h4>Zen</h4>
+                <p>No timer, no XP, no streak. Just write.</p>
+              </div>
+              <div class="mode-option active" data-mode="normal">
+                <h4>Time</h4>
+                <p>Tab-lock only. Leave and lose it.</p>
+              </div>
+              <div class="mode-option dangerous-opt" data-mode="dangerous">
+                <h4>Dangerous</h4>
+                <p>Stop typing and the session fails.</p>
+              </div>
+              <div class="mode-option research-opt" data-mode="research">
+                <h4>Research</h4>
+                <p>Wikipedia + AI sidebar, side-by-side with your writing.</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-ghost btn-full" id="modal-cancel">Cancel</button>
+            <button class="btn btn-primary btn-full" id="modal-start">Start Writing</button>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: mode-specific config. Add new modes by tagging sections with data-for-mode. -->
+        <div class="modal session-config-panel" id="session-config-panel">
+          <h3 class="config-panel-title" id="config-panel-title">Time Settings</h3>
+
+          <!-- Danger Variant Tabs (dangerous only) -->
+          <div class="config-section danger-variant-tabs-section" data-for-mode="dangerous">
+            <div class="danger-variant-tabs" id="danger-variant-tabs">
+              <button class="danger-variant-tab active" data-variant="classic">Dangerous</button>
+              <button class="danger-variant-tab" data-variant="chill">Chill Danger</button>
+            </div>
+            <div class="danger-variant-desc" id="danger-variant-desc">Stop typing and everything you wrote is gone.</div>
+          </div>
+
+          <!-- Session Duration (normal + dangerous; each mode shows its own preset row) -->
+          <div class="config-section" data-for-mode="normal dangerous research">
+            <label>Session Duration</label>
+            <div class="time-presets" id="time-presets" data-for-mode="normal research">
+              <button class="time-preset" data-minutes="5">5 min</button>
+              <button class="time-preset" data-minutes="15">15 min</button>
+              <button class="time-preset active" data-minutes="30">30 min</button>
+              <button class="time-preset" data-minutes="45">45 min</button>
+              <button class="time-preset" data-minutes="60">60 min</button>
+              <button class="time-preset" data-minutes="0">Unlimited</button>
+              <button class="time-preset time-preset-add" id="time-preset-add-btn" title="Custom time">+</button>
+            </div>
+            <div class="time-presets" id="danger-time-presets" data-for-mode="dangerous" style="display:none">
+              <button class="time-preset" data-minutes="3">3 min</button>
+              <button class="time-preset active" data-minutes="5">5 min</button>
+              <button class="time-preset" data-minutes="10">10 min</button>
+              <button class="time-preset" data-minutes="20">20 min</button>
+              <button class="time-preset time-preset-add" id="danger-custom-time-btn" title="Custom time">+</button>
+            </div>
+            <div class="time-custom-row" id="time-custom-row" style="display:none">
+              <input type="number" id="custom-time-input" min="1" max="1440" placeholder="e.g. 25">
+              <span class="input-suffix">min</span>
+              <button class="btn btn-primary btn-small" id="custom-time-set">Set</button>
+            </div>
+          </div>
+
+          <!-- Death Timer (dangerous only) -->
+          <div class="config-section" id="death-timer-section" data-for-mode="dangerous">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
               <span style="font-size:13px;font-weight:600;color:var(--text-primary)">Death Timer</span>
               <span style="font-size:11px;color:var(--text-muted)">— stop typing and it deletes your work</span>
             </div>
@@ -988,9 +1090,10 @@
               <button class="btn btn-primary btn-small" id="death-timer-custom-set">Set</button>
             </div>
           </div>
-          <!-- Tab Timer — grace period when user leaves the tab (normal + danger modes) -->
-          <div id="tab-timer-section">
-            <div style="display:flex;align-items:center;gap:8px;margin-top:12px;margin-bottom:8px">
+
+          <!-- Tab Timer (normal + dangerous) -->
+          <div class="config-section" id="tab-timer-section" data-for-mode="normal dangerous research">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
               <span style="font-size:13px;font-weight:600;color:var(--text-primary)">Tab Timer</span>
               <span style="font-size:11px;color:var(--text-muted)">— grace period when you leave the tab</span>
             </div>
@@ -1007,31 +1110,10 @@
               <button class="btn btn-primary btn-small" id="tab-timer-custom-set">Set</button>
             </div>
           </div>
+
           <!-- Hidden inputs to preserve values for editor -->
           <input type="hidden" id="tab-grace-input" value="10">
           <input type="hidden" id="danger-threshold-input" value="5">
-          <div class="time-custom-row" id="time-custom-row" style="display:none">
-            <input type="number" id="custom-time-input" min="1" max="1440" placeholder="e.g. 25">
-            <span class="input-suffix">min</span>
-            <button class="btn btn-primary btn-small" id="custom-time-set">Set</button>
-          </div>
-        </div>
-        <div class="modal-field">
-          <label>Writing Mode</label>
-          <div class="mode-selector">
-            <div class="mode-option active" data-mode="normal">
-              <h4>Normal</h4>
-              <p>Tab-lock only. Leave and lose it.</p>
-            </div>
-            <div class="mode-option dangerous-opt" data-mode="dangerous">
-              <h4>Dangerous</h4>
-              <p>Stop typing and the session fails.</p>
-            </div>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-ghost btn-full" id="modal-cancel">Cancel</button>
-          <button class="btn btn-primary btn-full" id="modal-start">Start Writing</button>
         </div>
       </div>
     </div>
@@ -1309,8 +1391,14 @@
   <script src="/js/api.js?v=19"></script>
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
-  <script src="/js/editor.js?v=24"></script>
-  <script src="/js/app.js?v=52"></script>
-  <script src="/js/stories.js?v=14"></script>
+  <script src="/js/editor.js?v=40"></script>
+  <script src="/js/app.js?v=82"></script>
+  <script src="/js/stories.js?v=16"></script>
+  <script>
+    fetch('/api/version').then(r => r.json()).then(d => {
+      const el = document.getElementById('version-tag');
+      if (el && d.version) el.textContent = 'v' + d.version;
+    }).catch(() => {});
+  </script>
 </body>
 </html>

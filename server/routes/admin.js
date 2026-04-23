@@ -82,10 +82,35 @@ router.get('/stats', async (req, res) => {
     });
   }
 
+  // AI (Gemini) weekly usage aggregation
+  const isoWeek = (() => {
+    const d = new Date();
+    const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    const weekNum = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    return `${date.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+  })();
+  let aiUsed = 0;
+  let aiCapacity = 0;
+  let aiActiveUsers = 0;
+  users.forEach(u => {
+    if (u.role === 'admin') return;
+    const limit = u.plan === 'premium' ? 50 : 5;
+    aiCapacity += limit;
+    const usage = u.aiResearchUsedWeek;
+    if (usage && usage.week === isoWeek && usage.count > 0) {
+      aiUsed += usage.count;
+      aiActiveUsers += 1;
+    }
+  });
+
   res.json({
     activeNow,
     writingNow,
     totalUsers: users.filter(u => u.role !== 'admin').length,
+    aiUsage: { used: aiUsed, capacity: aiCapacity, activeUsers: aiActiveUsers, week: isoWeek },
     totalDocuments: docs.length,
     activeDocuments: docs.filter(d => !d.deleted).length,
     abandonedDocuments: docs.filter(d => d.deletedBySystem).length,

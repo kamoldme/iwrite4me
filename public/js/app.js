@@ -522,6 +522,7 @@ const App = {
     document.getElementById('doc-name-skip').addEventListener('click', () => this._confirmDocName('Untitled'));
     document.getElementById('doc-name-back').addEventListener('click', () => {
       document.getElementById('doc-name-modal').classList.remove('active');
+      this.openSessionModal();
     });
     docNameInput.addEventListener('input', () => docNameInput.classList.remove('input-invalid'));
     docNameInput.addEventListener('keydown', (e) => {
@@ -572,24 +573,46 @@ const App = {
       if (e.key === 'Enter') setCustomTime();
     });
 
+    // Auto-grow topic textarea as user types
+    const topicInput = document.getElementById('session-topic-input');
+    if (topicInput) {
+      topicInput.addEventListener('input', () => this._autoGrowTopic());
+    }
+
+    // Prompt generator: ✨ button + category popover
+    const genBtn = document.getElementById('prompt-generate-btn');
+    const pop = document.getElementById('prompt-popover');
+    if (genBtn && pop) {
+      genBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const showing = pop.style.display !== 'none';
+        if (showing) { pop.style.display = 'none'; return; }
+        pop.style.display = 'block';
+        this._refreshPromptQuota();
+      });
+      document.addEventListener('click', (e) => {
+        if (pop.style.display === 'none') return;
+        if (!pop.contains(e.target) && e.target !== genBtn && !genBtn.contains(e.target)) {
+          pop.style.display = 'none';
+        }
+      });
+      pop.querySelectorAll('.prompt-chip').forEach(chip => {
+        chip.addEventListener('click', () => this._fetchPrompt(chip.dataset.category));
+      });
+    }
+
     document.querySelectorAll('.mode-option').forEach(opt => {
       opt.addEventListener('click', () => {
         document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
         opt.classList.add('active');
         this.sessionMode = opt.dataset.mode;
-        // Swap time preset panels based on mode
+        this._applyModeConfigPanel(this.sessionMode);
         const isDanger = this.sessionMode === 'dangerous';
-        const isPro = this.user && this.user.plan === 'premium';
-        document.getElementById('time-presets').style.display = isDanger ? 'none' : 'flex';
-        document.getElementById('danger-time-presets').style.display = isDanger ? 'flex' : 'none';
+        const isZen = this.sessionMode === 'zen';
         document.getElementById('time-custom-row').style.display = 'none';
-        // Show death timer section in dangerous mode
-        const deathSection = document.getElementById('death-timer-section');
-        if (deathSection) deathSection.style.display = isDanger ? 'block' : 'none';
-        const tabSection = document.getElementById('tab-timer-section');
-        if (tabSection) tabSection.style.display = isDanger ? 'none' : 'block';
-        if (isDanger) {
-          // Default danger duration to the active preset
+        if (isZen) {
+          this.sessionDuration = 0;
+        } else if (isDanger) {
           const dangerActive = document.querySelector('#danger-time-presets .time-preset.active');
           this.sessionDuration = parseInt(dangerActive?.dataset.minutes || 5);
         } else {
@@ -597,6 +620,22 @@ const App = {
           this.sessionDuration = parseInt(normalActive?.dataset.minutes || 30);
         }
         this._applyTimerRestrictions();
+      });
+    });
+
+    // Bind danger variant tabs (Dangerous classic vs Chill Danger)
+    this.sessionDangerVariant = 'classic';
+    const variantDescEl = document.getElementById('danger-variant-desc');
+    const variantDescMap = {
+      classic: 'Stop typing and everything you wrote is gone.',
+      chill: '3 hearts. Stop typing and you lose 40% of your progress. Run out of hearts — everything is gone.'
+    };
+    document.querySelectorAll('.danger-variant-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.danger-variant-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this.sessionDangerVariant = tab.dataset.variant;
+        if (variantDescEl) variantDescEl.textContent = variantDescMap[this.sessionDangerVariant] || '';
       });
     });
 
@@ -725,7 +764,7 @@ const App = {
     document.getElementById('editor-save-edit-btn').addEventListener('click', () => Editor.saveEdits());
 
     // Editor toolbar: page zoom +/-
-    const ZOOM_MIN = 0.5, ZOOM_MAX = 2.0, ZOOM_STEP = 0.1;
+    const ZOOM_MIN = 0.5, ZOOM_MAX = 1.25, ZOOM_STEP = 0.1;
     const applyPageZoom = (z) => {
       document.body.style.zoom = z;
       try { localStorage.setItem('iwrite_page_zoom', String(z)); } catch {}
@@ -774,6 +813,43 @@ const App = {
     if (fmtFontSelect) {
       fmtFontSelect.addEventListener('change', () => {
         Editor.setFont(fmtFontSelect.value);
+      });
+    }
+
+    // Editor toolbar: Research drawer
+    const researchBtn = document.getElementById('editor-research-btn');
+    if (researchBtn) {
+      researchBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const drawer = document.getElementById('research-drawer');
+        if (drawer && drawer.classList.contains('open')) {
+          this._closeResearch();
+        } else {
+          this._openResearch();
+        }
+      });
+    }
+    const researchClose = document.getElementById('research-drawer-close');
+    if (researchClose) researchClose.addEventListener('click', () => this._closeResearch());
+    document.querySelectorAll('.research-tab').forEach(t => {
+      t.addEventListener('click', () => this._switchResearchTab(t.dataset.rtab));
+    });
+    const wikiBtn = document.getElementById('research-wiki-btn');
+    const wikiInput = document.getElementById('research-wiki-input');
+    if (wikiBtn) wikiBtn.addEventListener('click', () => this._doWikiLookup());
+    if (wikiInput) wikiInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); this._doWikiLookup(); }
+    });
+    const aiBtn = document.getElementById('gem-send');
+    const aiInput = document.getElementById('gem-input');
+    if (aiBtn) aiBtn.addEventListener('click', () => this._doAIAsk());
+    if (aiInput) {
+      aiInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._doAIAsk(); }
+      });
+      aiInput.addEventListener('input', () => {
+        aiInput.style.height = 'auto';
+        aiInput.style.height = Math.min(aiInput.scrollHeight, 120) + 'px';
       });
     }
 
@@ -937,6 +1013,11 @@ const App = {
     document.querySelectorAll('.sidebar-nav-item[data-view]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.view === view);
     });
+
+    // Reset scroll so each view starts at the top instead of inheriting the previous view's position
+    window.scrollTo(0, 0);
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) mainContent.scrollTop = 0;
 
     // Restore hamburger if leaving stories while in story-back-mode
     if (view !== 'stories') {
@@ -1507,15 +1588,17 @@ const App = {
             <h4>${doc.pinned ? '<span class="pin-icon" title="Pinned">&#x1F4CC;</span> ' : ''}${this.escapeHtml(doc.title)} ${isFailed ? '<span class="badge badge-failed">FAILED</span>' : ''}</h4>
             <div class="doc-card-meta">
               <span>${doc.wordCount || 0} words</span>
-              <span>${isDangerous ? '&#x26A1; Dangerous' : 'Normal'}</span>
               <span>${this.formatDate(doc.updatedAt)}</span>
               ${doc.xpEarned ? `<span class="xp-gained">+${doc.xpEarned} XP</span>` : ''}
             </div>
           </div>
         </div>
-        <button class="doc-card-menu-btn" data-doc-id="${doc.id}" title="Options">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-        </button>
+        <div class="doc-card-right">
+          <span class="doc-mode-badge doc-mode-${doc.mode === 'dangerous' ? 'dangerous' : doc.mode === 'zen' ? 'zen' : doc.mode === 'research' ? 'research' : 'time'}">${doc.mode === 'dangerous' ? 'DANGEROUS' : doc.mode === 'zen' ? 'ZEN' : doc.mode === 'research' ? 'RESEARCH' : 'TIME'}</span>
+          <button class="doc-card-menu-btn" data-doc-id="${doc.id}" title="Options">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+          </button>
+        </div>
       </div>`;
     }).join('');
 
@@ -1624,15 +1707,9 @@ const App = {
     document.querySelector('.mode-option[data-mode="normal"]').classList.add('active');
     this.sessionMode = 'normal';
     this.sessionDuration = 30;
-    document.getElementById('time-presets').style.display = 'flex';
-    document.getElementById('danger-time-presets').style.display = 'none';
+    this._applyModeConfigPanel('normal');
     document.querySelectorAll('#time-presets .time-preset').forEach(b => b.classList.remove('active'));
     document.querySelector('#time-presets .time-preset[data-minutes="30"]').classList.add('active');
-    // Reset death timer section
-    const deathSection = document.getElementById('death-timer-section');
-    if (deathSection) deathSection.style.display = 'none';
-    const tabSection = document.getElementById('tab-timer-section');
-    if (tabSection) tabSection.style.display = 'block';
     document.getElementById('danger-threshold-input').value = '5';
     document.querySelectorAll('#death-timer-presets .time-preset').forEach(b => b.classList.remove('active'));
     const defaultDeath = document.querySelector('#death-timer-presets .time-preset[data-seconds="5"]');
@@ -1643,10 +1720,444 @@ const App = {
     // Reset new fields
     document.getElementById('session-topic-input').value = '';
     document.getElementById('session-target-words').value = '';
+    const pGenBtn = document.getElementById('prompt-generate-btn');
+    if (pGenBtn) pGenBtn.classList.remove('has-prompt');
+    const pPop = document.getElementById('prompt-popover');
+    if (pPop) pPop.style.display = 'none';
+    const pTopic = document.getElementById('session-topic-input');
+    if (pTopic) pTopic.style.height = '';
     // Apply plan-based timer restrictions
     this._applyTimerRestrictions();
     // Session limits are invisible — enforced server-side only
     this._showWeeklySessionInfo();
+  },
+
+  // Show/hide mode-specific config sections based on data-for-mode attributes.
+  // To add a new mode: tag sections with data-for-mode="newmode" (space-separated for multi-mode).
+  _applyModeConfigPanel(mode) {
+    const wrapper = document.getElementById('session-modal-wrapper');
+    const panel = document.getElementById('session-config-panel');
+    if (!wrapper || !panel) return;
+    const sections = panel.querySelectorAll('.config-section');
+    let anyVisible = false;
+    sections.forEach(sec => {
+      const modes = (sec.dataset.forMode || '').split(/\s+/).filter(Boolean);
+      const show = modes.includes(mode);
+      sec.style.display = show ? '' : 'none';
+      if (show) anyVisible = true;
+    });
+    // Nested mode-specific preset rows (e.g. #time-presets vs #danger-time-presets)
+    panel.querySelectorAll('.time-presets[data-for-mode]').forEach(row => {
+      const modes = (row.dataset.forMode || '').split(/\s+/).filter(Boolean);
+      row.style.display = modes.includes(mode) ? 'flex' : 'none';
+    });
+    wrapper.classList.toggle('has-config', anyVisible);
+    const title = document.getElementById('config-panel-title');
+    if (title) {
+      const map = { normal: 'Time Settings', dangerous: 'Dangerous Settings', zen: '', research: 'Research Settings' };
+      title.textContent = map[mode] || 'Settings';
+    }
+  },
+
+  _openResearch() {
+    const drawer = document.getElementById('research-drawer');
+    if (!drawer) return;
+    const offset = 55;
+    drawer.style.top = offset + 'px';
+    drawer.style.height = `calc(100vh - ${offset}px)`;
+    drawer.classList.add('open');
+    drawer.classList.add('docked');
+    const editorEl = document.getElementById('editor-container');
+    if (editorEl) editorEl.classList.add('has-docked-research');
+    this._refreshResearchQuota();
+    this._currentResearchTab = this._currentResearchTab || 'wiki';
+    this._switchResearchTab(this._currentResearchTab);
+  },
+
+  _closeResearch() {
+    const drawer = document.getElementById('research-drawer');
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.classList.remove('docked');
+      // Defer clearing inline top/height until after the slide-out transition completes
+      // so the drawer's geometry stays stable during the animation.
+      clearTimeout(this._researchCloseTimer);
+      this._researchCloseTimer = setTimeout(() => {
+        if (!drawer.classList.contains('open')) {
+          drawer.style.top = '';
+          drawer.style.height = '';
+        }
+      }, 340);
+    }
+    const editorEl = document.getElementById('editor-container');
+    if (editorEl) editorEl.classList.remove('has-docked-research');
+    this._aiChatHistory = [];
+  },
+
+  _switchResearchTab(tab) {
+    this._currentResearchTab = tab;
+    document.querySelectorAll('.research-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.rtab === tab);
+    });
+    document.querySelectorAll('.research-pane').forEach(p => {
+      p.style.display = p.dataset.rpane === tab ? '' : 'none';
+    });
+    const composer = document.getElementById('gem-box');
+    if (composer) {
+      composer.classList.toggle('show', tab === 'ai');
+      composer.style.display = '';
+    }
+    if (tab === 'ai') this._renderAIChat();
+    this._refreshResearchQuota();
+  },
+
+  async _refreshResearchQuota() {
+    const el = document.getElementById('research-quota');
+    if (!el) return;
+    if (this._currentResearchTab === 'wiki') {
+      el.className = 'research-quota';
+      el.textContent = 'Wikipedia · unlimited';
+      return;
+    }
+    try {
+      const q = await API.researchQuota();
+      const remaining = Math.max(0, q.limit - q.used);
+      const capped = remaining === 0;
+      el.className = 'research-quota' + (capped ? ' capped' : '');
+      el.textContent = capped
+        ? (q.isPro ? `You've used all ${q.limit} AI questions this week.` : `Weekly AI limit reached. Upgrade to PRO for 50/week.`)
+        : `${remaining} of ${q.limit} AI question${q.limit === 1 ? '' : 's'} left this week${q.isPro ? '' : ' · PRO gets 50/week'}`;
+      const askBtn = document.getElementById('gem-send');
+      if (askBtn) askBtn.disabled = capped;
+    } catch {
+      el.textContent = '';
+    }
+  },
+
+  async _doWikiLookup() {
+    const input = document.getElementById('research-wiki-input');
+    const out = document.getElementById('research-wiki-results');
+    const btn = document.getElementById('research-wiki-btn');
+    if (!input || !out) return;
+    const q = input.value.trim();
+    if (!q) return;
+    btn.disabled = true;
+    out.innerHTML = '<div class="research-loading">Searching…</div>';
+    try {
+      const res = await API.researchWiki(q);
+      const hasWiki = !!res.summary;
+      const hasDdg = !!(res.ddg && (res.ddg.abstract || (res.ddg.related && res.ddg.related.length)));
+      if (!hasWiki && !hasDdg) {
+        out.innerHTML = '<div class="research-error">No results found.</div>';
+        return;
+      }
+
+      let html = '';
+
+      if (hasWiki) {
+        const s = res.summary;
+        html += `
+          <div class="research-section-label">Wikipedia</div>
+          <div class="research-result-card wiki-card" data-wiki-title="${this._esc(s.title)}" role="button" tabindex="0">
+            <div class="research-result-title">${this._esc(s.title)}</div>
+            <div class="research-result-extract">${this._esc(s.extract || '')}</div>
+            <div class="research-card-hint">Click to read full article →</div>
+          </div>
+        `;
+        if ((res.alternatives || []).length) {
+          html += `<div class="research-alternatives">`;
+          for (const a of res.alternatives) {
+            html += `
+              <div class="research-alt-card wiki-card" data-wiki-title="${this._esc(a.title)}" role="button" tabindex="0">
+                <div class="research-alt-title">${this._esc(a.title)}</div>
+                ${a.snippet ? `<div class="research-alt-snippet">${this._esc(a.snippet)}</div>` : ''}
+              </div>
+            `;
+          }
+          html += `</div>`;
+        }
+      }
+
+      if (hasDdg) {
+        html += `<div class="research-section-label">DuckDuckGo</div>`;
+        if (res.ddg.abstract) {
+          const a = res.ddg.abstract;
+          html += `
+            <div class="research-result-card ddg-card">
+              <div class="research-result-extract">${this._esc(a.text)}</div>
+              ${a.url ? `<a class="research-result-link" href="${a.url}" target="_blank" rel="noopener">${this._esc(a.source)} →</a>` : `<div class="research-alt-snippet">${this._esc(a.source)}</div>`}
+            </div>
+          `;
+        }
+        if (res.ddg.related && res.ddg.related.length) {
+          html += `<div class="research-alternatives">`;
+          for (const r of res.ddg.related) {
+            html += `
+              <a class="research-alt-card ddg-link" href="${r.url}" target="_blank" rel="noopener">
+                <div class="research-alt-snippet">${this._esc(r.text)}</div>
+              </a>
+            `;
+          }
+          html += `</div>`;
+        }
+      }
+
+      out.innerHTML = html;
+
+      out.querySelectorAll('.wiki-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('a')) return;
+          const title = card.getAttribute('data-wiki-title');
+          if (title) this._openWikiDetail(title);
+        });
+      });
+    } catch (e) {
+      out.innerHTML = `<div class="research-error">${this._esc(e.message || 'Search failed')}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  },
+
+  async _openWikiDetail(title) {
+    const results = document.getElementById('research-wiki-results');
+    const detail = document.getElementById('research-wiki-detail');
+    const body = document.getElementById('research-wiki-detail-body');
+    const backBtn = document.getElementById('research-wiki-back');
+    const inputRow = document.querySelector('[data-rpane="wiki"] .research-input-row');
+    const hint = document.querySelector('[data-rpane="wiki"] .research-hint');
+    if (!results || !detail || !body) return;
+
+    results.style.display = 'none';
+    if (inputRow) inputRow.style.display = 'none';
+    if (hint) hint.style.display = 'none';
+    detail.style.display = 'block';
+    body.innerHTML = '<div class="research-loading">Loading article…</div>';
+
+    if (backBtn && !backBtn._wired) {
+      backBtn._wired = true;
+      backBtn.addEventListener('click', () => this._closeWikiDetail());
+    }
+
+    try {
+      const full = await API.researchWikiFull(title);
+      const paragraphs = (full.extract || '').split(/\n+/).filter(Boolean)
+        .map(p => `<p>${this._esc(p)}</p>`).join('');
+      body.innerHTML = `
+        <div class="research-detail-title">${this._esc(full.title)}</div>
+        <div class="research-full-text research-full-text-page">${paragraphs}${full.truncated ? '<p class="research-full-note">Article truncated. Open on Wikipedia for the rest.</p>' : ''}</div>
+        <a class="research-result-link" href="${full.url}" target="_blank" rel="noopener">Open on Wikipedia →</a>
+      `;
+    } catch (e) {
+      body.innerHTML = `<div class="research-error">${this._esc(e.message || 'Failed to load article')}</div>`;
+    }
+  },
+
+  _closeWikiDetail() {
+    const results = document.getElementById('research-wiki-results');
+    const detail = document.getElementById('research-wiki-detail');
+    const inputRow = document.querySelector('[data-rpane="wiki"] .research-input-row');
+    const hint = document.querySelector('[data-rpane="wiki"] .research-hint');
+    if (detail) detail.style.display = 'none';
+    if (results) results.style.display = '';
+    if (inputRow) inputRow.style.display = '';
+    if (hint) hint.style.display = '';
+  },
+
+  _renderAIChat() {
+    const chat = document.getElementById('research-ai-chat');
+    if (!chat) return;
+    const history = this._aiChatHistory || [];
+    if (!history.length) {
+      chat.innerHTML = '<div class="research-chat-empty">Ask anything. History stays during this session.</div>';
+      return;
+    }
+    chat.innerHTML = history.slice().reverse().map(m => {
+      if (m.role === 'user') {
+        return `<div class="research-chat-bubble research-chat-user">${this._esc(m.text)}</div>`;
+      }
+      if (m.role === 'loading') {
+        return `<div class="research-chat-bubble research-chat-ai research-chat-loading"><span></span><span></span><span></span></div>`;
+      }
+      if (m.role === 'error') {
+        return `<div class="research-chat-bubble research-chat-ai research-chat-err">${this._esc(m.text)}</div>`;
+      }
+      return `<div class="research-chat-bubble research-chat-ai research-chat-md">${this._renderMarkdown(m.text)}</div>`;
+    }).join('');
+    chat.scrollTop = 0;
+  },
+
+  _renderMarkdown(raw) {
+    let s = this._esc(String(raw || ''));
+
+    // Code blocks ```...```
+    const codeBlocks = [];
+    s = s.replace(/```([\s\S]*?)```/g, (_, code) => {
+      codeBlocks.push(code.replace(/^\n/, ''));
+      return `\u0000CB${codeBlocks.length - 1}\u0000`;
+    });
+
+    // Inline code `...`
+    const inlineCodes = [];
+    s = s.replace(/`([^`\n]+)`/g, (_, code) => {
+      inlineCodes.push(code);
+      return `\u0000IC${inlineCodes.length - 1}\u0000`;
+    });
+
+    // Headings (### only, to keep it tight)
+    s = s.replace(/^###\s+(.+)$/gm, '<h4 class="md-h">$1</h4>');
+    s = s.replace(/^##\s+(.+)$/gm, '<h4 class="md-h">$1</h4>');
+
+    // Bold **text** and italic *text*
+    s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    // Also support _italic_
+    s = s.replace(/(^|\W)_([^_\n]+)_(?=\W|$)/g, '$1<em>$2</em>');
+
+    // Links [text](url) — only http(s)
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+    // Lists — group consecutive lines starting with - or * or digit.
+    const lines = s.split('\n');
+    const out = [];
+    let listType = null;
+    let listBuf = [];
+    const flush = () => {
+      if (listBuf.length) {
+        out.push(`<${listType}>${listBuf.map(i => `<li>${i}</li>`).join('')}</${listType}>`);
+        listBuf = [];
+        listType = null;
+      }
+    };
+    for (const line of lines) {
+      const ul = line.match(/^\s*[-*]\s+(.+)$/);
+      const ol = line.match(/^\s*\d+\.\s+(.+)$/);
+      if (ul) {
+        if (listType !== 'ul') flush();
+        listType = 'ul';
+        listBuf.push(ul[1]);
+      } else if (ol) {
+        if (listType !== 'ol') flush();
+        listType = 'ol';
+        listBuf.push(ol[1]);
+      } else {
+        flush();
+        out.push(line);
+      }
+    }
+    flush();
+    s = out.join('\n');
+
+    // Paragraphs: split on blank lines, wrap non-block chunks in <p>, and turn single newlines into <br>
+    const blocks = s.split(/\n{2,}/);
+    s = blocks.map(b => {
+      const trimmed = b.trim();
+      if (!trimmed) return '';
+      if (/^<(ul|ol|h4|pre|blockquote)/.test(trimmed)) return trimmed;
+      return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
+    }).join('');
+
+    // Restore code
+    s = s.replace(/\u0000IC(\d+)\u0000/g, (_, i) => `<code>${this._esc(inlineCodes[+i])}</code>`);
+    s = s.replace(/\u0000CB(\d+)\u0000/g, (_, i) => `<pre><code>${this._esc(codeBlocks[+i])}</code></pre>`);
+
+    return s;
+  },
+
+  async _doAIAsk() {
+    const input = document.getElementById('gem-input');
+    const btn = document.getElementById('gem-send');
+    if (!input) return;
+    const question = input.value.trim();
+    if (!question) return;
+
+    this._aiChatHistory = this._aiChatHistory || [];
+    const priorHistory = this._aiChatHistory.filter(m => m.role === 'user' || m.role === 'ai');
+    this._aiChatHistory.push({ role: 'user', text: question });
+    this._aiChatHistory.push({ role: 'loading' });
+    this._renderAIChat();
+    input.value = '';
+    input.style.height = '';
+    btn.disabled = true;
+
+    try {
+      const res = await API.researchAsk(question, priorHistory);
+      this._aiChatHistory.pop();
+      this._aiChatHistory.push({ role: 'ai', text: res.answer });
+      this._renderAIChat();
+      this._refreshResearchQuota();
+    } catch (e) {
+      this._aiChatHistory.pop();
+      const msg = e.status === 429
+        ? (e.message || 'Weekly limit reached')
+        : (e.message || 'AI request failed');
+      this._aiChatHistory.push({ role: 'error', text: msg });
+      this._renderAIChat();
+      if (e.status === 429) this._refreshResearchQuota();
+    } finally {
+      btn.disabled = false;
+      input.focus();
+    }
+  },
+
+  _esc(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  },
+
+  async _refreshPromptQuota() {
+    const quotaEl = document.getElementById('prompt-popover-quota');
+    if (!quotaEl) return;
+    try {
+      const q = await API.promptQuota();
+      const remaining = Math.max(0, q.limit - q.used);
+      const capped = remaining === 0;
+      quotaEl.className = 'prompt-popover-quota' + (capped ? ' capped' : '');
+      quotaEl.textContent = capped
+        ? (q.isPro ? `You've used all ${q.limit} prompts today.` : `Daily prompt used. Upgrade to PRO for 10/day.`)
+        : `${remaining} of ${q.limit} prompt${q.limit === 1 ? '' : 's'} left today${q.isPro ? '' : ' · PRO gets 10/day'}`;
+      document.querySelectorAll('.prompt-chip').forEach(c => { c.disabled = capped; });
+    } catch (e) {
+      quotaEl.textContent = '';
+    }
+  },
+
+  _autoGrowTopic() {
+    const topic = document.getElementById('session-topic-input');
+    if (!topic) return;
+    const min = 56;
+    const max = 220;
+    const current = topic.style.height || (topic.offsetHeight + 'px');
+    topic.style.height = 'auto';
+    const target = Math.min(max, Math.max(min, topic.scrollHeight));
+    topic.style.height = current;
+    requestAnimationFrame(() => {
+      topic.style.height = target + 'px';
+    });
+  },
+
+  async _fetchPrompt(category) {
+    const btn = document.getElementById('prompt-generate-btn');
+    const pop = document.getElementById('prompt-popover');
+    const topic = document.getElementById('session-topic-input');
+    if (btn) btn.disabled = true;
+    try {
+      const res = await API.nextPrompt(category);
+      if (topic) {
+        topic.value = res.prompt.text;
+        this._autoGrowTopic();
+      }
+      if (btn) btn.classList.add('has-prompt');
+      if (pop) pop.style.display = 'none';
+      if (typeof this.toast === 'function') this.toast('Prompt loaded', 'success');
+    } catch (e) {
+      if (e.status === 429) {
+        await this._refreshPromptQuota();
+        if (typeof this.toast === 'function') this.toast(e.message || 'Daily limit reached', 'error');
+      } else {
+        if (typeof this.toast === 'function') this.toast('Failed: ' + (e.message || 'error'), 'error');
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   },
 
   _applyTimerRestrictions() {
@@ -1814,7 +2325,8 @@ const App = {
       topic: this._pendingTopic || '',
       targetWords: this._pendingTargetWords || 0,
       dangerThreshold,
-      tabGracePeriod
+      tabGracePeriod,
+      dangerVariant: this.sessionMode === 'dangerous' ? (this.sessionDangerVariant || 'classic') : null
     });
   },
 
@@ -3351,15 +3863,18 @@ const App = {
       </div>
     `;
 
-    // Position
-    const rect = anchor.getBoundingClientRect();
+    // Position relative to the last visible line of the link (handles wrapped usernames)
+    const rects = anchor.getClientRects();
+    const rect = rects.length ? rects[rects.length - 1] : anchor.getBoundingClientRect();
+    card.style.left = '-9999px';
+    card.style.top = '0px';
     card.style.display = 'block';
     const cardRect = card.getBoundingClientRect();
-    let top = rect.bottom + 8;
+    let top = rect.bottom + 6;
     let left = rect.left;
-    if (top + cardRect.height > window.innerHeight) top = rect.top - cardRect.height - 8;
-    if (left + cardRect.width > window.innerWidth) left = window.innerWidth - cardRect.width - 8;
-    card.style.top = `${top}px`;
+    if (top + cardRect.height > window.innerHeight - 8) top = rect.top - cardRect.height - 6;
+    if (left + cardRect.width > window.innerWidth - 8) left = window.innerWidth - cardRect.width - 8;
+    card.style.top = `${Math.max(8, top)}px`;
     card.style.left = `${Math.max(8, left)}px`;
   },
 
@@ -4180,10 +4695,18 @@ const App = {
 
     const rect = anchorEl.getBoundingClientRect();
     menu.style.position = 'fixed';
+    menu.style.visibility = 'hidden';
     menu.style.top = `${rect.bottom + 4}px`;
     menu.style.right = `${window.innerWidth - rect.right}px`;
     menu.style.left = 'auto';
     document.body.appendChild(menu);
+    // Flip above the trigger if the menu would overflow the viewport bottom
+    const menuH = menu.offsetHeight;
+    if (rect.bottom + 4 + menuH > window.innerHeight - 8) {
+      const above = rect.top - menuH - 4;
+      menu.style.top = `${Math.max(8, above)}px`;
+    }
+    menu.style.visibility = '';
 
     const close = () => { menu.remove(); document.removeEventListener('click', close); };
     setTimeout(() => document.addEventListener('click', close), 0);
@@ -4225,9 +4748,16 @@ const App = {
 
     const rect = anchorEl.getBoundingClientRect();
     menu.style.position = 'fixed';
+    menu.style.visibility = 'hidden';
     menu.style.top = `${rect.bottom + 4}px`;
     menu.style.left = `${rect.left}px`;
     document.body.appendChild(menu);
+    const menuH = menu.offsetHeight;
+    if (rect.bottom + 4 + menuH > window.innerHeight - 8) {
+      const above = rect.top - menuH - 4;
+      menu.style.top = `${Math.max(8, above)}px`;
+    }
+    menu.style.visibility = '';
 
     const close = () => { menu.remove(); document.removeEventListener('click', close); };
     setTimeout(() => document.addEventListener('click', close), 0);
@@ -6022,7 +6552,7 @@ const App = {
     'writing-modes': {
       title: 'Writing Modes',
       html: `<p>Choose your level of risk before each session.</p>
-        <p><strong>Normal</strong> — Tab-lock only. Leave the tab and your writing gets a 10-second grace period. Come back before it runs out.</p>
+        <p><strong>Time</strong> — Tab-lock only. Leave the tab and your writing gets a 10-second grace period. Come back before it runs out.</p>
         <p><strong>Dangerous</strong> — Stop typing for <strong>5 seconds</strong> and the session fails automatically. Your writing is deleted. No exceptions.</p>`
     },
     'xp-levels': {
