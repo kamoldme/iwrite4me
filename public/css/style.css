@@ -13588,6 +13588,10 @@ html {
 }
 
 .research-detail {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
   animation: researchDetailIn 200ms cubic-bezier(.2,.8,.2,1);
 }
 @keyframes researchDetailIn {
