@@ -1792,7 +1792,9 @@ const App = {
 
   _confirmDocName(name) {
     document.getElementById('doc-name-modal').classList.remove('active');
-    document.getElementById('editor-title').value = name || 'Untitled';
+    const titleInput = document.getElementById('editor-title');
+    titleInput.value = (!name || name === 'Untitled') ? '' : name;
+    titleInput.placeholder = 'Write a title...';
     // Danger threshold from death timer — always add +1s hidden buffer
     // User sees "5s" but internally gets 6s, "10s" becomes 11s, etc.
     let dangerThreshold = 6000;
