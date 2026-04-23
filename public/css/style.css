@@ -3486,6 +3486,7 @@ body.public-profile .main-content { padding-top: 0; }
   font-weight: 300;
   font-size: 15px;
 }
+#view-leaderboard .dashboard-header p { color: var(--text-primary); }
 
 .stats-grid {
   display: grid;
