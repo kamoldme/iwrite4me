@@ -7226,6 +7226,7 @@ body.editor-active .mobile-sidebar-toggle {
 .session-target-input::-webkit-inner-spin-button,
 .session-target-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .session-target-input { -moz-appearance: textfield; }
+.input-invalid, .input-invalid:focus { border-color: #e53e3e !important; box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.25) !important; }
 
 .label-hint {
   font-size: 11px;

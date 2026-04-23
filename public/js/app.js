@@ -507,19 +507,24 @@ const App = {
     document.getElementById('modal-start').addEventListener('click', () => this.startSession());
 
     // Document name modal
-    document.getElementById('doc-name-confirm').addEventListener('click', () => {
-      const name = document.getElementById('doc-name-input').value.trim();
-      this._confirmDocName(name || 'Untitled');
-    });
+    const docNameInput = document.getElementById('doc-name-input');
+    const tryConfirmDocName = () => {
+      const name = docNameInput.value.trim();
+      if (!name) {
+        docNameInput.classList.add('input-invalid');
+        docNameInput.focus();
+        return;
+      }
+      this._confirmDocName(name);
+    };
+    document.getElementById('doc-name-confirm').addEventListener('click', tryConfirmDocName);
     document.getElementById('doc-name-skip').addEventListener('click', () => this._confirmDocName('Untitled'));
     document.getElementById('doc-name-back').addEventListener('click', () => {
       document.getElementById('doc-name-modal').classList.remove('active');
     });
-    document.getElementById('doc-name-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const name = document.getElementById('doc-name-input').value.trim();
-        this._confirmDocName(name || 'Untitled');
-      }
+    docNameInput.addEventListener('input', () => docNameInput.classList.remove('input-invalid'));
+    docNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') tryConfirmDocName();
     });
 
     document.querySelectorAll('#time-presets .time-preset[data-minutes]').forEach(btn => {
