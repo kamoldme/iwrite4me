@@ -128,6 +128,8 @@ const Editor = {
     this.textarea.contentEditable = 'true';
     this.textarea.focus();
     this.active = true;
+    if (this._originalTabTitle == null) this._originalTabTitle = document.title;
+    document.title = 'Session Going on';
 
     // Show correct buttons for active session
     // In dangerous mode or duel mode, hide the Complete button — session ends only when time runs out
@@ -510,13 +512,12 @@ const Editor = {
     if (this.tabCountdown) return;
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
-    if (this._originalTabTitle == null) this._originalTabTitle = document.title;
-    document.title = `⏳ ${this.tabGracePeriod}s — come back!`;
+    document.title = `DELETION IN ${this.tabGracePeriod}s...`;
     this.tabCountdown = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = Math.max(0, this.tabGracePeriod - elapsed);
       this.tabWarningTimer.textContent = remaining;
-      document.title = `⏳ ${remaining}s — come back!`;
+      document.title = `DELETION IN ${remaining}s...`;
       if (remaining <= 0) {
         this.abandonSession();
       }
@@ -550,9 +551,9 @@ const Editor = {
       clearInterval(this.tabCountdown);
       this.tabCountdown = null;
     }
-    if (this._originalTabTitle != null) {
-      document.title = this._originalTabTitle;
-      this._originalTabTitle = null;
+    // Tab countdown ended but session is still active — restore the session title
+    if (this.active && !this.abandoned) {
+      document.title = 'Session Going on';
     }
     this.tabWarning.classList.remove('active');
     this.tabLeftTime = null;
@@ -577,10 +578,6 @@ const Editor = {
   async abandonSession() {
     this.abandoned = true;
     clearInterval(this.tabCountdown);
-    if (this._originalTabTitle != null) {
-      document.title = this._originalTabTitle;
-      this._originalTabTitle = null;
-    }
     this.cleanup();
 
     // Save to cache regardless of mode
@@ -1769,6 +1766,10 @@ const Editor = {
 
   cleanup() {
     this.active = false;
+    if (this._originalTabTitle != null) {
+      document.title = this._originalTabTitle;
+      this._originalTabTitle = null;
+    }
     clearInterval(this.timerInterval);
     clearInterval(this.autoSaveInterval);
     clearInterval(this.dangerInterval);
