@@ -166,20 +166,25 @@ router.get('/verify-session', authenticate, async (req, res) => {
       : await stripe.subscriptions.retrieve(session.subscription);
 
     const isTrial = subscription.trial_end && subscription.trial_end > Math.floor(Date.now() / 1000);
+    const expiresAt = isTrial
+      ? new Date(subscription.trial_end * 1000).toISOString()
+      : new Date(now.getTime() + DURATION_DAYS[duration] * 86400000).toISOString();
 
     const updates = {
       plan: 'premium',
       planDuration: duration,
       planStartedAt: now.toISOString(),
-      planExpiresAt: new Date(now.getTime() + DURATION_DAYS[duration] * 86400000).toISOString(),
+      planExpiresAt: expiresAt,
       planSource: isTrial ? 'trial' : 'stripe',
       stripeCustomerId: session.customer,
       stripeSubscriptionId: subscriptionId,
-      planPaymentFailed: false
+      planPaymentFailed: false,
+      planPaymentAttempts: 0
     };
 
     if (isTrial) {
       updates.trialUsed = true;
+      updates.trialEndingAt = new Date(subscription.trial_end * 1000).toISOString();
     }
 
     await updateOne('users.json', u => u.id === userId, updates);
@@ -276,20 +281,25 @@ async function stripeWebhookHandler(req, res) {
         const isTrial = subscription.trial_end && subscription.trial_end > Math.floor(Date.now() / 1000);
         const duration = session.metadata?.duration || '1m';
         const now = new Date();
+        const expiresAt = isTrial
+          ? new Date(subscription.trial_end * 1000).toISOString()
+          : new Date(now.getTime() + DURATION_DAYS[duration] * 86400000).toISOString();
 
         const updates = {
           plan: 'premium',
           planDuration: duration,
           planStartedAt: now.toISOString(),
-          planExpiresAt: new Date(now.getTime() + DURATION_DAYS[duration] * 86400000).toISOString(),
+          planExpiresAt: expiresAt,
           planSource: isTrial ? 'trial' : 'stripe',
           stripeCustomerId: session.customer,
           stripeSubscriptionId: subscriptionId,
-          planPaymentFailed: false
+          planPaymentFailed: false,
+          planPaymentAttempts: 0
         };
 
         if (isTrial) {
           updates.trialUsed = true;
+          updates.trialEndingAt = new Date(subscription.trial_end * 1000).toISOString();
         }
 
         await updateOne('users.json', u => u.id === userId, updates);
@@ -330,7 +340,10 @@ async function stripeWebhookHandler(req, res) {
           await updateOne('users.json', u => u.id === user.id, {
             planExpiresAt: new Date(base.getTime() + DURATION_DAYS[duration] * 86400000).toISOString(),
             planPaymentFailed: false,
-            planSource: 'stripe'
+            planPaymentAttempts: 0,
+            planSource: 'stripe',
+            trialEndingSoon: false,
+            trialEndingAt: null
           });
 
           logAction('stripe_subscription_renewed', {
@@ -344,22 +357,49 @@ async function stripeWebhookHandler(req, res) {
         break;
       }
 
+      case 'customer.subscription.trial_will_end': {
+        const subscription = event.data.object;
+        const user = await findOne('users.json', u => u.stripeSubscriptionId === subscription.id);
+        if (user) {
+          await updateOne('users.json', u => u.id === user.id, {
+            trialEndingSoon: true,
+            trialEndingAt: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null
+          });
+          logAction('stripe_trial_will_end', { subscriptionId: subscription.id }, user.id);
+          try { require('../telegram').notifyStripeTrialEnding && require('../telegram').notifyStripeTrialEnding(user); } catch {}
+        }
+        break;
+      }
+
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
         const subscriptionId = invoice.subscription;
         const user = await findOne('users.json', u => u.stripeSubscriptionId === subscriptionId);
 
         if (user) {
+          const attempts = (user.planPaymentAttempts || 0) + 1;
           await updateOne('users.json', u => u.id === user.id, {
-            planPaymentFailed: true
+            planPaymentFailed: true,
+            planPaymentAttempts: attempts
           });
 
           logAction('stripe_payment_failed', {
             subscriptionId,
-            attemptCount: invoice.attempt_count
+            attemptCount: invoice.attempt_count,
+            ourAttempts: attempts
           }, user.id);
 
           try { require('../telegram').notifyStripeFailed(user); } catch {}
+
+          // After 2nd failure, cancel subscription → user goes free
+          if (attempts >= 2) {
+            try {
+              await stripe.subscriptions.cancel(subscriptionId);
+              logAction('stripe_subscription_auto_cancelled', { subscriptionId, reason: 'payment_failed_twice' }, user.id);
+            } catch (err) {
+              console.error('Auto-cancel failed:', err);
+            }
+          }
         }
 
         break;

@@ -261,6 +261,7 @@ const App = {
     this.updateUserUI();
     // Check for pending admin-awarded PRO congrats (show confetti + message)
     setTimeout(() => this.checkPendingProCongrats(), 800);
+    setTimeout(() => this._checkTrialEnding(), 1200);
 
     // Initialize level tracking if not set (prevents false level-up on first visit)
     if (!localStorage.getItem('iwrite_last_level')) {
@@ -3629,6 +3630,18 @@ const App = {
     }
     // Clean URL
     window.history.replaceState({}, document.title, '/app.html#upgrade');
+  },
+
+  _checkTrialEnding() {
+    const u = this.user;
+    if (!u || u.planSource !== 'trial' || !u.trialEndingAt) return;
+    const hoursLeft = (new Date(u.trialEndingAt) - new Date()) / 36e5;
+    if (hoursLeft <= 0 || hoursLeft > 72) return;
+    const key = `iwrite_trial_reminder_shown_${u.id}`;
+    if (localStorage.getItem(key) === u.trialEndingAt) return;
+    const days = Math.max(1, Math.ceil(hoursLeft / 24));
+    this.toast(`⏰ Your trial ends in ${days} day${days === 1 ? '' : 's'}. You'll be charged automatically. <a href="#" onclick="App.openPricing();return false" style="color:inherit;text-decoration:underline">Manage</a>`, 'warning', 8000);
+    localStorage.setItem(key, u.trialEndingAt);
   },
 
   async checkPendingProCongrats() {

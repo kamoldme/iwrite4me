@@ -416,6 +416,14 @@ function notifyStripeFailed(user) {
   );
 }
 
+function notifyStripeTrialEnding(user) {
+  send(
+    `⏰ <b>Trial Ending Soon (3d)</b>\n\n` +
+    `User: ${esc(user.name)} (@${esc(user.username)})\n` +
+    `Email: ${esc(user.email)}`
+  );
+}
+
 function notifyStripeCancelled(user) {
   send(
     `🚫 <b>Subscription Cancelled</b>\n\n` +
@@ -467,6 +475,7 @@ module.exports = {
   notifyStripeSubscription,
   notifyStripeRenewal,
   notifyStripeFailed,
+  notifyStripeTrialEnding,
   notifyStripeCancelled,
   notifyReferral,
   notifyStorySubmitted
