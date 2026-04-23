@@ -1941,7 +1941,14 @@ const App = {
     try {
       const full = await API.researchWikiFull(title);
       const paragraphs = (full.extract || '').split(/\n+/).filter(Boolean)
-        .map(p => `<p>${this._esc(p)}</p>`).join('');
+        .map(p => {
+          const m = p.match(/^(=+)\s*(.+?)\s*\1$/);
+          if (m) {
+            const level = Math.min(m[1].length, 6);
+            return `<h${level} class="research-section-heading">${this._esc(m[2])}</h${level}>`;
+          }
+          return `<p>${this._esc(p)}</p>`;
+        }).join('');
       body.innerHTML = `
         <div class="research-detail-title">${this._esc(full.title)}</div>
         <div class="research-full-text research-full-text-page">${paragraphs}${full.truncated ? '<p class="research-full-note">Article truncated. Open on Wikipedia for the rest.</p>' : ''}</div>

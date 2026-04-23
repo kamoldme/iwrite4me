@@ -13427,6 +13427,19 @@ html {
   overflow-y: auto;
 }
 .research-full-text p { margin: 0 0 8px; }
+.research-section-heading {
+  margin: 16px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.research-section-heading:first-child { margin-top: 0; }
+.research-full-text h2.research-section-heading { font-size: 15px; }
+.research-full-text h3.research-section-heading { font-size: 14px; }
+.research-full-text h4.research-section-heading,
+.research-full-text h5.research-section-heading,
+.research-full-text h6.research-section-heading { font-size: 13px; border-bottom-style: dashed; }
 .research-full-note { font-size: 11px; color: var(--text-muted); font-style: italic; }
 
 /* ===== AI Chat ===== */
