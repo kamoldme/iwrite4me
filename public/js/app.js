@@ -63,7 +63,8 @@ const App = {
   profileLink(username, displayText, extraClass) {
     if (!username) return displayText || '';
     const esc = this.escapeHtml ? this.escapeHtml.bind(this) : (s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
-    const cls = extraClass ? `username-link ${extraClass}` : 'username-link';
+    const base = displayText ? 'username-link' : 'username-link is-username';
+    const cls = extraClass ? `${base} ${extraClass}` : base;
     return `<a href="/app/profile/${encodeURIComponent(username)}" class="${cls}" data-username="${esc(username)}">${displayText || ('@' + esc(username))}</a>`;
   },
 
@@ -3199,7 +3200,7 @@ const App = {
           if (this._hoverCardLink !== link || !link.matches(':hover')) return;
           this._showHoverCard(data, link);
         } catch {}
-      }, 300);
+      }, 1500);
     }, true);
 
     document.addEventListener('mouseleave', (e) => {

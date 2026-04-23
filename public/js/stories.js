@@ -157,7 +157,7 @@
         : `<span class="story-author-avatar-fallback">${esc(initialsFor(story.authorName || 'Writer'))}</span>`;
       const usernameText = story.authorUsername ? `@${esc(story.authorUsername)}` : 'Writer';
       const usernameHtml = story.authorUsername
-        ? `<a href="/app/profile/${encodeURIComponent(story.authorUsername)}" class="username-link" data-username="${esc(story.authorUsername)}" onclick="event.stopPropagation()">${usernameText}</a>`
+        ? `<a href="/app/profile/${encodeURIComponent(story.authorUsername)}" class="username-link is-username" data-username="${esc(story.authorUsername)}" onclick="event.stopPropagation()">${usernameText}</a>`
         : usernameText;
       const plan = story.authorPlan === 'premium'
         ? '<span class="pro-nav-badge">PRO</span>'
@@ -212,6 +212,7 @@
               formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt),
               `${story.readTimeMinutes || 1} min read`
             ])}
+            ${this.renderMetric('view', story.viewCount)}
             ${this.renderMetric('heart', story.likeCount, { active: story.likedByMe })}
             ${this.renderMetric('comment', story.commentCount)}
           </div>
@@ -234,6 +235,7 @@
               <div class="doc-card-meta">
                 <span>${story.readTimeMinutes || 1} min read</span>
                 <span>${formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt)}</span>
+                <span>${story.viewCount || 0} views</span>
                 <span>${story.commentCount || 0} comments</span>
                 ${story.likeCount ? `<span>${story.likeCount} likes</span>` : ''}
               </div>
@@ -512,7 +514,7 @@
             <div class="story-comment-card-head">
               <div class="story-comment-author-wrap">
                 <strong>${esc(comment.authorName || 'Unknown')}</strong>
-                ${comment.authorUsername ? `<a href="/app/profile/${encodeURIComponent(comment.authorUsername)}" class="username-link" data-username="${esc(comment.authorUsername)}" onclick="event.stopPropagation()">@${esc(comment.authorUsername)}</a>` : ''}
+                ${comment.authorUsername ? `<a href="/app/profile/${encodeURIComponent(comment.authorUsername)}" class="username-link is-username" data-username="${esc(comment.authorUsername)}" onclick="event.stopPropagation()">@${esc(comment.authorUsername)}</a>` : ''}
               </div>
               <div class="story-comment-meta">
                 <span>${formatStoryDate(comment.createdAt)}</span>

@@ -509,10 +509,13 @@ const Editor = {
     if (this.tabCountdown) return;
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
+    if (this._originalTabTitle == null) this._originalTabTitle = document.title;
+    document.title = `⏳ ${this.tabGracePeriod}s — come back!`;
     this.tabCountdown = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.tabLeftTime) / 1000);
-      const remaining = this.tabGracePeriod - elapsed;
+      const remaining = Math.max(0, this.tabGracePeriod - elapsed);
       this.tabWarningTimer.textContent = remaining;
+      document.title = `⏳ ${remaining}s — come back!`;
       if (remaining <= 0) {
         this.abandonSession();
       }
@@ -546,6 +549,10 @@ const Editor = {
       clearInterval(this.tabCountdown);
       this.tabCountdown = null;
     }
+    if (this._originalTabTitle != null) {
+      document.title = this._originalTabTitle;
+      this._originalTabTitle = null;
+    }
     this.tabWarning.classList.remove('active');
     this.tabLeftTime = null;
     // Immediately update session timer so it shows correct remaining time
@@ -569,6 +576,10 @@ const Editor = {
   async abandonSession() {
     this.abandoned = true;
     clearInterval(this.tabCountdown);
+    if (this._originalTabTitle != null) {
+      document.title = this._originalTabTitle;
+      this._originalTabTitle = null;
+    }
     this.cleanup();
 
     // Save to cache regardless of mode
