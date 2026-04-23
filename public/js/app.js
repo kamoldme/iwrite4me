@@ -1911,7 +1911,7 @@ const App = {
       const statLine = isReferrals
         ? `&#x1F4E9; ${entry.referralCount || 0} invite${(entry.referralCount || 0) === 1 ? '' : 's'}`
         : isTime
-          ? `${this._formatWritingTime(entry.minutesWritten)}`
+          ? `&#x23F1;&#xFE0F; ${this._formatWritingTime(entry.minutesWritten)}`
           : `${entry.streak ? '&#x1F525; ' + entry.streak + ' day streak' : 'No streak'}`;
       return `
         <div class="podium-slot">
