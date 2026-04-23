@@ -1766,7 +1766,6 @@
         _docsTotal = result.total || allDocs.length;
         applyDocsFilter();
         renderDocsPager();
-        renderLostFiles();
       } catch { toast('Failed to load documents', 'error'); }
     }
 
@@ -2216,12 +2215,17 @@
 
     // ===== LOST FILES =====
     let lostDocs = [];
-    function getLostDocs() {
-      return allDocs.filter(d => getDocStatus(d) === 'lost' || getDocStatus(d) === 'deleted');
+    let _lostLoaded = false;
+    async function loadLostDocs() {
+      try {
+        const result = await adminRequest('/admin/documents-lost');
+        lostDocs = result.items || [];
+        _lostLoaded = true;
+      } catch { toast('Failed to load lost files', 'error'); }
     }
     function goLostPage(p) { _lostPage = p; renderLostFiles(); }
-    function renderLostFiles() {
-      lostDocs = getLostDocs();
+    async function renderLostFiles() {
+      if (!_lostLoaded) await loadLostDocs();
       document.getElementById('lost-count').textContent = lostDocs.length;
       const searchVal = (document.getElementById('lost-search').value || '').toLowerCase();
       const statusFilter = document.getElementById('lost-status-filter').value;
@@ -2266,8 +2270,8 @@
           <td style="font-size:12px">${timeCol ? new Date(timeCol).toLocaleString() : '—'}</td>
           <td class="actions">
             <button class="admin-btn admin-btn-primary" onclick="viewDoc('${d.id}')">View</button>
-            <button class="admin-btn admin-btn-success" onclick="restoreDoc('${d.id}');setTimeout(renderLostFiles,500)">Restore</button>
-            <button class="admin-btn admin-btn-danger" onclick="permanentDeleteDoc('${d.id}');setTimeout(renderLostFiles,500)">Delete</button>
+            <button class="admin-btn admin-btn-success" onclick="restoreDoc('${d.id}');setTimeout(()=>{_lostLoaded=false;renderLostFiles();},500)">Restore</button>
+            <button class="admin-btn admin-btn-danger" onclick="permanentDeleteDoc('${d.id}');setTimeout(()=>{_lostLoaded=false;renderLostFiles();},500)">Delete</button>
           </td>
         </tr>`;
       }).join('');
@@ -2293,7 +2297,8 @@
       }
       toast(`Deleted ${deleted} file(s)`, 'success');
       await loadDocs();
-      renderLostFiles();
+      _lostLoaded = false;
+      await renderLostFiles();
       loadOverview();
     });
     document.getElementById('lost-delete-all').addEventListener('click', async () => {
@@ -2302,7 +2307,7 @@
       const statusFilter = document.getElementById('lost-status-filter').value;
       const dateFrom = document.getElementById('lost-date-from').value;
       const dateTo = document.getElementById('lost-date-to').value;
-      let filtered = getLostDocs();
+      let filtered = lostDocs.slice();
       if (statusFilter !== 'all') filtered = filtered.filter(d => getDocStatus(d) === statusFilter);
       if (searchVal) filtered = filtered.filter(d => (d.title || '').toLowerCase().includes(searchVal) || (d.ownerName || '').toLowerCase().includes(searchVal));
       if (dateFrom) { const from = new Date(dateFrom); filtered = filtered.filter(d => new Date(d.failedAt || d.updatedAt) >= from); }
@@ -2319,7 +2324,8 @@
       }
       toast(`Deleted ${deleted} file(s)`, 'success');
       await loadDocs();
-      renderLostFiles();
+      _lostLoaded = false;
+      await renderLostFiles();
       loadOverview();
     });
 

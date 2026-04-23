@@ -391,6 +391,19 @@ router.get('/documents', async (req, res) => {
   res.json({ items: paginated, page, totalPages, total, limit });
 });
 
+// All lost/deleted docs (no pagination — independent of main docs view)
+router.get('/documents-lost', async (req, res) => {
+  const allDocs = await findMany('documents.json');
+  const users = await findMany('users.json');
+  const userMap = {};
+  users.forEach(u => { userMap[u.id] = u.name; });
+  const docs = allDocs
+    .filter(d => d.deletedBySystem || d.deleted)
+    .map(d => ({ ...d, ownerName: userMap[d.userId] || 'Unknown' }))
+    .sort((a, b) => new Date(b.failedAt || b.updatedAt || 0) - new Date(a.failedAt || a.updatedAt || 0));
+  res.json({ items: docs, total: docs.length });
+});
+
 router.get('/documents/:id', async (req, res) => {
   const doc = await findOne('documents.json', d => d.id === req.params.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
