@@ -259,6 +259,8 @@ const App = {
     document.getElementById('auth-view').style.display = 'none';
     document.getElementById('app-view').style.display = 'block';
     this.updateUserUI();
+    // Check for pending admin-awarded PRO congrats (show confetti + message)
+    setTimeout(() => this.checkPendingProCongrats(), 800);
 
     // Initialize level tracking if not set (prevents false level-up on first visit)
     if (!localStorage.getItem('iwrite_last_level')) {
@@ -663,10 +665,79 @@ const App = {
       if (e.key === 'Enter') setDeathCustom();
     });
 
+    // Tab Timer presets (grace period when user leaves tab)
+    document.querySelectorAll('#tab-timer-presets .time-preset[data-seconds]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const secs = parseInt(btn.dataset.seconds);
+        const isPro = this.user && this.user.plan === 'premium';
+        if (!isPro && secs !== 10) {
+          this.toast('This tab timer option is a Pro feature.', 'info');
+          this.openPricing();
+          return;
+        }
+        document.querySelectorAll('#tab-timer-presets .time-preset').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-grace-input').value = secs;
+        document.getElementById('tab-timer-custom-row').style.display = 'none';
+      });
+    });
+    const tabCustomBtn = document.getElementById('tab-timer-custom-btn');
+    if (tabCustomBtn) {
+      tabCustomBtn.addEventListener('click', () => {
+        const isPro = this.user && this.user.plan === 'premium';
+        if (!isPro) {
+          this.toast('Custom tab timer is a Pro feature.', 'info');
+          this.openPricing();
+          return;
+        }
+        const row = document.getElementById('tab-timer-custom-row');
+        row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+        if (row.style.display === 'flex') document.getElementById('tab-timer-custom-input').focus();
+      });
+    }
+    const setTabCustom = () => {
+      const val = parseInt(document.getElementById('tab-timer-custom-input').value);
+      if (!val || val < 5) return;
+      document.querySelectorAll('#tab-timer-presets .time-preset').forEach(b => b.classList.remove('active'));
+      const customBtn = document.getElementById('tab-timer-custom-btn');
+      customBtn.textContent = `${val}s`;
+      customBtn.classList.add('active');
+      document.getElementById('tab-grace-input').value = val;
+      document.getElementById('tab-timer-custom-row').style.display = 'none';
+      document.getElementById('tab-timer-custom-input').value = '';
+    };
+    document.getElementById('tab-timer-custom-set').addEventListener('click', setTabCustom);
+    document.getElementById('tab-timer-custom-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') setTabCustom();
+    });
+
     document.getElementById('editor-back').addEventListener('click', () => Editor.abort());
     document.getElementById('editor-save-btn').addEventListener('click', () => Editor.completeSession());
     document.getElementById('editor-edit-btn').addEventListener('click', () => Editor.enterEditMode());
     document.getElementById('editor-save-edit-btn').addEventListener('click', () => Editor.saveEdits());
+
+    // Editor toolbar: font size +/-
+    const FONT_MIN = 13, FONT_MAX = 32;
+    const applyEditorFontSize = (size) => {
+      const ta = document.getElementById('editor-textarea');
+      if (ta) ta.style.fontSize = size + 'px';
+      try { localStorage.setItem('iwrite_editor_font_size', String(size)); } catch {}
+    };
+    const getEditorFontSize = () => {
+      const stored = parseInt(localStorage.getItem('iwrite_editor_font_size'));
+      return (stored && stored >= FONT_MIN && stored <= FONT_MAX) ? stored : 17;
+    };
+    applyEditorFontSize(getEditorFontSize());
+    const incBtn = document.getElementById('editor-font-inc');
+    const decBtn = document.getElementById('editor-font-dec');
+    if (incBtn) incBtn.addEventListener('click', () => {
+      const next = Math.min(FONT_MAX, getEditorFontSize() + 1);
+      applyEditorFontSize(next);
+    });
+    if (decBtn) decBtn.addEventListener('click', () => {
+      const next = Math.max(FONT_MIN, getEditorFontSize() - 1);
+      applyEditorFontSize(next);
+    });
 
     // Editor toolbar: theme toggle
     document.getElementById('editor-theme-btn').addEventListener('click', () => Editor.toggleEditorTheme());
@@ -1723,10 +1794,14 @@ const App = {
       const threshInput = document.getElementById('danger-threshold-input');
       if (threshInput) dangerThreshold = (Math.max(2, Math.min(30, parseInt(threshInput.value) || 5)) + 1) * 1000;
     }
+    let tabGracePeriod = 10;
+    const graceInput = document.getElementById('tab-grace-input');
+    if (graceInput) tabGracePeriod = Math.max(5, Math.min(300, parseInt(graceInput.value) || 10));
     Editor.start(this.sessionDuration, this.sessionMode, {
       topic: this._pendingTopic || '',
       targetWords: this._pendingTargetWords || 0,
-      dangerThreshold
+      dangerThreshold,
+      tabGracePeriod
     });
   },
 
@@ -1785,22 +1860,27 @@ const App = {
     const podium = document.getElementById('leaderboard-podium');
     const thead = document.getElementById('leaderboard-thead');
     const isTime = this._lbTab === 'time';
+    const isReferrals = this._lbTab === 'referrals';
 
     // Toggle tab class on leaderboard view for mobile column visibility
     const lbView = document.getElementById('view-leaderboard');
     if (lbView) {
       lbView.classList.toggle('lb-tab-time', isTime);
-      lbView.classList.toggle('lb-tab-streaks', !isTime);
+      lbView.classList.toggle('lb-tab-streaks', !isTime && !isReferrals);
+      lbView.classList.toggle('lb-tab-referrals', isReferrals);
     }
 
     // Sort based on active tab
     const data = [...rawData].sort((a, b) => {
+      if (isReferrals) return (b.referralCount || 0) - (a.referralCount || 0) || (b.totalWords || 0) - (a.totalWords || 0);
       if (isTime) return (b.minutesWritten || 0) - (a.minutesWritten || 0) || (b.totalWords || 0) - (a.totalWords || 0);
       return (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0);
     });
 
     // Update thead
-    if (isTime) {
+    if (isReferrals) {
+      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-referrals">Invites</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-level">Level</th></tr>`;
+    } else if (isTime) {
       thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-time">Writing Time</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-level">Level</th></tr>`;
     } else {
       thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-streak">Streak</th><th class="lb-col-words">Words</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-time">Time</th><th class="lb-col-level">Level</th></tr>`;
@@ -1819,9 +1899,11 @@ const App = {
       const avatarContent = entry.avatar
         ? `<img src="${entry.avatar}?t=${entry.avatarUpdatedAt || 0}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
         : entry.name.charAt(0).toUpperCase();
-      const statLine = isTime
-        ? `${this._formatWritingTime(entry.minutesWritten)}`
-        : `${entry.streak ? '&#x1F525; ' + entry.streak + ' day streak' : 'No streak'}`;
+      const statLine = isReferrals
+        ? `&#x1F4E9; ${entry.referralCount || 0} invite${(entry.referralCount || 0) === 1 ? '' : 's'}`
+        : isTime
+          ? `${this._formatWritingTime(entry.minutesWritten)}`
+          : `${entry.streak ? '&#x1F525; ' + entry.streak + ' day streak' : 'No streak'}`;
       return `
         <div class="podium-slot">
           ${isFirst ? '<div class="podium-crown">&#x1F451;</div>' : ''}
@@ -1847,6 +1929,18 @@ const App = {
         : this.escapeHtml(entry.name);
       const youBadge = isMe ? ' <span class="lb-you">YOU</span>' : '';
 
+      if (isReferrals) {
+        return `
+          <tr class="${isMe ? 'leaderboard-me' : ''}">
+            <td class="lb-rank">${rankEmoji}</td>
+            <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
+            <td class="lb-name">${nameCell}${youBadge}</td>
+            <td class="lb-col-referrals"><strong>${entry.referralCount || 0}</strong></td>
+            <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
+            <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
+            <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
+          </tr>`;
+      }
       if (isTime) {
         return `
           <tr class="${isMe ? 'leaderboard-me' : ''}">
@@ -3524,17 +3618,29 @@ const App = {
     window.history.replaceState({}, document.title, '/app.html#upgrade');
   },
 
-  _showProCelebration() {
+  async checkPendingProCongrats() {
+    const p = this.user && this.user.pendingProCongrats;
+    if (!p) return;
+    this._showProCelebration(p.message || null);
+    try { await API.request('/auth/ack-pro-congrats', { method: 'POST' }); } catch {}
+    if (this.user) this.user.pendingProCongrats = null;
+  },
+
+  _showProCelebration(customMsg) {
     this.launchConfetti();
 
     const overlay = document.createElement('div');
     overlay.className = 'levelup-overlay pro-celebration-overlay';
+    const subText = customMsg
+      ? this.escapeHtml(customMsg)
+      : 'You just unlocked the full writing experience.';
+    const titleText = customMsg ? 'You got PRO!' : 'Welcome to Pro!';
     overlay.innerHTML = `
       <div class="levelup-modal">
         <div class="levelup-glow pro-glow"></div>
         <div class="pro-celebration-text">PRO</div>
-        <h2 class="levelup-title pro-title">Welcome to Pro!</h2>
-        <p class="levelup-sub">You just unlocked the full writing experience.</p>
+        <h2 class="levelup-title pro-title">${titleText}</h2>
+        <p class="levelup-sub">${subText}</p>
         <button class="btn btn-primary levelup-btn" style="margin-top:30px">Start Writing</button>
       </div>
     `;
@@ -3764,10 +3870,14 @@ const App = {
 
   async addFriend() {
     const input = document.getElementById('friend-email-input');
-    const email = input.value.trim();
-    if (!email) return;
+    const raw = input.value.trim();
+    if (!raw) return;
+    const isEmail = raw.includes('@');
+    const cleaned = isEmail ? raw : raw.replace(/^@/, '');
     try {
-      const result = await API.sendFriendRequest(email);
+      const result = isEmail
+        ? await API.sendFriendRequest(cleaned)
+        : await API.sendFriendRequestByUsername(cleaned);
       input.value = '';
       this.toast(result.message || 'Request sent!', 'success');
       this.loadFriends();
@@ -4889,6 +4999,38 @@ const App = {
       document.getElementById('confirm-cancel').onclick = () => {
         overlay.classList.remove('active');
         resolve(false);
+      };
+    });
+  },
+
+  promptTitle() {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById('title-prompt-modal');
+      const input = document.getElementById('title-prompt-input');
+      const saveBtn = document.getElementById('title-prompt-save');
+      const skipBtn = document.getElementById('title-prompt-skip');
+      if (!overlay || !input || !saveBtn || !skipBtn) return resolve('');
+      input.value = '';
+      overlay.classList.add('active');
+      setTimeout(() => input.focus(), 100);
+      const cleanup = () => {
+        overlay.classList.remove('active');
+        saveBtn.onclick = null;
+        skipBtn.onclick = null;
+        input.onkeydown = null;
+      };
+      saveBtn.onclick = () => {
+        const val = (input.value || '').trim();
+        cleanup();
+        resolve(val || 'Untitled');
+      };
+      skipBtn.onclick = () => {
+        cleanup();
+        resolve('Untitled');
+      };
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') saveBtn.onclick();
+        else if (e.key === 'Escape') skipBtn.onclick();
       };
     });
   },

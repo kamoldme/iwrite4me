@@ -93,6 +93,7 @@ const Editor = {
     this.sessionTopic = opts.topic || '';
     // Custom danger threshold (Pro feature)
     if (opts.dangerThreshold) this.dangerThreshold = opts.dangerThreshold;
+    if (opts.tabGracePeriod) this.tabGracePeriod = opts.tabGracePeriod;
     if (typeof CommentSystem !== 'undefined') CommentSystem.destroy();
 
     try {
@@ -1152,6 +1153,25 @@ const Editor = {
         App.toast(`Early complete limit reached (${earlyLim}/month). Wait for the timer to finish.`, 'warning');
         return;
       }
+      const remaining = earlyLim - usedThisMonth;
+      const ok = await App.showConfirm(`Are you sure you want to end this session early? You will use 1 of your ${remaining} early finishes left this month.`);
+      if (!ok) {
+        this.active = true;
+        return;
+      }
+    }
+
+    // Task 10: If title is empty, prompt user to name it or keep as Untitled
+    if (this.getWordCount() > 0) {
+      const currentTitle = (this.titleInput.value || '').trim();
+      if (!currentTitle) {
+        const chosen = await App.promptTitle();
+        if (chosen === null) {
+          // User cancelled the prompt — don't complete
+          return;
+        }
+        this.titleInput.value = chosen || 'Untitled';
+      }
     }
 
     this.active = false;
@@ -1229,6 +1249,8 @@ const Editor = {
     App._docsCacheDirty = true;
     try { await App.loadDocuments(true); } catch {}
     this.showComplete(wordCount, duration, xpEarned, result.user);
+    // Show admin-awarded PRO congrats after session wraps up
+    setTimeout(() => App.checkPendingProCongrats(), 1200);
   },
 
   showComplete(words, duration, xp, user) {

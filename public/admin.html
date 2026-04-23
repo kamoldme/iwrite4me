@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/iWrite logo.png">
-  <link rel="stylesheet" href="/css/style.css?v=34">
+  <link rel="stylesheet" href="/css/style.css?v=35">
   <style>
     .admin-layout { display: flex; min-height: 100vh; }
     .admin-sidebar {
@@ -260,7 +260,7 @@
     .pager-info { font-size: 12px; color: var(--text-muted); margin-left: 8px; }
   </style>
 </head>
-<body>
+<body class="admin-keep-scrollbar">
   <!-- AUTH SCREEN (centered) -->
   <div id="admin-auth" class="admin-login-screen">
     <div class="admin-login-card">
@@ -1554,6 +1554,11 @@
               </div>
               <input type="hidden" id="edit-plan-duration" value="${u.plan==='premium' ? (u.planDuration||'infinite') : 'free'}">
               ${u.plan === 'premium' && u.planExpiresAt ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">Expires: ${u.planExpiresAt === 'infinite' ? '∞ Never' : new Date(u.planExpiresAt).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'})}</div>` : ''}
+              <div id="congrats-msg-row" style="display:none;margin-top:10px">
+                <label style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px">Congrats message (shown to user with confetti)</label>
+                <input type="text" id="edit-congrats-message" placeholder="e.g. for being a loyal user of the platform" maxlength="200" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-primary);color:var(--text-primary);font-size:13px">
+                <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Optional. Leave blank for a generic message.</div>
+              </div>
             </div>
             <div class="admin-field"><label>XP</label><div style="display:flex;gap:8px;align-items:center"><input type="number" id="edit-xp" value="${u.xp || 0}" style="flex:1"><button type="button" class="admin-btn admin-btn-ghost" style="padding:6px 12px;font-size:11px;white-space:nowrap" onclick="autocalcXP('${u.id}')">Autocalculate</button></div></div>
             <div class="admin-field"><label>Streak</label><input type="number" id="edit-streak" value="${u.streak || 0}"></div>
@@ -1587,6 +1592,10 @@
               if (!customDate) { toast('Please pick an expiry date', 'error'); return; }
               subBody.customExpiresAt = new Date(customDate + 'T23:59:59').toISOString();
             }
+            if (duration !== 'free') {
+              const cm = document.getElementById('edit-congrats-message');
+              if (cm) subBody.congratsMessage = cm.value.trim();
+            }
             await adminRequest(`/admin/users/${u.id}/subscription`, { method: 'POST', body: JSON.stringify(subBody) });
             toast('User updated', 'success');
             closeEditUser();
@@ -1594,6 +1603,10 @@
             loadOverview();
           } catch (err) { toast(err.message || 'Failed', 'error'); }
         });
+        // Show congrats message field if user already has premium (so admin can change message on re-grant)
+        const initialDur = document.getElementById('edit-plan-duration').value;
+        const congratsRow = document.getElementById('congrats-msg-row');
+        if (congratsRow) congratsRow.style.display = initialDur === 'free' ? 'none' : 'block';
         openPanel('edit-user-panel', 'edit-user-overlay');
       } catch { toast('Failed to load user', 'error'); }
     }
@@ -1613,6 +1626,8 @@
       });
       const customRow = document.getElementById('custom-expiry-row');
       if (customRow) customRow.style.display = dur === 'custom' ? 'flex' : 'none';
+      const congratsRow = document.getElementById('congrats-msg-row');
+      if (congratsRow) congratsRow.style.display = dur === 'free' ? 'none' : 'block';
     }
 
     async function togglePlan(id, current) {

@@ -541,6 +541,16 @@ router.delete('/banner', authenticate, async (req, res) => {
   }
 });
 
+// ===== PENDING PRO CONGRATS (admin-awarded) =====
+router.post('/ack-pro-congrats', authenticate, async (req, res) => {
+  try {
+    await updateOne('users.json', u => u.id === req.user.id, { pendingProCongrats: null });
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
 // ===== REFERRAL =====
 router.get('/referral', authenticate, async (req, res) => {
   try {

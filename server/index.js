@@ -371,6 +371,7 @@ app.get('/api/leaderboard', async (req, res) => {
           level: u.level || 0,
           streak: liveStreak(u),
           minutesWritten,
+          referralCount: u.referralCount || 0,
           avatar: u.avatar || null,
           avatarUpdatedAt: u.avatarUpdatedAt || null,
           plan: u.plan || 'free'
@@ -381,11 +382,13 @@ app.get('/api/leaderboard', async (req, res) => {
     const byStreak = [...all].sort((a, b) => b.streak - a.streak || b.totalWords - a.totalWords).slice(0, 10);
     // Top 10 by time written
     const byTime = [...all].sort((a, b) => b.minutesWritten - a.minutesWritten || b.totalWords - a.totalWords).slice(0, 10);
+    // Top 10 by referrals
+    const byReferrals = [...all].sort((a, b) => b.referralCount - a.referralCount || b.totalWords - a.totalWords).slice(0, 10);
 
-    // Merge both lists (deduplicate by id)
+    // Merge all lists (deduplicate by id)
     const seen = new Set();
     const merged = [];
-    for (const entry of [...byStreak, ...byTime]) {
+    for (const entry of [...byStreak, ...byTime, ...byReferrals]) {
       if (!seen.has(entry.id)) {
         seen.add(entry.id);
         merged.push(entry);

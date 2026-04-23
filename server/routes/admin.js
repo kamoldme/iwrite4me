@@ -209,7 +209,7 @@ router.post('/users/:id/subscription', async (req, res) => {
   const user = await findOne('users.json', u => u.id === req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const { duration, customExpiresAt } = req.body; // '1m', '3m', '6m', '12m', 'infinite', 'custom', 'free'
+  const { duration, customExpiresAt, congratsMessage } = req.body; // '1m', '3m', '6m', '12m', 'infinite', 'custom', 'free'
   const updates = {};
 
   if (duration === 'free') {
@@ -219,10 +219,17 @@ router.post('/users/:id/subscription', async (req, res) => {
     updates.planStartedAt = null;
     updates.planExpiresAt = null;
     updates.planExpired = false;
+    updates.pendingProCongrats = null;
   } else {
     updates.plan = 'premium';
+    updates.planSource = 'admin';
     updates.planDuration = duration;
     updates.planStartedAt = new Date().toISOString();
+    updates.pendingProCongrats = {
+      message: (congratsMessage || '').trim() || null,
+      grantedAt: new Date().toISOString(),
+      duration
+    };
 
     if (duration === 'infinite') {
       updates.planExpiresAt = 'infinite';

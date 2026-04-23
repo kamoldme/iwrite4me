@@ -9,6 +9,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('[data-aos]').forEach(el => observer.observe(el));
 
+  // Toggle scrolled state on landing nav for gradient blur background
+  const landingNav = document.querySelector('body.landing .nav');
+  if (landingNav) {
+    const updateNavScrolled = () => {
+      if (window.scrollY > 20) landingNav.classList.add('scrolled');
+      else landingNav.classList.remove('scrolled');
+    };
+    updateNavScrolled();
+    window.addEventListener('scroll', updateNavScrolled, { passive: true });
+  }
+
   const mobileMenu = document.querySelector('.mobile-menu');
   const navLinks = document.querySelector('.nav-links');
   if (mobileMenu) {
