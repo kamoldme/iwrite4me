@@ -585,6 +585,8 @@ const App = {
         // Show death timer section in dangerous mode
         const deathSection = document.getElementById('death-timer-section');
         if (deathSection) deathSection.style.display = isDanger ? 'block' : 'none';
+        const tabSection = document.getElementById('tab-timer-section');
+        if (tabSection) tabSection.style.display = isDanger ? 'none' : 'block';
         if (isDanger) {
           // Default danger duration to the active preset
           const dangerActive = document.querySelector('#danger-time-presets .time-preset.active');
@@ -721,27 +723,24 @@ const App = {
     document.getElementById('editor-edit-btn').addEventListener('click', () => Editor.enterEditMode());
     document.getElementById('editor-save-edit-btn').addEventListener('click', () => Editor.saveEdits());
 
-    // Editor toolbar: font size +/-
-    const FONT_MIN = 13, FONT_MAX = 32;
-    const applyEditorFontSize = (size) => {
-      const ta = document.getElementById('editor-textarea');
-      if (ta) ta.style.fontSize = size + 'px';
-      try { localStorage.setItem('iwrite_editor_font_size', String(size)); } catch {}
+    // Editor toolbar: page zoom +/-
+    const ZOOM_MIN = 0.5, ZOOM_MAX = 2.0, ZOOM_STEP = 0.1;
+    const applyPageZoom = (z) => {
+      document.body.style.zoom = z;
+      try { localStorage.setItem('iwrite_page_zoom', String(z)); } catch {}
     };
-    const getEditorFontSize = () => {
-      const stored = parseInt(localStorage.getItem('iwrite_editor_font_size'));
-      return (stored && stored >= FONT_MIN && stored <= FONT_MAX) ? stored : 17;
+    const getPageZoom = () => {
+      const stored = parseFloat(localStorage.getItem('iwrite_page_zoom'));
+      return (stored && stored >= ZOOM_MIN && stored <= ZOOM_MAX) ? stored : 1.0;
     };
-    applyEditorFontSize(getEditorFontSize());
+    applyPageZoom(getPageZoom());
     const incBtn = document.getElementById('editor-font-inc');
     const decBtn = document.getElementById('editor-font-dec');
     if (incBtn) incBtn.addEventListener('click', () => {
-      const next = Math.min(FONT_MAX, getEditorFontSize() + 1);
-      applyEditorFontSize(next);
+      applyPageZoom(Math.min(ZOOM_MAX, Math.round((getPageZoom() + ZOOM_STEP) * 10) / 10));
     });
     if (decBtn) decBtn.addEventListener('click', () => {
-      const next = Math.max(FONT_MIN, getEditorFontSize() - 1);
-      applyEditorFontSize(next);
+      applyPageZoom(Math.max(ZOOM_MIN, Math.round((getPageZoom() - ZOOM_STEP) * 10) / 10));
     });
 
     // Editor toolbar: theme toggle
@@ -1627,6 +1626,8 @@ const App = {
     // Reset death timer section
     const deathSection = document.getElementById('death-timer-section');
     if (deathSection) deathSection.style.display = 'none';
+    const tabSection = document.getElementById('tab-timer-section');
+    if (tabSection) tabSection.style.display = 'block';
     document.getElementById('danger-threshold-input').value = '5';
     document.querySelectorAll('#death-timer-presets .time-preset').forEach(b => b.classList.remove('active'));
     const defaultDeath = document.querySelector('#death-timer-presets .time-preset[data-seconds="5"]');
@@ -1875,8 +1876,9 @@ const App = {
       lbView.classList.toggle('lb-tab-referrals', isReferrals);
     }
 
-    // Sort based on active tab
-    const data = [...rawData].sort((a, b) => {
+    // Sort based on active tab, filter out zero-referral users for referrals tab
+    const filtered = isReferrals ? rawData.filter(e => (e.referralCount || 0) > 0) : rawData;
+    const data = [...filtered].sort((a, b) => {
       if (isReferrals) return (b.referralCount || 0) - (a.referralCount || 0) || (b.totalWords || 0) - (a.totalWords || 0);
       if (isTime) return (b.minutesWritten || 0) - (a.minutesWritten || 0) || (b.totalWords || 0) - (a.totalWords || 0);
       return (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0);
@@ -3299,7 +3301,7 @@ const App = {
           if (this._hoverCardLink !== link || !link.matches(':hover')) return;
           this._showHoverCard(data, link);
         } catch {}
-      }, 1500);
+      }, 600);
     }, true);
 
     document.addEventListener('mouseleave', (e) => {

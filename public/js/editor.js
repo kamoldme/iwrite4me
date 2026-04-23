@@ -129,7 +129,7 @@ const Editor = {
     this.textarea.focus();
     this.active = true;
     if (this._originalTabTitle == null) this._originalTabTitle = document.title;
-    document.title = 'Session Going on';
+    document.title = '✍️ Writing in progress…';
 
     // Show correct buttons for active session
     // In dangerous mode or duel mode, hide the Complete button — session ends only when time runs out
@@ -512,12 +512,12 @@ const Editor = {
     if (this.tabCountdown) return;
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
-    document.title = `DELETION IN ${this.tabGracePeriod}s...`;
+    document.title = `🔴 Come back! ${this.tabGracePeriod}s left`;
     this.tabCountdown = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = Math.max(0, this.tabGracePeriod - elapsed);
       this.tabWarningTimer.textContent = remaining;
-      document.title = `DELETION IN ${remaining}s...`;
+      document.title = `🔴 Come back! ${remaining}s left`;
       if (remaining <= 0) {
         this.abandonSession();
       }
@@ -553,7 +553,7 @@ const Editor = {
     }
     // Tab countdown ended but session is still active — restore the session title
     if (this.active && !this.abandoned) {
-      document.title = 'Session Going on';
+      document.title = '✍️ Writing in progress…';
     }
     this.tabWarning.classList.remove('active');
     this.tabLeftTime = null;

@@ -6908,13 +6908,17 @@ body.editor-active .mobile-sidebar-toggle {
 .editor-title-input {
   font-size: 15px;
   font-weight: 500;
-  border: none;
-  outline: none;
-  background: none;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
   font-family: var(--font-sans);
   min-width: 200px;
   color: var(--text-primary);
 }
+.editor-title-input:focus { background: transparent !important; box-shadow: none !important; }
 
 .editor-toolbar-center {
   display: flex;

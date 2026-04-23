@@ -383,7 +383,7 @@ app.get('/api/leaderboard', async (req, res) => {
     // Top 10 by time written
     const byTime = [...all].sort((a, b) => b.minutesWritten - a.minutesWritten || b.totalWords - a.totalWords).slice(0, 10);
     // Top 10 by referrals
-    const byReferrals = [...all].sort((a, b) => b.referralCount - a.referralCount || b.totalWords - a.totalWords).slice(0, 10);
+    const byReferrals = [...all].filter(u => (u.referralCount || 0) > 0).sort((a, b) => b.referralCount - a.referralCount || b.totalWords - a.totalWords).slice(0, 10);
 
     // Merge all lists (deduplicate by id)
     const seen = new Set();
