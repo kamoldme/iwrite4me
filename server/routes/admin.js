@@ -470,6 +470,44 @@ router.get('/lost-files', async (req, res) => {
   })).sort((a, b) => new Date(b.failedAt || b.updatedAt) - new Date(a.failedAt || a.updatedAt)));
 });
 
+// One-time migration: rewrite planExpiresAt for existing trial users to actual Stripe trial_end
+router.post('/migrate-trial-expiry', async (req, res) => {
+  try {
+    const Stripe = require('stripe');
+    if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe not configured' });
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' });
+
+    const users = await findMany('users.json', u => u.planSource === 'trial' && u.stripeSubscriptionId);
+    const results = { scanned: users.length, updated: 0, skipped: 0, errors: 0, details: [] };
+
+    for (const user of users) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        if (sub.trial_end) {
+          const trialEndISO = new Date(sub.trial_end * 1000).toISOString();
+          await updateOne('users.json', u => u.id === user.id, {
+            planExpiresAt: trialEndISO,
+            trialEndingAt: trialEndISO
+          });
+          results.updated++;
+          results.details.push({ userId: user.id, email: user.email, newExpiresAt: trialEndISO });
+        } else {
+          results.skipped++;
+        }
+      } catch (err) {
+        results.errors++;
+        results.details.push({ userId: user.id, error: err.message });
+      }
+    }
+
+    logAction('trial_expiry_migration_run', { ...results, details: undefined }, req.user.id);
+    res.json(results);
+  } catch (err) {
+    console.error('Trial expiry migration error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/lost-files/:id/activate', async (req, res) => {
   const updated = await updateOne('documents.json', d => d.id === req.params.id, {
     deleted: false
