@@ -846,11 +846,19 @@ const Editor = {
     if (!ta) return;
     const text = ta.innerText || '';
     if (!text.trim()) return;
-    // Drop the last 40% of words
-    const words = text.trim().split(/\s+/);
-    const dropCount = Math.max(1, Math.ceil(words.length * 0.4));
-    const keptWords = words.slice(0, Math.max(0, words.length - dropCount));
-    ta.innerText = keptWords.join(' ');
+    // Find all word positions in the original text so paragraph breaks and
+    // multi-space formatting survive when we drop the last 40% of words.
+    const matches = [];
+    const re = /\S+/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      matches.push({ start: m.index, end: m.index + m[0].length });
+    }
+    if (matches.length === 0) return;
+    const dropCount = Math.max(1, Math.ceil(matches.length * 0.4));
+    const keepCount = Math.max(0, matches.length - dropCount);
+    const sliced = keepCount === 0 ? '' : text.slice(0, matches[keepCount - 1].end);
+    ta.innerText = sliced;
     // Move cursor to end
     try {
       const range = document.createRange();
