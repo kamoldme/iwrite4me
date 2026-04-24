@@ -320,7 +320,7 @@
           <div class="timer" id="timer">6.0s</div>
         </div>
         <div class="page">
-          <div class="title">Untitled</div>
+          <div class="title" id="title"></div>
           <div class="prose" id="prose"><span class="caret" id="caret"></span></div>
         </div>
         <div class="footer">
@@ -343,6 +343,7 @@
   const statusEl = document.getElementById('status-label');
   const editor = document.getElementById('editor');
   const hint = document.getElementById('hint');
+  const titleEl = document.getElementById('title');
 
   // Story beats: [text to add, typing speed (ms/char), after-pause (ms)]
   // Special commands:
@@ -354,6 +355,8 @@
 
   const script = [
     { hint: 'Watch what happens when you stop typing.', show: true },
+    { typeTitle: 'Dangerous Mode', speed: 85 },
+    { wait: 400 },
     { type: 'If I stop typing right now, ', speed: 55 },
     { type: 'this sentence disappears', speed: 60 },
     { hint: '', show: false },
@@ -407,6 +410,14 @@
 
   function setTimer(sec) {
     timerEl.textContent = sec.toFixed(1) + 's';
+  }
+
+  async function typeTitle(str, speed) {
+    titleEl.textContent = '';
+    for (const ch of str) {
+      titleEl.textContent += ch;
+      await sleep(speed + Math.random() * 40);
+    }
   }
 
   async function type(str, speed) {
@@ -480,6 +491,8 @@
     for (const step of script) {
       if (step.type !== undefined) {
         await type(step.type, step.speed || 60);
+      } else if (step.typeTitle !== undefined) {
+        await typeTitle(step.typeTitle, step.speed || 80);
       } else if (step.pause) {
         await pause(step.pause, { statusArc: step.statusArc });
       } else if (step.delete) {
@@ -493,6 +506,7 @@
         setTimer(6.0);
       } else if (step.reset) {
         text.value = '';
+        titleEl.textContent = '';
         render();
         setStatus('Writing', 'writing');
         setTimer(6.0);

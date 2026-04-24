@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /app/profile/
+Allow: /story/
+
+Disallow: /app
+Disallow: /app/
+Disallow: /app?
+Disallow: /manual-login
+Disallow: /admin
+Disallow: /api/
+Disallow: /shared/
+Disallow: /invite/
+Disallow: /join/
+Disallow: /u/
+Disallow: /profile/
+Disallow: /promo-v2.2.html
+Disallow: /demo-dangerous.html
+Disallow: /og-image.html
+Disallow: /pro-badge.html
+Disallow: /social-posts.html
+
+Sitemap: https://iwrite4.me/sitemap.xml
