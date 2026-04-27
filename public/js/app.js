@@ -4118,6 +4118,153 @@ const App = {
     if (billingBtn) {
       billingBtn.addEventListener('click', () => this._openBillingPortal());
     }
+
+    // Bind subscription history button (idempotent — replace handler)
+    const subHistBtn = document.getElementById('sub-history-btn');
+    if (subHistBtn && !subHistBtn._bound) {
+      subHistBtn._bound = true;
+      subHistBtn.addEventListener('click', () => this.openSubscriptionHistory());
+    }
+    const subHistClose = document.getElementById('sub-history-close');
+    if (subHistClose && !subHistClose._bound) {
+      subHistClose._bound = true;
+      subHistClose.addEventListener('click', () => this.closeSubscriptionHistory());
+    }
+    const subHistOverlay = document.getElementById('sub-history-sidebar-overlay');
+    if (subHistOverlay && !subHistOverlay._bound) {
+      subHistOverlay._bound = true;
+      subHistOverlay.addEventListener('click', () => this.closeSubscriptionHistory());
+    }
+  },
+
+  async openSubscriptionHistory() {
+    const modal = document.getElementById('sub-history-modal');
+    const overlay = document.getElementById('sub-history-sidebar-overlay');
+    const body = document.getElementById('sub-history-body');
+    if (!modal || !body) return;
+
+    body.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px 0">Loading...</p>';
+    modal.classList.add('active');
+    overlay.classList.add('active');
+
+    try {
+      const res = await fetch('/api/stripe/history', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      body.innerHTML = this._renderSubscriptionHistory(data);
+    } catch {
+      body.innerHTML = '<p style="text-align:center;color:var(--danger);padding:30px 0">Failed to load history</p>';
+    }
+  },
+
+  closeSubscriptionHistory() {
+    document.getElementById('sub-history-modal')?.classList.remove('active');
+    document.getElementById('sub-history-sidebar-overlay')?.classList.remove('active');
+  },
+
+  _renderSubscriptionHistory(data) {
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    const fmtAmount = (cents, currency) => {
+      if (cents == null) return null;
+      const sym = (currency || 'usd').toLowerCase() === 'usd' ? '$' : '';
+      return `${sym}${(cents / 100).toFixed(2)}`;
+    };
+    const durLabel = (d) => d === '6m' ? '6-month' : d === '3m' ? '3-month' : d === '1m' ? 'Monthly' : '';
+
+    const cur = data.currentPlan || {};
+    const isPro = cur.plan === 'premium';
+    const currentBlock = `
+      <div class="sub-history-current">
+        <div class="sub-history-current-row">
+          <span class="sub-history-current-label">Status</span>
+          <span class="sub-history-current-value">${isPro ? 'Premium · Active' : 'Free'}</span>
+        </div>
+        ${isPro && cur.planSource ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Source</span><span class="sub-history-current-value">${this.escapeHtml(cur.planSource)}</span></div>` : ''}
+        ${isPro && cur.planDuration ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Plan</span><span class="sub-history-current-value">${durLabel(cur.planDuration) || cur.planDuration}</span></div>` : ''}
+        ${isPro && cur.planStartedAt ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Started</span><span class="sub-history-current-value">${fmtDate(cur.planStartedAt)}</span></div>` : ''}
+        ${isPro && cur.planExpiresAt && cur.planExpiresAt !== 'infinite' ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Renews</span><span class="sub-history-current-value">${fmtDate(cur.planExpiresAt)}</span></div>` : ''}
+        ${cur.planExpiresAt === 'infinite' ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Duration</span><span class="sub-history-current-value">Lifetime</span></div>` : ''}
+        <div class="sub-history-current-row"><span class="sub-history-current-label">Trial used</span><span class="sub-history-current-value">${cur.trialUsed ? 'Yes' : 'No'}</span></div>
+      </div>`;
+
+    const events = data.events || [];
+    if (events.length === 0) {
+      return currentBlock + '<p style="text-align:center;color:var(--text-muted);padding:30px 0">No history yet</p>';
+    }
+
+    const rows = events.map(e => {
+      let title = '';
+      let tag = '';
+      let amountHtml = '';
+      let metaParts = [fmtDate(e.timestamp)];
+
+      switch (e.type) {
+        case 'stripe_invoice': {
+          const amt = fmtAmount(e.details.amountPaid, e.details.currency);
+          const reason = e.details.billingReason === 'subscription_create' ? 'Subscription started'
+            : e.details.billingReason === 'subscription_cycle' ? 'Subscription renewal'
+            : 'Invoice';
+          title = `${reason} <span class="sub-history-tag sub-history-tag-paid">Paid</span>`;
+          if (e.details.periodStart && e.details.periodEnd) {
+            metaParts.push(`${fmtDate(e.details.periodStart)} → ${fmtDate(e.details.periodEnd)}`);
+          }
+          amountHtml = `<div class="sub-history-entry-amount">${amt || '—'}</div>${e.details.hostedInvoiceUrl ? `<a href="${e.details.hostedInvoiceUrl}" target="_blank" rel="noopener" class="sub-history-entry-amount-muted" style="color:var(--accent);text-decoration:none">View invoice</a>` : ''}`;
+          break;
+        }
+        case 'stripe_subscription_created': {
+          const isTrial = e.source === 'trial';
+          title = `${isTrial ? 'Free trial started' : 'Subscription started'} ${isTrial ? '<span class="sub-history-tag sub-history-tag-trial">Trial</span>' : '<span class="sub-history-tag sub-history-tag-paid">Paid</span>'}`;
+          if (e.duration) metaParts.push(durLabel(e.duration) || e.duration);
+          break;
+        }
+        case 'stripe_payment_verified': {
+          const isTrial = e.source === 'trial';
+          title = `${isTrial ? 'Trial activated' : 'Payment verified'} ${isTrial ? '<span class="sub-history-tag sub-history-tag-trial">Trial</span>' : '<span class="sub-history-tag sub-history-tag-paid">Paid</span>'}`;
+          if (e.duration) metaParts.push(durLabel(e.duration) || e.duration);
+          break;
+        }
+        case 'stripe_subscription_renewed':
+          title = `Subscription renewed <span class="sub-history-tag sub-history-tag-renewed">Renewed</span>`;
+          if (e.duration) metaParts.push(durLabel(e.duration) || e.duration);
+          break;
+        case 'stripe_subscription_cancelled':
+          title = `Subscription cancelled <span class="sub-history-tag sub-history-tag-cancelled">Cancelled</span>`;
+          break;
+        case 'stripe_subscription_auto_cancelled':
+          title = `Auto-cancelled (payment failed) <span class="sub-history-tag sub-history-tag-cancelled">Cancelled</span>`;
+          break;
+        case 'stripe_payment_failed':
+          title = `Payment failed <span class="sub-history-tag sub-history-tag-failed">Failed</span>`;
+          break;
+        case 'subscription_expired':
+          title = `Subscription expired <span class="sub-history-tag sub-history-tag-expired">Expired</span>`;
+          if (e.duration) metaParts.push(durLabel(e.duration) || e.duration);
+          break;
+        case 'promocode_redeemed':
+          title = `Promo code redeemed <span class="sub-history-tag sub-history-tag-promo">Promo</span>`;
+          break;
+        case 'admin_grant_pro':
+          title = `Pro granted by admin <span class="sub-history-tag sub-history-tag-admin">Admin</span>`;
+          break;
+        case 'referral_pro_granted':
+          title = `Pro from referrals <span class="sub-history-tag sub-history-tag-referral">Referral</span>`;
+          break;
+        default:
+          title = this.escapeHtml(e.type);
+      }
+
+      return `<div class="sub-history-entry">
+        <div class="sub-history-entry-left">
+          <div class="sub-history-entry-title">${title}</div>
+          <div class="sub-history-entry-meta">${metaParts.join(' · ')}</div>
+        </div>
+        <div class="sub-history-entry-right">${amountHtml}</div>
+      </div>`;
+    }).join('');
+
+    return currentBlock + rows;
   },
 
   async _startCheckout(isTrial) {

@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/iWrite logo.png">
-  <link rel="stylesheet" href="/css/style.css?v=91">
+  <link rel="stylesheet" href="/css/style.css?v=92">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -639,7 +639,10 @@
           <div id="analytics-content"></div>
         </div>
         <!-- UPGRADE VIEW -->
-        <div id="view-upgrade" class="view" style="display:none">
+        <div id="view-upgrade" class="view" style="display:none;position:relative">
+          <button class="sub-history-btn" id="sub-history-btn" title="Subscription history" aria-label="Subscription history">
+            <span style="font-size:14px">&#x1F4DC;</span> History
+          </button>
           <div class="upgrade-hero">
             <h1 class="upgrade-title">Unlock Your Full <span class="upgrade-pro-badge">Pro</span> Potential</h1>
             <p class="upgrade-subtitle">Select the plan that matches your goals. Upgrade anytime and cancel whenever you want.</p>
@@ -1338,6 +1341,18 @@
     </div>
   </div>
 
+  <!-- SUBSCRIPTION HISTORY SIDEBAR (right panel) -->
+  <div class="right-sidebar-overlay" id="sub-history-sidebar-overlay"></div>
+  <div class="right-sidebar" id="sub-history-modal">
+    <div class="right-sidebar-header">
+      <h3>&#x1F4DC; Subscription History</h3>
+      <button class="right-sidebar-close" id="sub-history-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="right-sidebar-body">
+      <div id="sub-history-body"></div>
+    </div>
+  </div>
+
   <!-- COMMENT HISTORY SIDEBAR (right panel) -->
   <div class="right-sidebar-overlay" id="comment-history-sidebar-overlay"></div>
   <div class="right-sidebar" id="comment-history-modal">
@@ -1406,7 +1421,7 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=42"></script>
-  <script src="/js/app.js?v=88"></script>
+  <script src="/js/app.js?v=89"></script>
   <script src="/js/stories.js?v=16"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

@@ -1,6 +1,6 @@
 const express = require('express');
 const Stripe = require('stripe');
-const { findOne, updateOne } = require('../utils/storage');
+const { findOne, findMany, updateOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 
@@ -68,6 +68,26 @@ router.post('/create-checkout-session', authenticate, async (req, res) => {
     // Trial guard: only allow if user has never used a trial
     if (trial && user.trialUsed) {
       return res.status(400).json({ error: 'You have already used your free trial.' });
+    }
+
+    // Belt-and-suspenders: if local flag is missing but Stripe shows a prior
+    // trial subscription on this customer, mark trialUsed and reject.
+    // Catches edge cases where webhook never fired or flag was reset.
+    if (trial && user.stripeCustomerId) {
+      try {
+        const subs = await stripe.subscriptions.list({
+          customer: user.stripeCustomerId,
+          status: 'all',
+          limit: 100
+        });
+        const hadTrial = subs.data.some(s => s.trial_start || s.trial_end);
+        if (hadTrial) {
+          await updateOne('users.json', u => u.id === user.id, { trialUsed: true });
+          return res.status(400).json({ error: 'You have already used your free trial.' });
+        }
+      } catch (err) {
+        console.warn('Stripe trial-history check failed:', err.message);
+      }
     }
 
     // Build the checkout session config
@@ -225,6 +245,95 @@ router.post('/create-portal-session', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Stripe portal error:', err);
     res.status(500).json({ error: 'Failed to create billing portal session' });
+  }
+});
+
+// ─────────────────────────────────────────────
+// GET /api/stripe/history
+// Returns a chronological subscription history for the current user.
+// Pulls from internal logs (covers trial/admin/promocode/referral grants)
+// and merges Stripe invoices when the user has a stripeCustomerId
+// (gives real paid amounts).
+// ─────────────────────────────────────────────
+router.get('/history', authenticate, async (req, res) => {
+  try {
+    const user = await findOne('users.json', u => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const STRIPE_ACTIONS = new Set([
+      'stripe_subscription_created',
+      'stripe_subscription_renewed',
+      'stripe_subscription_cancelled',
+      'stripe_subscription_auto_cancelled',
+      'stripe_payment_failed',
+      'stripe_payment_verified',
+      'subscription_expired',
+      'promocode_redeemed',
+      'admin_grant_pro',
+      'referral_pro_granted'
+    ]);
+
+    const allLogs = await findMany('logs.json', l =>
+      l.userId === user.id && STRIPE_ACTIONS.has(l.action)
+    );
+
+    const events = allLogs.map(l => ({
+      type: l.action,
+      timestamp: l.timestamp,
+      duration: l.details?.duration || null,
+      source: l.details?.source || null,
+      subscriptionId: l.details?.subscriptionId || null,
+      details: l.details || {}
+    }));
+
+    // Merge in Stripe invoices for real payment amounts
+    const stripe = getStripe();
+    if (stripe && user.stripeCustomerId) {
+      try {
+        const invoices = await stripe.invoices.list({
+          customer: user.stripeCustomerId,
+          limit: 50
+        });
+        for (const inv of invoices.data) {
+          if (inv.status !== 'paid' && inv.status !== 'open') continue;
+          events.push({
+            type: 'stripe_invoice',
+            timestamp: new Date((inv.status_transitions?.paid_at || inv.created) * 1000).toISOString(),
+            duration: null,
+            source: 'stripe',
+            subscriptionId: inv.subscription || null,
+            details: {
+              amountPaid: inv.amount_paid,
+              currency: inv.currency,
+              status: inv.status,
+              billingReason: inv.billing_reason,
+              hostedInvoiceUrl: inv.hosted_invoice_url,
+              periodStart: inv.period_start ? new Date(inv.period_start * 1000).toISOString() : null,
+              periodEnd: inv.period_end ? new Date(inv.period_end * 1000).toISOString() : null
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Stripe invoice fetch failed:', err.message);
+      }
+    }
+
+    events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    res.json({
+      events,
+      currentPlan: {
+        plan: user.plan,
+        planSource: user.planSource || null,
+        planDuration: user.planDuration || null,
+        planStartedAt: user.planStartedAt || null,
+        planExpiresAt: user.planExpiresAt || null,
+        trialUsed: !!user.trialUsed
+      }
+    });
+  } catch (err) {
+    console.error('Subscription history error:', err);
+    res.status(500).json({ error: 'Failed to load subscription history' });
   }
 });
 

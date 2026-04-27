@@ -11192,6 +11192,104 @@ a.lb-name-link .lb-username {
 .right-sidebar-overlay.active {
   display: block;
 }
+/* Subscription history button — top right of upgrade view */
+.sub-history-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 2;
+}
+.sub-history-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+/* Subscription history sidebar entries */
+.sub-history-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.sub-history-entry:last-child { border-bottom: none; }
+.sub-history-entry-left { flex: 1; min-width: 0; }
+.sub-history-entry-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sub-history-entry-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.sub-history-entry-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+.sub-history-entry-amount {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.sub-history-entry-amount-muted {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.sub-history-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.sub-history-tag-paid { background: rgba(34,197,94,0.12); color: #22c55e; }
+.sub-history-tag-trial { background: rgba(99,102,241,0.12); color: #818cf8; }
+.sub-history-tag-renewed { background: rgba(59,130,246,0.12); color: #3b82f6; }
+.sub-history-tag-cancelled { background: rgba(239,68,68,0.12); color: #ef4444; }
+.sub-history-tag-failed { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.sub-history-tag-expired { background: rgba(156,163,175,0.12); color: #9ca3af; }
+.sub-history-tag-promo { background: rgba(236,72,153,0.12); color: #ec4899; }
+.sub-history-tag-admin { background: rgba(168,85,247,0.12); color: #a855f7; }
+.sub-history-tag-referral { background: rgba(20,184,166,0.12); color: #14b8a6; }
+.sub-history-current {
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.sub-history-current-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.sub-history-current-row:first-child { margin-top: 0; }
+.sub-history-current-label { color: var(--text-muted); }
+.sub-history-current-value { color: var(--text-primary); font-weight: 500; }
+
 .right-sidebar {
   position: fixed;
   top: 0;
