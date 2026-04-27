@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { findOne, updateOne } = require('../utils/storage');
+const { findOne, findMany, updateOne } = require('../utils/storage');
 const { logAction } = require('../utils/logger');
 
 const SECRET = process.env.JWT_SECRET || 'iwrite-dev-secret-change-in-production';
@@ -26,34 +26,58 @@ function authenticate(req, res, next) {
   }
 }
 
-// Check and auto-downgrade expired premium subscriptions
-// Skips Stripe-managed and trial users — Stripe controls their lifecycle via webhooks
+// Downgrade a single user if their premium plan is expired. Returns true if downgraded.
+// Applies to all sources (stripe/trial/promocode/manual) — webhooks were unreliable
+// for trial-without-conversion, leaving users on premium indefinitely.
+async function downgradeIfExpired(user) {
+  if (!user || user.plan !== 'premium') return false;
+  if (!user.planExpiresAt || user.planExpiresAt === 'infinite') return false;
+  const expiresAt = new Date(user.planExpiresAt);
+  if (expiresAt >= new Date()) return false;
+  await updateOne('users.json', u => u.id === user.id, {
+    plan: 'free',
+    planExpired: true,
+    planExpiredAt: new Date().toISOString()
+  });
+  logAction('subscription_expired', {
+    userId: user.id,
+    planDuration: user.planDuration,
+    planSource: user.planSource,
+    expiredAt: user.planExpiresAt
+  }, 'system');
+  return true;
+}
+
+// Check and auto-downgrade expired premium subscriptions on each /me request.
 async function checkSubscriptionExpiry(req, res, next) {
   try {
     const user = await findOne('users.json', u => u.id === req.user.id);
-    if (user && user.plan === 'premium' && user.planExpiresAt && user.planExpiresAt !== 'infinite') {
-      // Skip Stripe-managed users — their subscription lifecycle is handled by webhooks
-      if (user.planSource === 'stripe' || user.planSource === 'trial') {
-        return next();
-      }
-      const expiresAt = new Date(user.planExpiresAt);
-      if (expiresAt < new Date()) {
-        await updateOne('users.json', u => u.id === user.id, {
-          plan: 'free',
-          planExpired: true,
-          planExpiredAt: new Date().toISOString()
-        });
-        logAction('subscription_expired', {
-          userId: user.id,
-          planDuration: user.planDuration,
-          expiredAt: user.planExpiresAt
-        }, 'system');
-        // Set flag so frontend can show expiry toast
-        req.subscriptionExpired = true;
-      }
-    }
+    const downgraded = await downgradeIfExpired(user);
+    if (downgraded) req.subscriptionExpired = true;
   } catch { /* non-critical — don't block the request */ }
   next();
+}
+
+// Background sweep: downgrade any premium user whose planExpiresAt has passed.
+// Safety net for cases where webhooks never fire (e.g. Stripe trial ending without
+// conversion does not emit customer.subscription.deleted).
+async function sweepExpiredSubscriptions() {
+  try {
+    const now = new Date();
+    const candidates = await findMany('users.json', u =>
+      u.plan === 'premium' &&
+      u.planExpiresAt &&
+      u.planExpiresAt !== 'infinite' &&
+      new Date(u.planExpiresAt) < now
+    );
+    let count = 0;
+    for (const user of candidates) {
+      if (await downgradeIfExpired(user)) count++;
+    }
+    if (count > 0) console.log(`[expiry-sweep] downgraded ${count} expired premium user(s)`);
+  } catch (err) {
+    console.error('[expiry-sweep] failed:', err.message || err);
+  }
 }
 
 function requireAdmin(req, res, next) {
@@ -63,4 +87,4 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { generateToken, authenticate, checkSubscriptionExpiry, requireAdmin, SECRET };
+module.exports = { generateToken, authenticate, checkSubscriptionExpiry, sweepExpiredSubscriptions, requireAdmin, SECRET };

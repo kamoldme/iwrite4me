@@ -332,13 +332,38 @@ async function stripeWebhookHandler(req, res) {
             break;
           }
 
+          // Guard: only process renewals for users who are actually on premium.
+          // Free users with stale stripeSubscriptionId (e.g. from a long-cancelled
+          // trial) were getting bogus "Subscription Renewed" notifications.
+          if (user.plan !== 'premium') {
+            console.warn(`Webhook: invoice.paid for non-premium user ${user.id} (sub ${subscriptionId}); clearing stale subscription link`);
+            await updateOne('users.json', u => u.id === user.id, { stripeSubscriptionId: null });
+            break;
+          }
+
+          // Confirm the subscription is still active in Stripe before treating
+          // this as a paid renewal (defends against replayed/late webhooks).
+          let stripeStatus = null;
+          try {
+            const sub = await stripe.subscriptions.retrieve(subscriptionId);
+            stripeStatus = sub.status;
+          } catch (err) {
+            console.warn(`Webhook: could not retrieve subscription ${subscriptionId}:`, err.message);
+            break;
+          }
+          if (stripeStatus !== 'active' && stripeStatus !== 'trialing') {
+            console.warn(`Webhook: invoice.paid but subscription ${subscriptionId} status is ${stripeStatus}; skipping renewal`);
+            break;
+          }
+
           const duration = user.planDuration || '1m';
           const now = new Date();
           const currentExpiry = user.planExpiresAt ? new Date(user.planExpiresAt) : now;
           const base = currentExpiry > now ? currentExpiry : now;
+          const newExpiresAt = new Date(base.getTime() + DURATION_DAYS[duration] * 86400000).toISOString();
 
           await updateOne('users.json', u => u.id === user.id, {
-            planExpiresAt: new Date(base.getTime() + DURATION_DAYS[duration] * 86400000).toISOString(),
+            planExpiresAt: newExpiresAt,
             planPaymentFailed: false,
             planPaymentAttempts: 0,
             planSource: 'stripe',
@@ -351,7 +376,7 @@ async function stripeWebhookHandler(req, res) {
             subscriptionId
           }, user.id);
 
-          try { require('../telegram').notifyStripeRenewal(user, { duration, expiresAt: new Date(base.getTime() + DURATION_DAYS[duration] * 86400000).toISOString() }); } catch {}
+          try { require('../telegram').notifyStripeRenewal(user, { duration, expiresAt: newExpiresAt }); } catch {}
         }
 
         break;

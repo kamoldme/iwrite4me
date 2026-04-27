@@ -735,6 +735,18 @@ async function start() {
       }
     }
     if (migrated > 0) console.log(`Assigned random usernames to ${migrated} existing users`);
+
+    // One-time cleanup: clear stripeSubscriptionId on free users.
+    // Stale links from cancelled trials caused phantom "Subscription Renewed"
+    // Telegram pings when Stripe replayed events for those dead subs.
+    let cleared = 0;
+    for (const u of allUsers) {
+      if (u.plan !== 'premium' && u.stripeSubscriptionId) {
+        await updateOne('users.json', usr => usr.id === u.id, { stripeSubscriptionId: null });
+        cleared++;
+      }
+    }
+    if (cleared > 0) console.log(`Cleared stale stripeSubscriptionId on ${cleared} free user(s)`);
   } catch (e) {
     console.error('DB init error:', e.message || e);
     console.error('DATABASE_URL set:', !!process.env.DATABASE_URL);
@@ -747,6 +759,12 @@ async function start() {
     // Start Telegram bot (non-blocking, won't crash server if it fails)
     // Pass activeUsers map directly to avoid circular require
     try { require('./telegram').init(activeUsers); } catch (e) { console.error('[Telegram] Init failed:', e.message); }
+
+    // Hourly sweep: downgrade expired premium users that webhooks missed
+    // (Stripe trials that end without conversion don't emit subscription.deleted)
+    const { sweepExpiredSubscriptions } = require('./middleware/auth');
+    sweepExpiredSubscriptions();
+    setInterval(sweepExpiredSubscriptions, 60 * 60 * 1000);
   });
 }
 
