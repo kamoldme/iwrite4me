@@ -292,14 +292,26 @@ router.get('/history', authenticate, async (req, res) => {
       ? allLogs.filter(l => !REDUNDANT_WHEN_STRIPE.has(l.action))
       : allLogs;
 
-    const events = filteredLogs.map(l => ({
-      type: l.action,
-      timestamp: l.timestamp,
-      duration: l.details?.duration || null,
-      source: l.details?.source || null,
-      subscriptionId: l.details?.subscriptionId || null,
-      details: l.details || {}
-    }));
+    const events = filteredLogs.map(l => {
+      const dur = l.details?.duration || l.details?.planDuration || null;
+      let periodStart = null, periodEnd = null;
+      if (dur && DURATION_DAYS[dur]) {
+        periodStart = l.timestamp;
+        periodEnd = new Date(new Date(l.timestamp).getTime() + DURATION_DAYS[dur] * 86400000).toISOString();
+      }
+      return {
+        type: l.action,
+        timestamp: l.timestamp,
+        duration: dur,
+        source: l.details?.source || null,
+        subscriptionId: l.details?.subscriptionId || null,
+        details: {
+          ...(l.details || {}),
+          periodStart: l.details?.periodStart || periodStart,
+          periodEnd: l.details?.periodEnd || periodEnd
+        }
+      };
+    });
 
     // Merge in Stripe invoices for real payment amounts
     if (hasStripeData) {

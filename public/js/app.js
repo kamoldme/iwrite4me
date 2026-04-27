@@ -4241,13 +4241,6 @@ const App = {
             subtitleParts.push(this.escapeHtml(e.details.couponName));
           }
 
-          // Period coverage as its own subtitle line
-          if (e.details.periodStart && e.details.periodEnd && !sameDay(e.details.periodStart, e.details.periodEnd)) {
-            if (!sameDay(e.timestamp, e.details.periodStart) || !sameDay(e.timestamp, e.details.periodEnd)) {
-              subtitleParts.push(`Covers ${fmtDate(e.details.periodStart)} – ${fmtDate(e.details.periodEnd)}`);
-            }
-          }
-
           if (isTrial) {
             amountHtml = `<div class="sub-history-entry-amount" style="color:var(--text-muted)">Free</div>${invoiceLink(e.details.hostedInvoiceUrl)}`;
           } else if (isPromo) {
@@ -4301,6 +4294,10 @@ const App = {
           title = this.escapeHtml(e.type);
       }
 
+      // Universal "covers" line: every event with a real period range gets one
+      if (e.details?.periodStart && e.details?.periodEnd && !sameDay(e.details.periodStart, e.details.periodEnd)) {
+        subtitleParts.push(`covers ${fmtDate(e.details.periodStart)} - ${fmtDate(e.details.periodEnd)}`);
+      }
       const subtitleHtml = subtitleParts.length
         ? `<div class="sub-history-entry-subtitle">${subtitleParts.join(' · ')}</div>`
         : '';
