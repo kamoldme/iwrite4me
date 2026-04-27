@@ -577,4 +577,88 @@ async function stripeWebhookHandler(req, res) {
   res.json({ received: true });
 }
 
-module.exports = { router, stripeWebhookHandler };
+// One-time reconciliation: find users marked free that Stripe still considers
+// active/trialing (silent downgrade victims of webhook misses + the new sweep)
+// and restore them with the correct planExpiresAt from Stripe.
+async function reconcileStripeSubscriptions() {
+  const stripe = getStripe();
+  if (!stripe) {
+    console.log('[stripe-reconcile] Stripe not configured, skipping');
+    return;
+  }
+  try {
+    const candidates = await findMany('users.json', u =>
+      u.plan !== 'premium' && u.stripeCustomerId
+    );
+    if (candidates.length === 0) {
+      console.log('[stripe-reconcile] no candidates');
+      return;
+    }
+    const restored = [];
+    for (const user of candidates) {
+      try {
+        const subs = await stripe.subscriptions.list({
+          customer: user.stripeCustomerId,
+          status: 'all',
+          limit: 10
+        });
+        const activeSub = subs.data.find(s => s.status === 'active' || s.status === 'trialing');
+        if (!activeSub) continue;
+        const item = activeSub.items?.data?.[0];
+        const periodEnd = item?.current_period_end || activeSub.current_period_end;
+        if (!periodEnd) continue;
+        const newExpiry = new Date(periodEnd * 1000).toISOString();
+        const isTrial = activeSub.status === 'trialing';
+        const updates = {
+          plan: 'premium',
+          planSource: isTrial ? 'trial' : 'stripe',
+          stripeSubscriptionId: activeSub.id,
+          planExpiresAt: newExpiry,
+          planExpired: false,
+          planExpiredAt: null,
+          planPaymentFailed: false,
+          planPaymentAttempts: 0
+        };
+        if (isTrial) updates.trialUsed = true;
+        await updateOne('users.json', u => u.id === user.id, updates);
+        logAction('stripe_reconciled', {
+          subscriptionId: activeSub.id,
+          status: activeSub.status,
+          newExpiry
+        }, user.id);
+        restored.push({ email: user.email, status: activeSub.status, expiry: newExpiry });
+
+        // Catch-up Telegram notification — admin would have gotten this when
+        // the original renewal webhook fired, if it had been received correctly.
+        try {
+          const tg = require('../telegram');
+          const refreshedUser = { ...user, ...updates };
+          if (isTrial) {
+            tg.notifyStripeSubscription(refreshedUser, {
+              duration: refreshedUser.planDuration || '1m',
+              isTrial: true,
+              expiresAt: newExpiry
+            });
+          } else {
+            tg.notifyStripeRenewal(refreshedUser, {
+              duration: refreshedUser.planDuration || '1m',
+              expiresAt: newExpiry
+            });
+          }
+        } catch {}
+      } catch (err) {
+        console.warn(`[stripe-reconcile] failed for user ${user.id}:`, err.message);
+      }
+    }
+    if (restored.length > 0) {
+      console.log(`[stripe-reconcile] restored ${restored.length} user(s):`, restored.map(r => r.email).join(', '));
+      try { require('../telegram').notifyStripeReconciled(restored); } catch {}
+    } else {
+      console.log('[stripe-reconcile] scanned ' + candidates.length + ' candidates, none needed restoration');
+    }
+  } catch (err) {
+    console.error('[stripe-reconcile] failed:', err.message || err);
+  }
+}
+
+module.exports = { router, stripeWebhookHandler, reconcileStripeSubscriptions };

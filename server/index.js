@@ -760,10 +760,15 @@ async function start() {
     // Pass activeUsers map directly to avoid circular require
     try { require('./telegram').init(activeUsers); } catch (e) { console.error('[Telegram] Init failed:', e.message); }
 
-    // Hourly sweep: downgrade expired premium users that webhooks missed
-    // (Stripe trials that end without conversion don't emit subscription.deleted)
+    // One-time reconciliation: restore users whose Stripe sub is still active
+    // but were silently downgraded (missed renewal webhook + sweep collision).
+    // Must run BEFORE the sweep so restored users aren't immediately re-downgraded.
+    const { reconcileStripeSubscriptions } = require('./routes/stripe');
     const { sweepExpiredSubscriptions } = require('./middleware/auth');
-    sweepExpiredSubscriptions();
+    (async () => {
+      await reconcileStripeSubscriptions();
+      await sweepExpiredSubscriptions();
+    })();
     setInterval(sweepExpiredSubscriptions, 60 * 60 * 1000);
   });
 }

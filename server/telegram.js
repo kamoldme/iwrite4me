@@ -441,6 +441,19 @@ function notifyStripeCancelled(user) {
   );
 }
 
+function notifyStripeReconciled(restored) {
+  if (!restored || restored.length === 0) return;
+  const lines = restored.slice(0, 30).map(r =>
+    `• ${esc(r.email)} — ${esc(r.status)} → ${esc((r.expiry || '').split('T')[0])}`
+  ).join('\n');
+  const more = restored.length > 30 ? `\n…and ${restored.length - 30} more` : '';
+  send(
+    `🔧 <b>Stripe Reconciliation</b>\n\n` +
+    `Restored ${restored.length} silently-downgraded user(s) on boot:\n` +
+    lines + more
+  );
+}
+
 function notifyReferral(newUser, referrer, referralCount) {
   const bonus = referralCount % 5 === 0 ? `\n🎉 <b>${esc(referrer.name)} earned FREE PRO</b> (${referralCount} referrals!)` : '';
   send(
@@ -486,6 +499,7 @@ module.exports = {
   notifyStripeFailed,
   notifyStripeTrialEnding,
   notifyStripeCancelled,
+  notifyStripeReconciled,
   notifyReferral,
   notifyStorySubmitted
 };
