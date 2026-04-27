@@ -4206,31 +4206,52 @@ const App = {
 
       switch (e.type) {
         case 'stripe_invoice': {
-          const isTrialStart = e.details.billingReason === 'subscription_create' && e.details.amountPaid === 0;
-          const isFirstPayment = e.details.billingReason === 'subscription_create' && e.details.amountPaid > 0;
+          const isCreate = e.details.billingReason === 'subscription_create';
           const isRenewal = e.details.billingReason === 'subscription_cycle';
+          const isTrial = !!e.details.isTrial;
+          const isPromo = !!e.details.isFullyDiscounted;
+          const isPaid = !isTrial && !isPromo && e.details.amountPaid > 0;
 
-          if (isTrialStart) {
-            title = `Free trial started <span class="sub-history-tag sub-history-tag-trial">Trial</span>`;
-          } else if (isFirstPayment) {
-            title = `Subscription started <span class="sub-history-tag sub-history-tag-paid">Paid</span>`;
+          let label, tag;
+          if (isCreate && isTrial) {
+            label = 'Free trial started';
+            tag = '<span class="sub-history-tag sub-history-tag-trial">Trial</span>';
+          } else if (isCreate && isPromo) {
+            label = 'Subscription started';
+            const pctTag = e.details.couponPercent ? `${e.details.couponPercent}% off` : 'Promo';
+            tag = `<span class="sub-history-tag sub-history-tag-promo">${pctTag}</span>`;
+          } else if (isCreate) {
+            label = 'Subscription started';
+            tag = '<span class="sub-history-tag sub-history-tag-paid">Paid</span>';
+          } else if (isRenewal && isPromo) {
+            label = 'Subscription renewed';
+            tag = `<span class="sub-history-tag sub-history-tag-promo">${e.details.couponPercent ? e.details.couponPercent + '% off' : 'Promo'}</span>`;
           } else if (isRenewal) {
-            title = `Subscription renewed <span class="sub-history-tag sub-history-tag-renewed">Renewed</span>`;
+            label = 'Subscription renewed';
+            tag = '<span class="sub-history-tag sub-history-tag-renewed">Renewed</span>';
           } else {
-            title = `Invoice <span class="sub-history-tag sub-history-tag-paid">Paid</span>`;
+            label = 'Invoice';
+            tag = '<span class="sub-history-tag sub-history-tag-paid">Paid</span>';
+          }
+          title = `${label} ${tag}`;
+
+          // Coupon name as a meta line if a discount was applied
+          if (e.details.couponName) {
+            metaParts.push(this.escapeHtml(e.details.couponName));
           }
 
           // Only show period if it's a real range AND not redundant with the event date
           if (e.details.periodStart && e.details.periodEnd && !sameDay(e.details.periodStart, e.details.periodEnd)) {
-            const periodStr = `${fmtDate(e.details.periodStart)} – ${fmtDate(e.details.periodEnd)}`;
-            // Skip redundancy when event date matches period bounds
             if (!sameDay(e.timestamp, e.details.periodStart) || !sameDay(e.timestamp, e.details.periodEnd)) {
-              metaParts.push(`covers ${periodStr}`);
+              metaParts.push(`covers ${fmtDate(e.details.periodStart)} – ${fmtDate(e.details.periodEnd)}`);
             }
           }
 
-          if (isTrialStart) {
+          if (isTrial) {
             amountHtml = `<div class="sub-history-entry-amount" style="color:var(--text-muted)">Free</div>${invoiceLink(e.details.hostedInvoiceUrl)}`;
+          } else if (isPromo) {
+            const origAmt = fmtAmount(e.details.subtotal, e.details.currency);
+            amountHtml = `<div class="sub-history-entry-amount" style="color:var(--text-muted)">Free</div>${origAmt ? `<div class="sub-history-entry-amount-muted" style="text-decoration:line-through">${origAmt}</div>` : ''}${invoiceLink(e.details.hostedInvoiceUrl)}`;
           } else {
             const amt = fmtAmount(e.details.amountPaid, e.details.currency);
             amountHtml = `<div class="sub-history-entry-amount">${amt || '—'}</div>${invoiceLink(e.details.hostedInvoiceUrl)}`;

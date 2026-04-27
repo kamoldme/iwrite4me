@@ -308,8 +308,38 @@ router.get('/history', authenticate, async (req, res) => {
           customer: user.stripeCustomerId,
           limit: 50
         });
+
+        // Cache: fetch each unique subscription once to read trial_start/trial_end
+        const subCache = {};
+        const getSub = async (subId) => {
+          if (!subId) return null;
+          if (subCache[subId] !== undefined) return subCache[subId];
+          try { subCache[subId] = await stripe.subscriptions.retrieve(subId); }
+          catch { subCache[subId] = null; }
+          return subCache[subId];
+        };
+
         for (const inv of invoices.data) {
           if (inv.status !== 'paid' && inv.status !== 'open') continue;
+
+          const totalDiscount = (inv.total_discount_amounts || []).reduce((s, d) => s + d.amount, 0);
+          const subtotal = inv.subtotal || 0;
+          const lineSubtotal = (inv.lines?.data || []).reduce((s, l) => s + (l.amount || 0), 0);
+          const isFullyDiscounted = totalDiscount > 0 && inv.amount_paid === 0 && lineSubtotal > 0;
+
+          const couponName = inv.discount?.coupon?.name || null;
+          const couponPercent = inv.discount?.coupon?.percent_off || null;
+          const couponAmountOff = inv.discount?.coupon?.amount_off || null;
+
+          // Detect trial: invoice was created during the subscription's trial window
+          let isTrial = false;
+          if (inv.subscription) {
+            const sub = await getSub(inv.subscription);
+            if (sub?.trial_start && sub?.trial_end) {
+              isTrial = inv.created >= sub.trial_start && inv.created <= sub.trial_end;
+            }
+          }
+
           events.push({
             type: 'stripe_invoice',
             timestamp: new Date((inv.status_transitions?.paid_at || inv.created) * 1000).toISOString(),
@@ -318,12 +348,19 @@ router.get('/history', authenticate, async (req, res) => {
             subscriptionId: inv.subscription || null,
             details: {
               amountPaid: inv.amount_paid,
+              subtotal,
               currency: inv.currency,
               status: inv.status,
               billingReason: inv.billing_reason,
               hostedInvoiceUrl: inv.hosted_invoice_url,
               periodStart: inv.period_start ? new Date(inv.period_start * 1000).toISOString() : null,
-              periodEnd: inv.period_end ? new Date(inv.period_end * 1000).toISOString() : null
+              periodEnd: inv.period_end ? new Date(inv.period_end * 1000).toISOString() : null,
+              isTrial,
+              isFullyDiscounted,
+              couponName,
+              couponPercent,
+              couponAmountOff,
+              discountAmount: totalDiscount
             }
           });
         }
