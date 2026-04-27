@@ -4194,23 +4194,47 @@ const App = {
       return currentBlock + '<p style="text-align:center;color:var(--text-muted);padding:30px 0">No history yet</p>';
     }
 
+    const sameDay = (a, b) => a && b && a.slice(0, 10) === b.slice(0, 10);
+    const invoiceLink = (url) => url
+      ? `<a href="${url}" target="_blank" rel="noopener" class="sub-history-entry-amount-muted" style="color:var(--accent);text-decoration:none">View invoice</a>`
+      : '';
+
     const rows = events.map(e => {
       let title = '';
-      let tag = '';
       let amountHtml = '';
       let metaParts = [fmtDate(e.timestamp)];
 
       switch (e.type) {
         case 'stripe_invoice': {
-          const amt = fmtAmount(e.details.amountPaid, e.details.currency);
-          const reason = e.details.billingReason === 'subscription_create' ? 'Subscription started'
-            : e.details.billingReason === 'subscription_cycle' ? 'Subscription renewal'
-            : 'Invoice';
-          title = `${reason} <span class="sub-history-tag sub-history-tag-paid">Paid</span>`;
-          if (e.details.periodStart && e.details.periodEnd) {
-            metaParts.push(`${fmtDate(e.details.periodStart)} → ${fmtDate(e.details.periodEnd)}`);
+          const isTrialStart = e.details.billingReason === 'subscription_create' && e.details.amountPaid === 0;
+          const isFirstPayment = e.details.billingReason === 'subscription_create' && e.details.amountPaid > 0;
+          const isRenewal = e.details.billingReason === 'subscription_cycle';
+
+          if (isTrialStart) {
+            title = `Free trial started <span class="sub-history-tag sub-history-tag-trial">Trial</span>`;
+          } else if (isFirstPayment) {
+            title = `Subscription started <span class="sub-history-tag sub-history-tag-paid">Paid</span>`;
+          } else if (isRenewal) {
+            title = `Subscription renewed <span class="sub-history-tag sub-history-tag-renewed">Renewed</span>`;
+          } else {
+            title = `Invoice <span class="sub-history-tag sub-history-tag-paid">Paid</span>`;
           }
-          amountHtml = `<div class="sub-history-entry-amount">${amt || '—'}</div>${e.details.hostedInvoiceUrl ? `<a href="${e.details.hostedInvoiceUrl}" target="_blank" rel="noopener" class="sub-history-entry-amount-muted" style="color:var(--accent);text-decoration:none">View invoice</a>` : ''}`;
+
+          // Only show period if it's a real range AND not redundant with the event date
+          if (e.details.periodStart && e.details.periodEnd && !sameDay(e.details.periodStart, e.details.periodEnd)) {
+            const periodStr = `${fmtDate(e.details.periodStart)} – ${fmtDate(e.details.periodEnd)}`;
+            // Skip redundancy when event date matches period bounds
+            if (!sameDay(e.timestamp, e.details.periodStart) || !sameDay(e.timestamp, e.details.periodEnd)) {
+              metaParts.push(`covers ${periodStr}`);
+            }
+          }
+
+          if (isTrialStart) {
+            amountHtml = `<div class="sub-history-entry-amount" style="color:var(--text-muted)">Free</div>${invoiceLink(e.details.hostedInvoiceUrl)}`;
+          } else {
+            const amt = fmtAmount(e.details.amountPaid, e.details.currency);
+            amountHtml = `<div class="sub-history-entry-amount">${amt || '—'}</div>${invoiceLink(e.details.hostedInvoiceUrl)}`;
+          }
           break;
         }
         case 'stripe_subscription_created': {

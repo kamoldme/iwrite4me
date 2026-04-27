@@ -277,7 +277,22 @@ router.get('/history', authenticate, async (req, res) => {
       l.userId === user.id && STRIPE_ACTIONS.has(l.action)
     );
 
-    const events = allLogs.map(l => ({
+    const stripe = getStripe();
+    const hasStripeData = !!(stripe && user.stripeCustomerId);
+
+    // When we have Stripe invoice data, suppress log entries that duplicate
+    // what the invoices already describe (signup/verify/renewal). Keep the
+    // log-only event types that have no invoice equivalent.
+    const REDUNDANT_WHEN_STRIPE = new Set([
+      'stripe_subscription_created',
+      'stripe_subscription_renewed',
+      'stripe_payment_verified'
+    ]);
+    const filteredLogs = hasStripeData
+      ? allLogs.filter(l => !REDUNDANT_WHEN_STRIPE.has(l.action))
+      : allLogs;
+
+    const events = filteredLogs.map(l => ({
       type: l.action,
       timestamp: l.timestamp,
       duration: l.details?.duration || null,
@@ -287,8 +302,7 @@ router.get('/history', authenticate, async (req, res) => {
     }));
 
     // Merge in Stripe invoices for real payment amounts
-    const stripe = getStripe();
-    if (stripe && user.stripeCustomerId) {
+    if (hasStripeData) {
       try {
         const invoices = await stripe.invoices.list({
           customer: user.stripeCustomerId,
