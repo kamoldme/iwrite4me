@@ -4203,6 +4203,7 @@ const App = {
       let title = '';
       let amountHtml = '';
       let metaParts = [fmtDate(e.timestamp)];
+      let subtitleParts = [];
 
       switch (e.type) {
         case 'stripe_invoice': {
@@ -4235,15 +4236,15 @@ const App = {
           }
           title = `${label} ${tag}`;
 
-          // Coupon name as a meta line if a discount was applied
+          // Coupon name as a subtitle line if a discount was applied
           if (e.details.couponName) {
-            metaParts.push(this.escapeHtml(e.details.couponName));
+            subtitleParts.push(this.escapeHtml(e.details.couponName));
           }
 
-          // Only show period if it's a real range AND not redundant with the event date
+          // Period coverage as its own subtitle line
           if (e.details.periodStart && e.details.periodEnd && !sameDay(e.details.periodStart, e.details.periodEnd)) {
             if (!sameDay(e.timestamp, e.details.periodStart) || !sameDay(e.timestamp, e.details.periodEnd)) {
-              metaParts.push(`covers ${fmtDate(e.details.periodStart)} – ${fmtDate(e.details.periodEnd)}`);
+              subtitleParts.push(`Covers ${fmtDate(e.details.periodStart)} – ${fmtDate(e.details.periodEnd)}`);
             }
           }
 
@@ -4300,10 +4301,14 @@ const App = {
           title = this.escapeHtml(e.type);
       }
 
+      const subtitleHtml = subtitleParts.length
+        ? `<div class="sub-history-entry-subtitle">${subtitleParts.join(' · ')}</div>`
+        : '';
       return `<div class="sub-history-entry">
         <div class="sub-history-entry-left">
           <div class="sub-history-entry-title">${title}</div>
           <div class="sub-history-entry-meta">${metaParts.join(' · ')}</div>
+          ${subtitleHtml}
         </div>
         <div class="sub-history-entry-right">${amountHtml}</div>
       </div>`;

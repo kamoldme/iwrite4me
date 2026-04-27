@@ -11242,6 +11242,12 @@ a.lb-name-link .lb-username {
   font-size: 11px;
   margin-top: 4px;
 }
+.sub-history-entry-subtitle {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 2px;
+  opacity: 0.8;
+}
 .sub-history-entry-right {
   text-align: right;
   flex-shrink: 0;
