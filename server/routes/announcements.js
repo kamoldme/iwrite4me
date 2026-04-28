@@ -26,10 +26,12 @@ const VALID_CATEGORIES = ['update', 'news', 'feature', 'tip'];
 const VALID_AUDIENCES = ['everyone', 'pro'];
 
 // ───────── User-facing: list visible announcements for current user ─────────
+// ?archive=1 returns ALL announcements (including inactive) for the Help → History view
 router.get('/', authenticate, async (req, res) => {
   try {
     const user = await findOne('users.json', u => u.id === req.user.id);
-    const all = await findMany('announcements.json', a => a.active !== false);
+    const isArchive = req.query.archive === '1' || req.query.archive === 'true';
+    const all = await findMany('announcements.json', a => isArchive ? true : a.active !== false);
     const isPro = user?.plan === 'premium';
 
     const visible = all
@@ -61,9 +63,10 @@ router.get('/admin/list', authenticate, requireAdmin, async (req, res) => {
 // ───────── Admin: create ─────────
 router.post('/admin', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { title, body, category, audience, imageUrl, linkUrl, linkLabel, pinned } = req.body || {};
+    const { title, subtitle, body, category, audience, imageUrl, linkUrl, linkLabel, pinned } = req.body || {};
     if (!title || !body) return res.status(400).json({ error: 'Title and body are required' });
     if (title.length > 80) return res.status(400).json({ error: 'Title too long (max 80 chars)' });
+    if (subtitle && subtitle.length > 120) return res.status(400).json({ error: 'Subtitle too long (max 120 chars)' });
     if (body.length > 500) return res.status(400).json({ error: 'Body too long (max 500 chars)' });
     if (category && !VALID_CATEGORIES.includes(category)) return res.status(400).json({ error: 'Invalid category' });
     if (audience && !VALID_AUDIENCES.includes(audience)) return res.status(400).json({ error: 'Invalid audience' });
@@ -71,6 +74,7 @@ router.post('/admin', authenticate, requireAdmin, async (req, res) => {
     const announcement = {
       id: uuid(),
       title: title.trim(),
+      subtitle: subtitle ? subtitle.trim() : null,
       body: body.trim(),
       category: category || 'update',
       audience: audience || 'everyone',
@@ -102,11 +106,15 @@ router.post('/admin', authenticate, requireAdmin, async (req, res) => {
 // ───────── Admin: update ─────────
 router.patch('/admin/:id', authenticate, requireAdmin, async (req, res) => {
   try {
-    const { title, body, category, audience, imageUrl, linkUrl, linkLabel, pinned, active } = req.body || {};
+    const { title, subtitle, body, category, audience, imageUrl, linkUrl, linkLabel, pinned, active } = req.body || {};
     const updates = {};
     if (title !== undefined) {
       if (title.length > 80) return res.status(400).json({ error: 'Title too long' });
       updates.title = title.trim();
+    }
+    if (subtitle !== undefined) {
+      if (subtitle && subtitle.length > 120) return res.status(400).json({ error: 'Subtitle too long' });
+      updates.subtitle = subtitle ? subtitle.trim() : null;
     }
     if (body !== undefined) {
       if (body.length > 500) return res.status(400).json({ error: 'Body too long' });
@@ -154,54 +162,100 @@ router.post('/admin/upload-image', authenticate, requireAdmin, imageUpload.singl
 });
 
 // ───────── Admin: AI drafting (Gemini) ─────────
+// Modes:
+//   - whole-post: { intent, mode: 'draft' | 'improve' } → returns { title, body }
+//   - per-field:  { intent?, currentValue?, field: 'title'|'subtitle'|'body'|'linkLabel', context? }
+//                 → returns { value }
+const FIELD_PROMPTS = {
+  title: {
+    rule: 'Output only the TITLE: punchy, specific, ≤80 chars. No quotes, no preamble.',
+    cap: 80
+  },
+  subtitle: {
+    rule: 'Output only the SUBTITLE: a 1-line tease that makes the reader want to expand the announcement. ≤120 chars, ideally ≤60 for best display. Specific, concrete. No clickbait.',
+    cap: 120
+  },
+  body: {
+    rule: 'Output only the BODY: brief informational text describing what changed and what the user should do. ≤500 chars. Plain text. Line breaks OK. No quotes, no preamble.',
+    cap: 500
+  },
+  linkLabel: {
+    rule: 'Output only a 2-3 word call-to-action label for a button. Action verb. Examples: "Read more", "Try it", "See changes". No quotes.',
+    cap: 30
+  }
+};
+
 router.post('/admin/draft', authenticate, requireAdmin, async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'AI service not configured' });
 
-  const { intent, mode } = req.body || {};
-  if (!intent || typeof intent !== 'string' || !intent.trim()) {
+  const { intent, mode, field, currentValue, context } = req.body || {};
+  const isFieldMode = field && FIELD_PROMPTS[field];
+
+  if (!isFieldMode && (!intent || !intent.trim())) {
     return res.status(400).json({ error: 'Intent is required' });
   }
+  if (isFieldMode && !intent?.trim() && !currentValue?.trim() && !context) {
+    return res.status(400).json({ error: 'Intent, current value, or context is required' });
+  }
 
-  // Gemini system prompt: defines product context, format, and style
-  const systemInstruction = `You are drafting in-app announcements for iWrite, a focused-writing platform. Users see your message in a small card on their dashboard.
+  const baseSystem = `You are drafting in-app announcements for iWrite, a focused-writing platform. Users see your message in a small card on their dashboard with a "tap to expand" interaction model — title and subtitle in the compact card, body and image in the expanded view.
 
 PRODUCT CONTEXT
 iWrite is a writing app where users complete timed sessions, build daily streaks (which grow a tree from seed to World Tree), earn XP/levels, and compete on a leaderboard. PRO is a paid tier ($1.99/mo) that unlocks: custom timer durations, custom danger-mode inactivity timer, YouTube background music, larger word/edit limits, folders, PDF export, full session analytics, username changes, Pro badge, priority support. There's a community tab for publishing stories with comments and likes, friends, follow, duels (head-to-head writing challenges), and referrals (every 5 referrals = free PRO).
 
-FORMAT CONSTRAINTS
-- Title: under 80 characters. Specific. No clickbait.
-- Body: under 500 characters. Plain text. Line breaks OK.
-
 VOICE
 - Specific, concrete, plain. Active voice. Short sentences.
-- Use product nouns: streak, tree, dangerous mode, leaderboard, duel, Pro, session, XP, story.
+- Use product nouns when relevant: streak, tree, dangerous mode, leaderboard, duel, Pro, session, XP, story.
 - Tell users what changed and what to do next. No hype.
 
 DO NOT
 - Use em-dashes (—) or en-dashes (–). Use periods or commas instead.
 - Use AI clichés: "delve", "leverage", "unlock", "elevate", "in today's fast-paced world", "we're thrilled", "exciting news", "introducing".
-- Use marketing fluff or filler. No "Hello writers!" or "Hey everyone!".
+- Use marketing fluff. No "Hello writers!" or "Hey everyone!".
 - Use emojis unless the input asks for them.
-- Add a sign-off like "Happy writing!".
+- Add a sign-off like "Happy writing!".`;
 
-OUTPUT FORMAT
-Return strict JSON with two keys: {"title": string, "body": string}. No prose, no preamble, no code fences.`;
+  let systemInstruction;
+  let userPrompt;
+  let useJson = true;
 
-  const userPrompt = mode === 'improve'
-    ? `Improve this announcement. Keep the meaning but tighten the language and remove anything that violates the rules above.\n\n${intent.slice(0, 2000)}`
-    : `Draft an announcement based on this intent:\n\n${intent.slice(0, 2000)}`;
+  if (isFieldMode) {
+    useJson = false;
+    systemInstruction = baseSystem + `\n\nTASK\n${FIELD_PROMPTS[field].rule}`;
+    const ctxBits = [];
+    if (context?.title) ctxBits.push(`Existing title: ${context.title}`);
+    if (context?.subtitle && field !== 'subtitle') ctxBits.push(`Existing subtitle: ${context.subtitle}`);
+    if (context?.body && field !== 'body') ctxBits.push(`Existing body: ${context.body}`);
+    const ctxStr = ctxBits.length ? `Context from other fields:\n${ctxBits.join('\n')}\n\n` : '';
+    if (currentValue?.trim() && intent?.trim()) {
+      userPrompt = `${ctxStr}Current ${field}: ${currentValue.slice(0, 1000)}\n\nUser instruction: ${intent.slice(0, 1000)}\n\nRewrite the ${field} accordingly.`;
+    } else if (currentValue?.trim()) {
+      userPrompt = `${ctxStr}Current ${field}: ${currentValue.slice(0, 1000)}\n\nImprove this ${field}. Tighten language. Remove anything that violates the rules above.`;
+    } else if (intent?.trim()) {
+      userPrompt = `${ctxStr}Generate the ${field} based on this intent: ${intent.slice(0, 1000)}`;
+    } else {
+      userPrompt = `${ctxStr}Generate the ${field} based on the context above.`;
+    }
+  } else {
+    systemInstruction = baseSystem + `\n\nFORMAT CONSTRAINTS\n- Title: under 80 characters. Specific. No clickbait.\n- Body: under 500 characters. Plain text. Line breaks OK.\n\nOUTPUT FORMAT\nReturn strict JSON with two keys: {"title": string, "body": string}. No prose, no preamble, no code fences.`;
+    userPrompt = mode === 'improve'
+      ? `Improve this announcement. Keep the meaning but tighten the language and remove anything that violates the rules above.\n\n${intent.slice(0, 2000)}`
+      : `Draft an announcement based on this intent:\n\n${intent.slice(0, 2000)}`;
+  }
 
   try {
     const callGemini = async (modelId) => {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+      const genConfig = { temperature: 0.5, maxOutputTokens: 600 };
+      if (useJson) genConfig.responseMimeType = 'application/json';
       return fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemInstruction }] },
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig: { temperature: 0.5, maxOutputTokens: 600, responseMimeType: 'application/json' }
+          generationConfig: genConfig
         })
       });
     };
@@ -222,6 +276,15 @@ Return strict JSON with two keys: {"title": string, "body": string}. No prose, n
 
     const data = await resp.json();
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+
+    if (isFieldMode) {
+      // Strip surrounding quotes Gemini sometimes adds
+      const cleaned = text.trim().replace(/^["']+|["']+$/g, '').trim();
+      const value = cleaned.slice(0, FIELD_PROMPTS[field].cap);
+      if (!value) return res.status(502).json({ error: 'AI returned empty result' });
+      return res.json({ value });
+    }
+
     let parsed;
     try { parsed = JSON.parse(text); }
     catch { return res.status(502).json({ error: 'AI returned malformed response' }); }

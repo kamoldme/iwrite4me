@@ -2485,20 +2485,22 @@ const App = {
     if (!container || !this._announcements?.length) return;
 
     const items = this._announcements;
+    // Compact card: title (BIG) + subtitle ONLY. No image, no body, no link button.
+    // Whole card is clickable → opens expand modal.
     const slides = items.map((a, i) => {
       const cat = a.category || 'update';
       const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+      const subtitle = a.subtitle || (a.body || '').slice(0, 80) + ((a.body || '').length > 80 ? '…' : '');
       return `
-        <div class="ann-slide${i === this._announcementIdx ? ' active' : ''}" data-idx="${i}">
-          ${a.imageUrl ? `<div class="ann-image" style="background-image:url('${this.escapeHtml(a.imageUrl)}')"></div>` : ''}
+        <div class="ann-slide${i === this._announcementIdx ? ' active' : ''}" data-idx="${i}" role="button" tabindex="0" aria-label="Open announcement: ${this.escapeHtml(a.title)}">
           <div class="ann-content">
             <div class="ann-cat-row">
               <span class="ann-cat-tag ann-cat-${cat}">${catLabel}</span>
               ${a.pinned ? '<span class="ann-pinned" title="Pinned">📌</span>' : ''}
             </div>
             <div class="ann-title">${this.escapeHtml(a.title)}</div>
-            <div class="ann-body">${this.escapeHtml(a.body)}</div>
-            ${a.linkUrl ? `<a class="ann-link-btn" href="${this.escapeHtml(a.linkUrl)}" target="_blank" rel="noopener">${this.escapeHtml(a.linkLabel || 'Read more')} →</a>` : ''}
+            <div class="ann-subtitle">${this.escapeHtml(subtitle)}</div>
+            <div class="ann-expand-hint">Tap to read more →</div>
           </div>
         </div>`;
     }).join('');
@@ -2518,19 +2520,140 @@ const App = {
         </div>` : ''}
     `;
 
-    // Wire up controls
-    container.querySelector('.ann-prev')?.addEventListener('click', () => {
+    // Whole-card click → open modal. Stop propagation on control buttons so they don't trigger the card click.
+    container.querySelectorAll('.ann-slide').forEach(slide => {
+      slide.addEventListener('click', () => {
+        const idx = parseInt(slide.dataset.idx, 10);
+        this.openAnnouncementModal(items[idx]);
+      });
+      slide.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const idx = parseInt(slide.dataset.idx, 10);
+          this.openAnnouncementModal(items[idx]);
+        }
+      });
+    });
+    container.querySelector('.ann-prev')?.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (this._announcementIdx > 0) { this._announcementIdx--; this._renderAnnouncementsCarousel(); }
     });
-    container.querySelector('.ann-next')?.addEventListener('click', () => {
+    container.querySelector('.ann-next')?.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (this._announcementIdx < items.length - 1) { this._announcementIdx++; this._renderAnnouncementsCarousel(); }
     });
     container.querySelectorAll('.ann-dot').forEach(d => {
-      d.addEventListener('click', () => {
+      d.addEventListener('click', (e) => {
+        e.stopPropagation();
         this._announcementIdx = parseInt(d.dataset.dotIdx, 10);
         this._renderAnnouncementsCarousel();
       });
     });
+  },
+
+  openAnnouncementModal(a) {
+    if (!a) return;
+    const overlay = document.getElementById('ann-modal-overlay');
+    const modal = document.getElementById('ann-modal');
+    const imageWrap = document.getElementById('ann-modal-image-wrap');
+    const content = document.getElementById('ann-modal-content');
+    if (!overlay || !modal) return;
+
+    const cat = a.category || 'update';
+    const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+
+    imageWrap.innerHTML = a.imageUrl
+      ? `<div class="ann-modal-image" style="background-image:url('${this.escapeHtml(a.imageUrl)}')"></div>`
+      : '';
+    content.innerHTML = `
+      <div class="ann-cat-row" style="margin-bottom:6px">
+        <span class="ann-cat-tag ann-cat-${cat}">${catLabel}</span>
+        ${a.pinned ? '<span class="ann-pinned" title="Pinned">📌</span>' : ''}
+      </div>
+      <div class="ann-modal-title">${this.escapeHtml(a.title)}</div>
+      ${a.subtitle ? `<div class="ann-modal-subtitle">${this.escapeHtml(a.subtitle)}</div>` : ''}
+      <div class="ann-modal-text">${this.escapeHtml(a.body || '')}</div>
+      ${a.linkUrl ? `<a class="ann-modal-link" href="${this.escapeHtml(a.linkUrl)}" target="_blank" rel="noopener">${this.escapeHtml(a.linkLabel || 'Read more')} →</a>` : ''}
+    `;
+    overlay.classList.add('active');
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Esc closes
+    if (!this._annModalEscBound) {
+      this._annModalEscBound = true;
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('ann-modal')?.classList.contains('active')) {
+          this.closeAnnouncementModal();
+        }
+      });
+    }
+  },
+
+  closeAnnouncementModal() {
+    document.getElementById('ann-modal-overlay')?.classList.remove('active');
+    document.getElementById('ann-modal')?.classList.remove('active');
+    document.body.style.overflow = '';
+  },
+
+  async openNotificationHistory() {
+    // Reuse the existing help-popup overlay for consistency
+    const popup = document.getElementById('help-popup');
+    const overlay = document.getElementById('help-popup-overlay');
+    const body = document.getElementById('help-popup-body');
+    if (!popup || !body) return;
+
+    body.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px 0">Loading…</p>';
+    overlay.classList.add('active');
+    popup.classList.add('active');
+
+    try {
+      const res = await fetch('/api/announcements?archive=1', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) throw new Error('failed');
+      const items = await res.json();
+      body.innerHTML = this._renderNotificationHistory(items);
+
+      // Wire each entry to open the announcement modal
+      body.querySelectorAll('.notif-history-entry').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = el.dataset.id;
+          const item = items.find(x => x.id === id);
+          if (item) this.openAnnouncementModal(item);
+        });
+      });
+    } catch {
+      body.innerHTML = '<p style="text-align:center;color:var(--danger);padding:30px 0">Failed to load history</p>';
+    }
+  },
+
+  _renderNotificationHistory(items) {
+    if (!items || items.length === 0) {
+      return '<h2 style="font-size:18px;margin-bottom:16px">📢 Notification History</h2><p style="color:var(--text-muted);padding:30px 0;text-align:center">No notifications yet.</p>';
+    }
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const rows = items.map(a => {
+      const cat = a.category || 'update';
+      const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+      const subtitle = a.subtitle || (a.body || '').slice(0, 100) + ((a.body || '').length > 100 ? '…' : '');
+      const inactive = a.active === false ? ' style="opacity:0.55"' : '';
+      return `<div class="notif-history-entry" data-id="${this.escapeHtml(a.id)}"${inactive} role="button" tabindex="0" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span class="ann-cat-tag ann-cat-${cat}">${catLabel}</span>
+            ${a.pinned ? '<span class="ann-pinned" title="Pinned">📌</span>' : ''}
+            ${a.active === false ? '<span style="font-size:10px;color:var(--text-muted)">archived</span>' : ''}
+          </div>
+          <div style="font-weight:600;font-size:14px;color:var(--text-primary);margin-bottom:3px">${this.escapeHtml(a.title)}</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.4">${this.escapeHtml(subtitle)}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);flex-shrink:0;text-align:right">${fmtDate(a.createdAt)}</div>
+      </div>`;
+    }).join('');
+    return `<h2 style="font-size:18px;margin-bottom:6px">📢 Notification History</h2>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Every announcement we've published. Tap one to see the full content.</p>
+      ${rows}`;
   },
 
   _lbData: null,
