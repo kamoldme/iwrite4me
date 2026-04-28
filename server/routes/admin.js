@@ -831,11 +831,46 @@ router.delete('/story-comments/:id', async (req, res) => {
 });
 
 // ===== STRIPE: SUBSCRIBER LIST =====
+// Detects+caches Stripe live/test mode per user. Filters test users by default
+// so the testing-period accounts don't pollute the production subscribers view.
+// Pass ?includeTest=1 to include them.
 router.get('/subscribers', async (req, res) => {
   try {
     const users = await findMany('users.json');
-    const subscribers = users
-      .filter(u => u.plan === 'premium' || u.planPaymentFailed)
+    let candidates = users.filter(u => u.plan === 'premium' || u.planPaymentFailed);
+
+    // Verify Stripe customers we don't yet have a stripeMode on. Cache result.
+    let stripeClient = null;
+    try { stripeClient = require('./stripe').getStripe?.(); } catch {}
+    // Fallback: instantiate Stripe directly if helper isn't exported
+    if (!stripeClient && process.env.STRIPE_SECRET_KEY) {
+      const Stripe = require('stripe');
+      stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' });
+    }
+
+    if (stripeClient) {
+      for (const u of candidates) {
+        if (!u.stripeCustomerId || u.stripeMode) continue;
+        try {
+          await stripeClient.customers.retrieve(u.stripeCustomerId);
+          await updateOne('users.json', x => x.id === u.id, { stripeMode: 'live' });
+          u.stripeMode = 'live';
+        } catch (err) {
+          // Only mark test on confirmed missing-resource — not on transient errors
+          if (err?.code === 'resource_missing' || /No such customer/i.test(err?.message || '')) {
+            await updateOne('users.json', x => x.id === u.id, { stripeMode: 'test' });
+            u.stripeMode = 'test';
+          }
+        }
+      }
+    }
+
+    const includeTest = req.query.includeTest === '1' || req.query.includeTest === 'true';
+    if (!includeTest) {
+      candidates = candidates.filter(u => u.stripeMode !== 'test');
+    }
+
+    const subscribers = candidates
       .map(u => ({
         id: u.id,
         name: u.name,
@@ -849,6 +884,8 @@ router.get('/subscribers', async (req, res) => {
         trialUsed: u.trialUsed || false,
         stripeCustomerId: u.stripeCustomerId || null,
         stripeSubscriptionId: u.stripeSubscriptionId || null,
+        stripeMode: u.stripeMode || null,
+        cancelAtPeriodEnd: !!u.cancelAtPeriodEnd,
         createdAt: u.createdAt
       }))
       .sort((a, b) => new Date(b.planStartedAt || b.createdAt) - new Date(a.planStartedAt || a.createdAt));
@@ -857,6 +894,20 @@ router.get('/subscribers', async (req, res) => {
   } catch (err) {
     console.error('Subscribers list error:', err);
     res.status(500).json({ error: 'Failed to load subscribers' });
+  }
+});
+
+// ===== ADMIN: SUBSCRIPTION HISTORY FOR ANY USER =====
+router.get('/users/:id/subscription-history', async (req, res) => {
+  try {
+    const user = await findOne('users.json', u => u.id === req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const { buildSubscriptionHistory } = require('./stripe');
+    const payload = await buildSubscriptionHistory(user);
+    res.json({ ...payload, user: { id: user.id, name: user.name, email: user.email, username: user.username || null } });
+  } catch (err) {
+    console.error('Admin subscription history error:', err);
+    res.status(500).json({ error: 'Failed to load subscription history' });
   }
 });
 

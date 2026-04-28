@@ -653,13 +653,17 @@
 
           <!-- Subscribers sub-page -->
           <div id="sub-page-subscribers">
-            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
               <button class="admin-btn admin-btn-primary sub-filter-btn" data-filter="all" onclick="filterSubscribers('all')">All</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="stripe" onclick="filterSubscribers('stripe')">Stripe</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="admin" onclick="filterSubscribers('admin')">Admin</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="trial" onclick="filterSubscribers('trial')">Trial</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="referral" onclick="filterSubscribers('referral')">Referral</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="failed" onclick="filterSubscribers('failed')">Payment Failed</button>
+              <label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer">
+                <input type="checkbox" id="include-test-toggle" onchange="loadSubscribers()" style="cursor:pointer">
+                Show test users
+              </label>
             </div>
             <div id="subscribers-count" style="font-size:12px;color:var(--text-muted);margin-bottom:8px"></div>
             <table class="admin-table">
@@ -671,10 +675,24 @@
                   <th>Duration</th>
                   <th>Expires</th>
                   <th>Payment</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="subscribers-tbody"></tbody>
             </table>
+          </div>
+
+          <!-- Subscription history slide-in panel -->
+          <div class="user-detail-overlay" id="sub-history-admin-overlay" onclick="closeSubHistoryAdmin()"></div>
+          <div class="user-detail-panel" id="sub-history-admin-panel">
+            <div class="user-detail-header">
+              <div>
+                <div style="font-size:16px;font-weight:700" id="sub-history-admin-title">Subscription History</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="sub-history-admin-subtitle"></div>
+              </div>
+              <button class="admin-btn admin-btn-ghost" onclick="closeSubHistoryAdmin()" style="padding:6px 12px">×</button>
+            </div>
+            <div class="user-detail-body" id="sub-history-admin-body"></div>
           </div>
 
           <!-- Promo Codes sub-page -->
@@ -2823,7 +2841,8 @@
 
     async function loadSubscribers() {
       try {
-        allSubscribers = await adminRequest('/admin/subscribers');
+        const includeTest = document.getElementById('include-test-toggle')?.checked ? '?includeTest=1' : '';
+        allSubscribers = await adminRequest('/admin/subscribers' + includeTest);
         filterSubscribers(currentSubFilter);
       } catch (e) { toast('Failed to load subscribers: ' + e.message, 'error'); }
     }
@@ -2857,17 +2876,138 @@
           : s.planExpiresAt ? new Date(s.planExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
         const paymentStatus = s.planPaymentFailed
           ? '<span style="color:var(--danger);font-weight:600">Failed</span>'
+          : s.cancelAtPeriodEnd
+          ? '<span style="color:var(--danger);font-weight:600">Cancelling</span>'
           : (s.planSource === 'stripe' ? '<span style="color:var(--success)">Active</span>' : '—');
+        const testTag = s.stripeMode === 'test'
+          ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(245,158,11,0.15);color:#f59e0b">TEST</span>'
+          : '';
 
         return `<tr>
-          <td>${esc(s.name)}</td>
+          <td>${esc(s.name)}${testTag}</td>
           <td style="font-size:12px">${esc(s.email)}</td>
           <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${sourceColor}22;color:${sourceColor}">${source}</span></td>
           <td>${s.planDuration || '—'}</td>
           <td style="font-size:12px">${expires}</td>
           <td>${paymentStatus}</td>
+          <td><button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="openSubHistoryAdmin('${s.id}', ${JSON.stringify(s.name).replace(/"/g, '&quot;')}, ${JSON.stringify(s.email).replace(/"/g, '&quot;')})">View</button></td>
         </tr>`;
       }).join('');
+    }
+
+    // ===== ADMIN: SUBSCRIPTION HISTORY PANEL =====
+    async function openSubHistoryAdmin(userId, userName, userEmail) {
+      document.getElementById('sub-history-admin-title').textContent = userName + "'s Subscription History";
+      document.getElementById('sub-history-admin-subtitle').textContent = userEmail;
+      const body = document.getElementById('sub-history-admin-body');
+      body.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px 0">Loading…</div>';
+      document.getElementById('sub-history-admin-overlay').style.display = 'block';
+      document.getElementById('sub-history-admin-panel').style.display = 'block';
+
+      try {
+        const data = await adminRequest('/admin/users/' + userId + '/subscription-history');
+        body.innerHTML = renderSubHistoryAdmin(data);
+      } catch (e) {
+        body.innerHTML = '<div style="color:var(--danger);padding:20px 0">Failed to load: ' + esc(e.message) + '</div>';
+      }
+    }
+
+    function closeSubHistoryAdmin() {
+      document.getElementById('sub-history-admin-overlay').style.display = 'none';
+      document.getElementById('sub-history-admin-panel').style.display = 'none';
+    }
+
+    function renderSubHistoryAdmin(data) {
+      const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+      const fmtAmount = (cents, currency) => {
+        if (cents == null) return null;
+        const sym = (currency || 'usd').toLowerCase() === 'usd' ? '$' : '';
+        return `${sym}${(cents / 100).toFixed(2)}`;
+      };
+      const durLabel = (d) => d === '6m' ? '6-month' : d === '3m' ? '3-month' : d === '1m' ? 'Monthly' : '';
+
+      const cur = data.currentPlan || {};
+      const isPro = cur.plan === 'premium';
+      const currentBlock = `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:18px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+            <span style="color:var(--text-muted)">Status</span>
+            <span style="font-weight:600">${isPro ? 'Premium · Active' : 'Free'}</span>
+          </div>
+          ${isPro && cur.planSource ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">Source</span><span>${esc(cur.planSource)}</span></div>` : ''}
+          ${isPro && cur.planDuration ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">Plan</span><span>${durLabel(cur.planDuration) || cur.planDuration}</span></div>` : ''}
+          ${isPro && cur.planStartedAt ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">Started</span><span>${fmtDate(cur.planStartedAt)}</span></div>` : ''}
+          ${isPro && cur.planExpiresAt && cur.planExpiresAt !== 'infinite'
+            ? (cur.cancelAtPeriodEnd
+              ? `<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--danger);font-weight:700">Cancelled</span><span style="color:var(--danger);font-weight:700">Ends ${fmtDate(cur.planExpiresAt)}</span></div>`
+              : `<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text-muted)">Renews</span><span>${fmtDate(cur.planExpiresAt)}</span></div>`)
+            : ''}
+        </div>`;
+
+      const events = data.events || [];
+      if (events.length === 0) {
+        return currentBlock + '<div style="text-align:center;color:var(--text-muted);padding:30px 0">No history yet</div>';
+      }
+
+      const rows = events.map(e => {
+        let title = e.type;
+        let amount = '';
+        let subtitle = '';
+        if (e.type === 'stripe_invoice') {
+          const isTrial = !!e.details?.isTrial;
+          const isPromo = !!e.details?.isFullyDiscounted;
+          const reason = e.details?.billingReason;
+          title = reason === 'subscription_create'
+            ? (isTrial ? 'Free trial started' : (isPromo ? 'Subscription started (promo)' : 'Subscription started'))
+            : reason === 'subscription_cycle'
+            ? 'Subscription renewed'
+            : 'Invoice';
+          amount = isTrial ? 'Free' : (isPromo ? 'Free (promo)' : (fmtAmount(e.details.amountPaid, e.details.currency) || ''));
+          if (e.details?.couponName) subtitle = esc(e.details.couponName);
+          if (e.details?.periodStart && e.details?.periodEnd) {
+            const ps = fmtDate(e.details.periodStart), pe = fmtDate(e.details.periodEnd);
+            if (ps !== pe) subtitle = (subtitle ? subtitle + ' · ' : '') + 'covers ' + ps + ' - ' + pe;
+          }
+        } else if (e.type === 'stripe_subscription_will_cancel') {
+          title = 'Cancellation scheduled';
+          if (e.details?.cancelAt) subtitle = 'Ends ' + fmtDate(e.details.cancelAt);
+        } else if (e.type === 'stripe_subscription_uncancelled') {
+          title = 'Cancellation reversed';
+        } else if (e.type === 'stripe_subscription_cancelled') {
+          title = 'Subscription cancelled';
+        } else if (e.type === 'stripe_subscription_auto_cancelled') {
+          title = 'Auto-cancelled (payment failed)';
+        } else if (e.type === 'stripe_payment_failed') {
+          title = 'Payment failed';
+        } else if (e.type === 'subscription_expired') {
+          title = 'Subscription expired';
+        } else if (e.type === 'promocode_redeemed') {
+          title = 'Promo code redeemed';
+        } else if (e.type === 'admin_grant_pro') {
+          title = 'Pro granted by admin';
+        } else if (e.type === 'referral_pro_granted') {
+          title = 'Pro from referrals';
+        } else if (e.type === 'stripe_subscription_created') {
+          title = e.source === 'trial' ? 'Free trial started' : 'Subscription started';
+        } else if (e.type === 'stripe_subscription_renewed') {
+          title = 'Subscription renewed';
+        } else if (e.type === 'stripe_payment_verified') {
+          title = e.source === 'trial' ? 'Trial activated' : 'Payment verified';
+        }
+        return `<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px">${title}</div>
+            <div style="color:var(--text-muted);font-size:11px;margin-top:3px">${fmtDate(e.timestamp)}</div>
+            ${subtitle ? `<div style="color:var(--text-muted);font-size:11px;margin-top:2px;opacity:0.8">${subtitle}</div>` : ''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            ${amount ? `<div style="font-weight:600;font-size:13px">${esc(amount)}</div>` : ''}
+            ${e.details?.hostedInvoiceUrl ? `<a href="${e.details.hostedInvoiceUrl}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent);text-decoration:none">View invoice</a>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+      return currentBlock + rows;
     }
 
     // ===== PROMPTS TAB =====

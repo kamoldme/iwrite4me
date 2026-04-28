@@ -255,32 +255,30 @@ router.post('/create-portal-session', authenticate, async (req, res) => {
 // and merges Stripe invoices when the user has a stripeCustomerId
 // (gives real paid amounts).
 // ─────────────────────────────────────────────
-router.get('/history', authenticate, async (req, res) => {
-  try {
-    const user = await findOne('users.json', u => u.id === req.user.id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+// Reusable: build the full subscription-history payload for a given user.
+// Used by both the self endpoint (/api/stripe/history) and the admin endpoint.
+async function buildSubscriptionHistory(user) {
+  const STRIPE_ACTIONS = new Set([
+    'stripe_subscription_created',
+    'stripe_subscription_renewed',
+    'stripe_subscription_cancelled',
+    'stripe_subscription_auto_cancelled',
+    'stripe_subscription_will_cancel',
+    'stripe_subscription_uncancelled',
+    'stripe_payment_failed',
+    'stripe_payment_verified',
+    'subscription_expired',
+    'promocode_redeemed',
+    'admin_grant_pro',
+    'referral_pro_granted'
+  ]);
 
-    const STRIPE_ACTIONS = new Set([
-      'stripe_subscription_created',
-      'stripe_subscription_renewed',
-      'stripe_subscription_cancelled',
-      'stripe_subscription_auto_cancelled',
-      'stripe_subscription_will_cancel',
-      'stripe_subscription_uncancelled',
-      'stripe_payment_failed',
-      'stripe_payment_verified',
-      'subscription_expired',
-      'promocode_redeemed',
-      'admin_grant_pro',
-      'referral_pro_granted'
-    ]);
+  const allLogs = await findMany('logs.json', l =>
+    l.userId === user.id && STRIPE_ACTIONS.has(l.action)
+  );
 
-    const allLogs = await findMany('logs.json', l =>
-      l.userId === user.id && STRIPE_ACTIONS.has(l.action)
-    );
-
-    const stripe = getStripe();
-    const hasStripeData = !!(stripe && user.stripeCustomerId);
+  const stripe = getStripe();
+  const hasStripeData = !!(stripe && user.stripeCustomerId);
 
     // Try Stripe first — if it succeeds we'll suppress duplicated log entries.
     // If it fails (e.g. test/live key mismatch, revoked key), we fall back to
@@ -392,7 +390,7 @@ router.get('/history', authenticate, async (req, res) => {
     const events = [...logEvents, ...stripeInvoiceEvents];
     events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    res.json({
+    return {
       events,
       currentPlan: {
         plan: user.plan,
@@ -404,7 +402,15 @@ router.get('/history', authenticate, async (req, res) => {
         cancelAtPeriodEnd: !!user.cancelAtPeriodEnd,
         cancelAt: user.cancelAt || null
       }
-    });
+    };
+}
+
+router.get('/history', authenticate, async (req, res) => {
+  try {
+    const user = await findOne('users.json', u => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const payload = await buildSubscriptionHistory(user);
+    res.json(payload);
   } catch (err) {
     console.error('Subscription history error:', err);
     res.status(500).json({ error: 'Failed to load subscription history' });
@@ -799,4 +805,4 @@ async function reconcileStripeSubscriptions() {
   }
 }
 
-module.exports = { router, stripeWebhookHandler, reconcileStripeSubscriptions };
+module.exports = { router, stripeWebhookHandler, reconcileStripeSubscriptions, buildSubscriptionHistory };
