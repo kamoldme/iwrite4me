@@ -265,6 +265,8 @@ router.get('/history', authenticate, async (req, res) => {
       'stripe_subscription_renewed',
       'stripe_subscription_cancelled',
       'stripe_subscription_auto_cancelled',
+      'stripe_subscription_will_cancel',
+      'stripe_subscription_uncancelled',
       'stripe_payment_failed',
       'stripe_payment_verified',
       'subscription_expired',
@@ -750,6 +752,40 @@ async function reconcileStripeSubscriptions() {
       try { require('../telegram').notifyStripeReconciled(restored); } catch {}
     } else {
       console.log('[stripe-reconcile] scanned ' + candidates.length + ' candidates, none needed restoration');
+    }
+
+    // Second pass: sync cancel_at_period_end for currently-premium users.
+    // Catches users who cancelled via the Stripe billing portal *before* the
+    // customer.subscription.updated webhook handler was deployed — so their
+    // cancelAtPeriodEnd flag never got written.
+    const premiums = await findMany('users.json', u =>
+      u.plan === 'premium' && u.stripeSubscriptionId
+    );
+    let cancelStateUpdates = 0;
+    for (const user of premiums) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        const willCancel = !!sub.cancel_at_period_end;
+        const cancelAt = sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null;
+        // Only write if state has actually changed
+        if (!!user.cancelAtPeriodEnd !== willCancel || (user.cancelAt || null) !== cancelAt) {
+          await updateOne('users.json', u => u.id === user.id, { cancelAtPeriodEnd: willCancel, cancelAt });
+          cancelStateUpdates++;
+          // If newly discovered cancellation, log it so it appears in history
+          if (willCancel && !user.cancelAtPeriodEnd) {
+            logAction('stripe_subscription_will_cancel', {
+              subscriptionId: sub.id,
+              cancelAt,
+              source: 'reconcile'
+            }, user.id);
+          }
+        }
+      } catch (err) {
+        console.warn(`[stripe-reconcile] cancel-state sync failed for user ${user.id}:`, err.message);
+      }
+    }
+    if (cancelStateUpdates > 0) {
+      console.log(`[stripe-reconcile] synced cancel-state on ${cancelStateUpdates} premium user(s)`);
     }
   } catch (err) {
     console.error('[stripe-reconcile] failed:', err.message || err);

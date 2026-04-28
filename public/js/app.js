@@ -4295,6 +4295,15 @@ const App = {
         case 'stripe_subscription_auto_cancelled':
           title = `Auto-cancelled (payment failed) <span class="sub-history-tag sub-history-tag-cancelled">Cancelled</span>`;
           break;
+        case 'stripe_subscription_will_cancel': {
+          const endsAt = e.details?.cancelAt ? fmtDate(e.details.cancelAt) : null;
+          title = `Cancellation scheduled <span class="sub-history-tag sub-history-tag-cancelled">Cancelling</span>`;
+          if (endsAt) subtitleParts.push(`Ends ${endsAt}`);
+          break;
+        }
+        case 'stripe_subscription_uncancelled':
+          title = `Cancellation reversed <span class="sub-history-tag sub-history-tag-renewed">Reactivated</span>`;
+          break;
         case 'stripe_payment_failed':
           title = `Payment failed <span class="sub-history-tag sub-history-tag-failed">Failed</span>`;
           break;
