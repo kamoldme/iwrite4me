@@ -4039,7 +4039,9 @@ const App = {
             <div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Plan</span><span class="upgrade-pro-value">${durLabel ? durLabel + ' Pro' : 'Pro'}</span></div>
             <div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Source</span><span class="upgrade-pro-value">${src}</span></div>
             ${startedAt ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Started</span><span class="upgrade-pro-value">${startedAt}</span></div>` : ''}
-            ${renewsAt ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Renews</span><span class="upgrade-pro-value">${renewsAt}</span></div>` : ''}
+            ${u.cancelAtPeriodEnd && renewsAt
+              ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label" style="color:var(--danger);font-weight:700">Cancelled</span><span class="upgrade-pro-value" style="color:var(--danger);font-weight:700">Ends ${renewsAt}</span></div>`
+              : (renewsAt ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Renews</span><span class="upgrade-pro-value">${renewsAt}</span></div>` : '')}
             ${u.planExpiresAt === 'infinite' ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Duration</span><span class="upgrade-pro-value">Lifetime</span></div>` : ''}
           </div>`;
           })() : `
@@ -4184,7 +4186,11 @@ const App = {
         ${isPro && cur.planSource ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Source</span><span class="sub-history-current-value">${this.escapeHtml(cur.planSource)}</span></div>` : ''}
         ${isPro && cur.planDuration ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Plan</span><span class="sub-history-current-value">${durLabel(cur.planDuration) || cur.planDuration}</span></div>` : ''}
         ${isPro && cur.planStartedAt ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Started</span><span class="sub-history-current-value">${fmtDate(cur.planStartedAt)}</span></div>` : ''}
-        ${isPro && cur.planExpiresAt && cur.planExpiresAt !== 'infinite' ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Renews</span><span class="sub-history-current-value">${fmtDate(cur.planExpiresAt)}</span></div>` : ''}
+        ${isPro && cur.planExpiresAt && cur.planExpiresAt !== 'infinite'
+          ? (cur.cancelAtPeriodEnd
+            ? `<div class="sub-history-current-row"><span class="sub-history-current-label" style="color:var(--danger);font-weight:700">Cancelled</span><span class="sub-history-current-value" style="color:var(--danger);font-weight:700">Ends ${fmtDate(cur.planExpiresAt)}</span></div>`
+            : `<div class="sub-history-current-row"><span class="sub-history-current-label">Renews</span><span class="sub-history-current-value">${fmtDate(cur.planExpiresAt)}</span></div>`)
+          : ''}
         ${cur.planExpiresAt === 'infinite' ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Duration</span><span class="sub-history-current-value">Lifetime</span></div>` : ''}
         <div class="sub-history-current-row"><span class="sub-history-current-label">Trial used</span><span class="sub-history-current-value">${cur.trialUsed ? 'Yes' : 'No'}</span></div>
       </div>`;

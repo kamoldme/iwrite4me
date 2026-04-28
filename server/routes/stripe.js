@@ -391,7 +391,9 @@ router.get('/history', authenticate, async (req, res) => {
         planDuration: user.planDuration || null,
         planStartedAt: user.planStartedAt || null,
         planExpiresAt: user.planExpiresAt || null,
-        trialUsed: !!user.trialUsed
+        trialUsed: !!user.trialUsed,
+        cancelAtPeriodEnd: !!user.cancelAtPeriodEnd,
+        cancelAt: user.cancelAt || null
       }
     });
   } catch (err) {
@@ -568,6 +570,34 @@ async function stripeWebhookHandler(req, res) {
         break;
       }
 
+      // Sync cancel-at-period-end flag whenever the subscription is updated.
+      // Fires when a user clicks "Cancel" in the Stripe billing portal — sub
+      // stays active until period end but won't renew. Also fires when they
+      // re-subscribe (cancel_at_period_end goes back to false).
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object;
+        const previous = event.data.previous_attributes || {};
+        const user = await findOne('users.json', u => u.stripeSubscriptionId === subscription.id);
+        if (!user) break;
+
+        const willCancel = !!subscription.cancel_at_period_end;
+        const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null;
+
+        await updateOne('users.json', u => u.id === user.id, {
+          cancelAtPeriodEnd: willCancel,
+          cancelAt
+        });
+
+        // Only notify on the transition (not every status update)
+        if (previous.cancel_at_period_end === false && willCancel) {
+          logAction('stripe_subscription_will_cancel', { subscriptionId: subscription.id, cancelAt }, user.id);
+          try { require('../telegram').notifyStripeWillCancel && require('../telegram').notifyStripeWillCancel(user, { cancelAt }); } catch {}
+        } else if (previous.cancel_at_period_end === true && !willCancel) {
+          logAction('stripe_subscription_uncancelled', { subscriptionId: subscription.id }, user.id);
+        }
+        break;
+      }
+
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
         const subscriptionId = invoice.subscription;
@@ -680,7 +710,9 @@ async function reconcileStripeSubscriptions() {
           planExpired: false,
           planExpiredAt: null,
           planPaymentFailed: false,
-          planPaymentAttempts: 0
+          planPaymentAttempts: 0,
+          cancelAtPeriodEnd: !!activeSub.cancel_at_period_end,
+          cancelAt: activeSub.cancel_at ? new Date(activeSub.cancel_at * 1000).toISOString() : null
         };
         if (isTrial) updates.trialUsed = true;
         await updateOne('users.json', u => u.id === user.id, updates);

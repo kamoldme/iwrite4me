@@ -441,6 +441,16 @@ function notifyStripeCancelled(user) {
   );
 }
 
+function notifyStripeWillCancel(user, details = {}) {
+  const ends = details.cancelAt ? new Date(details.cancelAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'period end';
+  send(
+    `⚠️ <b>Subscription Cancellation Scheduled</b>\n\n` +
+    `User: ${esc(user.name)} (@${esc(user.username)})\n` +
+    `Email: ${esc(user.email)}\n` +
+    `Will end: ${esc(ends)}`
+  );
+}
+
 function notifyStripeReconciled(restored) {
   if (!restored || restored.length === 0) return;
   const lines = restored.slice(0, 30).map(r =>
@@ -499,6 +509,7 @@ module.exports = {
   notifyStripeFailed,
   notifyStripeTrialEnding,
   notifyStripeCancelled,
+  notifyStripeWillCancel,
   notifyStripeReconciled,
   notifyReferral,
   notifyStorySubmitted
