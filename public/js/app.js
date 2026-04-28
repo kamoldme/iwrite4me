@@ -992,6 +992,21 @@ const App = {
     document.getElementById('comment-history-close').addEventListener('click', () => this.closeCommentHistorySidebar());
     document.getElementById('comment-history-sidebar-overlay').addEventListener('click', () => this.closeCommentHistorySidebar());
     document.getElementById('editor-comment-history-btn').addEventListener('click', () => this.openCommentHistory());
+
+    // Back-to-top button on community tab — visible after 320px scroll, hidden by parent display when off-tab
+    const backToTopBtn = document.getElementById('stories-back-to-top');
+    if (backToTopBtn) {
+      backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          backToTopBtn.classList.toggle('visible', window.scrollY > 320);
+          ticking = false;
+        });
+      }, { passive: true });
+    }
   },
 
   switchView(view, opts = {}) {
