@@ -356,6 +356,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v12H5.17L4 17.17V4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="12" x2="13" y2="12"/></svg>
             Prompts
           </button>
+          <button class="admin-nav-item" data-tab="announcements">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 11-5.8-1.6"/></svg>
+            Announcements
+          </button>
         </nav>
         <div class="admin-sidebar-footer">
           <button class="admin-nav-item" id="admin-theme-toggle">
@@ -767,6 +771,115 @@
         </div>
 
         <!-- PROMPTS -->
+        <!-- ANNOUNCEMENTS -->
+        <div id="tab-announcements" style="display:none">
+          <div class="admin-page-title">Announcements</div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-bottom:24px">
+            <!-- LEFT: form -->
+            <div class="admin-card" style="padding:20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <h3 style="font-size:14px;font-weight:600">Create / Edit</h3>
+                <button class="admin-btn admin-btn-ghost" id="ann-ai-toggle" onclick="toggleAnnAi()" style="padding:6px 10px;font-size:12px">✨ Draft with AI</button>
+              </div>
+
+              <div id="ann-ai-panel" style="display:none;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:6px">What is this announcement about?</label>
+                <textarea id="ann-ai-intent" rows="3" placeholder="e.g. Tell pro users about the new subscription history view in the upgrade tab" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px;resize:vertical"></textarea>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button class="admin-btn admin-btn-primary" onclick="generateAnnouncement('draft')" style="padding:6px 12px;font-size:12px">Generate</button>
+                  <button class="admin-btn admin-btn-ghost" onclick="generateAnnouncement('improve')" style="padding:6px 12px;font-size:12px">Improve current draft</button>
+                  <span id="ann-ai-status" style="margin-left:auto;font-size:11px;color:var(--text-muted);align-self:center"></span>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.4">
+                  Output: short, plain language, no em-dashes or AI clichés. Knows iWrite product terms (streak, tree, dangerous mode, Pro, leaderboard, duel).
+                </div>
+              </div>
+
+              <div style="margin-bottom:12px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Title <span id="ann-title-count" style="float:right">0/80</span></label>
+                <input id="ann-title" maxlength="80" oninput="updateAnnPreview()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:13px">
+              </div>
+
+              <div style="margin-bottom:12px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Body <span id="ann-body-count" style="float:right">0/500</span></label>
+                <textarea id="ann-body" rows="4" maxlength="500" oninput="updateAnnPreview()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:13px;resize:vertical"></textarea>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div>
+                  <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Category</label>
+                  <select id="ann-category" onchange="updateAnnPreview()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                    <option value="update">Update</option>
+                    <option value="news">News</option>
+                    <option value="feature">Feature</option>
+                    <option value="tip">Tip</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Audience</label>
+                  <select id="ann-audience" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                    <option value="everyone">Everyone</option>
+                    <option value="pro">Pro only</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="margin-bottom:12px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Image (optional, 16:9 recommended, ≤2 MB)</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="file" id="ann-image-file" accept="image/*" onchange="uploadAnnImage()" style="flex:1;font-size:12px">
+                  <button class="admin-btn admin-btn-ghost" onclick="clearAnnImage()" style="padding:6px 10px;font-size:11px">Clear</button>
+                </div>
+                <input type="hidden" id="ann-image-url">
+                <div id="ann-image-status" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div>
+                  <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Link URL (optional)</label>
+                  <input id="ann-link-url" placeholder="https://…" oninput="updateAnnPreview()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Link label</label>
+                  <input id="ann-link-label" placeholder="Read more" oninput="updateAnnPreview()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                </div>
+              </div>
+
+              <label style="display:inline-flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;margin-bottom:14px">
+                <input type="checkbox" id="ann-pinned" style="cursor:pointer"> Pin to top
+              </label>
+
+              <div style="display:flex;gap:8px">
+                <button class="admin-btn admin-btn-primary" onclick="saveAnnouncement()" id="ann-save-btn">Publish</button>
+                <button class="admin-btn admin-btn-ghost" onclick="resetAnnouncementForm()">Reset</button>
+                <input type="hidden" id="ann-edit-id">
+              </div>
+            </div>
+
+            <!-- RIGHT: live preview -->
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Live preview (what users see)</div>
+              <div id="ann-preview" style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;overflow:hidden;min-height:200px"></div>
+            </div>
+          </div>
+
+          <div style="font-size:14px;font-weight:600;margin-bottom:12px">All announcements</div>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Audience</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="announcements-tbody"></tbody>
+          </table>
+        </div>
+
         <div id="tab-prompts" style="display:none">
           <div class="admin-page-title">Writing Prompts</div>
           <div class="admin-card" style="padding:20px;margin-bottom:20px">
@@ -1065,6 +1178,7 @@
       localStorage.setItem('iwrite_admin_tab', tabName);
       if (tabName === 'stories') loadStoriesAdmin();
       if (tabName === 'prompts') loadPrompts();
+      if (tabName === 'announcements') { loadAnnouncementsAdmin(); resetAnnouncementForm(); }
     }
 
     document.querySelectorAll('[data-tab]').forEach(btn => {
@@ -3010,6 +3124,205 @@
       return currentBlock + rows;
     }
 
+    // ===== ANNOUNCEMENTS TAB =====
+    let _allAnnouncements = [];
+
+    function toggleAnnAi() {
+      const p = document.getElementById('ann-ai-panel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function generateAnnouncement(mode) {
+      const intent = mode === 'improve'
+        ? `Title: ${document.getElementById('ann-title').value}\n\nBody: ${document.getElementById('ann-body').value}`
+        : document.getElementById('ann-ai-intent').value.trim();
+      if (!intent) { toast('Type the intent or current draft first', 'error'); return; }
+      const status = document.getElementById('ann-ai-status');
+      status.textContent = 'Drafting…';
+      try {
+        const data = await adminRequest('/announcements/admin/draft', {
+          method: 'POST',
+          body: JSON.stringify({ intent, mode })
+        });
+        document.getElementById('ann-title').value = data.title || '';
+        document.getElementById('ann-body').value = data.body || '';
+        updateAnnPreview();
+        status.textContent = 'Done';
+        setTimeout(() => { status.textContent = ''; }, 2000);
+      } catch (e) {
+        status.textContent = '';
+        toast('AI failed: ' + e.message, 'error');
+      }
+    }
+
+    async function uploadAnnImage() {
+      const fileInput = document.getElementById('ann-image-file');
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      const status = document.getElementById('ann-image-status');
+      status.textContent = 'Uploading…';
+      try {
+        const fd = new FormData();
+        fd.append('image', file);
+        const token = localStorage.getItem('iwrite_token');
+        const res = await fetch('/api/announcements/admin/upload-image', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: fd
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Upload failed');
+        }
+        const data = await res.json();
+        document.getElementById('ann-image-url').value = data.imageUrl;
+        status.textContent = 'Uploaded';
+        updateAnnPreview();
+      } catch (e) {
+        status.textContent = '';
+        toast('Upload failed: ' + e.message, 'error');
+      }
+    }
+
+    function clearAnnImage() {
+      document.getElementById('ann-image-file').value = '';
+      document.getElementById('ann-image-url').value = '';
+      document.getElementById('ann-image-status').textContent = '';
+      updateAnnPreview();
+    }
+
+    function updateAnnPreview() {
+      const title = document.getElementById('ann-title').value;
+      const body = document.getElementById('ann-body').value;
+      const cat = document.getElementById('ann-category').value;
+      const imageUrl = document.getElementById('ann-image-url').value;
+      const linkUrl = document.getElementById('ann-link-url').value;
+      const linkLabel = document.getElementById('ann-link-label').value || 'Read more';
+      const pinned = document.getElementById('ann-pinned').checked;
+
+      document.getElementById('ann-title-count').textContent = `${title.length}/80`;
+      document.getElementById('ann-body-count').textContent = `${body.length}/500`;
+
+      const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+      const catColors = { update: '#6366f1', news: '#3b82f6', feature: '#22c55e', tip: '#f59e0b' };
+      const cc = catColors[cat] || '#6366f1';
+
+      document.getElementById('ann-preview').innerHTML = `
+        ${imageUrl ? `<div style="width:100%;aspect-ratio:16/9;background:url('${esc(imageUrl)}') center/cover, var(--bg-tertiary)"></div>` : ''}
+        <div style="padding:18px 22px 16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;background:${cc}26;color:${cc}">${catLabel}</span>
+            ${pinned ? '<span style="font-size:12px">📌</span>' : ''}
+          </div>
+          <div style="font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--text-primary);margin-bottom:6px">${esc(title || '(title)')}</div>
+          <div style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap">${esc(body || '(body)')}</div>
+          ${linkUrl ? `<div style="margin-top:12px"><span style="display:inline-block;padding:6px 12px;background:var(--accent);color:#0a0a0a;border-radius:8px;font-size:12px;font-weight:600">${esc(linkLabel)} →</span></div>` : ''}
+        </div>`;
+    }
+
+    async function saveAnnouncement() {
+      const editId = document.getElementById('ann-edit-id').value;
+      const title = document.getElementById('ann-title').value.trim();
+      const body = document.getElementById('ann-body').value.trim();
+      if (!title || !body) { toast('Title and body required', 'error'); return; }
+
+      const payload = {
+        title, body,
+        category: document.getElementById('ann-category').value,
+        audience: document.getElementById('ann-audience').value,
+        imageUrl: document.getElementById('ann-image-url').value || null,
+        linkUrl: document.getElementById('ann-link-url').value.trim() || null,
+        linkLabel: document.getElementById('ann-link-label').value.trim() || null,
+        pinned: document.getElementById('ann-pinned').checked
+      };
+
+      const btn = document.getElementById('ann-save-btn');
+      btn.disabled = true;
+      try {
+        if (editId) {
+          await adminRequest('/announcements/admin/' + editId, { method: 'PATCH', body: JSON.stringify(payload) });
+          toast('Updated', 'success');
+        } else {
+          await adminRequest('/announcements/admin', { method: 'POST', body: JSON.stringify(payload) });
+          toast('Published', 'success');
+        }
+        resetAnnouncementForm();
+        loadAnnouncementsAdmin();
+      } catch (e) {
+        toast('Failed: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function resetAnnouncementForm() {
+      document.getElementById('ann-edit-id').value = '';
+      document.getElementById('ann-title').value = '';
+      document.getElementById('ann-body').value = '';
+      document.getElementById('ann-category').value = 'update';
+      document.getElementById('ann-audience').value = 'everyone';
+      document.getElementById('ann-image-url').value = '';
+      document.getElementById('ann-image-file').value = '';
+      document.getElementById('ann-link-url').value = '';
+      document.getElementById('ann-link-label').value = '';
+      document.getElementById('ann-pinned').checked = false;
+      document.getElementById('ann-image-status').textContent = '';
+      document.getElementById('ann-save-btn').textContent = 'Publish';
+      const ai = document.getElementById('ann-ai-intent'); if (ai) ai.value = '';
+      updateAnnPreview();
+    }
+
+    function editAnnouncement(id) {
+      const a = _allAnnouncements.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('ann-edit-id').value = a.id;
+      document.getElementById('ann-title').value = a.title || '';
+      document.getElementById('ann-body').value = a.body || '';
+      document.getElementById('ann-category').value = a.category || 'update';
+      document.getElementById('ann-audience').value = a.audience || 'everyone';
+      document.getElementById('ann-image-url').value = a.imageUrl || '';
+      document.getElementById('ann-link-url').value = a.linkUrl || '';
+      document.getElementById('ann-link-label').value = a.linkLabel || '';
+      document.getElementById('ann-pinned').checked = !!a.pinned;
+      document.getElementById('ann-save-btn').textContent = 'Save changes';
+      updateAnnPreview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function toggleAnnouncementActive(id, currentActive) {
+      try {
+        await adminRequest('/announcements/admin/' + id, { method: 'PATCH', body: JSON.stringify({ active: !currentActive }) });
+        loadAnnouncementsAdmin();
+      } catch (e) { toast('Failed: ' + e.message, 'error'); }
+    }
+
+    async function loadAnnouncementsAdmin() {
+      try {
+        _allAnnouncements = await adminRequest('/announcements/admin/list');
+        const tbody = document.getElementById('announcements-tbody');
+        if (!_allAnnouncements.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No announcements yet</td></tr>';
+          return;
+        }
+        const fmt = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+        const catColors = { update: '#6366f1', news: '#3b82f6', feature: '#22c55e', tip: '#f59e0b' };
+        tbody.innerHTML = _allAnnouncements.map(a => {
+          const cc = catColors[a.category] || '#6b7280';
+          return `<tr>
+            <td>${esc(a.title)}${a.pinned ? ' <span title="Pinned">📌</span>' : ''}</td>
+            <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${cc}22;color:${cc}">${esc(a.category)}</span></td>
+            <td>${a.audience === 'pro' ? 'Pro only' : 'Everyone'}</td>
+            <td>${a.active === false ? '<span style="color:var(--text-muted)">Inactive</span>' : '<span style="color:var(--success)">Active</span>'}</td>
+            <td style="font-size:12px">${fmt(a.createdAt)}</td>
+            <td>
+              <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editAnnouncement('${a.id}')">Edit</button>
+              <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="toggleAnnouncementActive('${a.id}', ${a.active !== false})">${a.active === false ? 'Activate' : 'Deactivate'}</button>
+            </td>
+          </tr>`;
+        }).join('');
+      } catch (e) { toast('Failed to load announcements: ' + e.message, 'error'); }
+    }
+
     // ===== PROMPTS TAB =====
     let _allPrompts = [];
     let _promptFilter = 'all';
@@ -3245,7 +3558,7 @@
     };
 
     // ===== SWIPE BETWEEN TABS =====
-    const ADMIN_TAB_ORDER = ['overview','users','documents','stories','lostfiles','logs','support','duels','maintenance','subscriptions'];
+    const ADMIN_TAB_ORDER = ['overview','users','documents','stories','lostfiles','logs','support','duels','maintenance','subscriptions','prompts','announcements'];
     let _swipeStartX = 0;
     let _swipeStartY = 0;
     const adminMain = document.querySelector('.admin-main');

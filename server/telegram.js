@@ -451,6 +451,19 @@ function notifyStripeWillCancel(user, details = {}) {
   );
 }
 
+function notifyAnnouncementPublished(a) {
+  if (!a) return;
+  const audience = a.audience === 'pro' ? 'Pro users' : 'Everyone';
+  send(
+    `📢 <b>Announcement Published</b>\n\n` +
+    `Title: ${esc(a.title)}\n` +
+    `Audience: ${esc(audience)}\n` +
+    `Category: ${esc(a.category || 'update')}` +
+    (a.pinned ? '\n📌 Pinned' : '') +
+    `\n\n${esc((a.body || '').slice(0, 200))}${(a.body || '').length > 200 ? '…' : ''}`
+  );
+}
+
 function notifyStripeReconciled(restored) {
   if (!restored || restored.length === 0) return;
   const lines = restored.slice(0, 30).map(r =>
@@ -511,6 +524,7 @@ module.exports = {
   notifyStripeCancelled,
   notifyStripeWillCancel,
   notifyStripeReconciled,
+  notifyAnnouncementPublished,
   notifyReferral,
   notifyStorySubmitted
 };

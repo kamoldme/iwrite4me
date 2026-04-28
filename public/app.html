@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/iWrite logo.png">
-  <link rel="stylesheet" href="/css/style.css?v=94">
+  <link rel="stylesheet" href="/css/style.css?v=95">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -153,18 +153,22 @@
       <main class="main-content">
         <!-- DASHBOARD VIEW -->
         <div id="view-dashboard" class="view">
-          <div class="dashboard-hero">
-            <div class="dashboard-hero-text">
-              <h1 id="greeting-text">Ready to write?</h1>
-              <p class="dashboard-hero-sub">Your writing journey continues. Pick up where you left off.</p>
-              <div class="online-indicator" id="online-indicator" style="display:none">
-                <span class="online-dot"></span>
-                <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
+          <div class="dashboard-hero-row">
+            <!-- Announcements carousel (renders only when there are announcements) -->
+            <div class="dashboard-announcements" id="dashboard-announcements" style="display:none"></div>
+            <div class="dashboard-hero">
+              <div class="dashboard-hero-text">
+                <h1 id="greeting-text">Ready to write?</h1>
+                <p class="dashboard-hero-sub">Your writing journey continues. Pick up where you left off.</p>
+                <div class="online-indicator" id="online-indicator" style="display:none">
+                  <span class="online-dot"></span>
+                  <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
+                </div>
               </div>
+              <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">
+                <span style="padding-right:10px;font-size:1.3em;line-height:1">&#x270F;&#xFE0F;</span> Start Writing
+              </button>
             </div>
-            <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">
-              <span style="padding-right:10px;font-size:1.3em;line-height:1">&#x270F;&#xFE0F;</span> Start Writing
-            </button>
           </div>
 
           <!-- Username reminder -->
@@ -1424,7 +1428,7 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=42"></script>
-  <script src="/js/app.js?v=97"></script>
+  <script src="/js/app.js?v=98"></script>
   <script src="/js/stories.js?v=16"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

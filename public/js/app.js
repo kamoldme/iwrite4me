@@ -1202,6 +1202,9 @@ const App = {
     this.loadOnlineCount();
     this._onlineInterval = setInterval(() => this.loadOnlineCount(), 60000);
 
+    // Load announcements (renders only if any visible to this user)
+    this.loadAnnouncements();
+
     const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(this.user.xp || 0);
     document.getElementById('xp-level-text').innerHTML = `Level ${level}`;
     document.getElementById('xp-progress-text').textContent = `${xpInLevel.toLocaleString()} / ${xpForNextLevel.toLocaleString()} XP`;
@@ -2448,6 +2451,86 @@ const App = {
         el.style.display = 'none';
       }
     } catch {}
+  },
+
+  // ───────── Dashboard announcements (admin-published) ─────────
+  async loadAnnouncements() {
+    const container = document.getElementById('dashboard-announcements');
+    const row = container?.parentElement;
+    if (!container) return;
+    try {
+      const res = await fetch('/api/announcements', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) throw new Error('failed');
+      const items = await res.json();
+      if (!items || items.length === 0) {
+        container.style.display = 'none';
+        row?.classList.remove('has-announcements');
+        return;
+      }
+      this._announcements = items;
+      this._announcementIdx = 0;
+      this._renderAnnouncementsCarousel();
+      container.style.display = 'flex';
+      row?.classList.add('has-announcements');
+    } catch {
+      container.style.display = 'none';
+      row?.classList.remove('has-announcements');
+    }
+  },
+
+  _renderAnnouncementsCarousel() {
+    const container = document.getElementById('dashboard-announcements');
+    if (!container || !this._announcements?.length) return;
+
+    const items = this._announcements;
+    const slides = items.map((a, i) => {
+      const cat = a.category || 'update';
+      const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+      return `
+        <div class="ann-slide${i === this._announcementIdx ? ' active' : ''}" data-idx="${i}">
+          ${a.imageUrl ? `<div class="ann-image" style="background-image:url('${this.escapeHtml(a.imageUrl)}')"></div>` : ''}
+          <div class="ann-content">
+            <div class="ann-cat-row">
+              <span class="ann-cat-tag ann-cat-${cat}">${catLabel}</span>
+              ${a.pinned ? '<span class="ann-pinned" title="Pinned">📌</span>' : ''}
+            </div>
+            <div class="ann-title">${this.escapeHtml(a.title)}</div>
+            <div class="ann-body">${this.escapeHtml(a.body)}</div>
+            ${a.linkUrl ? `<a class="ann-link-btn" href="${this.escapeHtml(a.linkUrl)}" target="_blank" rel="noopener">${this.escapeHtml(a.linkLabel || 'Read more')} →</a>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    const dots = items.length > 1
+      ? items.map((_, i) => `<button class="ann-dot${i === this._announcementIdx ? ' active' : ''}" data-dot-idx="${i}" aria-label="Go to slide ${i+1}"></button>`).join('')
+      : '';
+
+    const showControls = items.length > 1;
+    container.innerHTML = `
+      ${slides}
+      ${showControls ? `
+        <div class="ann-controls">
+          <button class="ann-arrow ann-prev" ${this._announcementIdx === 0 ? 'disabled' : ''} aria-label="Previous">‹</button>
+          <div class="ann-dots">${dots}</div>
+          <button class="ann-arrow ann-next" ${this._announcementIdx === items.length - 1 ? 'disabled' : ''} aria-label="Next">›</button>
+        </div>` : ''}
+    `;
+
+    // Wire up controls
+    container.querySelector('.ann-prev')?.addEventListener('click', () => {
+      if (this._announcementIdx > 0) { this._announcementIdx--; this._renderAnnouncementsCarousel(); }
+    });
+    container.querySelector('.ann-next')?.addEventListener('click', () => {
+      if (this._announcementIdx < items.length - 1) { this._announcementIdx++; this._renderAnnouncementsCarousel(); }
+    });
+    container.querySelectorAll('.ann-dot').forEach(d => {
+      d.addEventListener('click', () => {
+        this._announcementIdx = parseInt(d.dataset.dotIdx, 10);
+        this._renderAnnouncementsCarousel();
+      });
+    });
   },
 
   _lbData: null,

@@ -98,6 +98,17 @@ app.get('/uploads/avatars/:file', (req, res) => {
   res.setHeader('Content-Type', 'image/jpeg');
   res.send(fs.readFileSync(filepath));
 });
+
+// Serve announcement images (long-cache since filenames are uuid-stable)
+const announcementsDir = path.join(__dirname, 'data/announcements');
+if (!fs.existsSync(announcementsDir)) fs.mkdirSync(announcementsDir, { recursive: true });
+app.get('/uploads/announcements/:file', (req, res) => {
+  const filepath = path.join(announcementsDir, path.basename(req.params.file));
+  if (!fs.existsSync(filepath)) return res.status(404).end();
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.setHeader('Content-Type', 'image/jpeg');
+  res.send(fs.readFileSync(filepath));
+});
 const bannersDir = path.join(dataDir, 'banners');
 if (!fs.existsSync(bannersDir)) fs.mkdirSync(bannersDir, { recursive: true });
 // Serve banners dynamically to bypass all caching layers
@@ -320,6 +331,7 @@ app.use('/api/profiles', require('./routes/profiles'));
 app.use('/api/follow', require('./routes/follow'));
 app.use('/api/prompts', require('./routes/prompts').router);
 app.use('/api/research', require('./routes/research'));
+app.use('/api/announcements', require('./routes/announcements'));
 
 const { findOne, findMany, insertOne, updateOne } = require('./utils/storage');
 const bcrypt = require('bcryptjs');
