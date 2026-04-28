@@ -282,40 +282,18 @@ router.get('/history', authenticate, async (req, res) => {
     const stripe = getStripe();
     const hasStripeData = !!(stripe && user.stripeCustomerId);
 
-    // When we have Stripe invoice data, suppress log entries that duplicate
-    // what the invoices already describe (signup/verify/renewal). Keep the
-    // log-only event types that have no invoice equivalent.
+    // Try Stripe first — if it succeeds we'll suppress duplicated log entries.
+    // If it fails (e.g. test/live key mismatch, revoked key), we fall back to
+    // log entries only so the user always sees their history.
     const REDUNDANT_WHEN_STRIPE = new Set([
       'stripe_subscription_created',
       'stripe_subscription_renewed',
       'stripe_payment_verified'
     ]);
-    const filteredLogs = hasStripeData
-      ? allLogs.filter(l => !REDUNDANT_WHEN_STRIPE.has(l.action))
-      : allLogs;
 
-    const events = filteredLogs.map(l => {
-      const dur = l.details?.duration || l.details?.planDuration || null;
-      let periodStart = null, periodEnd = null;
-      if (dur && DURATION_DAYS[dur]) {
-        periodStart = l.timestamp;
-        periodEnd = new Date(new Date(l.timestamp).getTime() + DURATION_DAYS[dur] * 86400000).toISOString();
-      }
-      return {
-        type: l.action,
-        timestamp: l.timestamp,
-        duration: dur,
-        source: l.details?.source || null,
-        subscriptionId: l.details?.subscriptionId || null,
-        details: {
-          ...(l.details || {}),
-          periodStart: l.details?.periodStart || periodStart,
-          periodEnd: l.details?.periodEnd || periodEnd
-        }
-      };
-    });
+    const stripeInvoiceEvents = [];
+    let stripeFetchSucceeded = false;
 
-    // Merge in Stripe invoices for real payment amounts
     if (hasStripeData) {
       try {
         const invoices = await stripe.invoices.list({
@@ -354,7 +332,7 @@ router.get('/history', authenticate, async (req, res) => {
             }
           }
 
-          events.push({
+          stripeInvoiceEvents.push({
             type: 'stripe_invoice',
             timestamp: new Date((inv.status_transitions?.paid_at || inv.created) * 1000).toISOString(),
             duration: null,
@@ -378,11 +356,40 @@ router.get('/history', authenticate, async (req, res) => {
             }
           });
         }
+        stripeFetchSucceeded = true;
       } catch (err) {
         console.warn('Stripe invoice fetch failed:', err.message);
       }
     }
 
+    // Only suppress log dupes if Stripe fetch actually succeeded.
+    // Otherwise, falling back to logs gives the user *something* to see.
+    const filteredLogs = stripeFetchSucceeded
+      ? allLogs.filter(l => !REDUNDANT_WHEN_STRIPE.has(l.action))
+      : allLogs;
+
+    const logEvents = filteredLogs.map(l => {
+      const dur = l.details?.duration || l.details?.planDuration || null;
+      let periodStart = null, periodEnd = null;
+      if (dur && DURATION_DAYS[dur]) {
+        periodStart = l.timestamp;
+        periodEnd = new Date(new Date(l.timestamp).getTime() + DURATION_DAYS[dur] * 86400000).toISOString();
+      }
+      return {
+        type: l.action,
+        timestamp: l.timestamp,
+        duration: dur,
+        source: l.details?.source || null,
+        subscriptionId: l.details?.subscriptionId || null,
+        details: {
+          ...(l.details || {}),
+          periodStart: l.details?.periodStart || periodStart,
+          periodEnd: l.details?.periodEnd || periodEnd
+        }
+      };
+    });
+
+    const events = [...logEvents, ...stripeInvoiceEvents];
     events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.json({
