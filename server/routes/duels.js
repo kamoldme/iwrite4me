@@ -197,7 +197,7 @@ async function tryMatch(userId, duration) {
   const opponent = await findOne('users.json', u => u.id === userId);
   const duelId = uuid();
   const now = new Date();
-  const startAt = new Date(now.getTime() + 30000); // 30s countdown
+  const startAt = new Date(now.getTime() + 60000); // 60s countdown
   await insertOne('duels.json', {
     id: duelId,
     challengerId: opp.userId, // earlier in queue gets challenger slot

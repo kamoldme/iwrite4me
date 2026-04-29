@@ -3631,13 +3631,23 @@ const App = {
       skipBtn.onclick = this._duelSkipHandler;
 
       const countdownInterval = setInterval(async () => {
-        // Poll duel status to check if opponent is ready
+        // Poll duel status to check if opponent is ready, cancelled, or active
         try {
           const latest = await API.getDuelStatus(duelId);
           if (latest.status === 'active') {
             clearInterval(countdownInterval);
             overlay.classList.remove('active');
             this.enterDuelMode(duelId);
+            return;
+          }
+          // Opponent cancelled — bail out, notify the surviving player
+          if (latest.status === 'cancelled' || latest.status === 'expired') {
+            clearInterval(countdownInterval);
+            overlay.classList.remove('active');
+            this._cancelDuelId = null;
+            const opponentName = isChallenger ? (latest.opponentName || 'Your opponent') : (latest.challengerName || 'Your opponent');
+            this.toast(`${opponentName} cancelled the duel.`, 'info', 5000);
+            this.loadDuelsView();
             return;
           }
           // Update opponent ready status
