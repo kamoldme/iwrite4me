@@ -3892,6 +3892,7 @@ const App = {
         <div class="up-story-meta">
           <span>${new Date(s.publishedAt || s.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           <span>${s.readTimeMinutes || 1} min read</span>
+          <span>👁 ${(s.viewCount || 0).toLocaleString()}</span>
           <span>❤ ${s.likeCount || 0}</span>
           <span>💬 ${s.commentCount || 0}</span>
         </div>
