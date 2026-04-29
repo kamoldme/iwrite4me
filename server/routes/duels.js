@@ -149,29 +149,46 @@ async function cleanupStaleDuels() {
 }
 
 // ───────── MATCHMAKING ─────────
-const VALID_DURATIONS = ['3m', '5m', '10m'];
-const DURATION_SECONDS = { '3m': 180, '5m': 300, '10m': 600 };
+// Duration is stored as a NUMBER of minutes (matches the existing challenge
+// flow which uses duration * 60 * 1000 elsewhere). Standard buckets are
+// 10/30/45 min for everyone; PRO users can also pick custom 5–180 min.
+const STANDARD_DURATIONS_MIN = [10, 30, 45];
+const PRO_CUSTOM_MIN = 5;
+const PRO_CUSTOM_MAX = 180;
+
+// Validates a requested duration against the user's plan. Returns the integer
+// duration in minutes, or null if invalid.
+function validateDuration(durationRaw, isPro) {
+  const d = parseInt(durationRaw, 10);
+  if (!Number.isFinite(d) || d <= 0) return null;
+  if (STANDARD_DURATIONS_MIN.includes(d)) return d;
+  if (isPro && d >= PRO_CUSTOM_MIN && d <= PRO_CUSTOM_MAX) return d;
+  return null;
+}
 
 // Tries to match the given user against the oldest waiting opponent in their
 // duration bucket. If a match is found: creates a duel and removes both queue
 // entries. Returns { matched: true, duelId } or { matched: false }.
 async function tryMatch(userId, duration) {
   const opponents = await findMany('duel-queue.json', q =>
-    q.duration === duration && q.userId !== userId
+    Number(q.duration) === Number(duration) && q.userId !== userId
   );
   if (!opponents.length) return { matched: false };
   opponents.sort((a, b) => new Date(a.joinedAt) - new Date(b.joinedAt));
   const opp = opponents[0];
 
   // Create duel — start countdown immediately. Both already opted in.
+  // 6-second countdown then transitions to active. Match the existing
+  // duel schema: numeric duration (minutes), startAt (when countdown ends),
+  // endAt set later when active starts.
   const duelId = uuid();
   const now = new Date();
-  const endAt = new Date(now.getTime() + DURATION_SECONDS[duration] * 1000 + 6000); // duration + 6s countdown
+  const startAt = new Date(now.getTime() + 6000); // 6s countdown
   await insertOne('duels.json', {
     id: duelId,
     challengerId: opp.userId, // earlier in queue gets challenger slot
     opponentId: userId,
-    duration,
+    duration: Number(duration),
     status: 'countdown',
     fromMatchmaking: true,
     challengerWords: 0,
@@ -180,7 +197,8 @@ async function tryMatch(userId, duration) {
     opponentLastSeen: now.toISOString(),
     createdAt: now.toISOString(),
     countdownStartAt: now.toISOString(),
-    endAt: endAt.toISOString()
+    startAt: startAt.toISOString(),
+    endAt: null
   });
 
   // Remove both from queue
@@ -195,15 +213,21 @@ async function tryMatch(userId, duration) {
 router.post('/queue/join', async (req, res) => {
   try {
     await cleanupStaleDuels();
-    const { duration } = req.body || {};
-    if (!VALID_DURATIONS.includes(duration)) {
-      return res.status(400).json({ error: 'Invalid duration. Use 3m, 5m, or 10m.' });
+    const me = await findOne('users.json', u => u.id === req.user.id);
+    const isPro = me?.plan === 'premium';
+    const duration = validateDuration(req.body?.duration, isPro);
+    if (!duration) {
+      return res.status(400).json({
+        error: isPro
+          ? `Invalid duration. Use ${STANDARD_DURATIONS_MIN.join('/')} min, or a custom ${PRO_CUSTOM_MIN}–${PRO_CUSTOM_MAX} min.`
+          : `Invalid duration. Use ${STANDARD_DURATIONS_MIN.join('/')} min. (Custom durations are PRO only.)`
+      });
     }
 
     // Already in queue? Update duration if different
     const existing = await findOne('duel-queue.json', q => q.userId === req.user.id);
     if (existing) {
-      if (existing.duration !== duration) {
+      if (Number(existing.duration) !== duration) {
         await updateOne('duel-queue.json', q => q.id === existing.id, {
           duration, lastSeen: new Date().toISOString()
         });
@@ -291,14 +315,25 @@ router.post('/queue/heartbeat', async (req, res) => {
   }
 });
 
-// GET /queue/lobby — public count of users waiting (for sidebar pulse)
+// GET /queue/lobby — counts of users waiting, broken down by duration
+// bucket. Used by the sidebar pulse and the lobby popover.
 router.get('/queue/lobby', async (req, res) => {
   try {
     await cleanupStaleDuels();
     const all = await findMany('duel-queue.json');
-    res.json({ waitingCount: all.length });
+    const now = Date.now();
+    const byDuration = {};
+    for (const q of all) {
+      const d = Number(q.duration);
+      if (!byDuration[d]) byDuration[d] = { duration: d, count: 0, oldestWaitMs: 0 };
+      byDuration[d].count += 1;
+      const waitMs = now - new Date(q.joinedAt).getTime();
+      if (waitMs > byDuration[d].oldestWaitMs) byDuration[d].oldestWaitMs = waitMs;
+    }
+    const buckets = Object.values(byDuration).sort((a, b) => a.duration - b.duration);
+    res.json({ waitingCount: all.length, buckets });
   } catch (err) {
-    res.json({ waitingCount: 0 });
+    res.json({ waitingCount: 0, buckets: [] });
   }
 });
 
@@ -412,7 +447,11 @@ router.post('/:id/cancel', async (req, res) => {
   try {
     const duel = await findOne('duels.json', d => d.id === req.params.id);
     if (!duel) return res.status(404).json({ error: 'Duel not found' });
-    if (duel.challengerId !== req.user.id) return res.status(403).json({ error: 'Not your challenge' });
+    // For matchmaking duels, either side can cancel (both opted in voluntarily).
+    // For challenge duels, only the challenger can cancel their own challenge.
+    const isParticipant = duel.challengerId === req.user.id || duel.opponentId === req.user.id;
+    const canCancel = duel.fromMatchmaking ? isParticipant : duel.challengerId === req.user.id;
+    if (!canCancel) return res.status(403).json({ error: 'Not your duel' });
     if (duel.status !== 'pending' && duel.status !== 'countdown') return res.status(400).json({ error: 'Cannot cancel this duel' });
 
     await updateOne('duels.json', d => d.id === req.params.id, { status: 'cancelled' });

@@ -952,18 +952,45 @@ const App = {
     document.getElementById('duel-cancel').addEventListener('click', () => this.closeDuelModal());
     document.getElementById('duel-start').addEventListener('click', () => this.createDuel());
 
-    // Matchmaking
+    // Matchmaking — duration pills
     document.querySelectorAll('.duel-mm-dur-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        const isCustom = btn.dataset.duration === 'custom';
+        if (isCustom) {
+          // PRO gate
+          if (!this.user || this.user.plan !== 'premium') {
+            this.toast('Custom durations are PRO only. Upgrade to unlock.', 'info');
+            return;
+          }
+        }
         document.querySelectorAll('.duel-mm-dur-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        this._mmDuration = btn.dataset.duration;
+        const customInput = document.getElementById('duel-mm-custom-input');
+        if (isCustom) {
+          customInput.style.display = 'inline-block';
+          customInput.focus();
+          // Use whatever's currently in the input (default 15)
+          const v = parseInt(customInput.value) || 15;
+          customInput.value = v;
+          this._mmDuration = v;
+        } else {
+          customInput.style.display = 'none';
+          this._mmDuration = parseInt(btn.dataset.duration);
+        }
       });
     });
+    document.getElementById('duel-mm-custom-input')?.addEventListener('input', (e) => {
+      const v = Math.min(Math.max(parseInt(e.target.value) || 0, 5), 180);
+      this._mmDuration = v;
+    });
+
     document.getElementById('duel-mm-find-btn')?.addEventListener('click', () => this.matchmakingFind());
     document.getElementById('duel-mm-cancel-btn')?.addEventListener('click', () => this.matchmakingCancel());
 
-    // Start lobby-pulse polling on app load (every 30s)
+    // Lobby popover (▾ chip click)
+    document.getElementById('duel-mm-pulse')?.addEventListener('click', () => this.toggleLobbyPopover());
+
+    // Start lobby polling globally — every 30s while logged in
     this.refreshDuelLobbyPulse();
     this._duelsLobbyInterval = setInterval(() => this.refreshDuelLobbyPulse(), 30000);
 
@@ -2978,10 +3005,11 @@ const App = {
   },
 
   // ───── Matchmaking ─────
-  _mmDuration: '3m',
+  _mmDuration: 10,
   _mmInQueue: false,
   _mmHeartbeatInterval: null,
   _mmJoinedAt: null,
+  _mmLobbyBuckets: [],
 
   async refreshDuelLobbyPulse() {
     if (!API.getToken || !API.getToken()) return;
@@ -2991,11 +3019,20 @@ const App = {
       });
       if (!res.ok) return;
       const data = await res.json();
-      // Subtract 1 if I'm in queue myself — only show pulse for OTHERS waiting
+      this._mmLobbyBuckets = data.buckets || [];
+      // Subtract 1 if I'm in queue myself — only show count for OTHERS waiting
       const others = Math.max(0, (data.waitingCount || 0) - (this._mmInQueue ? 1 : 0));
+      // Sidebar Duels nav indicator: green chip with count
       const pulse = document.getElementById('duels-lobby-pulse');
-      if (pulse) pulse.style.display = others > 0 ? 'inline-block' : 'none';
-      // Also update the in-page lobby chip if visible
+      if (pulse) {
+        if (others > 0) {
+          pulse.style.display = 'inline-flex';
+          pulse.textContent = String(others);
+        } else {
+          pulse.style.display = 'none';
+        }
+      }
+      // In-page lobby chip (header of matchmaking section)
       const chip = document.getElementById('duel-mm-pulse');
       const chipCount = document.getElementById('duel-mm-pulse-count');
       const lobbyText = document.getElementById('duel-mm-lobby-text');
@@ -3005,14 +3042,81 @@ const App = {
       }
       if (lobbyText) {
         lobbyText.textContent = others > 0
-          ? `${others} ${others === 1 ? 'person is' : 'people are'} waiting right now. Join in.`
+          ? `${others} ${others === 1 ? 'person is' : 'people are'} waiting. Click "${others === 1 ? '1 waiting' : others + ' waiting'} ▾" to see lobbies.`
           : 'Get matched with someone looking for a duel right now.';
       }
+      // If popover is open, refresh its contents too
+      const pop = document.getElementById('duel-mm-lobby-popover');
+      if (pop && pop.style.display !== 'none') this._renderLobbyPopover();
     } catch {}
   },
 
+  toggleLobbyPopover() {
+    const pop = document.getElementById('duel-mm-lobby-popover');
+    if (!pop) return;
+    if (pop.style.display === 'none' || !pop.style.display) {
+      this._renderLobbyPopover();
+      pop.style.display = 'block';
+    } else {
+      pop.style.display = 'none';
+    }
+  },
+
+  _renderLobbyPopover() {
+    const list = document.getElementById('duel-mm-lobby-list');
+    if (!list) return;
+    const fmtWait = (ms) => {
+      const s = Math.floor(ms / 1000);
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      const rs = s % 60;
+      return `${m}m ${rs}s`;
+    };
+    const buckets = (this._mmLobbyBuckets || []).filter(b => b.count > 0);
+    if (!buckets.length) {
+      list.innerHTML = '<div class="duel-mm-lobby-empty">No active lobbies. Be the first to start one.</div>';
+      return;
+    }
+    list.innerHTML = buckets.map(b => `
+      <div class="duel-mm-lobby-row">
+        <div class="duel-mm-lobby-dur">${b.duration} min</div>
+        <div class="duel-mm-lobby-meta">
+          <span><span class="duel-mm-lobby-count">${b.count}</span> waiting</span>
+          <span>oldest: ${fmtWait(b.oldestWaitMs || 0)}</span>
+        </div>
+        <button class="duel-mm-lobby-join-btn" onclick="App.matchmakingJoinDuration(${b.duration})">Join</button>
+      </div>
+    `).join('');
+  },
+
+  matchmakingJoinDuration(duration) {
+    const d = parseInt(duration);
+    if (!Number.isFinite(d)) return;
+    // Set duration UI to match
+    const std = [10, 30, 45];
+    document.querySelectorAll('.duel-mm-dur-btn').forEach(b => b.classList.remove('active'));
+    if (std.includes(d)) {
+      const btn = document.querySelector(`.duel-mm-dur-btn[data-duration="${d}"]`);
+      if (btn) btn.classList.add('active');
+      document.getElementById('duel-mm-custom-input').style.display = 'none';
+    } else {
+      // Custom (PRO) — show custom input with the value
+      const customBtn = document.getElementById('duel-mm-dur-custom');
+      if (customBtn) customBtn.classList.add('active');
+      const customInput = document.getElementById('duel-mm-custom-input');
+      if (customInput) { customInput.value = d; customInput.style.display = 'inline-block'; }
+    }
+    this._mmDuration = d;
+    document.getElementById('duel-mm-lobby-popover').style.display = 'none';
+    this.matchmakingFind();
+  },
+
   async matchmakingFind() {
-    const dur = this._mmDuration || '3m';
+    const dur = parseInt(this._mmDuration);
+    if (!Number.isFinite(dur) || dur < 5) {
+      this.toast('Pick a valid duration first', 'error');
+      return;
+    }
     const findBtn = document.getElementById('duel-mm-find-btn');
     if (findBtn) { findBtn.disabled = true; findBtn.textContent = 'Joining…'; }
     try {
@@ -3093,7 +3197,7 @@ const App = {
     document.getElementById('duel-mm-idle').style.display = 'none';
     document.getElementById('duel-mm-waiting').style.display = 'flex';
     const label = document.getElementById('duel-mm-duration-label');
-    if (label) label.textContent = duration === '10m' ? '10 min' : duration === '5m' ? '5 min' : '3 min';
+    if (label) label.textContent = `${duration} min`;
     const elapsedEl = document.getElementById('duel-mm-elapsed');
     if (elapsedEl) elapsedEl.textContent = '0s';
   },
@@ -3117,6 +3221,24 @@ const App = {
         this.loadDuelsView();
       }
     }, 300);
+  },
+
+  // Cancel a matchmaking duel during the countdown phase. Uses the existing
+  // /:id/cancel endpoint which only allows pending or countdown cancellation.
+  async cancelDuelCountdown() {
+    const duelId = this._cancelDuelId;
+    if (!duelId) return;
+    const overlay = document.getElementById('duel-countdown-overlay');
+    try {
+      await fetch('/api/duels/' + encodeURIComponent(duelId) + '/cancel', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+    } catch {}
+    if (overlay) overlay.classList.remove('active');
+    this._cancelDuelId = null;
+    this.toast('Duel cancelled.', 'info');
+    this.loadDuelsView();
   },
 
   async loadDuelsView() {
@@ -3398,6 +3520,7 @@ const App = {
       const timerEl = document.getElementById('duel-countdown-timer');
       const titleEl = document.getElementById('duel-countdown-title');
       const leaveBtn = document.getElementById('duel-leave-btn');
+      const cancelBtn = document.getElementById('duel-countdown-cancel-btn');
       const isChallenger = duel.challengerId === this.user.id;
       const oppName = isChallenger ? duel.opponentName : duel.challengerName;
 
@@ -3405,6 +3528,12 @@ const App = {
       titleEl.textContent = 'DUEL STARTS IN';
       timerEl.style.fontSize = '';
       leaveBtn.style.display = 'none';
+      // Show Cancel button for matchmaking duels — both opted in voluntarily,
+      // so either side can back out before the duel actually starts.
+      if (cancelBtn) {
+        cancelBtn.style.display = duel.fromMatchmaking ? '' : 'none';
+        this._cancelDuelId = duel.fromMatchmaking ? duelId : null;
+      }
 
       document.getElementById('duel-countdown-vs').textContent = `You vs ${oppName}`;
       document.getElementById('duel-countdown-duration').textContent = `${duel.duration} minute duel`;

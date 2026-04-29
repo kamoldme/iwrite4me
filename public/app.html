@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/iWrite logo.png">
-  <link rel="stylesheet" href="/css/style.css?v=102">
+  <link rel="stylesheet" href="/css/style.css?v=103">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -388,22 +388,33 @@
                   <div class="duel-mm-title">🎯 Find an opponent</div>
                   <div class="duel-mm-sub" id="duel-mm-lobby-text">Get matched with someone looking for a duel right now.</div>
                 </div>
-                <div class="duel-mm-pulse" id="duel-mm-pulse" title="People waiting"><span class="duel-mm-pulse-dot"></span><span id="duel-mm-pulse-count">0</span> waiting</div>
+                <button type="button" class="duel-mm-pulse" id="duel-mm-pulse" title="View lobbies — click to see who's waiting and for how long" style="display:none">
+                  <span class="duel-mm-pulse-dot"></span><span id="duel-mm-pulse-count">0</span> waiting
+                  <span style="margin-left:6px;font-size:9px;opacity:0.7">▾</span>
+                </button>
               </div>
               <div class="duel-mm-controls">
                 <div class="duel-mm-duration" role="radiogroup" aria-label="Duel duration">
-                  <button class="duel-mm-dur-btn active" data-duration="3m">3 min</button>
-                  <button class="duel-mm-dur-btn" data-duration="5m">5 min</button>
-                  <button class="duel-mm-dur-btn" data-duration="10m">10 min</button>
+                  <button class="duel-mm-dur-btn active" data-duration="10">10 min</button>
+                  <button class="duel-mm-dur-btn" data-duration="30">30 min</button>
+                  <button class="duel-mm-dur-btn" data-duration="45">45 min</button>
+                  <button class="duel-mm-dur-btn duel-mm-dur-custom" id="duel-mm-dur-custom" data-duration="custom" title="Custom duration (PRO)">+ <span class="duel-mm-pro-badge">PRO</span></button>
                 </div>
+                <input type="number" class="duel-mm-custom-input" id="duel-mm-custom-input" min="5" max="180" placeholder="min" style="display:none" aria-label="Custom duration in minutes">
                 <button class="btn btn-primary duel-mm-find-btn" id="duel-mm-find-btn">Find opponent</button>
+              </div>
+
+              <!-- Lobby popover (shows when ▾ chip clicked) -->
+              <div class="duel-mm-lobby-popover" id="duel-mm-lobby-popover" style="display:none">
+                <div class="duel-mm-lobby-head">Active lobbies</div>
+                <div id="duel-mm-lobby-list"></div>
               </div>
             </div>
             <div class="duel-mm-waiting" id="duel-mm-waiting" style="display:none">
               <div class="duel-mm-spinner"></div>
               <div class="duel-mm-waiting-text">Looking for an opponent…</div>
               <div class="duel-mm-waiting-meta">
-                <span id="duel-mm-elapsed">0s</span> · <span id="duel-mm-duration-label">3 min</span> · <span id="duel-mm-waiting-count">0</span> waiting
+                <span id="duel-mm-elapsed">0s</span> · <span id="duel-mm-duration-label">10 min</span> · <span id="duel-mm-waiting-count">0</span> waiting
               </div>
               <button class="btn btn-ghost duel-mm-cancel-btn" id="duel-mm-cancel-btn">Cancel</button>
             </div>
@@ -1271,6 +1282,7 @@
         </div>
         <button class="btn btn-primary" id="duel-skip-btn" style="margin-top:16px">Skip Wait</button>
         <button class="btn btn-ghost" id="duel-leave-btn" style="margin-top:12px;display:none" onclick="App.leaveDuelWaiting()">Leave</button>
+        <button class="btn btn-ghost" id="duel-countdown-cancel-btn" style="margin-top:10px;display:none" onclick="App.cancelDuelCountdown()">Cancel duel</button>
       </div>
     </div>
 
@@ -1471,7 +1483,7 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=43"></script>
-  <script src="/js/app.js?v=105"></script>
+  <script src="/js/app.js?v=106"></script>
   <script src="/js/stories.js?v=16"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
