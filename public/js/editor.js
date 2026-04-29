@@ -1664,19 +1664,35 @@ const Editor = {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || !sel.rangeCount) {
         popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
         return;
       }
       const text = sel.toString().trim();
-      if (!text) { popup.style.display = 'none'; return; }
+      if (!text) { popup.style.display = 'none'; Editor._selPopupAnchor = null; return; }
       const range = sel.getRangeAt(0);
       if (!Editor.textarea.contains(range.commonAncestorContainer)) {
         popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
         return;
       }
       const rect = range.getBoundingClientRect();
       popup.style.display = 'flex';
-      popup.style.left = Math.max(8, rect.left + rect.width / 2 - popup.offsetWidth / 2) + 'px';
-      popup.style.top = (rect.top - popup.offsetHeight - 14) + 'px';
+      // Center horizontally, clamped to viewport
+      const popupW = popup.offsetWidth;
+      const popupH = popup.offsetHeight;
+      const left = Math.max(8, Math.min(window.innerWidth - popupW - 8, rect.left + rect.width / 2 - popupW / 2));
+      popup.style.left = left + 'px';
+      // Prefer above the selection. If not enough room (would overlap toolbar
+      // or go off-screen), place below instead so it doesn't cover text.
+      const gap = 10;
+      const aboveTop = rect.top - popupH - gap;
+      if (aboveTop >= 60) {
+        popup.style.top = aboveTop + 'px';
+      } else {
+        popup.style.top = (rect.bottom + gap) + 'px';
+      }
+      // Remember the anchor — used to hide when cursor moves away from this selection
+      Editor._selPopupAnchor = { node: sel.anchorNode, offset: sel.anchorOffset };
     };
 
     // Show popup on mouseup (after selection is final) instead of selectionchange
@@ -1697,6 +1713,28 @@ const Editor = {
     document.addEventListener('mousedown', (e) => {
       if (!popup.contains(e.target) && e.target !== Editor.textarea && !Editor.textarea.contains(e.target)) {
         popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
+      }
+    });
+
+    // Hide when the selection collapses or moves to a different anchor.
+    // Covers: cursor moved with arrow keys (no shift), clicked elsewhere
+    // in editor, selection cleared by typing, etc.
+    document.addEventListener('selectionchange', () => {
+      if (popup.style.display === 'none' || !Editor._selPopupAnchor) return;
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) {
+        popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
+        return;
+      }
+      const a = Editor._selPopupAnchor;
+      // Anchor moved → user clicked or arrow-keyed somewhere else.
+      // (We deliberately don't compare focus — shift+arrow extends the
+      // selection, focus moves but anchor stays, popup should remain.)
+      if (sel.anchorNode !== a.node || sel.anchorOffset !== a.offset) {
+        popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
       }
     });
   },
