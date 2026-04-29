@@ -9302,7 +9302,7 @@ body.editor-active .mobile-sidebar-toggle {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 220px;
+  min-height: 260px;
 }
 .ann-slide {
   display: none;
@@ -9341,10 +9341,10 @@ body.editor-active .mobile-sidebar-toggle {
 .ann-pinned { font-size: 12px; }
 .ann-title {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 700;
-  letter-spacing: -0.5px;
-  line-height: 1.15;
+  letter-spacing: -0.6px;
+  line-height: 1.1;
   color: var(--text-primary);
   margin-bottom: 10px;
   display: -webkit-box;
@@ -9352,12 +9352,12 @@ body.editor-active .mobile-sidebar-toggle {
   -webkit-box-orient: vertical;
   overflow: hidden;
   /* lock to ~2 lines of space so all slides match vertically */
-  min-height: calc(24px * 1.15 * 2);
+  min-height: calc(30px * 1.1 * 2);
 }
 .ann-subtitle {
-  font-size: 13.5px;
+  font-size: 15.5px;
   color: var(--text-secondary);
-  line-height: 1.45;
+  line-height: 1.4;
   flex: 1;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -9365,7 +9365,7 @@ body.editor-active .mobile-sidebar-toggle {
   overflow: hidden;
   text-overflow: ellipsis;
   /* lock to ~3 lines of space so all slides match vertically */
-  min-height: calc(13.5px * 1.45 * 3);
+  min-height: calc(15.5px * 1.4 * 3);
 }
 .ann-expand-hint {
   font-size: 11px;
@@ -9421,7 +9421,7 @@ body.editor-active .mobile-sidebar-toggle {
 }
 .ann-dot.active { background: var(--accent); transform: scale(1.4); }
 
-/* Expanded announcement modal */
+/* Expanded announcement modal — fade overlay + scale-in modal */
 .ann-modal-overlay {
   position: fixed;
   inset: 0;
@@ -9429,13 +9429,16 @@ body.editor-active .mobile-sidebar-toggle {
   z-index: 10000;
   display: none;
   backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.22s ease;
 }
-.ann-modal-overlay.active { display: block; }
+.ann-modal-overlay.visible { display: block; }
+.ann-modal-overlay.active { opacity: 1; }
 .ann-modal {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(0.94);
   width: min(760px, 95vw);
   max-height: 92vh;
   background: var(--bg-card);
@@ -9445,9 +9448,15 @@ body.editor-active .mobile-sidebar-toggle {
   display: none;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45);
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.26s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
-.ann-modal.active { display: flex; }
+.ann-modal.visible { display: flex; }
+.ann-modal.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
 .ann-modal-close {
   position: absolute;
   top: 14px;
@@ -9468,20 +9477,20 @@ body.editor-active .mobile-sidebar-toggle {
   transition: background 0.15s;
 }
 .ann-modal-close:hover { background: rgba(0,0,0,0.7); }
-/* Image: any aspect ratio. object-fit: contain preserves whole image
-   (no crop), max-height caps tall portraits at a comfortable size. */
+/* Image wrap is the flex item; pin it (no shrink) so body scrolls. */
+#ann-modal-image-wrap { flex-shrink: 0; }
 .ann-modal-image {
   display: block;
   width: 100%;
-  max-height: min(560px, 55vh);
+  max-height: min(480px, 50vh);
   object-fit: contain;
   background: var(--bg-tertiary);
-  flex-shrink: 0;
 }
 .ann-modal-body {
   padding: 24px 32px 28px;
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0; /* allows the flex child to actually shrink + scroll */
 }
 .ann-modal-title {
   font-family: var(--font-display);
@@ -9517,6 +9526,50 @@ body.editor-active .mobile-sidebar-toggle {
   transition: filter 0.15s;
 }
 .ann-modal-link:hover { filter: brightness(1.1); }
+
+/* Like button */
+.ann-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+.ann-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+.ann-like-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+.ann-like-btn.liked {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+.ann-like-btn.liked:hover {
+  background: rgba(239, 68, 68, 0.18);
+}
+.ann-like-btn .ann-like-heart {
+  font-size: 15px;
+  transition: transform 0.2s ease;
+}
+.ann-like-btn.liked .ann-like-heart {
+  transform: scale(1.15);
+}
+.ann-like-btn:disabled { opacity: 0.5; cursor: wait; }
 
 /* AI ✨ icon button next to admin inputs */
 .ann-ai-icon-btn {

@@ -2559,6 +2559,7 @@ const App = {
     const content = document.getElementById('ann-modal-content');
     if (!overlay || !modal) return;
 
+    this._currentAnnouncement = a;
     const cat = a.category || 'update';
     const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
 
@@ -2573,13 +2574,33 @@ const App = {
       <div class="ann-modal-title">${this.escapeHtml(a.title)}</div>
       ${a.subtitle ? `<div class="ann-modal-subtitle">${this.escapeHtml(a.subtitle)}</div>` : ''}
       <div class="ann-modal-text">${this.escapeHtml(a.body || '')}</div>
-      ${a.linkUrl ? `<a class="ann-modal-link" href="${this.escapeHtml(a.linkUrl)}" target="_blank" rel="noopener">${this.escapeHtml(a.linkLabel || 'Read more')} →</a>` : ''}
+      <div class="ann-modal-actions">
+        <button class="ann-like-btn" id="ann-like-btn" type="button">
+          <span class="ann-like-heart">♡</span>
+          <span id="ann-like-count">—</span>
+        </button>
+        ${a.linkUrl ? `<a class="ann-modal-link" href="${this.escapeHtml(a.linkUrl)}" target="_blank" rel="noopener" style="margin-top:0">${this.escapeHtml(a.linkLabel || 'Read more')} →</a>` : ''}
+      </div>
     `;
-    overlay.classList.add('active');
-    modal.classList.add('active');
+
+    // Wire like button
+    const likeBtn = document.getElementById('ann-like-btn');
+    if (likeBtn) {
+      likeBtn.addEventListener('click', () => this._toggleAnnouncementLike(a.id));
+    }
+    this._loadAnnouncementLikeState(a.id);
+    this._recordAnnouncementView(a.id);
+
+    // Animate in: display first, then add active class on next frame
+    overlay.classList.add('visible');
+    modal.classList.add('visible');
+    requestAnimationFrame(() => {
+      overlay.classList.add('active');
+      modal.classList.add('active');
+    });
     document.body.style.overflow = 'hidden';
 
-    // Esc closes
+    // Esc closes (one global listener)
     if (!this._annModalEscBound) {
       this._annModalEscBound = true;
       document.addEventListener('keydown', (e) => {
@@ -2591,9 +2612,64 @@ const App = {
   },
 
   closeAnnouncementModal() {
-    document.getElementById('ann-modal-overlay')?.classList.remove('active');
-    document.getElementById('ann-modal')?.classList.remove('active');
+    const overlay = document.getElementById('ann-modal-overlay');
+    const modal = document.getElementById('ann-modal');
+    overlay?.classList.remove('active');
+    modal?.classList.remove('active');
     document.body.style.overflow = '';
+    // After transition completes, hide entirely so it doesn't catch clicks
+    clearTimeout(this._annModalCloseTimer);
+    this._annModalCloseTimer = setTimeout(() => {
+      overlay?.classList.remove('visible');
+      modal?.classList.remove('visible');
+    }, 260);
+  },
+
+  async _recordAnnouncementView(id) {
+    try {
+      await fetch('/api/announcements/' + encodeURIComponent(id) + '/view', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+    } catch {}
+  },
+
+  async _loadAnnouncementLikeState(id) {
+    try {
+      const res = await fetch('/api/announcements/' + encodeURIComponent(id) + '/like', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      this._renderAnnouncementLike(data.liked, data.count);
+    } catch {}
+  },
+
+  async _toggleAnnouncementLike(id) {
+    const btn = document.getElementById('ann-like-btn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/announcements/' + encodeURIComponent(id) + '/like', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      this._renderAnnouncementLike(data.liked, data.count);
+    } catch {} finally {
+      btn.disabled = false;
+    }
+  },
+
+  _renderAnnouncementLike(liked, count) {
+    const btn = document.getElementById('ann-like-btn');
+    const heart = btn?.querySelector('.ann-like-heart');
+    const countEl = document.getElementById('ann-like-count');
+    if (!btn || !heart || !countEl) return;
+    btn.classList.toggle('liked', !!liked);
+    heart.textContent = liked ? '♥' : '♡';
+    countEl.textContent = count.toLocaleString();
   },
 
   async openNotificationHistory() {

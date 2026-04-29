@@ -4,7 +4,7 @@ const fs = require('fs');
 const multer = require('multer');
 const sharp = require('sharp');
 const { v4: uuid } = require('uuid');
-const { findMany, findOne, insertOne, updateOne } = require('../utils/storage');
+const { findMany, findOne, insertOne, updateOne, deleteOne } = require('../utils/storage');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 
@@ -45,6 +45,69 @@ router.get('/', authenticate, async (req, res) => {
   } catch (err) {
     console.error('List announcements error:', err);
     res.status(500).json({ error: 'Failed to load announcements' });
+  }
+});
+
+// ───────── User-facing: like state for current user ─────────
+router.get('/:id/like', authenticate, async (req, res) => {
+  try {
+    const announcement = await findOne('announcements.json', a => a.id === req.params.id);
+    if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
+    const allLikes = await findMany('announcement-likes.json', l => l.announcementId === req.params.id);
+    const liked = allLikes.some(l => l.userId === req.user.id);
+    res.json({ liked, count: allLikes.length });
+  } catch (err) {
+    console.error('Get announcement like error:', err);
+    res.status(500).json({ error: 'Failed to get like state' });
+  }
+});
+
+// ───────── User-facing: toggle like ─────────
+router.post('/:id/like', authenticate, async (req, res) => {
+  try {
+    const announcement = await findOne('announcements.json', a => a.id === req.params.id);
+    if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
+    const existing = await findOne('announcement-likes.json', l =>
+      l.announcementId === req.params.id && l.userId === req.user.id
+    );
+    if (existing) {
+      await deleteOne('announcement-likes.json', l => l.id === existing.id);
+    } else {
+      await insertOne('announcement-likes.json', {
+        id: uuid(),
+        announcementId: req.params.id,
+        userId: req.user.id,
+        likedAt: new Date().toISOString()
+      });
+    }
+    const allLikes = await findMany('announcement-likes.json', l => l.announcementId === req.params.id);
+    res.json({ liked: !existing, count: allLikes.length });
+  } catch (err) {
+    console.error('Toggle announcement like error:', err);
+    res.status(500).json({ error: 'Failed to toggle like' });
+  }
+});
+
+// ───────── User-facing: record view (idempotent per user) ─────────
+router.post('/:id/view', authenticate, async (req, res) => {
+  try {
+    const announcement = await findOne('announcements.json', a => a.id === req.params.id);
+    if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
+    const existing = await findOne('announcement-views.json', v =>
+      v.announcementId === req.params.id && v.userId === req.user.id
+    );
+    if (!existing) {
+      await insertOne('announcement-views.json', {
+        id: uuid(),
+        announcementId: req.params.id,
+        userId: req.user.id,
+        viewedAt: new Date().toISOString()
+      });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Record announcement view error:', err);
+    res.status(500).json({ error: 'Failed to record view' });
   }
 });
 
@@ -339,6 +402,58 @@ DO NOT
   } catch (err) {
     console.error('Announcement draft error:', err);
     res.status(500).json({ error: 'Failed to draft announcement' });
+  }
+});
+
+// ───────── Admin: per-announcement stats (views + likes with viewer/liker lists) ─────────
+router.get('/admin/:id/stats', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const announcement = await findOne('announcements.json', a => a.id === req.params.id);
+    if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
+
+    const views = await findMany('announcement-views.json', v => v.announcementId === req.params.id);
+    const likes = await findMany('announcement-likes.json', l => l.announcementId === req.params.id);
+
+    const userIds = [...new Set([...views.map(v => v.userId), ...likes.map(l => l.userId)])];
+    const users = await findMany('users.json', u => userIds.includes(u.id));
+    const userById = Object.fromEntries(users.map(u => [u.id, { id: u.id, name: u.name, email: u.email, username: u.username || null, plan: u.plan }]));
+
+    const viewers = views
+      .map(v => ({ ...userById[v.userId], viewedAt: v.viewedAt }))
+      .filter(v => v.id)
+      .sort((a, b) => new Date(b.viewedAt) - new Date(a.viewedAt));
+    const likers = likes
+      .map(l => ({ ...userById[l.userId], likedAt: l.likedAt }))
+      .filter(l => l.id)
+      .sort((a, b) => new Date(b.likedAt) - new Date(a.likedAt));
+
+    res.json({
+      views: { count: views.length, viewers },
+      likes: { count: likes.length, likers }
+    });
+  } catch (err) {
+    console.error('Announcement stats error:', err);
+    res.status(500).json({ error: 'Failed to load stats' });
+  }
+});
+
+// ───────── Admin: bulk stats for the announcements list (counts only) ─────────
+router.get('/admin/list-with-stats', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const announcements = await findMany('announcements.json');
+    const allViews = await findMany('announcement-views.json');
+    const allLikes = await findMany('announcement-likes.json');
+    const viewsByAnn = {};
+    const likesByAnn = {};
+    allViews.forEach(v => { viewsByAnn[v.announcementId] = (viewsByAnn[v.announcementId] || 0) + 1; });
+    allLikes.forEach(l => { likesByAnn[l.announcementId] = (likesByAnn[l.announcementId] || 0) + 1; });
+    const enriched = announcements
+      .map(a => ({ ...a, viewCount: viewsByAnn[a.id] || 0, likeCount: likesByAnn[a.id] || 0 }))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json(enriched);
+  } catch (err) {
+    console.error('List-with-stats error:', err);
+    res.status(500).json({ error: 'Failed to load announcements' });
   }
 });
 

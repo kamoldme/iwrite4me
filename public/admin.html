@@ -899,12 +899,27 @@
                 <th>Category</th>
                 <th>Audience</th>
                 <th>Status</th>
+                <th>Views</th>
+                <th>Likes</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="announcements-tbody"></tbody>
           </table>
+
+          <!-- Per-announcement stats panel (viewers + likers) -->
+          <div class="user-detail-overlay" id="ann-stats-overlay" onclick="closeAnnStats()"></div>
+          <div class="user-detail-panel" id="ann-stats-panel">
+            <div class="user-detail-header">
+              <div>
+                <div style="font-size:16px;font-weight:700" id="ann-stats-title">Announcement Stats</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="ann-stats-subtitle"></div>
+              </div>
+              <button class="admin-btn admin-btn-ghost" onclick="closeAnnStats()" style="padding:6px 12px">×</button>
+            </div>
+            <div class="user-detail-body" id="ann-stats-body"></div>
+          </div>
         </div>
 
         <div id="tab-prompts" style="display:none">
@@ -3438,29 +3453,86 @@
 
     async function loadAnnouncementsAdmin() {
       try {
-        _allAnnouncements = await adminRequest('/announcements/admin/list');
+        _allAnnouncements = await adminRequest('/announcements/admin/list-with-stats');
         const tbody = document.getElementById('announcements-tbody');
         if (!_allAnnouncements.length) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No announcements yet</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">No announcements yet</td></tr>';
           return;
         }
         const fmt = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
         const catColors = { update: '#6366f1', news: '#3b82f6', feature: '#22c55e', tip: '#f59e0b' };
         tbody.innerHTML = _allAnnouncements.map(a => {
           const cc = catColors[a.category] || '#6b7280';
+          const views = a.viewCount || 0;
+          const likes = a.likeCount || 0;
           return `<tr>
             <td>${esc(a.title)}${a.pinned ? ' <span title="Pinned">📌</span>' : ''}</td>
             <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${cc}22;color:${cc}">${esc(a.category)}</span></td>
             <td>${a.audience === 'pro' ? 'Pro only' : 'Everyone'}</td>
             <td>${a.active === false ? '<span style="color:var(--text-muted)">Inactive</span>' : '<span style="color:var(--success)">Active</span>'}</td>
+            <td style="font-weight:600">${views.toLocaleString()}</td>
+            <td style="font-weight:600;color:${likes > 0 ? '#ef4444' : 'inherit'}">${likes > 0 ? '♥ ' : ''}${likes.toLocaleString()}</td>
             <td style="font-size:12px">${fmt(a.createdAt)}</td>
-            <td>
+            <td style="white-space:nowrap">
+              <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="openAnnStats('${a.id}')">Stats</button>
               <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editAnnouncement('${a.id}')">Edit</button>
               <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="toggleAnnouncementActive('${a.id}', ${a.active !== false})">${a.active === false ? 'Activate' : 'Deactivate'}</button>
             </td>
           </tr>`;
         }).join('');
       } catch (e) { toast('Failed to load announcements: ' + e.message, 'error'); }
+    }
+
+    async function openAnnStats(id) {
+      const a = _allAnnouncements.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('ann-stats-title').textContent = a.title;
+      document.getElementById('ann-stats-subtitle').textContent = a.subtitle || '';
+      const body = document.getElementById('ann-stats-body');
+      body.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px 0">Loading…</div>';
+      document.getElementById('ann-stats-overlay').style.display = 'block';
+      document.getElementById('ann-stats-panel').style.display = 'block';
+      try {
+        const data = await adminRequest('/announcements/admin/' + encodeURIComponent(id) + '/stats');
+        body.innerHTML = renderAnnStats(data);
+      } catch (e) {
+        body.innerHTML = '<div style="color:var(--danger);padding:20px 0">Failed to load: ' + esc(e.message) + '</div>';
+      }
+    }
+
+    function closeAnnStats() {
+      document.getElementById('ann-stats-overlay').style.display = 'none';
+      document.getElementById('ann-stats-panel').style.display = 'none';
+    }
+
+    function renderAnnStats(data) {
+      const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+      const viewers = data.views?.viewers || [];
+      const likers = data.likes?.likers || [];
+      const personRow = (p, ts) => `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:12px;align-items:center">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;color:var(--text-primary)">${esc(p.name || 'Unknown')}${p.plan === 'premium' ? ' <span style="color:#22c55e;font-size:10px;font-weight:700;letter-spacing:0.5px">PRO</span>' : ''}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${esc(p.email || '')}${p.username ? ' · @' + esc(p.username) : ''}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);flex-shrink:0">${esc(fmtDate(ts))}</div>
+      </div>`;
+      const stats = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Views</div>
+          <div style="font-size:24px;font-weight:700;margin-top:4px">${(data.views?.count || 0).toLocaleString()}</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Likes</div>
+          <div style="font-size:24px;font-weight:700;margin-top:4px;color:${(data.likes?.count || 0) > 0 ? '#ef4444' : 'inherit'}">${(data.likes?.count || 0) > 0 ? '♥ ' : ''}${(data.likes?.count || 0).toLocaleString()}</div>
+        </div>
+      </div>`;
+      const viewersBlock = viewers.length
+        ? `<div style="font-size:13px;font-weight:600;margin-bottom:8px">Viewers (${viewers.length})</div>${viewers.map(v => personRow(v, v.viewedAt)).join('')}`
+        : '<div style="font-size:13px;font-weight:600;margin-bottom:8px">Viewers</div><div style="color:var(--text-muted);padding:14px 0;text-align:center;font-size:12px">No views yet</div>';
+      const likersBlock = likers.length
+        ? `<div style="font-size:13px;font-weight:600;margin:24px 0 8px">Likers (${likers.length})</div>${likers.map(l => personRow(l, l.likedAt)).join('')}`
+        : '<div style="font-size:13px;font-weight:600;margin:24px 0 8px">Likers</div><div style="color:var(--text-muted);padding:14px 0;text-align:center;font-size:12px">No likes yet</div>';
+      return stats + viewersBlock + likersBlock;
     }
 
     // ===== PROMPTS TAB =====

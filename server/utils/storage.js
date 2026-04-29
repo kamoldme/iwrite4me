@@ -24,7 +24,9 @@ const TABLE_MAP = {
   'notifications.json': 'notifications',
   'app-settings.json': 'app_settings',
   'prompts.json': 'prompts',
-  'announcements.json': 'announcements'
+  'announcements.json': 'announcements',
+  'announcement-views.json': 'announcement_views',
+  'announcement-likes.json': 'announcement_likes'
 };
 
 function getTable(filename) {
@@ -58,6 +60,10 @@ async function initDB() {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_notifications_userid ON notifications ((data->>'userId'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications ((data->>'read'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements ((data->>'active'))`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_announcement_views_ann ON announcement_views ((data->>'announcementId'))`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_announcement_views_user_ann ON announcement_views ((data->>'userId'), (data->>'announcementId'))`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_announcement_likes_ann ON announcement_likes ((data->>'announcementId'))`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_announcement_likes_user_ann ON announcement_likes ((data->>'userId'), (data->>'announcementId'))`);
 }
 
 async function findOne(filename, predicate) {
