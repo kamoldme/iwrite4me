@@ -188,16 +188,22 @@ async function tryMatch(userId, duration) {
   const opp = opponents[0];
 
   // Create duel — start countdown immediately. Both already opted in.
-  // 6-second countdown then transitions to active. Match the existing
+  // 30-second countdown then transitions to active. Match the existing
   // duel schema: numeric duration (minutes), startAt (when countdown ends),
   // endAt set later when active starts.
+  // Hydrate challenger/opponent names so the countdown UI never shows
+  // "undefined" — the status endpoint returns the record as-is.
+  const challenger = await findOne('users.json', u => u.id === opp.userId);
+  const opponent = await findOne('users.json', u => u.id === userId);
   const duelId = uuid();
   const now = new Date();
-  const startAt = new Date(now.getTime() + 6000); // 6s countdown
+  const startAt = new Date(now.getTime() + 30000); // 30s countdown
   await insertOne('duels.json', {
     id: duelId,
     challengerId: opp.userId, // earlier in queue gets challenger slot
+    challengerName: challenger?.name || 'Opponent',
     opponentId: userId,
+    opponentName: opponent?.name || 'Opponent',
     duration: Number(duration),
     status: 'countdown',
     fromMatchmaking: true,
@@ -567,7 +573,16 @@ router.get('/:id/status', async (req, res) => {
 
     // Re-read in case forfeitedBy was set by cleanup or other player
     const latestDuel = await findOne('duels.json', d => d.id === req.params.id);
-    res.json(latestDuel || duel);
+    const result = latestDuel || duel;
+    // Hydrate names if missing (legacy matchmaking duels created before
+    // names were stored at creation time)
+    if (result && (!result.challengerName || !result.opponentName)) {
+      const ch = !result.challengerName ? await findOne('users.json', u => u.id === result.challengerId) : null;
+      const op = !result.opponentName ? await findOne('users.json', u => u.id === result.opponentId) : null;
+      if (ch) result.challengerName = ch.name || 'Opponent';
+      if (op) result.opponentName = op.name || 'Opponent';
+    }
+    res.json(result);
   } catch {
     res.status(500).json({ error: 'Server error' });
   }

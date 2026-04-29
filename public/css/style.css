@@ -6567,6 +6567,38 @@ body.public-profile .main-content { padding-top: 0; }
   font-size: 15px;
 }
 
+/* Stack the action buttons (Skip Wait / Cancel duel / Leave) vertically
+   with consistent width + padding so they read as one cohesive group. */
+.duel-countdown-content #duel-skip-btn,
+.duel-countdown-content #duel-countdown-cancel-btn,
+.duel-countdown-content #duel-leave-btn {
+  display: block;
+  width: 220px;
+  margin: 10px auto 0;
+  padding: 12px 24px;
+  font-size: 14px;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+.duel-countdown-content #duel-skip-btn {
+  margin-top: 18px;
+  font-weight: 700;
+}
+.duel-countdown-content #duel-countdown-cancel-btn,
+.duel-countdown-content #duel-leave-btn {
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+.duel-countdown-content #duel-countdown-cancel-btn:hover,
+.duel-countdown-content #duel-leave-btn:hover {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.4);
+  color: #ef4444;
+}
+
 .duel-history-doc-btn {
   background: none;
   border: 1px solid var(--border);
