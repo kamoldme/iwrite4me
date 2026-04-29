@@ -1,6 +1,7 @@
 const express = require('express');
 const { findOne, updateOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
+const { incrementPlatformAI } = require('../utils/aiMetrics');
 
 const router = express.Router();
 
@@ -195,6 +196,8 @@ router.post('/ask', authenticate, async (req, res) => {
     await updateOne('users.json', u => u.id === user.id, {
       aiResearchUsedWeek: { week: isoWeek(), count: usage.count + 1 }
     });
+    // Also tick the platform-wide counter
+    incrementPlatformAI('research-ask').catch(() => {});
 
     res.json({
       answer,

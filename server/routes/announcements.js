@@ -188,40 +188,32 @@ const FIELD_PROMPTS = {
   }
 };
 
-// Shared weekly Gemini quota — same counter as /api/research/ask so admin
-// drafting and research consume one budget. Mirrors limits in research.js.
-const FREE_WEEKLY_LIMIT = 5;
-const PRO_WEEKLY_LIMIT = 50;
-function isoWeek(d = new Date()) {
-  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const dayNum = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
-  return `${date.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-}
-function resolveAIUsage(user) {
-  const usage = user.aiResearchUsedWeek || { week: '', count: 0 };
-  if (usage.week !== isoWeek()) return { week: isoWeek(), count: 0 };
-  return usage;
+// Platform-wide Gemini tracking lives in server/utils/aiMetrics.js so research
+// and announcement drafting share one counter. No per-user limits here.
+const { incrementPlatformAI, getPlatformAIMetrics } = require('../utils/aiMetrics');
+
+// Forgiving JSON parser — strips code fences and surrounding prose, then
+// extracts the first {...} block before parsing. Returns null on failure.
+function parseLooseJson(raw) {
+  if (!raw) return null;
+  let s = String(raw).trim();
+  // Strip ```json ... ``` or ``` ... ``` fences
+  s = s.replace(/^```(?:json|text)?\s*/i, '').replace(/\s*```\s*$/i, '');
+  // Try direct parse first
+  try { return JSON.parse(s); } catch {}
+  // Extract the first balanced {...} substring
+  const first = s.indexOf('{');
+  const last = s.lastIndexOf('}');
+  if (first >= 0 && last > first) {
+    const slice = s.slice(first, last + 1);
+    try { return JSON.parse(slice); } catch {}
+  }
+  return null;
 }
 
 router.post('/admin/draft', authenticate, requireAdmin, async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'AI service not configured' });
-
-  // Quota gate — admin still consumes the same weekly bucket as everyone else
-  const user = await findOne('users.json', u => u.id === req.user.id);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  const isPro = user.plan === 'premium';
-  const limit = isPro ? PRO_WEEKLY_LIMIT : FREE_WEEKLY_LIMIT;
-  const usage = resolveAIUsage(user);
-  if (usage.count >= limit) {
-    return res.status(429).json({
-      error: `Weekly AI limit reached (${usage.count}/${limit}). Resets next week.`,
-      usage: { used: usage.count, limit }
-    });
-  }
 
   const { intent, mode, field, currentValue, context } = req.body || {};
   const isFieldMode = field && FIELD_PROMPTS[field];
@@ -311,34 +303,52 @@ DO NOT
     const data = await resp.json();
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
 
-    // Increment shared weekly counter (best-effort; failure not fatal)
-    try {
-      await updateOne('users.json', u => u.id === user.id, {
-        aiResearchUsedWeek: { week: isoWeek(), count: usage.count + 1 }
-      });
-    } catch {}
-    const newUsage = { used: usage.count + 1, limit };
+    // Track platform-wide AI usage
+    const metrics = await incrementPlatformAI(isFieldMode ? `announcement-${field}` : 'announcement-draft');
+    const platform = metrics ? {
+      total: metrics.totalCalls,
+      today: metrics.callsToday,
+      thisWeek: metrics.callsThisWeek
+    } : null;
 
     if (isFieldMode) {
-      // Strip surrounding quotes Gemini sometimes adds
-      const cleaned = text.trim().replace(/^["']+|["']+$/g, '').trim();
+      // Strip surrounding quotes / code fences Gemini sometimes adds
+      let cleaned = text.trim();
+      cleaned = cleaned.replace(/^```(?:json|text)?\s*/i, '').replace(/\s*```\s*$/i, '');
+      cleaned = cleaned.replace(/^["']+|["']+$/g, '').trim();
       const value = cleaned.slice(0, FIELD_PROMPTS[field].cap);
       if (!value) return res.status(502).json({ error: 'AI returned empty result' });
-      return res.json({ value, usage: newUsage });
+      return res.json({ value, platform });
     }
 
-    let parsed;
-    try { parsed = JSON.parse(text); }
-    catch { return res.status(502).json({ error: 'AI returned malformed response' }); }
+    // Forgiving JSON parse: strip code fences, extract first {...} block.
+    const parsed = parseLooseJson(text);
+    if (!parsed) {
+      console.warn('[announcements/draft] could not parse JSON. Raw text:', text.slice(0, 500));
+      return res.status(502).json({ error: 'AI returned malformed response. Try again.' });
+    }
 
     const title = (parsed.title || '').slice(0, 80);
     const body = (parsed.body || '').slice(0, 500);
-    if (!title || !body) return res.status(502).json({ error: 'AI did not return title and body' });
+    if (!title || !body) {
+      console.warn('[announcements/draft] missing title/body. Parsed:', JSON.stringify(parsed).slice(0, 500));
+      return res.status(502).json({ error: 'AI did not return title and body' });
+    }
 
-    res.json({ title, body, usage: newUsage });
+    res.json({ title, body, platform });
   } catch (err) {
     console.error('Announcement draft error:', err);
     res.status(500).json({ error: 'Failed to draft announcement' });
+  }
+});
+
+// ───────── Admin: platform AI usage metrics ─────────
+router.get('/admin/platform-ai-usage', authenticate, requireAdmin, async (req, res) => {
+  try {
+    res.json(await getPlatformAIMetrics());
+  } catch (err) {
+    console.error('Platform AI metrics error:', err);
+    res.status(500).json({ error: 'Failed to load AI metrics' });
   }
 });
 

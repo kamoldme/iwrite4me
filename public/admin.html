@@ -3153,32 +3153,22 @@
 
     // ===== ANNOUNCEMENTS TAB =====
     let _allAnnouncements = [];
-    let _annAiQuota = null; // { used, limit, isPro }
+    let _annPlatformAI = null; // { total, today, thisWeek, bySource }
 
     function _renderAnnAiQuota() {
       const el = document.getElementById('ann-ai-quota');
-      if (!el || !_annAiQuota) return;
-      const { used, limit } = _annAiQuota;
-      const remaining = Math.max(0, limit - used);
-      const exhausted = used >= limit;
-      el.textContent = exhausted
-        ? `AI: ${used}/${limit} used this week — limit reached`
-        : `AI: ${used}/${limit} used this week (${remaining} left)`;
-      el.style.color = exhausted ? 'var(--danger)' : (remaining <= 3 ? 'var(--warning, var(--danger))' : 'var(--text-muted)');
-      // Disable AI buttons when exhausted
-      document.querySelectorAll('.ann-ai-icon-btn, #ann-ai-toggle').forEach(btn => {
-        btn.disabled = exhausted;
-        btn.style.opacity = exhausted ? '0.4' : '';
-        btn.style.cursor = exhausted ? 'not-allowed' : '';
-      });
+      if (!el || !_annPlatformAI) return;
+      const { total, today, thisWeek } = _annPlatformAI;
+      el.textContent = `Platform AI calls — today: ${today.toLocaleString()} · this week: ${thisWeek.toLocaleString()} · all-time: ${total.toLocaleString()}`;
+      el.style.color = 'var(--text-muted)';
     }
 
     async function loadAnnAiQuota() {
       try {
-        const data = await adminRequest('/research/quota');
-        _annAiQuota = { used: data.used, limit: data.limit, isPro: data.isPro };
+        const data = await adminRequest('/announcements/admin/platform-ai-usage');
+        _annPlatformAI = data;
         _renderAnnAiQuota();
-      } catch (e) { /* non-critical — leave quota label blank */ }
+      } catch (e) { /* non-critical */ }
     }
 
     function toggleAnnAi() {
@@ -3203,11 +3193,10 @@
         updateAnnPreview();
         status.textContent = 'Done';
         setTimeout(() => { status.textContent = ''; }, 2000);
-        if (data.usage) { _annAiQuota = { ..._annAiQuota, used: data.usage.used, limit: data.usage.limit }; _renderAnnAiQuota(); }
+        if (data.platform) { _annPlatformAI = { ..._annPlatformAI, ...data.platform }; _renderAnnAiQuota(); }
       } catch (e) {
         status.textContent = '';
         toast('AI failed: ' + e.message, 'error');
-        // Refresh quota in case server returned 429
         loadAnnAiQuota();
       }
     }
@@ -3289,8 +3278,8 @@
             <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;background:${cc}26;color:${cc}">${catLabel}</span>
             ${pinned ? '<span style="font-size:12px">📌</span>' : ''}
           </div>
-          <div style="font-size:24px;font-weight:700;letter-spacing:-0.4px;line-height:1.2;color:var(--text-primary);margin-bottom:8px">${esc(title || '(title)')}</div>
-          ${subtitle ? `<div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">${esc(subtitle)}</div>` : ''}
+          <div style="font-size:32px;font-weight:700;letter-spacing:-0.5px;line-height:1.15;color:var(--text-primary);margin-bottom:10px">${esc(title || '(title)')}</div>
+          ${subtitle ? `<div style="font-size:15px;color:var(--text-muted);margin-bottom:14px;line-height:1.45">${esc(subtitle)}</div>` : ''}
           <div style="font-size:14px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.65">${esc(body || '(body)')}</div>
           ${linkUrl ? `<div style="margin-top:16px"><span style="display:inline-block;padding:8px 14px;background:var(--accent);color:#0a0a0a;border-radius:10px;font-size:12px;font-weight:600">${esc(linkLabel)} →</span></div>` : ''}
         </div>`;
@@ -3356,7 +3345,7 @@
             fieldEl.value = data.value;
             updateAnnPreview();
             closeAnnFieldAI();
-            if (data.usage) { _annAiQuota = { ..._annAiQuota, used: data.usage.used, limit: data.usage.limit }; _renderAnnAiQuota(); }
+            if (data.platform) { _annPlatformAI = { ..._annPlatformAI, ...data.platform }; _renderAnnAiQuota(); }
           } else {
             status.textContent = 'AI returned nothing';
           }
