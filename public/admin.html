@@ -3188,10 +3188,9 @@
       try {
         const fd = new FormData();
         fd.append('image', file);
-        const token = localStorage.getItem('iwrite_token');
         const res = await fetch('/api/announcements/admin/upload-image', {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token },
+          headers: { 'Authorization': 'Bearer ' + adminToken },
           body: fd
         });
         if (!res.ok) {
