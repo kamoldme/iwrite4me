@@ -11599,7 +11599,7 @@ a.lb-name-link .lb-username {
 }
 .duel-mm-dur-btn {
   padding: 6px 12px;
-  border: none;
+  border: 1.5px solid transparent;
   background: transparent;
   color: var(--text-secondary);
   font-size: 13px;
@@ -11610,9 +11610,10 @@ a.lb-name-link .lb-username {
 }
 .duel-mm-dur-btn:hover { color: var(--text-primary); }
 .duel-mm-dur-btn.active {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  background: rgba(74,222,128,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(74,222,128,0.18);
 }
 .duel-mm-find-btn { padding: 8px 18px; }
 
@@ -11622,16 +11623,23 @@ a.lb-name-link .lb-username {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  overflow: visible; /* let the PRO chip break out of the pill */
 }
 .duel-mm-pro-badge {
+  position: absolute;
+  top: -7px;
+  right: -10px;
   font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
-  color: #0a0a0a;
-  padding: 1px 5px;
+  letter-spacing: 0.4px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  padding: 2px 6px;
   border-radius: 4px;
-  margin-left: 2px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(245,158,11,0.4);
+  pointer-events: none;
+  line-height: 1;
 }
 .duel-mm-custom-input {
   width: 80px;
