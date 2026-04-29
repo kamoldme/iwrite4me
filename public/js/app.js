@@ -2575,8 +2575,10 @@ const App = {
       ${a.subtitle ? `<div class="ann-modal-subtitle">${this.escapeHtml(a.subtitle)}</div>` : ''}
       <div class="ann-modal-text">${this.escapeHtml(a.body || '')}</div>
       <div class="ann-modal-actions">
-        <button class="ann-like-btn" id="ann-like-btn" type="button">
-          <span class="ann-like-heart">♡</span>
+        <button class="ann-like-btn" id="ann-like-btn" type="button" aria-pressed="false">
+          <svg class="ann-like-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
           <span id="ann-like-count">—</span>
         </button>
         ${a.linkUrl ? `<a class="ann-modal-link" href="${this.escapeHtml(a.linkUrl)}" target="_blank" rel="noopener" style="margin-top:0">${this.escapeHtml(a.linkLabel || 'Read more')} →</a>` : ''}
@@ -2668,7 +2670,9 @@ const App = {
     const countEl = document.getElementById('ann-like-count');
     if (!btn || !heart || !countEl) return;
     btn.classList.toggle('liked', !!liked);
-    heart.textContent = liked ? '♥' : '♡';
+    btn.setAttribute('aria-pressed', String(!!liked));
+    // Toggle SVG fill: outlined when not liked, filled (currentColor) when liked.
+    heart.setAttribute('fill', liked ? 'currentColor' : 'none');
     countEl.textContent = count.toLocaleString();
   },
 

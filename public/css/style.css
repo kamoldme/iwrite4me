@@ -9563,11 +9563,16 @@ body.editor-active .mobile-sidebar-toggle {
   background: rgba(239, 68, 68, 0.18);
 }
 .ann-like-btn .ann-like-heart {
-  font-size: 15px;
-  transition: transform 0.2s ease;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, fill 0.18s ease;
 }
 .ann-like-btn.liked .ann-like-heart {
   transform: scale(1.15);
+}
+.ann-like-btn .ann-like-heart path {
+  transition: fill 0.18s ease;
 }
 .ann-like-btn:disabled { opacity: 0.5; cursor: wait; }
 

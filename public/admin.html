@@ -3451,6 +3451,9 @@
       } catch (e) { toast('Failed: ' + e.message, 'error'); }
     }
 
+    const HEART_SVG_FILLED = '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none" style="vertical-align:-2px;margin-right:4px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    const HEART_SVG_FILLED_LG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" stroke="none" style="vertical-align:-3px;margin-right:6px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+
     async function loadAnnouncementsAdmin() {
       try {
         _allAnnouncements = await adminRequest('/announcements/admin/list-with-stats');
@@ -3471,7 +3474,7 @@
             <td>${a.audience === 'pro' ? 'Pro only' : 'Everyone'}</td>
             <td>${a.active === false ? '<span style="color:var(--text-muted)">Inactive</span>' : '<span style="color:var(--success)">Active</span>'}</td>
             <td style="font-weight:600">${views.toLocaleString()}</td>
-            <td style="font-weight:600;color:${likes > 0 ? '#ef4444' : 'inherit'}">${likes > 0 ? '♥ ' : ''}${likes.toLocaleString()}</td>
+            <td style="font-weight:600;color:${likes > 0 ? '#ef4444' : 'inherit'}">${likes > 0 ? HEART_SVG_FILLED : ''}${likes.toLocaleString()}</td>
             <td style="font-size:12px">${fmt(a.createdAt)}</td>
             <td style="white-space:nowrap">
               <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="openAnnStats('${a.id}')">Stats</button>
@@ -3523,7 +3526,7 @@
         </div>
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px">
           <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Likes</div>
-          <div style="font-size:24px;font-weight:700;margin-top:4px;color:${(data.likes?.count || 0) > 0 ? '#ef4444' : 'inherit'}">${(data.likes?.count || 0) > 0 ? '♥ ' : ''}${(data.likes?.count || 0).toLocaleString()}</div>
+          <div style="font-size:24px;font-weight:700;margin-top:4px;color:${(data.likes?.count || 0) > 0 ? '#ef4444' : 'inherit'}">${(data.likes?.count || 0) > 0 ? HEART_SVG_FILLED_LG : ''}${(data.likes?.count || 0).toLocaleString()}</div>
         </div>
       </div>`;
       const viewersBlock = viewers.length
