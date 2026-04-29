@@ -9279,7 +9279,7 @@ body.editor-active .mobile-sidebar-toggle {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 16px; /* matches dashboard-stats-row → xp-bar-container gap */
 }
 .dashboard-hero-row.has-announcements {
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
@@ -9430,8 +9430,8 @@ body.editor-active .mobile-sidebar-toggle {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(560px, 92vw);
-  max-height: 85vh;
+  width: min(760px, 95vw);
+  max-height: 92vh;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -9462,26 +9462,28 @@ body.editor-active .mobile-sidebar-toggle {
   transition: background 0.15s;
 }
 .ann-modal-close:hover { background: rgba(0,0,0,0.7); }
+/* Image: any aspect ratio. object-fit: contain preserves whole image
+   (no crop), max-height caps tall portraits at a comfortable size. */
 .ann-modal-image {
+  display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  max-height: min(560px, 55vh);
+  object-fit: contain;
   background: var(--bg-tertiary);
-  background-size: cover;
-  background-position: center;
   flex-shrink: 0;
 }
 .ann-modal-body {
-  padding: 22px 28px 26px;
+  padding: 24px 32px 28px;
   overflow-y: auto;
   flex: 1;
 }
 .ann-modal-title {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.4px;
   line-height: 1.2;
-  margin: 10px 0 8px;
+  margin: 12px 0 10px;
   color: var(--text-primary);
 }
 .ann-modal-subtitle {
@@ -9490,8 +9492,8 @@ body.editor-active .mobile-sidebar-toggle {
   margin-bottom: 14px;
 }
 .ann-modal-text {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.65;
   color: var(--text-secondary);
   white-space: pre-wrap;
 }

@@ -2563,7 +2563,7 @@ const App = {
     const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
 
     imageWrap.innerHTML = a.imageUrl
-      ? `<div class="ann-modal-image" style="background-image:url('${this.escapeHtml(a.imageUrl)}')"></div>`
+      ? `<img class="ann-modal-image" src="${this.escapeHtml(a.imageUrl)}" alt="">`
       : '';
     content.innerHTML = `
       <div class="ann-cat-row" style="margin-bottom:6px">

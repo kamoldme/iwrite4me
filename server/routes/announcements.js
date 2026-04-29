@@ -150,9 +150,12 @@ router.post('/admin/upload-image', authenticate, requireAdmin, imageUpload.singl
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     const filename = `${uuid()}.jpg`;
     const filepath = path.join(ANNOUNCEMENTS_DIR, filename);
+    // Accept any aspect ratio (portrait, landscape, square, panorama).
+    // Resize fits inside a 1600x1600 box preserving aspect — no cropping.
     await sharp(req.file.buffer)
-      .resize(1200, null, { withoutEnlargement: true })
-      .jpeg({ quality: 80 })
+      .rotate() // honor EXIF orientation
+      .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 82 })
       .toFile(filepath);
     res.json({ imageUrl: `/uploads/announcements/${filename}` });
   } catch (err) {
