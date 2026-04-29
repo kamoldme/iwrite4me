@@ -952,6 +952,21 @@ const App = {
     document.getElementById('duel-cancel').addEventListener('click', () => this.closeDuelModal());
     document.getElementById('duel-start').addEventListener('click', () => this.createDuel());
 
+    // Matchmaking
+    document.querySelectorAll('.duel-mm-dur-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.duel-mm-dur-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this._mmDuration = btn.dataset.duration;
+      });
+    });
+    document.getElementById('duel-mm-find-btn')?.addEventListener('click', () => this.matchmakingFind());
+    document.getElementById('duel-mm-cancel-btn')?.addEventListener('click', () => this.matchmakingCancel());
+
+    // Start lobby-pulse polling on app load (every 30s)
+    this.refreshDuelLobbyPulse();
+    this._duelsLobbyInterval = setInterval(() => this.refreshDuelLobbyPulse(), 30000);
+
     document.querySelectorAll('#duel-time-presets .time-preset[data-minutes]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('#duel-time-presets .time-preset').forEach(b => b.classList.remove('active'));
@@ -2960,6 +2975,148 @@ const App = {
   closeDuelModal() {
     document.getElementById('duel-modal').classList.remove('active');
     document.getElementById('duel-friend-select').disabled = false;
+  },
+
+  // ───── Matchmaking ─────
+  _mmDuration: '3m',
+  _mmInQueue: false,
+  _mmHeartbeatInterval: null,
+  _mmJoinedAt: null,
+
+  async refreshDuelLobbyPulse() {
+    if (!API.getToken || !API.getToken()) return;
+    try {
+      const res = await fetch('/api/duels/queue/lobby', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      // Subtract 1 if I'm in queue myself — only show pulse for OTHERS waiting
+      const others = Math.max(0, (data.waitingCount || 0) - (this._mmInQueue ? 1 : 0));
+      const pulse = document.getElementById('duels-lobby-pulse');
+      if (pulse) pulse.style.display = others > 0 ? 'inline-block' : 'none';
+      // Also update the in-page lobby chip if visible
+      const chip = document.getElementById('duel-mm-pulse');
+      const chipCount = document.getElementById('duel-mm-pulse-count');
+      const lobbyText = document.getElementById('duel-mm-lobby-text');
+      if (chip && chipCount) {
+        chip.style.display = others > 0 ? 'inline-flex' : 'none';
+        chipCount.textContent = others;
+      }
+      if (lobbyText) {
+        lobbyText.textContent = others > 0
+          ? `${others} ${others === 1 ? 'person is' : 'people are'} waiting right now. Join in.`
+          : 'Get matched with someone looking for a duel right now.';
+      }
+    } catch {}
+  },
+
+  async matchmakingFind() {
+    const dur = this._mmDuration || '3m';
+    const findBtn = document.getElementById('duel-mm-find-btn');
+    if (findBtn) { findBtn.disabled = true; findBtn.textContent = 'Joining…'; }
+    try {
+      const res = await fetch('/api/duels/queue/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.getToken()}` },
+        body: JSON.stringify({ duration: dur })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        this.toast(data.error || 'Failed to join queue', 'error');
+        if (findBtn) { findBtn.disabled = false; findBtn.textContent = 'Find opponent'; }
+        return;
+      }
+      if (data.matched && data.duelId) {
+        this._mmEnterDuel(data.duelId);
+        return;
+      }
+      // Waiting state
+      this._mmInQueue = true;
+      this._mmJoinedAt = Date.now();
+      this._mmShowWaiting(dur);
+      this._mmHeartbeatInterval = setInterval(() => this._mmHeartbeat(), 3000);
+      this.refreshDuelLobbyPulse();
+    } catch (e) {
+      this.toast('Failed to join queue', 'error');
+      if (findBtn) { findBtn.disabled = false; findBtn.textContent = 'Find opponent'; }
+    }
+  },
+
+  async matchmakingCancel() {
+    clearInterval(this._mmHeartbeatInterval);
+    this._mmHeartbeatInterval = null;
+    this._mmInQueue = false;
+    try {
+      await fetch('/api/duels/queue/leave', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+    } catch {}
+    this._mmShowIdle();
+    this.refreshDuelLobbyPulse();
+  },
+
+  async _mmHeartbeat() {
+    try {
+      const res = await fetch('/api/duels/queue/heartbeat', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.status === 'matched' && data.duelId) {
+        clearInterval(this._mmHeartbeatInterval);
+        this._mmHeartbeatInterval = null;
+        this._mmInQueue = false;
+        this._mmEnterDuel(data.duelId);
+        return;
+      }
+      if (data.status === 'idle') {
+        // We were evicted (stale)
+        clearInterval(this._mmHeartbeatInterval);
+        this._mmHeartbeatInterval = null;
+        this._mmInQueue = false;
+        this._mmShowIdle();
+        return;
+      }
+      // status === 'waiting'
+      const elapsed = Math.floor((Date.now() - this._mmJoinedAt) / 1000);
+      const elapsedEl = document.getElementById('duel-mm-elapsed');
+      const countEl = document.getElementById('duel-mm-waiting-count');
+      if (elapsedEl) elapsedEl.textContent = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed/60)}m ${elapsed%60}s`;
+      if (countEl) countEl.textContent = data.waitingCount || 0;
+    } catch {}
+  },
+
+  _mmShowWaiting(duration) {
+    document.getElementById('duel-mm-idle').style.display = 'none';
+    document.getElementById('duel-mm-waiting').style.display = 'flex';
+    const label = document.getElementById('duel-mm-duration-label');
+    if (label) label.textContent = duration === '10m' ? '10 min' : duration === '5m' ? '5 min' : '3 min';
+    const elapsedEl = document.getElementById('duel-mm-elapsed');
+    if (elapsedEl) elapsedEl.textContent = '0s';
+  },
+
+  _mmShowIdle() {
+    document.getElementById('duel-mm-idle').style.display = '';
+    document.getElementById('duel-mm-waiting').style.display = 'none';
+    const findBtn = document.getElementById('duel-mm-find-btn');
+    if (findBtn) { findBtn.disabled = false; findBtn.textContent = 'Find opponent'; }
+  },
+
+  _mmEnterDuel(duelId) {
+    this._mmShowIdle();
+    this.toast('Match found! Entering duel…', 'success', 2000);
+    // Drop straight into the countdown — duel was created with status='countdown'
+    setTimeout(() => {
+      if (typeof this.enterDuelCountdown === 'function') {
+        this.enterDuelCountdown(duelId);
+      } else {
+        window.location.hash = 'duels';
+        this.loadDuelsView();
+      }
+    }, 300);
   },
 
   async loadDuelsView() {

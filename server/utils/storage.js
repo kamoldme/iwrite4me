@@ -26,7 +26,8 @@ const TABLE_MAP = {
   'prompts.json': 'prompts',
   'announcements.json': 'announcements',
   'announcement-views.json': 'announcement_views',
-  'announcement-likes.json': 'announcement_likes'
+  'announcement-likes.json': 'announcement_likes',
+  'duel-queue.json': 'duel_queue'
 };
 
 function getTable(filename) {
@@ -64,6 +65,8 @@ async function initDB() {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_announcement_views_user_ann ON announcement_views ((data->>'userId'), (data->>'announcementId'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_announcement_likes_ann ON announcement_likes ((data->>'announcementId'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_announcement_likes_user_ann ON announcement_likes ((data->>'userId'), (data->>'announcementId'))`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_duel_queue_user ON duel_queue ((data->>'userId'))`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_duel_queue_duration_joined ON duel_queue ((data->>'duration'), (data->>'joinedAt'))`);
 }
 
 async function findOne(filename, predicate) {
