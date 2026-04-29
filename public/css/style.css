@@ -11669,48 +11669,97 @@ a.lb-name-link .lb-username {
   color: var(--text-muted);
   margin-bottom: 8px;
 }
+/* Active Lobbies — vertical list of long, wide rows. One row per waiting user. */
 .duel-mm-lobby-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
   align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-  gap: 12px;
+  gap: 18px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
-.duel-mm-lobby-row:last-child { border-bottom: none; }
-.duel-mm-lobby-dur {
+.duel-mm-lobby-row:last-child { margin-bottom: 0; }
+.duel-mm-lobby-row:hover { border-color: rgba(74,222,128,0.4); }
+.duel-mm-lobby-user { min-width: 0; }
+.duel-mm-lobby-name {
+  font-size: 14px;
   font-weight: 700;
-  font-size: 13px;
   color: var(--text-primary);
-}
-.duel-mm-lobby-meta {
-  display: flex;
-  gap: 10px;
+  display: inline-flex;
   align-items: center;
-  font-size: 11px;
-  color: var(--text-muted);
+  gap: 6px;
 }
-.duel-mm-lobby-count {
-  color: #4ade80;
+.duel-mm-lobby-pro {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.duel-mm-lobby-username {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.duel-mm-lobby-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.duel-mm-lobby-stat-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 4px;
+}
+.duel-mm-lobby-dur {
+  color: var(--text-primary);
   font-weight: 700;
 }
+.duel-mm-lobby-wait { color: #4ade80; font-weight: 700; }
 .duel-mm-lobby-join-btn {
-  padding: 4px 10px;
-  font-size: 11px;
+  position: relative;
+  padding: 10px 28px;
+  font-size: 13px;
   background: var(--accent);
   color: #0a0a0a;
   border: none;
-  border-radius: 6px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   cursor: pointer;
-  transition: filter 0.15s;
+  transition: transform 0.18s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.18s ease, filter 0.15s ease;
+  box-shadow: 0 2px 8px rgba(74,222,128,0.25);
+  min-width: 110px;
 }
-.duel-mm-lobby-join-btn:hover { filter: brightness(1.1); }
+.duel-mm-lobby-join-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 18px rgba(74,222,128,0.45);
+  filter: brightness(1.08);
+}
+.duel-mm-lobby-join-btn:active { transform: translateY(0) scale(1); }
 .duel-mm-lobby-empty {
   text-align: center;
   color: var(--text-muted);
-  padding: 16px 0;
+  padding: 20px 0;
   font-size: 12px;
+}
+@media (max-width: 600px) {
+  .duel-mm-lobby-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .duel-mm-lobby-join-btn { width: 100%; }
 }
 .duel-mm-waiting {
   display: flex;
@@ -11737,7 +11786,36 @@ a.lb-name-link .lb-username {
   font-size: 12px;
   color: var(--text-muted);
 }
-.duel-mm-cancel-btn { margin-top: 4px; }
+.duel-mm-cancel-btn {
+  margin-top: 4px;
+  padding: 8px 22px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.duel-mm-cancel-btn:hover {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.4);
+  color: #ef4444;
+}
+.duel-mm-waiting-timeout {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+/* Strip native number input spinners on the custom-duration input */
+.duel-mm-custom-input::-webkit-outer-spin-button,
+.duel-mm-custom-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.duel-mm-custom-input { -moz-appearance: textfield; appearance: textfield; }
 
 /* Sidebar duels-nav indicator — green chip with count when others are looking */
 .duels-lobby-pulse {

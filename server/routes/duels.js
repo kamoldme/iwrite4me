@@ -156,13 +156,23 @@ const STANDARD_DURATIONS_MIN = [10, 30, 45];
 const PRO_CUSTOM_MIN = 5;
 const PRO_CUSTOM_MAX = 180;
 
-// Validates a requested duration against the user's plan. Returns the integer
-// duration in minutes, or null if invalid.
-function validateDuration(durationRaw, isPro) {
+// Validates a requested duration against the user's plan + the live queue.
+// Free users can pick STANDARD durations OR join an existing custom lobby
+// that a PRO user already created. Returns the integer duration or null.
+async function validateDuration(durationRaw, isPro, currentUserId) {
   const d = parseInt(durationRaw, 10);
   if (!Number.isFinite(d) || d <= 0) return null;
   if (STANDARD_DURATIONS_MIN.includes(d)) return d;
   if (isPro && d >= PRO_CUSTOM_MIN && d <= PRO_CUSTOM_MAX) return d;
+  // Free user picking a custom duration: only allow if a PRO user is already
+  // waiting at that exact duration. Joining an existing PRO-created lobby
+  // doesn't require the joiner to be PRO.
+  if (!isPro && d >= PRO_CUSTOM_MIN && d <= PRO_CUSTOM_MAX) {
+    const existing = await findOne('duel-queue.json', q =>
+      Number(q.duration) === d && q.userId !== currentUserId
+    );
+    if (existing) return d;
+  }
   return null;
 }
 
@@ -215,12 +225,12 @@ router.post('/queue/join', async (req, res) => {
     await cleanupStaleDuels();
     const me = await findOne('users.json', u => u.id === req.user.id);
     const isPro = me?.plan === 'premium';
-    const duration = validateDuration(req.body?.duration, isPro);
+    const duration = await validateDuration(req.body?.duration, isPro, req.user.id);
     if (!duration) {
       return res.status(400).json({
         error: isPro
           ? `Invalid duration. Use ${STANDARD_DURATIONS_MIN.join('/')} min, or a custom ${PRO_CUSTOM_MIN}–${PRO_CUSTOM_MAX} min.`
-          : `Invalid duration. Use ${STANDARD_DURATIONS_MIN.join('/')} min. (Custom durations are PRO only.)`
+          : `Invalid duration. Use ${STANDARD_DURATIONS_MIN.join('/')} min, or join an existing custom lobby. (Creating a custom duration requires PRO.)`
       });
     }
 
@@ -312,6 +322,37 @@ router.post('/queue/heartbeat', async (req, res) => {
   } catch (err) {
     console.error('Queue heartbeat error:', err);
     res.status(500).json({ error: 'Heartbeat failed' });
+  }
+});
+
+// GET /queue/lobby-detail — per-user list of who's waiting, with name,
+// username, duration, and wait time. Used by the in-page Active Lobbies
+// section. Excludes the current user from the list.
+router.get('/queue/lobby-detail', async (req, res) => {
+  try {
+    await cleanupStaleDuels();
+    const all = await findMany('duel-queue.json');
+    const others = all.filter(q => q.userId !== req.user.id);
+    if (!others.length) return res.json({ entries: [], waitingCount: 0 });
+    const userIds = [...new Set(others.map(q => q.userId))];
+    const users = await findMany('users.json', u => userIds.includes(u.id));
+    const userById = Object.fromEntries(users.map(u => [u.id, u]));
+    const now = Date.now();
+    const entries = others.map(q => {
+      const u = userById[q.userId] || {};
+      return {
+        userId: q.userId,
+        name: u.name || 'Unknown',
+        username: u.username || null,
+        plan: u.plan || 'free',
+        duration: Number(q.duration),
+        waitMs: now - new Date(q.joinedAt).getTime()
+      };
+    }).sort((a, b) => b.waitMs - a.waitMs);
+    res.json({ entries, waitingCount: entries.length });
+  } catch (err) {
+    console.error('Lobby detail error:', err);
+    res.json({ entries: [], waitingCount: 0 });
   }
 });
 

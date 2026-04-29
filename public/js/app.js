@@ -957,9 +957,10 @@ const App = {
       btn.addEventListener('click', () => {
         const isCustom = btn.dataset.duration === 'custom';
         if (isCustom) {
-          // PRO gate
+          // PRO gate — free users sent straight to Upgrade
           if (!this.user || this.user.plan !== 'premium') {
-            this.toast('Custom durations are PRO only. Upgrade to unlock.', 'info');
+            this.toast('Custom durations require PRO.', 'info', 2000);
+            this.switchView('upgrade');
             return;
           }
         }
@@ -979,6 +980,10 @@ const App = {
         }
       });
     });
+    // Hide PRO badge on the "+" pill for PRO users
+    if (this.user?.plan === 'premium') {
+      document.querySelectorAll('.duel-mm-pro-badge').forEach(b => b.style.display = 'none');
+    }
     document.getElementById('duel-mm-custom-input')?.addEventListener('input', (e) => {
       const v = Math.min(Math.max(parseInt(e.target.value) || 0, 5), 180);
       this._mmDuration = v;
@@ -2982,12 +2987,15 @@ const App = {
     document.getElementById('duel-modal').classList.add('active');
     const select = document.getElementById('duel-friend-select');
     select.innerHTML = '<option value="">Loading friends...</option>';
-    // Always fetch fresh friends list
+    // Always fetch fresh friends list. The endpoint returns
+    // { friends: [...], total, page, limit } — extract the array.
     try {
-      const friends = await API.getFriends();
-      this.friends = friends;
+      const resp = await API.getFriends(1, 'added', 100);
+      this.friends = Array.isArray(resp) ? resp : (resp?.friends || []);
     } catch {}
-    select.innerHTML = '<option value="">Choose a friend...</option>';
+    select.innerHTML = (this.friends || []).length === 0
+      ? '<option value="">No friends yet — add some first</option>'
+      : '<option value="">Choose a friend...</option>';
     (this.friends || []).forEach(f => {
       select.innerHTML += `<option value="${f.id}">${this.escapeHtml(f.name)}</option>`;
     });
@@ -3051,15 +3059,28 @@ const App = {
     } catch {}
   },
 
-  toggleLobbyPopover() {
+  async toggleLobbyPopover(forceOpen) {
     const pop = document.getElementById('duel-mm-lobby-popover');
     if (!pop) return;
-    if (pop.style.display === 'none' || !pop.style.display) {
-      this._renderLobbyPopover();
-      pop.style.display = 'block';
-    } else {
+    const isOpen = pop.style.display && pop.style.display !== 'none';
+    if (forceOpen === false || (isOpen && forceOpen !== true)) {
       pop.style.display = 'none';
+      return;
     }
+    await this._fetchLobbyDetail();
+    this._renderLobbyPopover();
+    pop.style.display = 'block';
+  },
+
+  async _fetchLobbyDetail() {
+    try {
+      const res = await fetch('/api/duels/queue/lobby-detail', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) { this._mmLobbyEntries = []; return; }
+      const data = await res.json();
+      this._mmLobbyEntries = data.entries || [];
+    } catch { this._mmLobbyEntries = []; }
   },
 
   _renderLobbyPopover() {
@@ -3072,21 +3093,35 @@ const App = {
       const rs = s % 60;
       return `${m}m ${rs}s`;
     };
-    const buckets = (this._mmLobbyBuckets || []).filter(b => b.count > 0);
-    if (!buckets.length) {
-      list.innerHTML = '<div class="duel-mm-lobby-empty">No active lobbies. Be the first to start one.</div>';
+    const entries = this._mmLobbyEntries || [];
+    if (!entries.length) {
+      list.innerHTML = '<div class="duel-mm-lobby-empty">No one waiting yet. Be the first to start a lobby.</div>';
       return;
     }
-    list.innerHTML = buckets.map(b => `
+    list.innerHTML = entries.map(e => `
       <div class="duel-mm-lobby-row">
-        <div class="duel-mm-lobby-dur">${b.duration} min</div>
-        <div class="duel-mm-lobby-meta">
-          <span><span class="duel-mm-lobby-count">${b.count}</span> waiting</span>
-          <span>oldest: ${fmtWait(b.oldestWaitMs || 0)}</span>
+        <div class="duel-mm-lobby-user">
+          <div class="duel-mm-lobby-name">${this.escapeHtml(e.name)}${e.plan === 'premium' ? ' <span class="duel-mm-lobby-pro">PRO</span>' : ''}</div>
+          ${e.username ? `<div class="duel-mm-lobby-username">@${this.escapeHtml(e.username)}</div>` : ''}
         </div>
-        <button class="duel-mm-lobby-join-btn" onclick="App.matchmakingJoinDuration(${b.duration})">Join</button>
+        <div class="duel-mm-lobby-stats">
+          <div><span class="duel-mm-lobby-stat-label">Duel</span> <span class="duel-mm-lobby-dur">${e.duration} min</span></div>
+          <div><span class="duel-mm-lobby-stat-label">Waiting</span> <span class="duel-mm-lobby-wait">${fmtWait(e.waitMs)}</span></div>
+        </div>
+        <button class="duel-mm-lobby-join-btn" onclick="App.matchmakingJoinDuration(${e.duration})">Join duel</button>
       </div>
     `).join('');
+  },
+
+  // Live-refresh lobby rows every 5s while the popover is open
+  _startLobbyDetailPoll() {
+    clearInterval(this._lobbyDetailInterval);
+    this._lobbyDetailInterval = setInterval(async () => {
+      const pop = document.getElementById('duel-mm-lobby-popover');
+      if (!pop || pop.style.display === 'none') return;
+      await this._fetchLobbyDetail();
+      this._renderLobbyPopover();
+    }, 5000);
   },
 
   matchmakingJoinDuration(duration) {
@@ -3162,6 +3197,13 @@ const App = {
   },
 
   async _mmHeartbeat() {
+    // Hard cap: stop searching after 5 minutes
+    const MAX_QUEUE_MS = 5 * 60 * 1000;
+    if (this._mmJoinedAt && (Date.now() - this._mmJoinedAt) >= MAX_QUEUE_MS) {
+      this.matchmakingCancel();
+      this.toast("No opponent found in 5 minutes. Try again or pick a different duration.", 'info', 5000);
+      return;
+    }
     try {
       const res = await fetch('/api/duels/queue/heartbeat', {
         method: 'POST',
@@ -3186,10 +3228,13 @@ const App = {
       }
       // status === 'waiting'
       const elapsed = Math.floor((Date.now() - this._mmJoinedAt) / 1000);
+      const remaining = Math.max(0, Math.ceil((MAX_QUEUE_MS - (Date.now() - this._mmJoinedAt)) / 1000));
       const elapsedEl = document.getElementById('duel-mm-elapsed');
       const countEl = document.getElementById('duel-mm-waiting-count');
+      const remainingEl = document.getElementById('duel-mm-time-left');
       if (elapsedEl) elapsedEl.textContent = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed/60)}m ${elapsed%60}s`;
       if (countEl) countEl.textContent = data.waitingCount || 0;
+      if (remainingEl) remainingEl.textContent = remaining < 60 ? `${remaining}s` : `${Math.floor(remaining/60)}m ${remaining%60}s`;
     } catch {}
   },
 
@@ -3242,6 +3287,20 @@ const App = {
   },
 
   async loadDuelsView() {
+    // Auto-open the Active Lobbies popover and start the live refresh poll
+    // whenever the user enters the Duels view (only if not already in queue —
+    // when waiting, the matchmaking section switches to its own UI anyway).
+    if (!this._mmInQueue) {
+      this.toggleLobbyPopover(true);
+      this._startLobbyDetailPoll();
+    }
+    // Hide the PRO badge on the "+" pill for premium users (in case the user
+    // upgraded after page load and we're re-entering the view).
+    if (this.user?.plan === 'premium') {
+      document.querySelectorAll('.duel-mm-pro-badge').forEach(b => b.style.display = 'none');
+    } else {
+      document.querySelectorAll('.duel-mm-pro-badge').forEach(b => b.style.display = '');
+    }
     try {
       const duelHistoryPage = this._duelHistoryPage || 1;
       const [requests, sentDuels, historyData] = await Promise.all([
