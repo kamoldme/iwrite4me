@@ -2532,12 +2532,21 @@ const App = {
     if (!container || !this._announcements?.length) return;
 
     const items = this._announcements;
-    // Compact card: title (BIG) + subtitle ONLY. No image, no body, no link button.
-    // Whole card is clickable → opens expand modal.
+    // Compact card: title (BIG) + subtitle (short tease) + body preview
+    // (truncated, fills remaining space). No image, no link button.
+    // Whole card is clickable → opens expand modal for full content.
     const slides = items.map((a, i) => {
       const cat = a.category || 'update';
       const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
-      const subtitle = a.subtitle || (a.body || '').slice(0, 80) + ((a.body || '').length > 80 ? '…' : '');
+      // Subtitle: explicit field if present, else first slice of body as fallback.
+      // Body preview: full body text, line-clamped via CSS to 3 lines with ellipsis.
+      // If no explicit subtitle, derive a short tease from body so we don't
+      // double-show the same text in both subtitle and body-preview.
+      const hasExplicitSubtitle = !!a.subtitle;
+      const subtitle = hasExplicitSubtitle
+        ? a.subtitle
+        : ((a.body || '').slice(0, 80) + ((a.body || '').length > 80 ? '…' : ''));
+      const showBodyPreview = hasExplicitSubtitle && a.body && a.body.length > 0;
       return `
         <div class="ann-slide${i === this._announcementIdx ? ' active' : ''}" data-idx="${i}" role="button" tabindex="0" aria-label="Open announcement: ${this.escapeHtml(a.title)}">
           <div class="ann-content">
@@ -2547,6 +2556,7 @@ const App = {
             </div>
             <div class="ann-title">${this.escapeHtml(a.title)}</div>
             <div class="ann-subtitle">${this.escapeHtml(subtitle)}</div>
+            ${showBodyPreview ? `<div class="ann-body-preview">${this.escapeHtml(a.body)}</div>` : ''}
             <div class="ann-expand-hint">Tap to read more →</div>
           </div>
         </div>`;
