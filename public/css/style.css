@@ -9334,7 +9334,7 @@ body.editor-active .mobile-sidebar-toggle {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 300px;
+  min-height: 280px;
 }
 .ann-slide {
   display: none;
@@ -9406,7 +9406,7 @@ body.editor-active .mobile-sidebar-toggle {
   flex: 1;
   min-height: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
