@@ -9403,15 +9403,20 @@ body.editor-active .mobile-sidebar-toggle {
   color: var(--text-muted);
   line-height: 1.5;
   margin-top: 8px;
-  flex: 1;
-  min-height: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: pre-wrap;
+  /* Hard cap: exactly 2 lines, no flex stretch, no third-line bleed */
+  max-height: calc(12.5px * 1.5 * 2);
+  min-height: calc(12.5px * 1.5 * 2);
 }
+/* Push the expand-hint to the bottom of the card so removing flex:1 from
+   body-preview doesn't leave the hint floating mid-card. */
+.ann-content { justify-content: flex-start; }
+.ann-expand-hint { margin-top: auto; padding-top: 10px; }
 .ann-expand-hint {
   font-size: 11px;
   color: var(--accent);
