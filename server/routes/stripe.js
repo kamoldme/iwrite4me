@@ -762,7 +762,8 @@ async function reconcileStripeSubscriptions() {
     }
     if (restored.length > 0) {
       console.log(`[stripe-reconcile] restored ${restored.length} user(s):`, restored.map(r => r.email).join(', '));
-      try { require('../telegram').notifyStripeReconciled(restored); } catch {}
+      // Per-user "Subscription Renewed" pings already fired inside the loop —
+      // the batch summary was redundant noise, removed.
     } else {
       console.log('[stripe-reconcile] scanned ' + candidates.length + ' candidates, none needed restoration');
     }
@@ -785,12 +786,15 @@ async function reconcileStripeSubscriptions() {
           await updateOne('users.json', u => u.id === user.id, { cancelAtPeriodEnd: willCancel, cancelAt });
           cancelStateUpdates++;
           // If newly discovered cancellation, log it so it appears in history
+          // AND send the catch-up Telegram (the webhook would have fired this
+          // when the user clicked Cancel; reconcile now covers webhook misses).
           if (willCancel && !user.cancelAtPeriodEnd) {
             logAction('stripe_subscription_will_cancel', {
               subscriptionId: sub.id,
               cancelAt,
               source: 'reconcile'
             }, user.id);
+            try { require('../telegram').notifyStripeWillCancel(user, { cancelAt }); } catch {}
           }
         }
       } catch (err) {
