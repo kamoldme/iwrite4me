@@ -9371,6 +9371,9 @@ body.editor-active .mobile-sidebar-toggle {
 .ann-cat-feature { background: rgba(34,197,94,0.15); color: #22c55e; }
 .ann-cat-tip { background: rgba(245,158,11,0.15); color: #f59e0b; }
 .ann-pinned { font-size: 12px; }
+/* Title is the highest-priority element. Always fully shown — never
+   line-clamped or shrunk. At narrow widths or high zoom it grows taller;
+   subtitle and body preview yield space (or shrink to 1 line) instead. */
 .ann-title {
   font-family: var(--font-display);
   font-size: 30px;
@@ -9379,11 +9382,10 @@ body.editor-active .mobile-sidebar-toggle {
   line-height: 1.1;
   color: var(--text-primary);
   margin-bottom: 10px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  /* lock to ~2 lines of space so all slides match vertically */
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  flex-shrink: 0;
+  /* lock to ~2 lines minimum so short titles don't make the card collapse */
   min-height: calc(30px * 1.1 * 2);
 }
 .ann-subtitle {
@@ -9395,8 +9397,8 @@ body.editor-active .mobile-sidebar-toggle {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* lock to 2 lines of space so all slides match vertically */
-  min-height: calc(15.5px * 1.4 * 2);
+  flex-shrink: 1;
+  min-height: 0;
 }
 .ann-body-preview {
   font-size: 12.5px;
@@ -9409,14 +9411,14 @@ body.editor-active .mobile-sidebar-toggle {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: pre-wrap;
-  /* Hard cap: exactly 2 lines, no flex stretch, no third-line bleed */
+  flex-shrink: 2;
+  min-height: 0;
+  /* Hard cap: exactly 2 lines, no third-line bleed */
   max-height: calc(12.5px * 1.5 * 2);
-  min-height: calc(12.5px * 1.5 * 2);
 }
-/* Push the expand-hint to the bottom of the card so removing flex:1 from
-   body-preview doesn't leave the hint floating mid-card. */
+/* Title always shown; subtitle/body yield. Hint stays pinned bottom. */
 .ann-content { justify-content: flex-start; }
-.ann-expand-hint { margin-top: auto; padding-top: 10px; }
+.ann-expand-hint { margin-top: auto; padding-top: 10px; flex-shrink: 0; }
 .ann-expand-hint {
   font-size: 11px;
   color: var(--accent);
