@@ -378,7 +378,12 @@
       <main class="admin-main">
         <!-- OVERVIEW -->
         <div id="tab-overview">
-          <div class="admin-page-title">Dashboard</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">
+            <div class="admin-page-title" style="margin-bottom:0">Dashboard</div>
+            <button class="admin-btn admin-btn-ghost" id="overview-refresh-btn" onclick="refreshOverview()" title="Refresh all stats" style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px">
+              <span id="overview-refresh-icon">↻</span> Refresh
+            </button>
+          </div>
           <div class="admin-stats-grid" id="admin-stats"></div>
           <div class="admin-charts-row">
             <div class="admin-chart-card">
@@ -1465,8 +1470,7 @@
             <div class="label">Online</div>
             <div class="value" style="color:#22c55e" id="active-now-count">${stats.activeNow || 0}</div>
             <div class="admin-online-dot"></div>
-            <div style="position:absolute;bottom:16px;right:16px;display:flex;gap:6px">
-              <button class="admin-btn admin-btn-ghost" style="font-size:11px;padding:4px 12px" onclick="refreshActiveCount()" id="refresh-active-btn" title="Refresh">↻</button>
+            <div style="position:absolute;bottom:16px;right:16px">
               <button class="admin-btn admin-btn-ghost" style="font-size:11px;padding:4px 12px" onclick="toggleActiveUsersList()">View</button>
             </div>
             <div id="active-users-list" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;max-height:200px;overflow-y:auto"></div>
@@ -1474,7 +1478,6 @@
           <div class="admin-stat-card" style="position:relative">
             <div class="label">Writing Now</div>
             <div class="value" style="color:#f59e0b" id="writing-now-count">${stats.writingNow || 0}</div>
-            <button class="admin-btn admin-btn-ghost" style="font-size:11px;padding:4px 12px;position:absolute;bottom:12px;right:12px" onclick="refreshWritingNow()" id="refresh-writing-btn" title="Check who is writing right now">↻</button>
           </div>
           <div class="admin-stat-card"><div class="label">Users</div><div class="value">${stats.totalUsers}</div></div>
           <div class="admin-stat-card"><div class="label">Documents</div><div class="value">${stats.totalDocuments}</div></div>
@@ -1524,43 +1527,40 @@
       } catch { toast('Failed to load stats', 'error'); }
     }
 
-    async function refreshActiveCount() {
-      const btn = document.getElementById('refresh-active-btn');
-      const el = document.getElementById('active-now-count');
+    // Single refresh button at the top of the admin dashboard. Re-runs
+    // loadOverview() which already drives every stat card on the page,
+    // so Online and Writing Now counts update along with the rest.
+    async function refreshOverview() {
+      const btn = document.getElementById('overview-refresh-btn');
+      const icon = document.getElementById('overview-refresh-icon');
+      if (!btn) return;
       btn.disabled = true;
-      btn.style.opacity = '0.5';
-      btn.textContent = '⟳';
+      btn.style.opacity = '0.6';
+      const orig = icon.textContent;
+      icon.textContent = '⟳';
+      icon.style.animation = 'spin 0.8s linear infinite';
       try {
-        const stats = await adminRequest('/admin/stats');
-        el.textContent = stats.activeNow || 0;
-        // Brief green flash to confirm update
-        el.style.transition = 'color 0.2s';
-        el.style.color = '#4ade80';
-        setTimeout(() => { el.style.color = '#22c55e'; }, 400);
+        await loadOverview();
+        // Quick green flash on the Online + Writing Now cards as a confirm
+        const onlineEl = document.getElementById('active-now-count');
+        const writingEl = document.getElementById('writing-now-count');
+        if (onlineEl) {
+          const orig = onlineEl.style.color;
+          onlineEl.style.transition = 'color 0.2s';
+          onlineEl.style.color = '#4ade80';
+          setTimeout(() => { onlineEl.style.color = orig || '#22c55e'; }, 400);
+        }
+        if (writingEl) {
+          const orig = writingEl.style.color;
+          writingEl.style.transition = 'color 0.2s';
+          writingEl.style.color = '#fbbf24';
+          setTimeout(() => { writingEl.style.color = orig || '#f59e0b'; }, 400);
+        }
       } catch { toast('Failed to refresh', 'error'); }
       btn.disabled = false;
       btn.style.opacity = '1';
-      btn.textContent = '↻';
-    }
-
-    async function refreshWritingNow() {
-      const btn = document.getElementById('refresh-writing-btn');
-      const el = document.getElementById('writing-now-count');
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
-      btn.textContent = '⟳';
-      try {
-        const data = await adminRequest('/active-users');
-        const writingCount = (data.users || []).filter(u => u.writing).length;
-        el.textContent = writingCount;
-        // Brief amber flash to confirm update
-        el.style.transition = 'color 0.2s';
-        el.style.color = '#fbbf24';
-        setTimeout(() => { el.style.color = '#f59e0b'; }, 400);
-      } catch { toast('Failed to refresh', 'error'); }
-      btn.disabled = false;
-      btn.style.opacity = '1';
-      btn.textContent = '↻';
+      icon.textContent = orig;
+      icon.style.animation = '';
     }
 
     async function toggleActiveUsersList() {
