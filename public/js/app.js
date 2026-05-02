@@ -2584,7 +2584,7 @@ const App = {
               ${a.pinned ? '<span class="ann-pinned" title="Pinned">📌</span>' : ''}
               <span class="ann-expand-hint">Tap to read →</span>
             </div>
-            <div class="ann-title">${this.escapeHtml(a.title)}</div>
+            <div class="ann-title"><span>${this.escapeHtml(a.title)}</span></div>
             ${subtitle ? `<div class="ann-subtitle">${this.escapeHtml(subtitle)}</div>` : ''}
           </div>
         </div>`;
