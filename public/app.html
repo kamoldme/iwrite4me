@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=111">
+  <link rel="stylesheet" href="/css/style.css?v=112">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -914,19 +914,18 @@
         <span class="duel-bar-forfeit" id="duel-bar-forfeit" style="display:none">Opponent left!</span>
       </div>
 
-      <!-- Visible victory banner — shows when opponent forfeits during an active
-           duel. Persists across the rest of the session, lets the writer keep
-           extending time and finish on their own terms. -->
-      <div class="duel-victory-banner" id="duel-victory-banner" style="display:none">
-        <div class="duel-victory-banner-icon">🏆</div>
-        <div class="duel-victory-banner-text">
-          <div class="duel-victory-banner-title">You won!</div>
-          <div class="duel-victory-banner-sub" id="duel-victory-banner-sub">Opponent left the duel. Keep writing as long as you want — add time freely.</div>
+      <!-- Opponent-left info notification — small floating card styled like
+           the extra-time request. Persistent (no auto-dismiss); user can
+           close it manually. The +5 min button stays in the duel toolbar;
+           a small "Finish" link is included for ending the session early. -->
+      <div class="duel-opponent-left-notice" id="duel-opponent-left-notice" style="display:none" role="status" aria-live="polite">
+        <span class="duel-opp-left-icon">🏆</span>
+        <div class="duel-opp-left-text">
+          <div class="duel-opp-left-title">You won!</div>
+          <div class="duel-opp-left-sub" id="duel-opp-left-sub">Opponent left. Keep writing or finish anytime.</div>
         </div>
-        <div class="duel-victory-banner-actions">
-          <button class="btn btn-ghost duel-victory-extend" onclick="Editor.addExtraTime()">+ 5 min</button>
-          <button class="btn btn-primary duel-victory-finish" onclick="Editor.finishDuelEarly()">Finish session</button>
-        </div>
+        <button class="duel-opp-left-finish" onclick="Editor.finishDuelEarly()" title="Finish duel now">Finish</button>
+        <button class="duel-opp-left-close" onclick="Editor.dismissOpponentLeftNotice()" aria-label="Dismiss">×</button>
       </div>
       <!-- Extra time request toast (accept/reject) -->
       <div class="duel-extra-time-request" id="duel-extra-time-req" style="display:none">
@@ -1292,6 +1291,10 @@
         <div class="duel-countdown-timer" id="duel-countdown-timer">60</div>
         <p class="duel-countdown-vs" id="duel-countdown-vs">You vs Opponent</p>
         <p class="duel-countdown-duration" id="duel-countdown-duration">10 minute duel</p>
+        <div class="duel-countdown-rules">
+          <div class="duel-countdown-rules-title">⚠️ Quick rules</div>
+          <div class="duel-countdown-rules-text">Finish the full session time to win and save your writing — even if your opponent leaves first. If you leave early, your writing is gone.</div>
+        </div>
         <div class="duel-skip-row" id="duel-skip-row">
           <span class="duel-skip-status" id="duel-skip-me">Skip</span>
           <span style="color:var(--text-muted);font-size:14px">—</span>
@@ -1499,8 +1502,8 @@
   <script src="/js/api.js?v=20"></script>
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
-  <script src="/js/editor.js?v=44"></script>
-  <script src="/js/app.js?v=109"></script>
+  <script src="/js/editor.js?v=45"></script>
+  <script src="/js/app.js?v=110"></script>
   <script src="/js/stories.js?v=16"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

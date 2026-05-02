@@ -4549,7 +4549,10 @@ const App = {
     });
     card.addEventListener('mouseleave', () => this._scheduleHideHoverCard());
 
-    // Delegate hover events on username links
+    // Delegate hover events on username links.
+    // Track the latest cursor position relative to the hovered link so we
+    // can position the card a CONSTANT visual distance from the cursor —
+    // independent of font metrics / line-leading / device DPI.
     document.addEventListener('mouseenter', (e) => {
       const link = e.target.closest && e.target.closest('.username-link');
       if (!link) return;
@@ -4558,6 +4561,7 @@ const App = {
       clearTimeout(this._hoverCardHideTimeout);
       clearTimeout(this._hoverCardShowTimeout);
       this._hoverCardLink = link;
+      this._hoverCardCursor = { x: e.clientX, y: e.clientY };
       this._hoverCardShowTimeout = setTimeout(async () => {
         // Only show if user is still hovering this exact link
         if (this._hoverCardLink !== link || !link.matches(':hover')) return;
@@ -4571,6 +4575,15 @@ const App = {
           this._showHoverCard(data, link);
         } catch {}
       }, 600);
+    }, true);
+    // Refresh cursor position while hovering — the show timer fires after
+    // 600ms and the cursor may have moved within the link.
+    document.addEventListener('mousemove', (e) => {
+      if (!this._hoverCardLink) return;
+      const link = e.target.closest && e.target.closest('.username-link');
+      if (link === this._hoverCardLink) {
+        this._hoverCardCursor = { x: e.clientX, y: e.clientY };
+      }
     }, true);
 
     document.addEventListener('mouseleave', (e) => {
@@ -4613,16 +4626,29 @@ const App = {
       </div>
     `;
 
-    // Position relative to the last visible line of the link (handles wrapped usernames)
-    const rects = anchor.getClientRects();
-    const rect = rects.length ? rects[rects.length - 1] : anchor.getBoundingClientRect();
+    // Position relative to the CURSOR — gives a constant visual gap on
+    // every device, font, and zoom level. Falls back to the link's
+    // bounding rect if cursor wasn't captured (e.g., focus via keyboard).
     card.style.left = '-9999px';
     card.style.top = '0px';
     card.style.display = 'block';
     const cardRect = card.getBoundingClientRect();
-    let top = rect.bottom + 6;
-    let left = rect.left;
-    if (top + cardRect.height > window.innerHeight - 8) top = rect.top - cardRect.height - 6;
+    const GAP = 14; // constant visual offset below cursor in CSS pixels
+    let top, left;
+    if (this._hoverCardCursor) {
+      top = this._hoverCardCursor.y + GAP;
+      left = this._hoverCardCursor.x - 20; // small left-bias so cursor sits over the card
+    } else {
+      const rects = anchor.getClientRects();
+      const rect = rects.length ? rects[rects.length - 1] : anchor.getBoundingClientRect();
+      top = rect.bottom + GAP;
+      left = rect.left;
+    }
+    // Flip above the cursor if there's no room below
+    if (top + cardRect.height > window.innerHeight - 8) {
+      top = (this._hoverCardCursor ? this._hoverCardCursor.y : top) - cardRect.height - GAP;
+    }
+    // Clamp horizontally to viewport
     if (left + cardRect.width > window.innerWidth - 8) left = window.innerWidth - cardRect.width - 8;
     card.style.top = `${Math.max(8, top)}px`;
     card.style.left = `${Math.max(8, left)}px`;

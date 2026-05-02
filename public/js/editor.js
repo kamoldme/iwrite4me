@@ -1067,10 +1067,10 @@ const Editor = {
     if (this.documentId && this._duelInfo.duelId) {
       try { API.setDuelDoc(this._duelInfo.duelId, this.documentId); } catch {}
     }
-    // Reset forfeit notification flag + hide victory banner from any prior duel
+    // Reset forfeit notification flag + hide opponent-left notice from any prior duel
     this._duelForfeitNotified = false;
-    const victoryBanner = document.getElementById('duel-victory-banner');
-    if (victoryBanner) victoryBanner.style.display = 'none';
+    const oppLeftNotice = document.getElementById('duel-opponent-left-notice');
+    if (oppLeftNotice) oppLeftNotice.style.display = 'none';
     // Poll every 3 seconds with backoff on failure
     this._duelPollDelay = 3000;
     this._duelPollTimer = setTimeout(() => this._pollDuel(), this._duelPollDelay);
@@ -1129,14 +1129,15 @@ const Editor = {
       if (duel.forfeitedBy && duel.forfeitedBy === oppId) {
         if (!this._duelForfeitNotified) {
           this._duelForfeitNotified = true;
-          // Show prominent victory banner — persistent until session ends.
-          // The user can keep writing, add time freely, finish when ready.
-          const banner = document.getElementById('duel-victory-banner');
-          const sub = document.getElementById('duel-victory-banner-sub');
+          // Compact info notice — matches the extra-time request style.
+          // Persistent until user dismisses or duel ends. Stays in the
+          // corner so it doesn't crowd the writing area.
+          const notice = document.getElementById('duel-opponent-left-notice');
+          const sub = document.getElementById('duel-opp-left-sub');
           if (sub) {
-            sub.textContent = `${this._duelInfo.opponentName} left the duel. Keep writing as long as you want — add time freely, finish when ready.`;
+            sub.textContent = `${this._duelInfo.opponentName} left. Keep writing or finish anytime.`;
           }
-          if (banner) banner.style.display = 'flex';
+          if (notice) notice.style.display = 'flex';
         }
       }
 
@@ -1172,9 +1173,15 @@ const Editor = {
     }
   },
 
+  // Hide the opponent-left notification (info-only — user dismisses manually)
+  dismissOpponentLeftNotice() {
+    const notice = document.getElementById('duel-opponent-left-notice');
+    if (notice) notice.style.display = 'none';
+  },
+
   // Manually finish the duel after opponent has forfeited. Server respects
   // endurance scoring (forfeiter loses; survivor wins). The Finish button
-  // is only shown via the victory banner, which only appears after a
+  // is only shown via the opponent-left notice, which only appears after a
   // detected forfeit, so the result is already determined.
   async finishDuelEarly() {
     if (!this._duelInfo) return;
@@ -1183,10 +1190,10 @@ const Editor = {
     try {
       const wordCount = this.getWordCount();
       await API.completeDuel(this._duelInfo.duelId, wordCount);
-      // Hide the banner — the duel-completed status from the next poll will
+      // Hide the notice — the duel-completed status from the next poll will
       // trigger _showDuelResults which shows the final modal.
-      const banner = document.getElementById('duel-victory-banner');
-      if (banner) banner.style.display = 'none';
+      const notice = document.getElementById('duel-opponent-left-notice');
+      if (notice) notice.style.display = 'none';
       // Trigger one more poll right away to pick up the completed state
       if (this._duelPollTimer) {
         clearTimeout(this._duelPollTimer);
