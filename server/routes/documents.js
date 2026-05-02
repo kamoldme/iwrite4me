@@ -389,11 +389,18 @@ router.post('/:id/complete', async (req, res) => {
   await logAction('session_completed', { docId: req.params.id, wordCount, duration, xpEarned }, req.user.id);
   const completedDoc = await findOne('documents.json', d => d.id === req.params.id);
   try {
-    require('../telegram').notifySessionCompleted(
-      updatedUser || { name: 'Unknown', username: '?' },
-      completedDoc,
-      { wordCount, duration, xpEarned }
+    // If this document is part of a duel, send the duel-flavored notification
+    // instead of the generic session-completed one.
+    const linkedDuel = await findOne('duels.json', d =>
+      d.challengerDocId === req.params.id || d.opponentDocId === req.params.id
     );
+    const safeUser = updatedUser || { name: 'Unknown', username: '?' };
+    const stats = { wordCount, duration, xpEarned };
+    if (linkedDuel) {
+      require('../telegram').notifyDuelSessionCompleted(safeUser, completedDoc, stats, linkedDuel);
+    } else {
+      require('../telegram').notifySessionCompleted(safeUser, completedDoc, stats);
+    }
   } catch {}
   const { password: _, ...safeUser } = updatedUser;
   res.json({ document: completedDoc, user: safeUser });

@@ -361,6 +361,38 @@ function notifySessionCompleted(user, doc, stats) {
   );
 }
 
+// Same shape as notifySessionCompleted but framed as a duel — used when
+// the completed document is linked to a duel record. Adds opponent name +
+// result (won/lost/forfeit/draw) so the admin can read the outcome at a
+// glance instead of confusing it with a regular solo session.
+function notifyDuelSessionCompleted(user, doc, stats, duel) {
+  const isChallenger = duel.challengerId === user.id;
+  const opponentName = isChallenger ? duel.opponentName : duel.challengerName;
+  const fromMatchmaking = !!duel.fromMatchmaking;
+  let result;
+  if (duel.status !== 'completed') {
+    result = '⏳ In progress';
+  } else if (duel.forfeitedBy === user.id) {
+    result = '😢 Forfeit (lost)';
+  } else if (duel.winnerId === user.id) {
+    result = '🏆 Won';
+  } else if (duel.winnerId) {
+    result = '😢 Lost';
+  } else {
+    result = '🤝 Draw';
+  }
+  const mins = Math.round((stats.duration || 0) / 60);
+  send(
+    `⚔️ <b>Duel Completed</b>\n\n` +
+    `Writer: ${esc(user.name)} (@${esc(user.username)})\n` +
+    `Vs: ${esc(opponentName || 'Opponent')}${fromMatchmaking ? ' (matchmaking)' : ''}\n` +
+    `Result: ${result}\n` +
+    `Duration: ${mins} min\n` +
+    `Words: ${stats.wordCount || 0}\n` +
+    `XP: +${stats.xpEarned || 0}`
+  );
+}
+
 function notifySessionFailed(user, doc, stats) {
   const mode = doc.mode === 'dangerous' ? '🔴 Dangerous' : '🟢 Normal';
   const reasonMap = { typing_stopped: '⌨️ Stopped typing', tab_left: '🚪 Left the tab' };
@@ -502,6 +534,7 @@ module.exports = {
   init,
   notifyUserRegistered,
   notifySessionCompleted,
+  notifyDuelSessionCompleted,
   notifySessionFailed,
   notifySupportTicket,
   notifyStripeSubscription,

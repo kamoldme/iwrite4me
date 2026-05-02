@@ -74,9 +74,12 @@ const STALE_POLL_MS = 15000; // 15 seconds (polls happen every 3s)
 async function cleanupStaleDuels() {
   const now = Date.now();
 
-  // 1. Active duels past endAt → complete by word count
+  // 1. Active duels past endAt → auto-complete (only when no forfeit).
+  // If forfeitedBy is set, the remaining writer is in a "victory lap" —
+  // they continue writing on their own clock until they manually finish or
+  // disappear (cleanup case 2 below catches that).
   const expiredDuels = await findMany('duels.json', d =>
-    d.status === 'active' && d.endAt && new Date(d.endAt).getTime() <= now
+    d.status === 'active' && d.endAt && new Date(d.endAt).getTime() <= now && !d.forfeitedBy
   );
   for (const duel of expiredDuels) {
     await completeDuelByTime(duel.id);
@@ -564,8 +567,10 @@ router.get('/:id/status', async (req, res) => {
       return res.json(updated);
     }
 
-    // Auto-complete if time is up (uses shared helper which respects forfeitedBy)
-    if (duel.status === 'active' && duel.endAt && new Date(duel.endAt) <= new Date()) {
+    // Auto-complete if time is up — but only when no one forfeited.
+    // If opponent already left, the remaining writer keeps the session alive
+    // and finishes manually (or extends time as long as they want).
+    if (duel.status === 'active' && duel.endAt && new Date(duel.endAt) <= new Date() && !duel.forfeitedBy) {
       await completeDuelByTime(req.params.id);
       const completed = await findOne('duels.json', d => d.id === req.params.id);
       return res.json(completed);
@@ -634,11 +639,15 @@ router.post('/:id/complete', async (req, res) => {
       return res.status(403).json({ error: 'Not your duel' });
     }
 
-    // Re-read to get latest state
+    // Re-read to get latest state.
+    // ENDURANCE SCORING: forfeiter loses; otherwise draw. Word counts are
+    // tracked but no longer determine the winner (consistent with
+    // completeDuelByTime — see commit "switch from word-count to endurance").
     const latest = await updateOne('duels.json', d => d.id === req.params.id, update);
-    const cw = latest.challengerWords || 0;
-    const ow = latest.opponentWords || 0;
-    const winnerId = cw > ow ? latest.challengerId : ow > cw ? latest.opponentId : null;
+    let winnerId = null;
+    if (latest.forfeitedBy) {
+      winnerId = latest.forfeitedBy === latest.challengerId ? latest.opponentId : latest.challengerId;
+    }
 
     const completed = await updateOne('duels.json', d => d.id === req.params.id, {
       status: 'completed',

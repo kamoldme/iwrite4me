@@ -1067,8 +1067,10 @@ const Editor = {
     if (this.documentId && this._duelInfo.duelId) {
       try { API.setDuelDoc(this._duelInfo.duelId, this.documentId); } catch {}
     }
-    // Reset forfeit notification flag
+    // Reset forfeit notification flag + hide victory banner from any prior duel
     this._duelForfeitNotified = false;
+    const victoryBanner = document.getElementById('duel-victory-banner');
+    if (victoryBanner) victoryBanner.style.display = 'none';
     // Poll every 3 seconds with backoff on failure
     this._duelPollDelay = 3000;
     this._duelPollTimer = setTimeout(() => this._pollDuel(), this._duelPollDelay);
@@ -1127,9 +1129,14 @@ const Editor = {
       if (duel.forfeitedBy && duel.forfeitedBy === oppId) {
         if (!this._duelForfeitNotified) {
           this._duelForfeitNotified = true;
-          App.toast(`${this._duelInfo.opponentName} left the duel!`, 'info');
-          const forfeitEl = document.getElementById('duel-bar-forfeit');
-          if (forfeitEl) forfeitEl.style.display = '';
+          // Show prominent victory banner — persistent until session ends.
+          // The user can keep writing, add time freely, finish when ready.
+          const banner = document.getElementById('duel-victory-banner');
+          const sub = document.getElementById('duel-victory-banner-sub');
+          if (sub) {
+            sub.textContent = `${this._duelInfo.opponentName} left the duel. Keep writing as long as you want — add time freely, finish when ready.`;
+          }
+          if (banner) banner.style.display = 'flex';
         }
       }
 
@@ -1162,6 +1169,31 @@ const Editor = {
       }
     } catch (e) {
       App.toast(e.message || 'Failed to request extra time', 'error');
+    }
+  },
+
+  // Manually finish the duel after opponent has forfeited. Server respects
+  // endurance scoring (forfeiter loses; survivor wins). The Finish button
+  // is only shown via the victory banner, which only appears after a
+  // detected forfeit, so the result is already determined.
+  async finishDuelEarly() {
+    if (!this._duelInfo) return;
+    const ok = await App.showConfirm('Finish the duel now? You\'ll keep your win.');
+    if (!ok) return;
+    try {
+      const wordCount = this.getWordCount();
+      await API.completeDuel(this._duelInfo.duelId, wordCount);
+      // Hide the banner — the duel-completed status from the next poll will
+      // trigger _showDuelResults which shows the final modal.
+      const banner = document.getElementById('duel-victory-banner');
+      if (banner) banner.style.display = 'none';
+      // Trigger one more poll right away to pick up the completed state
+      if (this._duelPollTimer) {
+        clearTimeout(this._duelPollTimer);
+        this._duelPollTimer = setTimeout(() => this._pollDuel(), 100);
+      }
+    } catch (e) {
+      App.toast(e.message || 'Failed to finish duel', 'error');
     }
   },
 
