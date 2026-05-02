@@ -28,9 +28,13 @@ router.get('/stats', async (req, res) => {
   const activeNow = activeUsersMap ? activeUsersMap.size : 0;
   const writingCutoff = Date.now() - 60000; // 60s window
   let writingNow = 0;
+  let onTabNow = 0;
   if (activeUsersMap) {
     for (const [, data] of activeUsersMap) {
       if (data.writingAt && data.writingAt > writingCutoff) writingNow++;
+      // "On Tab" = visibilityState was 'visible' within the last 60s.
+      // Online means the tab is just open; On Tab means it's actually focused.
+      if (data.focusedAt && data.focusedAt > writingCutoff) onTabNow++;
     }
   }
 
@@ -109,6 +113,7 @@ router.get('/stats', async (req, res) => {
   res.json({
     activeNow,
     writingNow,
+    onTabNow,
     totalUsers: users.filter(u => u.role !== 'admin').length,
     aiUsage: { used: aiUsed, capacity: aiCapacity, activeUsers: aiActiveUsers, week: isoWeek },
     totalDocuments: docs.length,

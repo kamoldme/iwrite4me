@@ -1479,6 +1479,10 @@
             <div class="label">Writing Now</div>
             <div class="value" style="color:#f59e0b" id="writing-now-count">${stats.writingNow || 0}</div>
           </div>
+          <div class="admin-stat-card" style="position:relative" title="Users with the tab actively focused — distinct from Online (which counts any open tab including background ones)">
+            <div class="label">On Tab</div>
+            <div class="value" style="color:#3b82f6" id="on-tab-count">${stats.onTabNow || 0}</div>
+          </div>
           <div class="admin-stat-card"><div class="label">Users</div><div class="value">${stats.totalUsers}</div></div>
           <div class="admin-stat-card"><div class="label">Documents</div><div class="value">${stats.totalDocuments}</div></div>
           <div class="admin-stat-card"><div class="label">Active Docs</div><div class="value" style="color:var(--success)">${stats.activeDocuments}</div></div>

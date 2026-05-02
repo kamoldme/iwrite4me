@@ -275,11 +275,39 @@ app.get('/api/active-users', (req, res) => {
           id,
           email: data.email,
           minutesAgo: Math.round((now - data.lastSeen) / 60000),
-          writing: !!(data.writingAt && data.writingAt > writingCutoff)
+          writing: !!(data.writingAt && data.writingAt > writingCutoff),
+          onTab: !!(data.focusedAt && data.focusedAt > writingCutoff)
         });
       }
       res.json({ count: users.length, users: users.sort((a, b) => a.minutesAgo - b.minutesAgo) });
     });
+  });
+});
+
+// Tab visibility ping — frontend posts here whenever document.visibilityState
+// flips. Lets the admin distinguish "tab is open" (Online) from "tab is the
+// active window" (On Tab). Stays in-memory; resets on server boot like the
+// rest of activeUsers state.
+app.post('/api/tab-state', express.json(), (req, res) => {
+  const { authenticate } = require('./middleware/auth');
+  authenticate(req, res, () => {
+    const focused = !!req.body?.focused;
+    const entry = activeUsers.get(req.user.id);
+    if (entry) {
+      if (focused) {
+        entry.focusedAt = Date.now();
+      } else {
+        entry.focusedAt = null;
+      }
+      entry.lastSeen = Date.now();
+    } else {
+      activeUsers.set(req.user.id, {
+        email: req.user.email,
+        lastSeen: Date.now(),
+        focusedAt: focused ? Date.now() : null
+      });
+    }
+    res.json({ ok: true });
   });
 });
 

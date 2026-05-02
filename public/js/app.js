@@ -262,6 +262,8 @@ const App = {
     // Check for pending admin-awarded PRO congrats (show confetti + message)
     setTimeout(() => this.checkPendingProCongrats(), 800);
     setTimeout(() => this._checkTrialEnding(), 1200);
+    // Start reporting tab focus state to admin (Online vs On Tab distinction)
+    this._setupTabFocusTracking();
 
     // Initialize level tracking if not set (prevents false level-up on first visit)
     if (!localStorage.getItem('iwrite_last_level')) {
@@ -302,6 +304,39 @@ const App = {
     this.bindAppEvents();
     this.startNotifPolling();
     this._applyProLocks();
+  },
+
+  // Tab focus reporting — server tracks "On Tab" separately from "Online".
+  // Online = lastSeen within window (any auth'd request). On Tab = the
+  // tab is currently visible/focused (document.visibilityState === 'visible').
+  _setupTabFocusTracking() {
+    if (this._tabFocusBound) return;
+    this._tabFocusBound = true;
+    const ping = (focused) => {
+      if (!API.getToken || !API.getToken()) return;
+      try {
+        fetch('/api/tab-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.getToken()}` },
+          body: JSON.stringify({ focused }),
+          keepalive: true
+        }).catch(() => {});
+      } catch {}
+    };
+    // Initial state
+    ping(document.visibilityState === 'visible');
+    // Each visibility change
+    document.addEventListener('visibilitychange', () => {
+      ping(document.visibilityState === 'visible');
+    });
+    // Heartbeat: while focused, refresh server state every 45s so it doesn't
+    // expire mid-session (server window is 60s) AND so a server restart
+    // re-establishes the focused state quickly.
+    this._tabFocusInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') ping(true);
+    }, 45000);
+    // On unload, best-effort tell the server we're gone
+    window.addEventListener('pagehide', () => ping(false));
     this._startMaintenancePolling();
     this._initHoverCards();
     this._initFollowListModal();
@@ -3313,11 +3348,20 @@ const App = {
     }
     try {
       const duelHistoryPage = this._duelHistoryPage || 1;
-      const [requests, sentDuels, historyData] = await Promise.all([
+      // Use allSettled so a single endpoint failure doesn't kill the whole
+      // view. Fall back to empty arrays per call so the rest of the page
+      // still renders sensibly.
+      const results = await Promise.allSettled([
         API.getDuelRequests(),
         API.getSentDuels(),
         API.getDuelHistory(duelHistoryPage, 10)
       ]);
+      const requests = results[0].status === 'fulfilled' ? results[0].value : [];
+      const sentDuels = results[1].status === 'fulfilled' ? results[1].value : [];
+      const historyData = results[2].status === 'fulfilled' ? results[2].value : { items: [], totalPages: 1, page: 1 };
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') console.warn('[loadDuelsView] call ' + i + ' failed:', r.reason);
+      });
       const history = historyData.items || [];
       const totalPages = historyData.totalPages || 1;
       const currentPage = historyData.page || 1;
@@ -3438,9 +3482,15 @@ const App = {
 
         historyContainer.innerHTML = html;
       }
-    } catch {
-      this.toast('Failed to load duels', 'error');
+    } catch (err) {
+      console.warn('[loadDuelsView] render error:', err);
+      // Only surface the toast on the user's first explicit load — auto-refresh
+      // failures (every 10s) shouldn't spam the user.
+      if (!this._duelsViewLoadedOnce) {
+        this.toast('Failed to load duels', 'error');
+      }
     }
+    this._duelsViewLoadedOnce = true;
   },
 
   async acceptDuel(duelId) {

@@ -1092,14 +1092,18 @@ const Editor = {
         this._duelEndAt = new Date(duel.endAt).getTime();
       }
 
-      // Update word counts — same layout for both sides: challenger left, opponent right
+      // Update word counts — same layout for both sides: challenger left, opponent right.
+      // If a player has forfeited, show "left" instead of their stale word count
+      // (which would otherwise sit at 0 and look like they just hadn't typed yet).
       const leftWords = document.getElementById('duel-bar-left-words');
       const rightWords = document.getElementById('duel-bar-right-words');
+      const challengerLeft = duel.forfeitedBy === duel.challengerId;
+      const opponentLeft = duel.forfeitedBy === duel.opponentId;
       if (this._duelInfo.isChallenger) {
         if (leftWords) leftWords.textContent = myWords;
-        if (rightWords) rightWords.textContent = duel.opponentWords || 0;
+        if (rightWords) rightWords.textContent = opponentLeft ? 'left' : (duel.opponentWords || 0);
       } else {
-        if (leftWords) leftWords.textContent = duel.challengerWords || 0;
+        if (leftWords) leftWords.textContent = challengerLeft ? 'left' : (duel.challengerWords || 0);
         if (rightWords) rightWords.textContent = myWords;
       }
 
