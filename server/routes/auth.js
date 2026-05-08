@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const validator = require('validator');
 const { v4: uuid } = require('uuid');
 const path = require('path');
 const fs = require('fs');
@@ -9,6 +10,38 @@ const { findOne, insertOne, updateOne } = require('../utils/storage');
 const { generateToken, authenticate, checkSubscriptionExpiry } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 const { OAuth2Client } = require('google-auth-library');
+
+const MIN_PASSWORD_LENGTH = 8;
+
+// Top guessable passwords — quick deny-list. Not exhaustive (zxcvbn would be
+// stronger), but blocks the obvious offenders that brute-forcers try first.
+const COMMON_PASSWORDS = new Set([
+  '12345678', '123456789', '1234567890', 'password', 'password1', 'password123',
+  'qwerty123', 'qwertyui', 'qwerty12', 'iloveyou', 'iloveu123', 'admin123',
+  'letmein123', 'welcome1', 'welcome123', 'monkey123', 'football', 'baseball',
+  'sunshine', 'princess', 'dragon123', 'shadow123', 'master123', 'abc12345',
+  'passw0rd', 'p@ssword', 'p@ssw0rd', '11111111', '00000000', 'asdfghjk',
+  'changeme', 'trustno1', 'iwrite4me', 'iwrite123'
+]);
+
+function validatePassword(pw) {
+  if (!pw || typeof pw !== 'string') return 'Password is required';
+  if (pw.length < MIN_PASSWORD_LENGTH) return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+  if (pw.length > 200) return 'Password is too long';
+  if (COMMON_PASSWORDS.has(pw.toLowerCase())) return 'This password is too common, please pick a stronger one';
+  return null;
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function validateEmail(email) {
+  if (!email) return 'Email is required';
+  if (email.length > 254) return 'Email is too long';
+  if (!validator.isEmail(email)) return 'Please enter a valid email address';
+  return null;
+}
 
 // Streak → tree stage mapping (30 days = max)
 const TREE_STAGE_THRESHOLDS = [0, 1, 3, 5, 8, 11, 14, 17, 20, 23, 27, 30];
@@ -75,18 +108,20 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, username } = req.body;
+    const { name, password, username } = req.body;
+    const email = normalizeEmail(req.body.email);
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
     if (containsBadWord(name)) {
       return res.status(400).json({ error: 'Name contains inappropriate content' });
     }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    }
+    const emailError = validateEmail(email);
+    if (emailError) return res.status(400).json({ error: emailError });
+    const passwordError = validatePassword(password);
+    if (passwordError) return res.status(400).json({ error: passwordError });
 
-    const existing = await findOne('users.json', u => u.email === email);
+    const existing = await findOne('users.json', u => normalizeEmail(u.email) === email);
     if (existing) {
       return res.status(409).json({ error: 'Email already registered' });
     }
@@ -180,12 +215,13 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = normalizeEmail(req.body.email);
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = await findOne('users.json', u => u.email === email);
+    const user = await findOne('users.json', u => normalizeEmail(u.email) === email);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -323,9 +359,8 @@ router.post('/change-password', authenticate, async (req, res) => {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' });
-    }
+    const newPasswordError = validatePassword(newPassword);
+    if (newPasswordError) return res.status(400).json({ error: newPasswordError.replace(/^Password/, 'New password') });
 
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ error: 'New passwords do not match' });
@@ -356,7 +391,7 @@ router.post('/google', async (req, res) => {
     });
     const payload = ticket.getPayload();
     const googleId = payload.sub;
-    const email = payload.email;
+    const email = normalizeEmail(payload.email);
     const name = payload.name;
 
     // Find user by googleId first
@@ -364,7 +399,7 @@ router.post('/google', async (req, res) => {
 
     // If not found by googleId, try email
     if (!user) {
-      user = await findOne('users.json', u => u.email === email);
+      user = await findOne('users.json', u => normalizeEmail(u.email) === email);
       if (user && !user.googleId) {
         // Link Google to existing email account
         await updateOne('users.json', u => u.id === user.id, {

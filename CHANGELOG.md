@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.0.41] - 2026-05-08
+
+### Security
+- Login rate-limiting tightened from 20 attempts / 15 min to **5 / 15 min** (with skipSuccessfulRequests so legitimate users aren't punished)
+- Registration rate-limiting added: **5 accounts / hour** per IP
+- Email format validation on registration via `validator.isEmail()`; emails normalized (lowercase + trim) so case variants can no longer create duplicate accounts
+- Password minimum bumped from 6 → 8 characters; added a small common-password deny-list (`password`, `12345678`, `iwrite4me`, etc.)
+- `helmet` middleware enabled with a CSP that allows the third-party services the app actually uses (Google Tag Manager, Google OAuth, Stripe, Google Fonts); also enables HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- `x-powered-by: Express` header removed
+- JWT lifetime reduced from 7 days → 2 days
+- One-shot cleanup script added (`server/scripts/cleanup-pentest-accounts.js`) to remove test accounts created during the security audit; run with `railway run node server/scripts/cleanup-pentest-accounts.js`
+
 ## [2.3.9] - 2026-03-23
 
 ### Changed

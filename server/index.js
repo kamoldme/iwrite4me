@@ -1,12 +1,16 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Don't advertise the framework
+app.disable('x-powered-by');
 
 // Real-time streak: returns 0 if lastWritingDate is stale (older than yesterday)
 function liveStreak(user) {
@@ -19,6 +23,54 @@ function liveStreak(user) {
 
 // Trust Railway's reverse proxy
 app.set('trust proxy', 1);
+
+// Security headers via helmet. CSP allows the third-party services the app
+// actually uses: Google (analytics, OAuth, Fonts), Stripe (payments), and
+// inline scripts/styles already present across the static HTML pages.
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        'https://www.googletagmanager.com',
+        'https://www.google-analytics.com',
+        'https://accounts.google.com',
+        'https://apis.google.com',
+        'https://js.stripe.com',
+        'https://cdnjs.cloudflare.com'
+      ],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: [
+        "'self'",
+        'https://www.google-analytics.com',
+        'https://accounts.google.com',
+        'https://api.stripe.com'
+      ],
+      frameSrc: [
+        "'self'",
+        'https://accounts.google.com',
+        'https://js.stripe.com',
+        'https://hooks.stripe.com'
+      ],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
 
 // CORS — lock to your domain
 const allowedOrigins = [
@@ -50,10 +102,29 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting — tighter buckets per attack surface.
+// Login is the most-attacked endpoint, so it gets the strictest cap.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many login attempts, please try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many accounts created from this IP, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Google OAuth and password change are sensitive but lower-risk than email login.
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 attempts per window
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message: { error: 'Too many attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false
@@ -75,9 +146,10 @@ app.post('/api/stripe/webhook',
   stripeWebhookHandler
 );
 
-app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', registerLimiter);
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/google', authLimiter);
+app.use('/api/auth/change-password', authLimiter);
 app.use('/api', apiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
