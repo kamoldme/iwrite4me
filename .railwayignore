@@ -1,0 +1,9 @@
+# Non-runtime files — excluded from Railway deploy uploads to keep them small/fast.
+# (Runtime app lives in server/ and public/.)
+demo-*.gif
+session_prompting_example.md
+*.md
+.claude/
+.gstack/
+.vercel/
+backups/
