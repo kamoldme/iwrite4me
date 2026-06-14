@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.0.42] - 2026-06-14
+
+### Added
+- New **Test Mode** theme — a warm cream-parchment "Writer's Desk" look with forest-green accents, an elegant Fraunces serif for headings, paper-grain texture, and softly rounded cards. Toggle through themes in the sidebar: Dark → Light → Sepia → Test → Dark.
+
+### Fixed
+- Theme persistence: `sepia` (and the new `test`) themes now restore correctly on reload — previously any non-light theme silently reverted to dark on refresh.
+
 ## [3.0.41] - 2026-05-08
 
 ### Security

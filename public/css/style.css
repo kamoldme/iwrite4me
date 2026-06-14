@@ -1678,6 +1678,316 @@ body::-webkit-scrollbar,
   box-shadow: 0 6px 20px rgba(195, 126, 63, 0.4);
 }
 
+/* ===== TEST THEME ===== */
+/* ══════════════════════════════════════════════════════════════
+   TEST THEME — "Writer's Desk" / Warm Cream Parchment
+   Reference: the iWrite4.me dashboard mockup — cozy paper desk,
+   forest-green accents, elegant Fraunces serif headings.
+   Lighter & warmer than Sepia; keeps the green accent of Light.
+   Accent: #5e7d45 (forest / olive green)
+   Canvas: #ebe4d4 (warm parchment)  Cards: #faf6ec (ivory)
+   ══════════════════════════════════════════════════════════════ */
+.test {
+  --bg-primary: #ebe4d4;
+  --bg-secondary: #f3eee1;
+  --bg-card: #faf6ec;
+  --bg-card-hover: #f4eede;
+  --bg-elevated: #fcf9f1;
+  --bg-glass: rgba(250, 246, 236, 0.92);
+  --text-primary: #3b352a;
+  --text-secondary: rgba(59, 53, 42, 0.64);
+  --text-muted: rgba(59, 53, 42, 0.42);
+  --accent: #5e7d45;
+  --accent-soft: rgba(94, 125, 69, 0.12);
+  --accent-glow: rgba(94, 125, 69, 0.22);
+  --danger: #c0573f;
+  --danger-soft: rgba(192, 87, 63, 0.12);
+  --success: #5e7d45;
+  --success-soft: rgba(94, 125, 69, 0.12);
+  --warning: #c08a3a;
+  --xp-color: #5e7d45;
+  --border: rgba(74, 58, 30, 0.12);
+  --border-light: rgba(74, 58, 30, 0.06);
+  --border-hover: rgba(74, 58, 30, 0.20);
+  --hover-bg: rgba(74, 58, 30, 0.05);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-lg: 22px;
+  --shadow: 0 1px 3px rgba(74, 58, 30, 0.10), 0 0 0 1px rgba(74, 58, 30, 0.05);
+  --shadow-lg: 0 16px 44px rgba(74, 58, 30, 0.13), 0 0 0 1px rgba(74, 58, 30, 0.05);
+  --shadow-3d: 0 2px 10px rgba(74, 58, 30, 0.09), 0 1px 2px rgba(74, 58, 30, 0.05);
+  --shadow-glow: 0 0 30px rgba(94, 125, 69, 0.10);
+  --shadow-inset-glow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --gradient-card: linear-gradient(135deg, rgba(250,246,236,0.7) 0%, rgba(235,228,212,0.35) 100%);
+  --gradient-accent: linear-gradient(135deg, #6e8d4f 0%, #54712f 100%);
+  --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(94,125,69,0.07) 0%, transparent 60%);
+  --font-display: 'Archivo', system-ui, sans-serif;
+}
+
+/* ── Test: base canvas ── */
+.test body, .test {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+/* Soft warm paper grain — fine fiber texture, very subtle */
+.test body::before {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent, transparent 2px,
+      rgba(120, 95, 50, 0.035) 2px,
+      rgba(120, 95, 50, 0.035) 3px,
+      transparent 3px, transparent 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent, transparent 3px,
+      rgba(120, 95, 50, 0.028) 3px,
+      rgba(120, 95, 50, 0.028) 4px,
+      transparent 4px, transparent 8px
+    );
+  background-size: auto;
+  opacity: 1;
+}
+/* Vignette — gentle warm edge */
+.test body::after {
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(120, 95, 45, 0.08) 100%);
+}
+
+/* ── Test: typography — Fraunces serif headings ── */
+.test .dashboard-hero-text h1,
+.test .dashboard-header h1,
+.test .docs-header h1,
+.test .docs-header h2,
+.test .tree-container h3,
+.test .heatmap-title {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+}
+.test .dashboard-hero-text h1 {
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  font-size: 34px;
+}
+.test .dashboard-hero-text h1 em {
+  font-style: italic;
+  font-weight: 600;
+  color: var(--accent);
+}
+.test .dashboard-header h1,
+.test .docs-header h1,
+.test .docs-header h2 {
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.test .dashboard-hero-sub,
+.test .dashboard-header p { font-weight: 400; }
+/* Section labels that were tiny uppercase → readable serif titles */
+.test .heatmap-title,
+.test .tree-container h3 {
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-primary);
+}
+
+/* ── Test: nav ── */
+.test .nav {
+  background: rgba(243, 238, 225, 0.94);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+.test .logo { text-shadow: none; color: #41502b; }
+
+/* ── Test: sidebar ── */
+.test .sidebar {
+  background: var(--bg-secondary);
+  border-right-color: var(--border);
+  box-shadow: 1px 0 10px rgba(74, 58, 30, 0.05);
+}
+.test .sidebar-nav-item.active {
+  background: rgba(94, 125, 69, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(94, 125, 69, 0.24);
+  box-shadow: inset 0 0 16px rgba(94, 125, 69, 0.06);
+}
+.test .sidebar-nav-item:hover { background: rgba(94, 125, 69, 0.06); }
+.test .user-avatar { box-shadow: 0 4px 12px rgba(94, 125, 69, 0.28); }
+
+/* ── Test: buttons — olive pills, white text ── */
+.test .btn-small,
+.test .btn-primary {
+  background: var(--gradient-accent);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(94, 125, 69, 0.28);
+}
+.test .btn-small:hover,
+.test .btn-primary:hover {
+  background: linear-gradient(135deg, #6f8f4f 0%, #4d6a2b 100%);
+  box-shadow: 0 6px 18px rgba(94, 125, 69, 0.34);
+}
+.test .btn-ghost { border-color: rgba(94, 125, 69, 0.28); color: var(--accent); }
+.test .btn-ghost:hover { border-color: rgba(94, 125, 69, 0.45); background: rgba(94, 125, 69, 0.06); color: var(--accent); }
+.test ::selection { background: var(--accent); color: #faf6ec; }
+
+/* ── Test: stat cards + hero ── */
+.test .stat-card,
+.test .dash-stat-card {
+  background: var(--bg-card);
+  box-shadow: var(--shadow-3d);
+}
+.test .stat-card::before,
+.test .dash-stat-card::before { background: linear-gradient(90deg, transparent, rgba(94,125,69,0.20), transparent); }
+.test .dash-stat-card:hover {
+  box-shadow: 0 16px 40px rgba(74, 58, 30, 0.13);
+  border-color: rgba(94, 125, 69, 0.20);
+}
+/* Uniform warm-ink stat numbers, like the reference — colour lives in the icons */
+.test .dash-stat-words .dash-stat-value,
+.test .dash-stat-sessions .dash-stat-value,
+.test .dash-stat-streak .dash-stat-value,
+.test .dash-stat-xp .dash-stat-value { color: var(--text-primary); }
+.test .dashboard-hero { box-shadow: var(--shadow-3d); background: var(--bg-card); }
+.test .dashboard-hero::before {
+  background: radial-gradient(circle, rgba(94,125,69,0.10) 0%, transparent 70%);
+}
+
+/* ── Test: heatmap — forest-green scale on warm empty cells ── */
+.test .heatmap-cell[data-level="0"] { background: rgba(74, 58, 30, 0.06); }
+.test .heatmap-cell[data-level="1"] { background: rgba(94, 125, 69, 0.26); }
+.test .heatmap-cell[data-level="2"] { background: rgba(94, 125, 69, 0.50); }
+.test .heatmap-cell[data-level="3"] { background: rgba(94, 125, 69, 0.74); }
+.test .heatmap-cell[data-level="4"] { background: #4e6b34; }
+.test .heatmap-cell:hover { box-shadow: 0 0 8px rgba(94, 125, 69, 0.3); }
+.test .heatmap-legend-cell[data-level="0"] { background: rgba(74, 58, 30, 0.06); }
+.test .heatmap-legend-cell[data-level="1"] { background: rgba(94, 125, 69, 0.26); }
+.test .heatmap-legend-cell[data-level="2"] { background: rgba(94, 125, 69, 0.50); }
+.test .heatmap-legend-cell[data-level="3"] { background: rgba(94, 125, 69, 0.74); }
+.test .heatmap-legend-cell[data-level="4"] { background: #4e6b34; }
+.test .heatmap-section { box-shadow: var(--shadow-3d); }
+.test .heatmap-section::before { background: linear-gradient(90deg, transparent, rgba(94,125,69,0.16), transparent); }
+
+/* ── Test: XP bar ── */
+.test .xp-bar-fill { background: var(--gradient-accent); box-shadow: 0 0 10px rgba(94, 125, 69, 0.22); }
+.test .xp-bar { background: rgba(74, 58, 30, 0.08); }
+
+/* ── Test: tree ── */
+.test .tree-container { box-shadow: var(--shadow-3d); }
+.test .tree-container::before { background: linear-gradient(90deg, transparent, rgba(94,125,69,0.20), transparent); }
+
+/* ── Test: document / session cards ── */
+.test .doc-card { background: var(--bg-card); }
+.test .doc-card:hover {
+  box-shadow: 0 16px 40px rgba(74, 58, 30, 0.12), 0 0 30px rgba(94, 125, 69, 0.06);
+  border-color: rgba(94, 125, 69, 0.20);
+}
+.test .doc-action-btn { background: rgba(74, 58, 30, 0.04); }
+.test .doc-icon.doc-icon-completed { background: rgba(94, 125, 69, 0.16); color: var(--accent); }
+
+/* ── Test: editor — writing on warm paper ── */
+.test .editor-back-btn { background: rgba(74, 58, 30, 0.04); }
+.test .danger-progress { background: rgba(74, 58, 30, 0.06); }
+.test .danger-progress-fill { background: var(--accent); }
+.test .editor-area,
+.test .ql-editor,
+.test #editor-container { background: var(--bg-card); }
+
+/* ── Test: modals, toasts, popups ── */
+.test .modal-overlay { background: rgba(59, 53, 42, 0.50); }
+.test .modal { background: var(--bg-card); }
+.test .toast { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
+.test .toast.success { border-color: rgba(94, 125, 69, 0.3); box-shadow: var(--shadow-lg), 0 0 20px rgba(94, 125, 69, 0.1); }
+.test .selection-popup { background: var(--bg-card); border-color: var(--border); box-shadow: var(--shadow-lg); }
+
+/* ── Test: inputs & forms ── */
+.test input, .test textarea, .test select {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+.test input:focus, .test textarea:focus, .test select:focus {
+  border-color: rgba(94, 125, 69, 0.45);
+  box-shadow: 0 0 0 3px rgba(94, 125, 69, 0.10);
+}
+.test .editor-title-input,
+.test .editor-topic-input,
+.test .story-title-input-plain { background: transparent !important; }
+
+/* ── Test: duels ── */
+.test .duel-history-card.won { border-left-color: var(--accent); }
+.test .dhc-badge.won { background: rgba(94, 125, 69, 0.12); color: var(--accent); }
+.test .duel-sent-card { background: linear-gradient(135deg, rgba(94, 125, 69, 0.05), var(--bg-card)); }
+.test .duel-bar { background: linear-gradient(135deg, rgba(94, 125, 69, 0.15), rgba(94, 125, 69, 0.05)); }
+.test .duel-extra-time-accept { background: rgba(94, 125, 69, 0.15); color: var(--accent); }
+.test .duel-extra-time-accept:hover { background: rgba(94, 125, 69, 0.25); }
+
+/* ── Test: friends, analytics, presets ── */
+.test .friend-card { background: var(--bg-card); }
+.test .friend-card:hover { box-shadow: 0 8px 28px rgba(74, 58, 30, 0.10); }
+.test .analytics-bar { background: var(--accent) !important; }
+.test .analytics-milestone.unlocked { background: rgba(94, 125, 69, 0.08); }
+.test .time-preset.active { box-shadow: 0 4px 16px rgba(94, 125, 69, 0.3); }
+.test .mode-option.active { box-shadow: 0 4px 20px rgba(94, 125, 69, 0.3); }
+.test .motivate-toast { box-shadow: 0 4px 20px rgba(94, 125, 69, 0.2); }
+.test .session-complete::before { background: radial-gradient(circle, rgba(94,125,69,0.12) 0%, transparent 60%); }
+
+/* ── Test: achievements, leaderboard, support ── */
+.test .achievement-card.earned { border-color: rgba(94, 125, 69, 0.2); }
+.test .achievement-card.earned:hover { border-color: rgba(94, 125, 69, 0.4); }
+.test .podium-avatar { box-shadow: 0 4px 16px rgba(94, 125, 69, 0.3); }
+.test .leaderboard-table tr:hover td { background: rgba(94, 125, 69, 0.04); }
+.test .leaderboard-me td { background: rgba(94, 125, 69, 0.08) !important; }
+.test .ticket-type--suggestion,
+.test .ticket-type--feedback,
+.test .ticket-status--open,
+.test .ticket-status--replied { background: rgba(94, 125, 69, 0.12); color: var(--accent); }
+
+/* ── Test: pricing & upgrade cards ── */
+.test .upgrade-card-featured { box-shadow: 0 0 0 1px rgba(94, 125, 69, 0.15), 0 4px 32px rgba(94, 125, 69, 0.08); }
+.test .pricing-card.pro { box-shadow: 0 0 0 1px rgba(94, 125, 69, 0.15), 0 4px 32px rgba(94, 125, 69, 0.08); }
+.test .plan-card-active { box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(94, 125, 69, 0.08); }
+
+/* ── Test: landing surfaces ── */
+.test .mock-editor { box-shadow: 0 30px 80px rgba(74, 58, 30, 0.22), 0 0 60px rgba(94, 125, 69, 0.08); }
+.test .feature-card::before { background: linear-gradient(90deg, transparent, rgba(94,125,69,0.18), transparent); }
+.test .feature-card:hover { box-shadow: 0 20px 50px rgba(74, 58, 30, 0.14), 0 0 40px rgba(94, 125, 69, 0.08); border-color: rgba(94, 125, 69, 0.25); }
+.test .how-it-works::before { background: radial-gradient(ellipse, rgba(94,125,69,0.08) 0%, transparent 70%); }
+.test .cta::before { background: radial-gradient(ellipse, rgba(94,125,69,0.10) 0%, transparent 70%); }
+
+/* ── Test: misc accents ── */
+.test .online-dot, .test .status-dot { background: var(--accent); box-shadow: 0 0 6px rgba(94, 125, 69, 0.5); }
+.test .session-admin-tag { background: rgba(94, 125, 69, 0.12); }
+.test .notification-badge { background: linear-gradient(135deg, rgba(94, 125, 69, 0.15), rgba(94, 125, 69, 0.05)); }
+.test .levelup-glow { background: radial-gradient(circle, rgba(94, 125, 69, 0.3) 0%, transparent 70%); }
+.test .levelup-badge { box-shadow: 0 0 40px rgba(94, 125, 69, 0.4), 0 0 80px rgba(94, 125, 69, 0.15); }
+.test .auth-beta-badge { background: rgba(94, 125, 69, 0.12); }
+
+/* ── Test: keyframe overrides — green pulse/glow → olive ── */
+@keyframes test-duel-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(94, 125, 69, 0.4), var(--shadow); }
+  50% { box-shadow: 0 0 20px 8px rgba(94, 125, 69, 0.2), var(--shadow-lg); }
+}
+@keyframes test-online-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(94, 125, 69, 0.4); }
+  50% { box-shadow: 0 0 6px 2px rgba(94, 125, 69, 0.2); }
+}
+.test .duel-big-btn { animation-name: test-duel-pulse; background: var(--gradient-accent) !important; color: #ffffff !important; }
+.test .duel-big-btn:hover { animation-name: test-duel-pulse; box-shadow: 0 8px 30px rgba(94, 125, 69, 0.4), var(--shadow-lg) !important; }
+.test .online-dot, .test .status-dot { animation-name: test-online-pulse; }
+
+/* ── Test: scrollbar ── */
+.test ::-webkit-scrollbar-thumb { background: rgba(94, 125, 69, 0.25); }
+.test ::-webkit-scrollbar-thumb:hover { background: rgba(94, 125, 69, 0.40); }
+.test ::-webkit-scrollbar-track { background: rgba(74, 58, 30, 0.04); }
+
+/* ── Test: share button ── */
+.test .btn-share-analytics {
+  background: var(--gradient-accent);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(94, 125, 69, 0.3);
+}
+.test .btn-share-analytics:hover { box-shadow: 0 6px 20px rgba(94, 125, 69, 0.4); }
+
 /* ===== SESSION ANALYTICS ===== */
 .analytics-grid {
   display: grid;

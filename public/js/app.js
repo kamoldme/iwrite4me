@@ -272,7 +272,7 @@ const App = {
     }
 
     const savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
-    if (savedTheme === 'light') document.documentElement.classList.add('light');
+    if (['light', 'sepia', 'test'].includes(savedTheme)) document.documentElement.classList.add(savedTheme);
 
     // Resolve current URL to determine which view to show
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -521,9 +521,8 @@ const App = {
       });
     });
 
-    // Theme toggle — sync button state with current theme
-    const isLightNow = document.documentElement.classList.contains('light');
-    this._applyTheme(isLightNow ? 'light' : 'dark');
+    // Theme toggle — restore the saved theme (dark / light / sepia / test)
+    this._applyTheme(localStorage.getItem('iwrite_theme') || 'dark');
     document.getElementById('theme-toggle-btn').addEventListener('click', () => {
       this._cycleTheme();
     });
@@ -6514,13 +6513,14 @@ const App = {
   _applyTheme(theme) {
     const root = document.documentElement;
     // Remove all theme classes
-    root.classList.remove('light', 'sepia');
+    root.classList.remove('light', 'sepia', 'test');
     if (theme === 'light') root.classList.add('light');
     else if (theme === 'sepia') root.classList.add('sepia');
+    else if (theme === 'test') root.classList.add('test');
     localStorage.setItem('iwrite_theme', theme);
     const btn = document.getElementById('theme-toggle-btn');
     if (!btn) return;
-    const labels = { dark: 'Light Mode', light: 'Sepia Mode', sepia: 'Dark Mode' };
+    const labels = { dark: 'Light Mode', light: 'Sepia Mode', sepia: 'Test Mode', test: 'Dark Mode' };
     btn.querySelector('.theme-icon-dark').style.display = theme === 'dark' ? '' : 'none';
     btn.querySelector('.theme-icon-light').style.display = theme !== 'dark' ? '' : 'none';
     btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Light Mode';
@@ -6528,8 +6528,11 @@ const App = {
 
   _cycleTheme() {
     const current = localStorage.getItem('iwrite_theme') || 'dark';
-    // All users: dark → light → sepia → dark
-    const next = current === 'dark' ? 'light' : current === 'light' ? 'sepia' : 'dark';
+    // All users: dark → light → sepia → test → dark
+    const next = current === 'dark' ? 'light'
+      : current === 'light' ? 'sepia'
+      : current === 'sepia' ? 'test'
+      : 'dark';
     this._applyTheme(next);
   },
 
