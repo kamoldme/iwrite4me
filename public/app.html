@@ -16,10 +16,10 @@
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <!-- Fraunces: warm old-style serif used by the "Test Mode" (Writer's Desk) theme -->
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet">
+  <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=116">
+  <link rel="stylesheet" href="/css/style.css?v=117">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -168,9 +168,26 @@
                   <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
                 </div>
               </div>
-              <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">
-                <span style="padding-right:10px;font-size:1.3em;line-height:1">&#x270F;&#xFE0F;</span> Start Writing
-              </button>
+              <!-- Test Mode only: writer's-desk polaroid + handwritten quote -->
+              <div class="td-hero-aside test-only" aria-hidden="true">
+                <div class="td-polaroid">
+                  <span class="td-polaroid-tape"></span>
+                  <div class="td-polaroid-photo">&#x2615;</div>
+                  <div class="td-polaroid-caption">today&rsquo;s pages</div>
+                </div>
+                <div class="td-hero-quote">
+                  <p>&ldquo;You can make anything by writing.&rdquo;</p>
+                  <span>&mdash; C.S. Lewis</span>
+                </div>
+              </div>
+              <div class="td-hero-actions">
+                <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">
+                  <span style="padding-right:10px;font-size:1.3em;line-height:1">&#x270F;&#xFE0F;</span> Start Writing
+                </button>
+                <button class="btn btn-ghost btn-large dashboard-newsession-btn test-only" id="td-new-session-btn">
+                  <span style="padding-right:8px;font-size:1.1em;line-height:1">&#x1F551;</span> New Session
+                </button>
+              </div>
             </div>
           </div>
 
@@ -201,6 +218,14 @@
               <div class="dash-stat-emoji">&#x2B50;</div>
               <div class="dash-stat-value" id="total-xp">0</div>
               <div class="dash-stat-label">Total XP</div>
+            </div>
+            <!-- Test Mode only: level progress lives inline at the end of the stat bar -->
+            <div class="dash-level-segment test-only">
+              <div class="dls-head">
+                <span class="dls-label">Level <span id="td-level">1</span></span>
+                <span class="dls-xp" id="td-level-xp">0 / 100 XP</span>
+              </div>
+              <div class="dls-bar"><div class="dls-fill" id="td-level-fill" style="width:0%"></div></div>
             </div>
           </div>
 
@@ -235,6 +260,26 @@
                 </div>
               </div>
             </div>
+            <!-- Test Mode only: Today's Progress ring -->
+            <div class="td-progress-card test-only">
+              <h3>&#x1F4CB; Today&rsquo;s Progress</h3>
+              <div class="td-progress-body">
+                <div class="td-ring">
+                  <svg viewBox="0 0 120 120" width="120" height="120">
+                    <circle class="td-ring-track" cx="60" cy="60" r="52"></circle>
+                    <circle class="td-ring-fill" id="td-ring-fill" cx="60" cy="60" r="52"></circle>
+                  </svg>
+                  <span class="td-ring-emoji">&#x1F331;</span>
+                </div>
+                <div class="td-progress-text">
+                  <div class="td-progress-head" id="td-progress-head">Keep going!</div>
+                  <p class="td-progress-sub">You&rsquo;re building something great.</p>
+                  <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span></div>
+                  <div class="td-progress-goal-label">Daily Word Goal</div>
+                  <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">&#x270E; Edit Goal</button>
+                </div>
+              </div>
+            </div>
             <div class="tree-container">
               <h3>&#x1F333; Your Writing Tree</h3>
               <canvas id="tree-canvas" width="280" height="300"></canvas>
@@ -242,12 +287,49 @@
             </div>
           </div>
 
-          <div class="dashboard-recent">
-            <div class="docs-header">
-              <h2>&#x1F4C4; Recent Sessions</h2>
-              <button class="btn btn-primary btn-small" id="new-doc-btn-2">New Session</button>
+          <div class="td-row2">
+            <div class="dashboard-recent">
+              <div class="docs-header">
+                <h2>&#x1F4C4; Recent Sessions</h2>
+                <button class="btn btn-primary btn-small" id="new-doc-btn-2">New Session</button>
+              </div>
+              <div id="recent-docs"></div>
             </div>
-            <div id="recent-docs"></div>
+            <!-- Test Mode only: reflection sticky note -->
+            <div class="td-reflection-card test-only">
+              <div class="td-card-head">
+                <h3>&#x275D; Reflection Prompt</h3>
+                <button class="td-newprompt-btn" id="td-new-prompt-btn">&#x21BB; New Prompt</button>
+              </div>
+              <div class="td-sticky">
+                <p id="td-prompt-text">&ldquo;What&rsquo;s one small truth you discovered while writing recently?&rdquo;</p>
+                <p class="td-sticky-foot">Take a moment to reflect and write from the heart.</p>
+                <span class="td-sticky-feather">&#x1FAB6;</span>
+              </div>
+            </div>
+            <!-- Test Mode only: achievements panel -->
+            <div class="td-achievements-card test-only">
+              <div class="td-card-head">
+                <h3>&#x1F3C6; Achievements</h3>
+              </div>
+              <div id="td-achievements"></div>
+            </div>
+          </div>
+          <!-- Test Mode only: footer quote + maker's stamp -->
+          <div class="td-footer test-only">
+            <blockquote class="td-footer-quote">
+              &#x201C;The first draft doesn&rsquo;t have to be perfect. It just has to be written.&#x201D;
+              <cite>&mdash; James Clear</cite>
+            </blockquote>
+            <div class="td-stamp" aria-hidden="true">
+              <svg viewBox="0 0 100 100" width="84" height="84">
+                <defs><path id="td-stamp-path" d="M 50,50 m -34,0 a 34,34 0 1,1 68,0 a 34,34 0 1,1 -68,0"></path></defs>
+                <circle cx="50" cy="50" r="47" class="td-stamp-ring"></circle>
+                <circle cx="50" cy="50" r="28" class="td-stamp-ring-inner"></circle>
+                <text class="td-stamp-text"><textPath href="#td-stamp-path" startOffset="0">WRITE &#x00B7; REFLECT &#x00B7; GROW &#x00B7; WRITE &#x00B7; REFLECT &#x00B7; GROW &#x00B7; </textPath></text>
+                <text x="50" y="57" text-anchor="middle" class="td-stamp-center">&#x1F58B;</text>
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -1505,7 +1587,7 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=46"></script>
-  <script src="/js/app.js?v=114"></script>
+  <script src="/js/app.js?v=115"></script>
   <script src="/js/stories.js?v=16"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

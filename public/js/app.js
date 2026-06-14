@@ -1323,6 +1323,99 @@ const App = {
     // Only show non-failed, non-admin-deactivated docs in main lists
     const visibleDocs = this.documents.filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
     this.renderDocumentList('recent-docs', visibleDocs.slice(0, 3));
+
+    // Populate Test Mode dashboard extras (hidden unless the 'test' theme is active)
+    this._renderTestDashboard();
+  },
+
+  // Test Mode ("Writer's Desk") dashboard extras: inline level bar, Today's
+  // Progress ring, achievements panel, reflection prompt. All driven by real
+  // user data; the elements are display:none unless the .test theme is active.
+  _renderTestDashboard() {
+    const u = this.user || {};
+    const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    // Inline level segment (mirrors the standard XP bar)
+    const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(u.xp || 0);
+    setT('td-level', level);
+    setT('td-level-xp', `${xpInLevel.toLocaleString()} / ${xpForNextLevel.toLocaleString()} XP`);
+    const lf = document.getElementById('td-level-fill');
+    if (lf) lf.style.width = `${Math.min(100, (xpInLevel / xpForNextLevel) * 100)}%`;
+
+    // Today's Progress ring — words written today vs daily goal
+    const todayKey = new Date().toISOString().slice(0, 10);
+    let wordsToday = 0;
+    (this.documents || []).forEach(d => {
+      if (!d.updatedAt || !d.wordCount || d.deletedBySystem) return;
+      if (new Date(d.updatedAt).toISOString().slice(0, 10) === todayKey) wordsToday += d.wordCount;
+    });
+    const goal = parseInt(localStorage.getItem('iwrite_daily_goal') || '1000', 10) || 1000;
+    setT('td-words-today', wordsToday.toLocaleString());
+    setT('td-words-goal', goal.toLocaleString());
+    const pct = Math.min(1, wordsToday / goal);
+    const ring = document.getElementById('td-ring-fill');
+    if (ring) {
+      const C = 2 * Math.PI * 52;
+      ring.style.strokeDasharray = C;
+      ring.style.strokeDashoffset = C * (1 - pct);
+    }
+    setT('td-progress-head', wordsToday >= goal ? 'Goal reached!' : wordsToday > 0 ? 'Keep going!' : 'Start your day');
+
+    // Achievements — derived from real stats (mirrors the reference card)
+    const totalWords = u.totalWords || 0;
+    const bestStreak = Math.max(u.streak || 0, u.longestStreak || 0);
+    const ach = [
+      { icon: '&#x1F3AF;', name: 'Consistent', desc: 'Write a 7-day streak', cur: Math.min(bestStreak, 7), max: 7 },
+      { icon: '&#x26A1;', name: 'Speed Writer', desc: 'Write 500 total words', cur: Math.min(totalWords, 500), max: 500 },
+      { icon: '&#x1F4D6;', name: 'Storyteller', desc: 'Write 2,500 total words', cur: Math.min(totalWords, 2500), max: 2500 },
+    ];
+    const wrap = document.getElementById('td-achievements');
+    if (wrap) {
+      wrap.innerHTML = ach.map(a => {
+        const done = a.cur >= a.max;
+        return `<div class="td-ach-row">
+          <div class="td-ach-icon">${a.icon}</div>
+          <div class="td-ach-meta"><div class="td-ach-name">${a.name}</div><div class="td-ach-desc">${a.desc}</div></div>
+          <div class="td-ach-count">${a.cur.toLocaleString()} / ${a.max.toLocaleString()}</div>
+          <div class="td-ach-check ${done ? 'done' : 'pending'}">${done ? '&#x2713;' : ''}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Bind interactive buttons once
+    if (!this._tdBound) {
+      this._tdBound = true;
+      const prompts = [
+        "What's one small truth you discovered while writing recently?",
+        "Which sentence today surprised you the most?",
+        "What were you avoiding saying — and what if you said it?",
+        "Describe today in a single, honest image.",
+        "What would you write if no one would ever read it?",
+        "What's a feeling you can't quite name yet?",
+      ];
+      const promptEl = document.getElementById('td-prompt-text');
+      const newPromptBtn = document.getElementById('td-new-prompt-btn');
+      if (newPromptBtn && promptEl) {
+        newPromptBtn.onclick = () => {
+          this._tdPromptIdx = ((this._tdPromptIdx ?? 0) + 1) % prompts.length;
+          promptEl.textContent = `“${prompts[this._tdPromptIdx]}”`;
+        };
+      }
+      const editGoalBtn = document.getElementById('td-edit-goal-btn');
+      if (editGoalBtn) {
+        editGoalBtn.onclick = () => {
+          const cur = parseInt(localStorage.getItem('iwrite_daily_goal') || '1000', 10) || 1000;
+          const v = prompt('Set your daily word goal:', cur);
+          const n = parseInt(v, 10);
+          if (v !== null && !isNaN(n) && n > 0) {
+            localStorage.setItem('iwrite_daily_goal', String(n));
+            this._renderTestDashboard();
+          }
+        };
+      }
+      const newSessBtn = document.getElementById('td-new-session-btn');
+      if (newSessBtn) newSessBtn.onclick = () => { const b = document.getElementById('new-doc-btn'); if (b) b.click(); };
+    }
   },
 
   _renderHeatmap() {

@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.0.43] - 2026-06-14
+
+### Changed
+- **Test Mode** now restructures the dashboard layout (not just colors) to match the "Writer's Desk" reference: hero gains a polaroid + handwritten quote and a New Session button; the four stat cards collapse into a single horizontal bar with the level progress inline; a "Today's Progress" word-goal ring joins the activity/tree row; and a new row adds a Reflection sticky-note and an Achievements panel, with a closing quote and a "Write · Reflect · Grow" maker's stamp. All scoped to Test Mode only — other themes keep the original layout.
+- Today's Progress ring and Achievements are driven by real data (today's words vs an editable daily goal; streak/word milestones). Reflection prompts cycle through a set via the "New Prompt" button.
+
 ## [3.0.42] - 2026-06-14
 
 ### Added
