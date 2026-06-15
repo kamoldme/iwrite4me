@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.0.45] - 2026-06-15
+
+### Changed
+- Test Mode dashboard relaid out as a 2×2 grid: Writing Activity beside the combined Today's Progress + Reflection panel (equal height), and the Writing Tree beside Achievements (equal height, one row). Recent Sessions removed from the Test Mode dashboard.
+- Today's Progress and Reflection Prompt are now a single panel.
+- Achievements shows three at a time per page, each with a circular progress indicator (check when complete, clock while in progress); pages are swipeable with dots.
+- When an announcement is showing, the greeting card is now the wider of the two (announcement panel narrower).
+
 ## [3.0.44] - 2026-06-15
 
 ### Added

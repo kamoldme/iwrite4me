@@ -19,7 +19,7 @@
   <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=118">
+  <link rel="stylesheet" href="/css/style.css?v=119">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -232,7 +232,7 @@
             </div>
           </div>
 
-          <div class="dashboard-row-top">
+          <div class="dashboard-grid">
             <div class="heatmap-section">
               <div class="heatmap-header">
                 <h3 class="heatmap-title">Writing Activity</h3>
@@ -289,9 +289,6 @@
               <canvas id="tree-canvas" width="280" height="300"></canvas>
               <p class="tree-info">Stage: <span class="tree-stage-label" id="tree-stage-text">Seed</span></p>
             </div>
-          </div>
-
-          <div class="td-row2">
             <div class="dashboard-recent">
               <div class="docs-header">
                 <h2>&#x1F4C4; Recent Sessions</h2>
@@ -1599,7 +1596,7 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=46"></script>
-  <script src="/js/app.js?v=116"></script>
+  <script src="/js/app.js?v=117"></script>
   <script src="/js/stories.js?v=16"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

@@ -1398,26 +1398,45 @@ const App = {
       groupOf(a) - groupOf(b) || (b.cur / b.max) - (a.cur / a.max));
     this._achList = sorted;
 
+    // Group into pages of 3 (a swiper page shows several at once)
+    const PER_PAGE = 3;
+    const pages = [];
+    for (let i = 0; i < sorted.length; i += PER_PAGE) pages.push(sorted.slice(i, i + PER_PAGE));
+    this._achPages = pages.length;
+
+    // Small circular progress indicator (check when done, clock while pending)
+    const ringHTML = (a) => {
+      const r = 18, C = 2 * Math.PI * r;
+      const off = C * (1 - Math.min(1, a.cur / a.max));
+      const done = a.cur >= a.max;
+      const inner = done
+        ? '<span class="td-ach-ring-icon done">&#x2713;</span>'
+        : '<span class="td-ach-ring-icon pending">&#x1F551;</span>';
+      return `<div class="td-ach-ring"><svg viewBox="0 0 44 44" width="44" height="44">
+        <circle class="td-ach-ring-track" cx="22" cy="22" r="${r}"></circle>
+        <circle class="td-ach-ring-fill" cx="22" cy="22" r="${r}" style="stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${off.toFixed(1)}"></circle>
+      </svg>${inner}</div>`;
+    };
+
     const track = document.getElementById('td-ach-track');
     if (track) {
-      track.innerHTML = sorted.map(a => {
-        const cur = Math.min(a.cur, a.max);
-        const done = a.cur >= a.max;
-        const ratio = Math.round((cur / a.max) * 100);
-        const icon = done ? '&#x2713;' : '&#x1F551;'; // check vs clock
-        const label = done ? 'Done' : (a.cur > 0 ? 'In progress' : 'Not started');
-        return `<div class="td-ach-slide"><div class="td-ach-card">
-          <div class="td-ach-icon">${a.icon}</div>
-          <div class="td-ach-name">${a.name}</div>
-          <div class="td-ach-desc">${a.desc}</div>
-          <div class="td-ach-count">${cur.toLocaleString()} / ${a.max.toLocaleString()}</div>
-          <div class="td-ach-progress"><div class="td-ach-progress-fill" style="width:${ratio}%"></div></div>
-          <div class="td-ach-status ${done ? 'done' : 'pending'}">${icon} ${label}</div>
-        </div></div>`;
-      }).join('');
+      track.innerHTML = pages.map(page => `<div class="td-ach-slide">${
+        page.map(a => {
+          const cur = Math.min(a.cur, a.max);
+          return `<div class="td-ach-item">
+            <div class="td-ach-icon">${a.icon}</div>
+            <div class="td-ach-meta">
+              <div class="td-ach-name">${a.name}</div>
+              <div class="td-ach-desc">${a.desc}</div>
+              <div class="td-ach-count">${cur.toLocaleString()} / ${a.max.toLocaleString()}</div>
+            </div>
+            ${ringHTML(a)}
+          </div>`;
+        }).join('')
+      }</div>`).join('');
     }
     const dotsEl = document.getElementById('td-ach-dots');
-    if (dotsEl) dotsEl.innerHTML = sorted.map((_, i) => `<button class="td-ach-dot" data-idx="${i}" aria-label="Achievement ${i + 1}"></button>`).join('');
+    if (dotsEl) dotsEl.innerHTML = pages.map((_, i) => `<button class="td-ach-dot" data-idx="${i}" aria-label="Page ${i + 1}"></button>`).join('');
     this._updateAchSwiper();
 
     // Bind interactive controls once
@@ -1477,7 +1496,7 @@ const App = {
 
   // Position the achievements swiper (track transform + dots + arrow state)
   _updateAchSwiper() {
-    const n = this._achList ? this._achList.length : 0;
+    const n = this._achPages || 0;
     const track = document.getElementById('td-ach-track');
     if (!track || !n) return;
     const idx = this._achIdx = Math.max(0, Math.min(this._achIdx || 0, n - 1));
