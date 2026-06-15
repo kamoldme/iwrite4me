@@ -489,10 +489,11 @@ const App = {
       if (e.target === e.currentTarget) this.closePricing();
     });
 
-    // Mobile sidebar toggle
+    // Sidebar toggle — mobile off-canvas + desktop collapse
     const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
     const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
     const sidebar = document.getElementById('sidebar');
+    const isDesktop = () => window.innerWidth > 768;
 
     const openMobileSidebar = () => {
       sidebar.classList.add('open');
@@ -504,15 +505,26 @@ const App = {
       mobileSidebarToggle.classList.remove('open');
       mobileSidebarOverlay.style.display = 'none';
     };
+    const collapseSidebar = () => { document.body.classList.add('sidebar-collapsed'); localStorage.setItem('iwrite_sidebar_collapsed', '1'); };
+    const expandSidebar = () => { document.body.classList.remove('sidebar-collapsed'); localStorage.setItem('iwrite_sidebar_collapsed', '0'); };
+
+    // Restore desktop collapsed state
+    if (localStorage.getItem('iwrite_sidebar_collapsed') === '1') document.body.classList.add('sidebar-collapsed');
 
     mobileSidebarToggle.addEventListener('click', () => {
       // When in story-back-mode, the stories.js handler takes over via onclick
       if (mobileSidebarToggle.classList.contains('story-back-mode')) return;
+      if (isDesktop()) {
+        document.body.classList.contains('sidebar-collapsed') ? expandSidebar() : collapseSidebar();
+        return;
+      }
       sidebar.classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
     });
     mobileSidebarOverlay.addEventListener('click', closeMobileSidebar);
     const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
-    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeMobileSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', () => {
+      isDesktop() ? collapseSidebar() : closeMobileSidebar();
+    });
 
     // Close sidebar on mobile when a nav item is clicked
     sidebar.querySelectorAll('.sidebar-nav-item[data-view]').forEach(btn => {
@@ -1361,28 +1373,54 @@ const App = {
     }
     setT('td-progress-head', wordsToday >= goal ? 'Goal reached!' : wordsToday > 0 ? 'Keep going!' : 'Start your day');
 
-    // Achievements — derived from real stats (mirrors the reference card)
+    // Polaroid photo emoji — rotates once per day
+    const polaroidEmojis = ['&#x2615;', '&#x1F4D6;', '&#x1F58B;&#xFE0F;', '&#x1F56F;&#xFE0F;', '&#x1F33F;', '&#x1F4D3;', '&#x1F375;', '&#x1F319;', '&#x270D;&#xFE0F;', '&#x1FAB4;'];
+    const dayIndex = Math.floor(Date.now() / 86400000) % polaroidEmojis.length;
+    const photoEl = document.getElementById('td-polaroid-photo');
+    if (photoEl) photoEl.innerHTML = polaroidEmojis[dayIndex];
+
+    // Achievements — derived from real stats; in-progress first, done last
     const totalWords = u.totalWords || 0;
+    const totalSessions = u.totalSessions || 0;
     const bestStreak = Math.max(u.streak || 0, u.longestStreak || 0);
-    const ach = [
-      { icon: '&#x1F3AF;', name: 'Consistent', desc: 'Write a 7-day streak', cur: Math.min(bestStreak, 7), max: 7 },
-      { icon: '&#x26A1;', name: 'Speed Writer', desc: 'Write 500 total words', cur: Math.min(totalWords, 500), max: 500 },
-      { icon: '&#x1F4D6;', name: 'Storyteller', desc: 'Write 2,500 total words', cur: Math.min(totalWords, 2500), max: 2500 },
+    const defs = [
+      { icon: '&#x1F3AF;', name: 'Consistent', desc: 'Write a 7-day streak', cur: bestStreak, max: 7 },
+      { icon: '&#x26A1;', name: 'Speed Writer', desc: 'Write 500 total words', cur: totalWords, max: 500 },
+      { icon: '&#x1F4D6;', name: 'Storyteller', desc: 'Write 2,500 total words', cur: totalWords, max: 2500 },
+      { icon: '&#x1F4DA;', name: 'Novelist', desc: 'Write 10,000 total words', cur: totalWords, max: 10000 },
+      { icon: '&#x1F525;', name: 'On Fire', desc: 'Reach a 30-day streak', cur: bestStreak, max: 30 },
+      { icon: '&#x1F3C3;', name: 'Marathoner', desc: 'Complete 50 sessions', cur: totalSessions, max: 50 },
+      { icon: '&#x2B50;', name: 'Rising Star', desc: 'Reach Level 5', cur: level, max: 5 },
     ];
-    const wrap = document.getElementById('td-achievements');
-    if (wrap) {
-      wrap.innerHTML = ach.map(a => {
+    // group: 0 = in progress, 1 = not started, 2 = done; then by progress ratio
+    const groupOf = (a) => (a.cur >= a.max ? 2 : a.cur > 0 ? 0 : 1);
+    const sorted = defs.slice().sort((a, b) =>
+      groupOf(a) - groupOf(b) || (b.cur / b.max) - (a.cur / a.max));
+    this._achList = sorted;
+
+    const track = document.getElementById('td-ach-track');
+    if (track) {
+      track.innerHTML = sorted.map(a => {
+        const cur = Math.min(a.cur, a.max);
         const done = a.cur >= a.max;
-        return `<div class="td-ach-row">
+        const ratio = Math.round((cur / a.max) * 100);
+        const icon = done ? '&#x2713;' : '&#x1F551;'; // check vs clock
+        const label = done ? 'Done' : (a.cur > 0 ? 'In progress' : 'Not started');
+        return `<div class="td-ach-slide"><div class="td-ach-card">
           <div class="td-ach-icon">${a.icon}</div>
-          <div class="td-ach-meta"><div class="td-ach-name">${a.name}</div><div class="td-ach-desc">${a.desc}</div></div>
-          <div class="td-ach-count">${a.cur.toLocaleString()} / ${a.max.toLocaleString()}</div>
-          <div class="td-ach-check ${done ? 'done' : 'pending'}">${done ? '&#x2713;' : ''}</div>
-        </div>`;
+          <div class="td-ach-name">${a.name}</div>
+          <div class="td-ach-desc">${a.desc}</div>
+          <div class="td-ach-count">${cur.toLocaleString()} / ${a.max.toLocaleString()}</div>
+          <div class="td-ach-progress"><div class="td-ach-progress-fill" style="width:${ratio}%"></div></div>
+          <div class="td-ach-status ${done ? 'done' : 'pending'}">${icon} ${label}</div>
+        </div></div>`;
       }).join('');
     }
+    const dotsEl = document.getElementById('td-ach-dots');
+    if (dotsEl) dotsEl.innerHTML = sorted.map((_, i) => `<button class="td-ach-dot" data-idx="${i}" aria-label="Achievement ${i + 1}"></button>`).join('');
+    this._updateAchSwiper();
 
-    // Bind interactive buttons once
+    // Bind interactive controls once
     if (!this._tdBound) {
       this._tdBound = true;
       const prompts = [
@@ -1401,21 +1439,55 @@ const App = {
           promptEl.textContent = `“${prompts[this._tdPromptIdx]}”`;
         };
       }
+
+      // Achievements swiper navigation
+      const achPrev = document.getElementById('td-ach-prev');
+      const achNext = document.getElementById('td-ach-next');
+      if (achPrev) achPrev.onclick = () => { this._achIdx = (this._achIdx || 0) - 1; this._updateAchSwiper(); };
+      if (achNext) achNext.onclick = () => { this._achIdx = (this._achIdx || 0) + 1; this._updateAchSwiper(); };
+      if (dotsEl) dotsEl.onclick = (e) => {
+        const b = e.target.closest('[data-idx]');
+        if (b) { this._achIdx = parseInt(b.dataset.idx, 10); this._updateAchSwiper(); }
+      };
+
+      // Edit-goal opens the in-app modal
       const editGoalBtn = document.getElementById('td-edit-goal-btn');
-      if (editGoalBtn) {
+      const goalModal = document.getElementById('goal-modal');
+      const goalInput = document.getElementById('goal-input');
+      const goalSave = document.getElementById('goal-save-btn');
+      const goalCancel = document.getElementById('goal-cancel-btn');
+      const closeGoal = () => goalModal && goalModal.classList.remove('active');
+      if (editGoalBtn && goalModal) {
         editGoalBtn.onclick = () => {
-          const cur = parseInt(localStorage.getItem('iwrite_daily_goal') || '1000', 10) || 1000;
-          const v = prompt('Set your daily word goal:', cur);
-          const n = parseInt(v, 10);
-          if (v !== null && !isNaN(n) && n > 0) {
-            localStorage.setItem('iwrite_daily_goal', String(n));
-            this._renderTestDashboard();
-          }
+          if (goalInput) goalInput.value = parseInt(localStorage.getItem('iwrite_daily_goal') || '1000', 10) || 1000;
+          goalModal.classList.add('active');
+          if (goalInput) setTimeout(() => goalInput.focus(), 60);
         };
       }
-      const newSessBtn = document.getElementById('td-new-session-btn');
-      if (newSessBtn) newSessBtn.onclick = () => { const b = document.getElementById('new-doc-btn'); if (b) b.click(); };
+      if (goalSave) goalSave.onclick = () => {
+        const n = parseInt(goalInput && goalInput.value, 10);
+        if (!isNaN(n) && n > 0) { localStorage.setItem('iwrite_daily_goal', String(n)); this._renderTestDashboard(); }
+        closeGoal();
+      };
+      if (goalCancel) goalCancel.onclick = closeGoal;
+      if (goalModal) goalModal.addEventListener('click', (e) => { if (e.target === goalModal) closeGoal(); });
+      if (goalInput) goalInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && goalSave) goalSave.click(); });
     }
+  },
+
+  // Position the achievements swiper (track transform + dots + arrow state)
+  _updateAchSwiper() {
+    const n = this._achList ? this._achList.length : 0;
+    const track = document.getElementById('td-ach-track');
+    if (!track || !n) return;
+    const idx = this._achIdx = Math.max(0, Math.min(this._achIdx || 0, n - 1));
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    const dots = document.getElementById('td-ach-dots');
+    if (dots) [...dots.children].forEach((d, i) => d.classList.toggle('active', i === idx));
+    const prev = document.getElementById('td-ach-prev');
+    const next = document.getElementById('td-ach-next');
+    if (prev) prev.disabled = idx === 0;
+    if (next) next.disabled = idx === n - 1;
   },
 
   _renderHeatmap() {

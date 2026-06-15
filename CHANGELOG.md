@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.44] - 2026-06-15
+
+### Added
+- Sidebar is now collapsible on desktop (all themes): the **×** in the sidebar header hides it and a floating menu button brings it back; state is remembered.
+- Edit Goal now opens an in-app modal to set the daily word goal (replaces the browser prompt).
+
+### Changed
+- Test Mode dashboard refinements: single **Start Writing** button in the hero; announcements moved below the greeting; **Today's Progress** lost its title and is vertically centered; the writing-tree canvas now scales to its column (no more clipping/off-centre); the polaroid is larger and its photo emoji rotates daily; the handwritten hero quote was removed.
+- Test Mode **Reflection Prompt** moved directly beneath Today's Progress, with a larger prompt and no helper caption.
+- Test Mode **Achievements** is now a swiper/pager covering more milestones — in-progress ones shown first, a clock icon for unfinished/in-progress and a check for completed.
+
 ## [3.0.43] - 2026-06-14
 
 ### Changed
