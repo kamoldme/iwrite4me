@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.1.4] - 2026-06-15
+
+### Changed
+- Dashboard Achievements panel now shows two columns (4 per swiper page, 2×2) instead of a single column; collapses to one column on narrow viewports.
+
 ## [3.1.3] - 2026-06-15
 
 ### Fixed

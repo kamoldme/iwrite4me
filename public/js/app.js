@@ -1419,8 +1419,8 @@ const App = {
       groupOf(a) - groupOf(b) || (b.cur / b.max) - (a.cur / a.max));
     this._achList = sorted;
 
-    // Group into pages of 3 (a swiper page shows several at once)
-    const PER_PAGE = 3;
+    // Group into pages (two columns × two rows per page)
+    const PER_PAGE = 4;
     const pages = [];
     for (let i = 0; i < sorted.length; i += PER_PAGE) pages.push(sorted.slice(i, i + PER_PAGE));
     this._achPages = pages.length;
