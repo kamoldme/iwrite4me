@@ -1268,77 +1268,92 @@ const App = {
   },
 
   async loadDashboard() {
+    // 1) Instant paint from the last-known cached user — avoids the "everything
+    //    is 0 / blank visuals" flash while the network requests are in flight.
+    try {
+      if (!this.user) {
+        const cached = JSON.parse(localStorage.getItem('iwrite_user_cache') || 'null');
+        if (cached) this.user = cached;
+      }
+    } catch {}
+    if (this.user) { this.updateUserUI(); this._paintDashboard(); }
+
+    // 2) Fetch the user and documents IN PARALLEL (was sequential = two round-trips).
+    const docsPromise = API.getDocuments().catch(() => null);
+
     try {
       this.user = await API.getMe();
+      try { localStorage.setItem('iwrite_user_cache', JSON.stringify(this.user)); } catch {}
       this.updateUserUI();
-      // Show toast if subscription just expired
       if (this.user.subscriptionJustExpired) {
         this.toast('Your Pro subscription has expired. You\'ve been moved to the Free plan.', 'warning');
       }
     } catch {}
 
-    // Username reminder
-    const usernameReminder = document.getElementById('username-reminder');
-    if (usernameReminder) {
-      if (!this.user.username) {
-        usernameReminder.style.display = 'flex';
-      } else {
-        usernameReminder.style.display = 'none';
-      }
-    }
-
-    document.getElementById('total-words').textContent = (this.user.totalWords || 0).toLocaleString();
-    document.getElementById('total-sessions').textContent = this.user.totalSessions || 0;
-    document.getElementById('current-streak').textContent = this.user.streak || 0;
-    document.getElementById('longest-streak-text').textContent = `Best: ${this.user.longestStreak || 0}`;
-    document.getElementById('total-xp').textContent = (this.user.xp || 0).toLocaleString();
-
-    // Fetch and display active users count
+    // One-time side effects
+    if (this._onlineInterval) clearInterval(this._onlineInterval);
     this.loadOnlineCount();
     this._onlineInterval = setInterval(() => this.loadOnlineCount(), 60000);
-
-    // Load announcements (renders only if any visible to this user)
     this.loadAnnouncements();
 
-    const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(this.user.xp || 0);
-    document.getElementById('xp-level-text').innerHTML = `Level ${level}`;
-    document.getElementById('xp-progress-text').textContent = `${xpInLevel.toLocaleString()} / ${xpForNextLevel.toLocaleString()} XP`;
-    document.getElementById('xp-bar-fill').style.width = `${Math.min(100, (xpInLevel / xpForNextLevel) * 100)}%`;
-
-    // Queue level-up celebrations (layer by layer)
+    // Queue level-up celebrations (once, against the fresh level)
+    const { level } = this.calcXPLevel((this.user && this.user.xp) || 0);
     const prevLevel = parseInt(localStorage.getItem('iwrite_last_level') || '0');
     if (level > prevLevel && prevLevel > 0) {
       const pendingLevels = [];
-      for (let l = prevLevel + 1; l <= level; l++) {
-        pendingLevels.push(l);
-      }
+      for (let l = prevLevel + 1; l <= level; l++) pendingLevels.push(l);
       localStorage.setItem('iwrite_last_level', level.toString());
       this._showLevelUpQueue(pendingLevels);
     } else {
       localStorage.setItem('iwrite_last_level', level.toString());
     }
 
-    const canvas = document.getElementById('tree-canvas');
-    const stage = this.user.treeStage || 0;
-    TreeRenderer.draw(canvas, stage, this.user.streak || 0);
-    document.getElementById('tree-stage-text').textContent = TreeRenderer.stages[stage] || 'Seed';
+    // 3) Paint everything driven by user data right away (stats, level bar, tree, achievements)
+    this._paintDashboard();
 
+    // 4) Documents arrive (in parallel) → refresh heatmap, recent list, today's-progress ring
     try {
-      this.documents = await API.getDocuments();
+      const docs = await docsPromise;
+      if (!docs) throw new Error('no docs');
+      this.documents = docs;
       this._docsCacheDirty = false;
       this._docsCacheLoaded = true;
     } catch {
-      this.documents = [];
+      if (!this.documents) this.documents = [];
+    }
+    this._paintDashboard();
+  },
+
+  // Render all data-driven dashboard visuals from this.user / this.documents.
+  // Null-safe + idempotent so it can run from cache and again after each fetch.
+  _paintDashboard() {
+    const u = this.user || {};
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    const ur = document.getElementById('username-reminder');
+    if (ur) ur.style.display = (this.user && !u.username) ? 'flex' : 'none';
+
+    setText('total-words', (u.totalWords || 0).toLocaleString());
+    setText('total-sessions', u.totalSessions || 0);
+    setText('current-streak', u.streak || 0);
+    setText('longest-streak-text', `Best: ${u.longestStreak || 0}`);
+    setText('total-xp', (u.xp || 0).toLocaleString());
+
+    const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(u.xp || 0);
+    const xlt = document.getElementById('xp-level-text'); if (xlt) xlt.innerHTML = `Level ${level}`;
+    setText('xp-progress-text', `${xpInLevel.toLocaleString()} / ${xpForNextLevel.toLocaleString()} XP`);
+    const xbf = document.getElementById('xp-bar-fill'); if (xbf) xbf.style.width = `${Math.min(100, (xpInLevel / xpForNextLevel) * 100)}%`;
+
+    const canvas = document.getElementById('tree-canvas');
+    if (canvas && window.TreeRenderer) {
+      const stage = u.treeStage || 0;
+      TreeRenderer.draw(canvas, stage, u.streak || 0);
+      setText('tree-stage-text', TreeRenderer.stages[stage] || 'Seed');
     }
 
-    // --- Render activity heatmap ---
     this._renderHeatmap();
-
-    // Only show non-failed, non-admin-deactivated docs in main lists
-    const visibleDocs = this.documents.filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
+    const visibleDocs = (this.documents || []).filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
     this.renderDocumentList('recent-docs', visibleDocs.slice(0, 3));
-
-    // Populate Test Mode dashboard extras (hidden unless the 'test' theme is active)
     this._renderTestDashboard();
   },
 

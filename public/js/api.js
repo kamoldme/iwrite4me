@@ -465,6 +465,8 @@ const API = {
 
   logout() {
     this.clearToken();
+    // Drop the optimistic dashboard cache so the next account doesn't briefly see this one's stats
+    try { localStorage.removeItem('iwrite_user_cache'); } catch {}
     window.location.href = '/app';
   },
 

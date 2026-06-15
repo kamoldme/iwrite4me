@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.1.1] - 2026-06-15
+
+### Fixed
+- Faster dashboard load / less "everything is 0 and blank" flash: the user and documents are now fetched in parallel (was sequential), user-driven visuals (stats, level bar, achievements, tree, empty heatmap grid) paint as soon as the user loads instead of waiting for documents, and the dashboard paints instantly from a cached copy of the user on repeat loads.
+
 ## [3.1.0] - 2026-06-15
 
 ### Changed
