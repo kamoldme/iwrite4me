@@ -940,14 +940,15 @@ const App = {
     document.getElementById('editor-copy-btn').addEventListener('click', async () => {
       const textarea = document.getElementById('editor-textarea');
 
-      // During active sessions: no copying unless maintenance is active
+      // During active sessions: no copying — except for Pro users (perk) or maintenance
       if (Editor.active) {
-        if (!this._maintActive) {
+        const canCopy = this._maintActive || (this.user && this.user.plan === 'premium');
+        if (!canCopy) {
           this.toast('Copying is disabled during sessions', 'error');
           return;
         }
         await this._doCopy(textarea);
-        this.toast('Copied! Unlimited during maintenance', 'success');
+        this.toast(this._maintActive ? 'Copied! Unlimited during maintenance' : 'Copied to clipboard!', 'success');
         return;
       }
 

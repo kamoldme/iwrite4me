@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.1.8] - 2026-06-15
+
+### Fixed
+- **XP awarded on page refresh:** resuming an expired session on load could re-enter `completeSession` (the 100ms timer kept calling it while it awaited the title prompt), awarding XP multiple times, and a refresh mid-prompt could re-resume it. Added a re-entrancy guard and clear the saved session immediately on a timer-expired completion.
+- **Background music didn't play:** the helmet CSP had no `media-src`, so it fell back to `'self'` and the browser blocked all archive.org audio. Added `media-src` for archive.org (+ its `ia*.us.archive.org` redirect host). Also dropped the unneeded `crossOrigin` on the audio element and now surface a toast if playback fails instead of failing silently.
+
+### Changed
+- **Pro users can now copy during sessions.** Copy was blocked for everyone during active sessions; it's now allowed for Pro (and during maintenance) across the copy button, the document-level copy/cut/right-click block, and text selection. Free users are still blocked (anti-paste).
+
 ## [3.1.7] - 2026-06-15
 
 ### Fixed

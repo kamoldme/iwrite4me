@@ -1362,6 +1362,14 @@ const Editor = {
 
   async completeSession(timerExpired) {
     if (!this.active || this.abandoned) return;
+    // Guard re-entrancy: the 100ms timer keeps firing updateTimer (which calls
+    // completeSession) while we await the title prompt — without this, an expired
+    // session resumed on page load awards XP many times over.
+    if (this._completing) return;
+    this._completing = true;
+    // An expired session is over: drop its saved state now so a refresh mid-prompt
+    // can't resume-and-complete it again (the "every refresh gives XP" bug).
+    if (timerExpired) this._clearSessionState();
 
     // Check early complete limit (only when user clicks Complete, not when timer expires)
     // Bypass during maintenance — unlimited saves/copies
@@ -1377,12 +1385,14 @@ const Editor = {
       const earlyLim = user.plan === 'premium' ? 15 : 3;
       if (usedThisMonth >= earlyLim) {
         App.toast(`Early complete limit reached (${earlyLim}/month). Wait for the timer to finish.`, 'warning');
+        this._completing = false;
         return;
       }
       const remaining = earlyLim - usedThisMonth;
       const ok = await App.showConfirm(`Are you sure you want to end this session early? You will use 1 of your ${remaining} early finishes left this month.`);
       if (!ok) {
         this.active = true;
+        this._completing = false;
         return;
       }
     }
@@ -1394,6 +1404,7 @@ const Editor = {
         const chosen = await App.promptTitle();
         if (chosen === null) {
           // User cancelled the prompt — don't complete
+          this._completing = false;
           return;
         }
         this.titleInput.value = chosen || 'Untitled';
@@ -1850,8 +1861,12 @@ const Editor = {
     this._audioElement = new Audio(src);
     this._audioElement.loop = true;
     this._audioElement.volume = vol / 100;
-    this._audioElement.crossOrigin = 'anonymous';
-    this._audioElement.play().catch(() => {});
+    // No crossOrigin: plain cross-origin playback needs no CORS, and setting it would
+    // require CORS on every redirect hop. (No Web Audio analyser here that would need it.)
+    this._audioElement.play().catch((err) => {
+      App.toast('Could not play audio — try again', 'error');
+      console.warn('[audio] play failed', err);
+    });
     this._audioPlaying = true;
     this._activeAudioKey = key;
     this._updateTrackUI();
@@ -2033,6 +2048,7 @@ const Editor = {
 
   cleanup() {
     this.active = false;
+    this._completing = false;
     if (this._originalTabTitle != null) {
       document.title = this._originalTabTitle;
       this._originalTabTitle = null;
@@ -2135,8 +2151,13 @@ const Editor = {
   },
 
   // ── Copy blocking during active sessions ──
+  _copyAllowed() {
+    return App._maintActive || (App.user && App.user.plan === 'premium');
+  },
+
   _onCopyBlock(e) {
     if (!Editor.active) return;
+    if (Editor._copyAllowed()) return; // Pro users (and maintenance) may copy during sessions
     // Allow copy from the research drawer (AI chat + Wiki results)
     const drawer = document.getElementById('research-drawer');
     if (drawer) {
@@ -2152,6 +2173,7 @@ const Editor = {
 
   _onContextMenuBlock(e) {
     if (!Editor.active) return;
+    if (Editor._copyAllowed()) return; // Pro users (and maintenance) may right-click during sessions
     const drawer = document.getElementById('research-drawer');
     if (drawer && e.target && drawer.contains(e.target)) return;
     e.preventDefault();
@@ -2161,9 +2183,11 @@ const Editor = {
     document.addEventListener('copy', this._onCopyBlock, true);
     document.addEventListener('cut', this._onCopyBlock, true);
     document.addEventListener('contextmenu', this._onContextMenuBlock, true);
-    // Block text selection in the editor during sessions
-    this.textarea.style.userSelect = 'none';
-    this.textarea.style.webkitUserSelect = 'none';
+    // Block text selection during sessions — but let Pro users (and maintenance) select to copy
+    if (!this._copyAllowed()) {
+      this.textarea.style.userSelect = 'none';
+      this.textarea.style.webkitUserSelect = 'none';
+    }
     // Still allow typing in contentEditable
     this.textarea.style.caretColor = 'var(--text-primary)';
   },

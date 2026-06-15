@@ -47,6 +47,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      // Background music streams from archive.org (/download/ 302-redirects to ia*.us.archive.org)
+      mediaSrc: ["'self'", 'https://archive.org', 'https://*.archive.org', 'blob:'],
       connectSrc: [
         "'self'",
         'https://www.google-analytics.com',
