@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0] - 2026-06-15
+
+### Changed
+- The "Writer's Desk" dashboard structure is now shared by **all** themes — polaroid hero, horizontal stat+level bar, the 2×2 grid (Writing Activity, Today's Progress + Reflection, Writing Tree, Achievements swiper), footer quote + stamp, and no Recent Sessions card.
+- **Light** mode now uses the warm parchment palette (the former Test look) and keeps the name "Light". **Dark** and **Sepia** get the same structure with their own colours.
+- The separate "Test" mode is folded into Light; the theme cycle is now Dark → Light → Sepia. The structure is variable-driven (`--accent-rgb` / `--ink-rgb`) so each theme colours it.
+
 ## [3.0.46] - 2026-06-15
 
 ### Changed

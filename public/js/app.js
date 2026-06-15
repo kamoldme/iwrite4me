@@ -271,8 +271,10 @@ const App = {
       localStorage.setItem('iwrite_last_level', level.toString());
     }
 
-    const savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
-    if (['light', 'sepia', 'test'].includes(savedTheme)) document.documentElement.classList.add(savedTheme);
+    let savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
+    if (savedTheme === 'test') savedTheme = 'light';
+    document.documentElement.classList.add('test'); // Writer's Desk structure — always on
+    if (savedTheme === 'light' || savedTheme === 'sepia') document.documentElement.classList.add(savedTheme);
 
     // Resolve current URL to determine which view to show
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -6696,27 +6698,26 @@ const App = {
 
   _applyTheme(theme) {
     const root = document.documentElement;
-    // Remove all theme classes
-    root.classList.remove('light', 'sepia', 'test');
+    if (theme === 'test') theme = 'light'; // legacy: Test folded into Light
+    // 'test' = Writer's Desk structure layer — always on; color theme adds light/sepia (dark = none)
+    root.classList.remove('light', 'sepia');
+    root.classList.add('test');
     if (theme === 'light') root.classList.add('light');
     else if (theme === 'sepia') root.classList.add('sepia');
-    else if (theme === 'test') root.classList.add('test');
     localStorage.setItem('iwrite_theme', theme);
     const btn = document.getElementById('theme-toggle-btn');
     if (!btn) return;
-    const labels = { dark: 'Light Mode', light: 'Sepia Mode', sepia: 'Test Mode', test: 'Dark Mode' };
+    const labels = { dark: 'Light Mode', light: 'Sepia Mode', sepia: 'Dark Mode' };
     btn.querySelector('.theme-icon-dark').style.display = theme === 'dark' ? '' : 'none';
     btn.querySelector('.theme-icon-light').style.display = theme !== 'dark' ? '' : 'none';
     btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Light Mode';
   },
 
   _cycleTheme() {
-    const current = localStorage.getItem('iwrite_theme') || 'dark';
-    // All users: dark → light → sepia → test → dark
-    const next = current === 'dark' ? 'light'
-      : current === 'light' ? 'sepia'
-      : current === 'sepia' ? 'test'
-      : 'dark';
+    let current = localStorage.getItem('iwrite_theme') || 'dark';
+    if (current === 'test') current = 'light';
+    // dark → light → sepia → dark (all share the Writer's Desk structure)
+    const next = current === 'dark' ? 'light' : current === 'light' ? 'sepia' : 'dark';
     this._applyTheme(next);
   },
 
