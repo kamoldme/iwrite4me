@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.1.6] - 2026-06-15
+
+### Changed
+- Dashboard greeting font changed to **Story Script** (handwritten script).
+- Achievements rows now stretch to fill the panel height, removing the empty gap between the swipe dots and the bottom of the card.
+
 ## [3.1.5] - 2026-06-15
 
 ### Changed
