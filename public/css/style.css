@@ -2022,9 +2022,9 @@ button.test-only { display: none; }
   box-shadow: 0 1px 3px rgba(74, 58, 30, 0.12);
 }
 .test .td-polaroid-photo {
-  width: 150px; height: 114px; border-radius: 2px;
+  width: 170px; height: 134px; border-radius: 2px;
   background: linear-gradient(135deg, #c2a86f 0%, #9a8453 55%, #6f6240 100%);
-  display: flex; align-items: center; justify-content: center; font-size: 56px;
+  display: flex; align-items: center; justify-content: center; font-size: 90px; line-height: 1;
   box-shadow: inset 0 0 18px rgba(74, 58, 30, 0.25);
 }
 .test .td-polaroid-caption {
@@ -2079,12 +2079,17 @@ button.test-only { display: none; }
 .test .dls-bar { height: 8px; background: rgba(74, 58, 30, 0.10); border-radius: 99px; overflow: hidden; }
 .test .dls-fill { height: 100%; background: var(--gradient-accent); border-radius: 99px; min-width: 2px; transition: width 0.8s ease; }
 
-/* ── Test grid: heatmap | today+reflection  /  tree | achievements ── */
-.test .dashboard-grid { grid-template-columns: 1.3fr 1fr; align-items: stretch; }
+/* ── Test grid: heatmap | today+reflection  /  tree | achievements ──
+   12-col so each row gets its own split: row 2 gives Achievements more
+   width and the Writing Tree less. */
+.test .dashboard-grid { grid-template-columns: repeat(12, 1fr); align-items: stretch; }
+.test .dashboard-grid > .heatmap-section { grid-column: 1 / 8; grid-row: 1; }
+.test .dashboard-grid > .td-mid-stack { grid-column: 8 / 13; grid-row: 1; }
+.test .dashboard-grid > .tree-container { grid-column: 1 / 6; grid-row: 2; display: flex; flex-direction: column; justify-content: center; }
+.test .dashboard-grid > .td-achievements-card { grid-column: 6 / 13; grid-row: 2; }
 .test .dashboard-grid > .dashboard-recent { display: none; }   /* Recent Sessions removed */
-/* Writing tree centred in its (stretched) cell */
-.test .dashboard-grid > .tree-container { display: flex; flex-direction: column; justify-content: center; }
-.test .tree-container #tree-canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+/* Writing tree: smaller, centred */
+.test .tree-container #tree-canvas { max-width: 196px; height: auto; display: block; margin: 0 auto; }
 
 /* Achievements keeps its own panel chrome */
 .test .td-achievements-card {
@@ -2202,6 +2207,7 @@ button.test-only { display: none; }
   .test .dash-stat-card { flex: 1 1 40%; }
   .test .dash-level-segment { flex: 1 1 100%; }
   .test .dashboard-grid { grid-template-columns: 1fr; }
+  .test .dashboard-grid > * { grid-column: 1 / -1; grid-row: auto; }
   .test .td-footer { flex-direction: column-reverse; gap: 18px; }
   .test .td-hero-aside { display: none; }
 }

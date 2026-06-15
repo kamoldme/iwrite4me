@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.0.46] - 2026-06-15
+
+### Changed
+- Test Mode polaroid now shows today's daily emoji as a large photo (the "today's pages" caption was removed).
+- Test Mode row 2 rebalanced: the Achievements panel is wider and the Writing Tree is smaller.
+
 ## [3.0.45] - 2026-06-15
 
 ### Changed
