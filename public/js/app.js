@@ -1157,9 +1157,11 @@ const App = {
     if (view === 'leaderboard') this.loadLeaderboard();
     if (view === 'settings') this.loadProfile();
     if (view === 'my-profile') this.loadMyProfile();
-    if (view === 'friends') this.loadFriends();
+    // Friends / Analytics: load once, then only re-fetch when there's something new
+    // (a new friend request, or the user's stats changed). See updateNotifBadge + loadDashboard.
+    if (view === 'friends' && (!this._friendsLoaded || this._friendsDirty)) this.loadFriends();
     if (view === 'support') { this.loadSupport(); this.initSupportImageUpload(); }
-    if (view === 'analytics') this.loadAnalytics();
+    if (view === 'analytics' && (!this._analyticsLoaded || this._analyticsDirty)) this.loadAnalytics();
     if (view === 'upgrade') this.loadUpgrade();
     if (view === 'user-profile' && username) this.loadUserProfile(username);
     if (view === 'duels') {
@@ -1285,6 +1287,8 @@ const App = {
       this.user = await API.getMe();
       try { localStorage.setItem('iwrite_user_cache', JSON.stringify(this.user)); } catch {}
       this.updateUserUI();
+      // If the user's writing stats changed since Analytics was last loaded, mark it stale
+      if (this._analyticsSig !== undefined && this._statsSig() !== this._analyticsSig) this._analyticsDirty = true;
       if (this.user.subscriptionJustExpired) {
         this.toast('Your Pro subscription has expired. You\'ve been moved to the Free plan.', 'warning');
       }
@@ -5499,6 +5503,8 @@ const App = {
   _friendsTotalPages: 1,
 
   async loadFriends() {
+    this._friendsLoaded = true;
+    this._friendsDirty = false;
     // Copy Invite Link button
     const copyInvBtn = document.getElementById('copy-invite-link-btn');
     if (copyInvBtn) {
@@ -5760,6 +5766,7 @@ const App = {
 
 
   _lastDuelRequestCount: -1, // -1 = not yet polled (skip first toast)
+  _lastFriendReqCount: -1,   // -1 = not yet polled
 
   async startNotifPolling() {
     const poll = async () => {
@@ -5786,6 +5793,12 @@ const App = {
           friendBadge.style.display = 'none';
         }
       }
+      // A new friend request arrived → Friends view needs a refresh next time it's opened
+      if (this._lastFriendReqCount >= 0 && friendRequests.length > this._lastFriendReqCount) {
+        this._friendsDirty = true;
+        if (this.currentView === 'friends') this.loadFriends();
+      }
+      this._lastFriendReqCount = friendRequests.length;
 
       // Duels badge
       const duelBadge = document.getElementById('duels-badge');
@@ -5839,6 +5852,9 @@ const App = {
             dot.style.display = 'none';
           }
         }
+        // New community posts exist → refresh the Community feed next time it's opened
+        // (mark dirty only; don't auto-reload while the user is reading it).
+        if (latest.newCount > 0 && this.currentView !== 'stories') this._storiesDirty = true;
       } catch {}
     } catch {}
   },
@@ -6839,7 +6855,17 @@ const App = {
   _analyticsData: null,
   _analyticsRange: 30,
 
+  // Signature of the writing stats that Analytics depends on — lets us detect
+  // when Analytics needs a refresh (i.e. the user actually wrote/changed something).
+  _statsSig() {
+    const u = this.user || {};
+    return `${u.totalWords || 0}|${u.totalSessions || 0}|${u.xp || 0}|${u.treeStage || 0}`;
+  },
+
   async loadAnalytics() {
+    this._analyticsLoaded = true;
+    this._analyticsDirty = false;
+    this._analyticsSig = this._statsSig(); // snapshot stats so we only reload when they change
     const container = document.getElementById('analytics-content');
     container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">Loading analytics...</div>';
 

@@ -363,6 +363,8 @@
     },
 
     async loadStories() {
+      App._storiesLoaded = true;
+      App._storiesDirty = false;
       const feedEl = document.getElementById('stories-feed');
       if (feedEl) {
         const skeletonCard = `<div class="story-skeleton-card"><div class="story-skeleton-line skeleton-author"></div><div class="story-skeleton-line skeleton-title"></div><div class="story-skeleton-line skeleton-excerpt"></div><div class="story-skeleton-line skeleton-excerpt-short"></div><div class="story-skeleton-line skeleton-meta"></div></div>`;
@@ -1460,7 +1462,8 @@
     baseSwitchView(view, opts);
     if (view === 'stories') {
       this.syncStoryControls();
-      this.loadStories();
+      // Load once, then only re-fetch when there's new community content (see updateNotifBadge)
+      if (!this._storiesLoaded || this._storiesDirty) this.loadStories();
       // Mark community as seen — hide the green dot
       localStorage.setItem('iwrite_community_seen', new Date().toISOString());
       const dot = document.getElementById('community-new-dot');

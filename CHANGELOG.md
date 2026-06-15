@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.2] - 2026-06-15
+
+### Changed
+- Community, Friends, and Analytics no longer re-fetch on every visit. They load once and the rendered view is reused on subsequent visits; they only re-fetch when there's actually something new:
+  - **Community** refreshes when the 10s poller detects newly published posts (the same signal as the green "new" dot), plus your own story actions and the manual refresh still update it immediately.
+  - **Friends** refreshes when a new friend request arrives (and friend actions still refresh it directly).
+  - **Analytics** refreshes only when your writing stats change (after completing/affecting a session), detected on the next dashboard load.
+
 ## [3.1.1] - 2026-06-15
 
 ### Fixed
