@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.1.3] - 2026-06-15
+
+### Fixed
+- Writing Tree was invisible: the dashboard repaint guarded the tree draw on `window.TreeRenderer`, but `TreeRenderer` is a top-level `const` (not on `window`), so the guard was always false. Reference it directly now.
+
 ## [3.1.2] - 2026-06-15
 
 ### Changed

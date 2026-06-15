@@ -1349,7 +1349,7 @@ const App = {
     const xbf = document.getElementById('xp-bar-fill'); if (xbf) xbf.style.width = `${Math.min(100, (xpInLevel / xpForNextLevel) * 100)}%`;
 
     const canvas = document.getElementById('tree-canvas');
-    if (canvas && window.TreeRenderer) {
+    if (canvas && typeof TreeRenderer !== 'undefined') {
       const stage = u.treeStage || 0;
       TreeRenderer.draw(canvas, stage, u.streak || 0);
       setText('tree-stage-text', TreeRenderer.stages[stage] || 'Seed');
