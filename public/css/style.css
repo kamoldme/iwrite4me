@@ -2182,9 +2182,22 @@ button.test-only { display: none; }
   .test .dash-stat-card { flex: 1 1 40%; }
   .test .dash-level-segment { flex: 1 1 100%; }
   .test .dashboard-grid { grid-template-columns: 1fr; }
-  .test .dashboard-grid > * { grid-column: 1 / -1; grid-row: auto; }
+  /* Reset the per-panel 12-col placements with MATCHING specificity (0,3,0) so the
+     panels actually stack — a universal `> *` reset (0,2,0) loses to them. */
+  .test .dashboard-grid > .heatmap-section,
+  .test .dashboard-grid > .td-mid-stack,
+  .test .dashboard-grid > .tree-container,
+  .test .dashboard-grid > .td-achievements-card {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
   .test .td-footer { flex-direction: column-reverse; gap: 18px; }
   .test .td-hero-aside { display: none; }
+}
+
+/* Phones: stack the Today's Progress ring above its text so it never squeezes */
+@media (max-width: 480px) {
+  .test .td-progress-body { flex-direction: column; align-items: flex-start; gap: 14px; text-align: left; }
 }
 
 /* ══════════════════════════════════════════════════════════════

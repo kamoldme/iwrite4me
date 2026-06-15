@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.1.7] - 2026-06-15
+
+### Fixed
+- Mobile dashboard: the panels (Writing Activity, Today's Progress + Reflection, Writing Tree, Achievements) now stack to a single full-width column on phones/tablets. They previously kept their desktop 12-column placements (the per-panel `grid-column` rules outranked the responsive `> *` reset), so they overflowed and got clipped. The reset now uses matching-specificity selectors.
+- On phones (≤480px) the Today's Progress ring stacks above its text so it never squeezes.
+
 ## [3.1.6] - 2026-06-15
 
 ### Changed
