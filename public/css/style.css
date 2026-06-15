@@ -1733,13 +1733,15 @@ body::-webkit-scrollbar,
   font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
 }
 .test .dashboard-hero-text h1 {
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  font-size: 34px;
+  font-family: 'Instrument Serif', 'Fraunces', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  font-size: 44px;
+  line-height: 1.05;
 }
 .test .dashboard-hero-text h1 em {
   font-style: italic;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--accent);
 }
 .test .dashboard-header h1,

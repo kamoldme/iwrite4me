@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.1.5] - 2026-06-15
+
+### Changed
+- Dashboard greeting ("Good evening, …") now uses Instrument Serif — a more elegant, high-contrast editorial serif that pairs with the Instrument Sans body font (section titles still use Fraunces).
+
 ## [3.1.4] - 2026-06-15
 
 ### Changed
