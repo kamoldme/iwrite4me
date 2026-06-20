@@ -3018,7 +3018,7 @@
       else if (filter === 'admin') filtered = allSubscribers.filter(s => !s.planSource || s.planSource === 'admin');
       else if (filter === 'trial') filtered = allSubscribers.filter(s => s.planSource === 'trial');
       else if (filter === 'referral') filtered = allSubscribers.filter(s => s.planSource === 'referral');
-      else if (filter === 'failed') filtered = allSubscribers.filter(s => s.planPaymentFailed);
+      else if (filter === 'failed') filtered = allSubscribers.filter(s => s.planPaymentFailed && s.planSource === 'stripe');
 
       document.getElementById('subscribers-count').textContent = `${filtered.length} subscriber${filtered.length !== 1 ? 's' : ''}`;
 
@@ -3034,11 +3034,13 @@
         const sourceColor = sourceColors[source] || '#6b7280';
         const expires = s.planExpiresAt === 'infinite' ? '∞ Never'
           : s.planExpiresAt ? new Date(s.planExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-        const paymentStatus = s.planPaymentFailed
+        // "Failed" applies only to real Stripe payment failures. Admin/referral grants
+        // are not billed, so they never show as failed — active ones show "Active".
+        const paymentStatus = (s.planPaymentFailed && s.planSource === 'stripe')
           ? '<span style="color:var(--danger);font-weight:600">Failed</span>'
           : s.cancelAtPeriodEnd
           ? '<span style="color:var(--danger);font-weight:600">Cancelling</span>'
-          : (s.planSource === 'stripe' ? '<span style="color:var(--success)">Active</span>' : '—');
+          : '<span style="color:var(--success)">Active</span>';
         const testTag = s.stripeMode === 'test'
           ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(245,158,11,0.15);color:#f59e0b">TEST</span>'
           : '';

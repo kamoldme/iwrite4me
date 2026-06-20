@@ -279,6 +279,11 @@ router.post('/users/:id/subscription', async (req, res) => {
       updates.planExpiresAt = expiresAt.toISOString();
     }
     updates.planExpired = false;
+    // Admin grants are not Stripe-billed. Clear any leftover payment-failure / cancel
+    // state so an admin-granted user never shows up as "Payment Failed".
+    updates.planPaymentFailed = false;
+    updates.planPaymentAttempts = 0;
+    updates.cancelAtPeriodEnd = false;
   }
 
   const updated = await updateOne('users.json', u => u.id === req.params.id, updates);
@@ -842,7 +847,10 @@ router.delete('/story-comments/:id', async (req, res) => {
 router.get('/subscribers', async (req, res) => {
   try {
     const users = await findMany('users.json');
-    let candidates = users.filter(u => u.plan === 'premium' || u.planPaymentFailed);
+    // Active premium of any source, plus genuine Stripe payment failures. A non-Stripe
+    // (admin/referral) user with a stale planPaymentFailed flag is NOT a failed payment,
+    // so once their grant ends and they're downgraded they fall off this list.
+    let candidates = users.filter(u => u.plan === 'premium' || (u.planPaymentFailed && u.planSource === 'stripe'));
 
     // Verify Stripe customers we don't yet have a stripeMode on. Cache result.
     let stripeClient = null;

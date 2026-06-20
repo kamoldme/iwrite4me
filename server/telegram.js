@@ -213,10 +213,10 @@ function init(activeUsersMap) {
       });
     });
 
-    // Periodic stats card every 5 hours
-    const FIVE_HOURS = 5 * 60 * 60 * 1000;
+    // Periodic stats card once a day
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
     setTimeout(() => sendStatsCard(), 10000); // first one 10s after boot
-    setInterval(() => sendStatsCard(), FIVE_HOURS);
+    setInterval(() => sendStatsCard(), TWENTY_FOUR_HOURS);
 
     // /stats command — manual stats card
     bot.onText(/\/stats/, (msg) => {

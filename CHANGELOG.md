@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.1.9] - 2026-06-15
+
+### Changed
+- Telegram bot posts the periodic stats card once a day (was every 5 hours).
+- Admin-granted subscriptions never show as "Payment Failed" (they aren't Stripe-billed): the grant clears any leftover payment-failure flag, the admin subscribers list only marks genuine Stripe failures, and an admin grant simply drops off the list when it ends. The per-user subscription history view remains.
+- Pro users can copy **selected** text during a session (the navbar "copy whole document" button stays off mid-session for everyone except maintenance).
+- Removed the `+1m` / `+5m` timer buttons in Zen mode (no XP / no timer pressure, so extending is pointless).
+
+### Added
+- The writing app (dashboard) now shows a "best on a laptop or PC" gate on phones; the admin page and landing are unaffected.
+
 ## [3.1.8] - 2026-06-15
 
 ### Fixed

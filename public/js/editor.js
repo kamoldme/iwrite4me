@@ -183,7 +183,8 @@ const Editor = {
     // Show session controls (swap add-time buttons for duel mode)
     document.getElementById('editor-timer').style.display = '';
     document.getElementById('editor-timer-toggle').style.display = '';
-    document.querySelector('.editor-add-time').style.display = isDuel ? 'none' : '';
+    // Hide +1m/+5m for duels (fixed window) and Zen (no timer pressure / no XP — pointless)
+    document.querySelector('.editor-add-time').style.display = (isDuel || mode === 'zen') ? 'none' : '';
     document.getElementById('duel-add-time-btn').style.display = isDuel ? '' : 'none';
     this._timerHidden = false;
     this._timerMasked = false;
@@ -1305,6 +1306,8 @@ const Editor = {
       document.getElementById('editor-comment-history-btn').style.display = 'none';
       document.getElementById('formatting-toolbar').style.display = this.mode === 'dangerous' ? 'none' : 'flex';
       document.getElementById('status-bar').style.display = 'flex';
+      const addTimeEl = document.querySelector('.editor-add-time');
+      if (addTimeEl) addTimeEl.style.display = this.mode === 'zen' ? 'none' : '';
       this.titleInput.readOnly = false;
 
       this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous' : 'Normal';

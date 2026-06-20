@@ -940,15 +940,19 @@ const App = {
     document.getElementById('editor-copy-btn').addEventListener('click', async () => {
       const textarea = document.getElementById('editor-textarea');
 
-      // During active sessions: no copying — except for Pro users (perk) or maintenance
+      // The navbar button copies the WHOLE document — disabled mid-session for everyone
+      // (except maintenance). Pro users instead select the bit they want and copy that
+      // (selection copy is allowed for Pro in the editor), so the button stays off.
       if (Editor.active) {
-        const canCopy = this._maintActive || (this.user && this.user.plan === 'premium');
-        if (!canCopy) {
-          this.toast('Copying is disabled during sessions', 'error');
+        if (!this._maintActive) {
+          const isPro = this.user && this.user.plan === 'premium';
+          this.toast(isPro
+            ? 'Select the text you want, then copy it — the full-document copy is off during sessions'
+            : 'Copying is disabled during sessions', 'error');
           return;
         }
         await this._doCopy(textarea);
-        this.toast(this._maintActive ? 'Copied! Unlimited during maintenance' : 'Copied to clipboard!', 'success');
+        this.toast('Copied! Unlimited during maintenance', 'success');
         return;
       }
 

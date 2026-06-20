@@ -19,10 +19,19 @@
   <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Story+Script&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=125">
+  <link rel="stylesheet" href="/css/style.css?v=126">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+  <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
+  <div id="mobile-gate" aria-hidden="true">
+    <div class="mobile-gate-inner">
+      <div class="mobile-gate-emoji">&#x1F4BB;</div>
+      <div class="mobile-gate-logo">iWrite4.me</div>
+      <h1>Best on a bigger screen</h1>
+      <p>Focused writing needs a keyboard and room to think. Please open iWrite4.me on a laptop or PC to start writing.</p>
+    </div>
+  </div>
   <div id="auth-view" class="auth-container" style="display:none">
     <div class="auth-monsters-panel">
       <div class="auth-brand-title">
@@ -1594,8 +1603,8 @@
   <script src="/js/api.js?v=21"></script>
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
-  <script src="/js/editor.js?v=47"></script>
-  <script src="/js/app.js?v=123"></script>
+  <script src="/js/editor.js?v=48"></script>
+  <script src="/js/app.js?v=124"></script>
   <script src="/js/stories.js?v=17"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
