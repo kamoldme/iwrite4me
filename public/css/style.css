@@ -442,7 +442,12 @@ body::-webkit-scrollbar,
 }
 
 .stories-mode-feed .stories-feed-panel {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 28px;
+  max-width: 1120px;
+  margin: 0 auto;
+  align-items: start;
 }
 
 .stories-mode-feed .stories-detail-panel {
@@ -2236,6 +2241,48 @@ button.test-only { display: none; }
   .mobile-gate-logo { font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--accent); margin-bottom: 18px; }
   #mobile-gate h1 { font-family: 'Fraunces', Georgia, serif; font-size: 25px; font-weight: 600; color: var(--text-primary); line-height: 1.25; margin: 0 0 12px; }
   #mobile-gate p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COMMUNITY — Popular Writers sidebar (right side of the feed)
+   ══════════════════════════════════════════════════════════════ */
+.stories-mode-feed .stories-feed-panel > #stories-feed { min-width: 0; }
+.stories-mode-feed .stories-feed-panel > #stories-feed .stories-feed-shell { max-width: none; margin: 0; }
+.stories-popular-panel { display: none; }
+.stories-mode-feed .stories-popular-panel { display: block; position: sticky; top: 16px; }
+.stories-popular-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 18px 10px;
+  box-shadow: var(--shadow-3d);
+}
+.stories-popular-card h3 {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--text-muted); margin: 0 0 6px;
+}
+.stories-popular-item {
+  display: flex; align-items: center; gap: 11px; padding: 9px 0;
+  border-bottom: 1px solid var(--border-light);
+  text-decoration: none; color: inherit;
+}
+.stories-popular-item:last-child { border-bottom: none; }
+.stories-popular-item:hover .stories-popular-name { color: var(--accent); }
+.stories-popular-avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; object-fit: cover;
+  background: var(--gradient-accent); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px;
+}
+.stories-popular-meta { flex: 1; min-width: 0; }
+.stories-popular-name {
+  font-weight: 600; font-size: 13px; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.15s;
+}
+.stories-popular-handle { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stories-popular-followers { font-size: 11px; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 1000px) {
+  .stories-mode-feed .stories-feed-panel { grid-template-columns: 1fr; }
+  .stories-mode-feed .stories-popular-panel { display: none; }
 }
 
 /* ===== SESSION ANALYTICS ===== */
@@ -4569,7 +4616,12 @@ body.public-profile .main-content { padding-top: 0; }
 }
 
 .stories-mode-feed .stories-feed-panel {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 28px;
+  max-width: 1120px;
+  margin: 0 auto;
+  align-items: start;
 }
 
 .stories-mode-feed .stories-detail-panel {

@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.2.0] - 2026-06-20
+
+### Added
+- **Popular writers** sidebar on the Community feed: the right side now lists the most-followed writers (avatar, name, @handle, follower count), sorted by follower count. Each row links to that writer's profile. New `GET /api/follow/popular` endpoint backs it; the list is cached per visit and the sidebar is hidden below 1000px (and inside the story reader/composer).
+
 ## [3.1.9] - 2026-06-15
 
 ### Changed

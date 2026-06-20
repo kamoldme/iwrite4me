@@ -19,7 +19,7 @@
   <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Story+Script&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=126">
+  <link rel="stylesheet" href="/css/style.css?v=127">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -416,6 +416,7 @@
           <div class="stories-layout">
             <section class="stories-feed-panel">
               <div id="stories-feed"></div>
+              <aside id="stories-popular" class="stories-popular-panel" aria-label="Popular writers"></aside>
             </section>
             <section class="stories-detail-panel">
               <div id="story-detail"></div>
@@ -1605,7 +1606,7 @@
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=48"></script>
   <script src="/js/app.js?v=124"></script>
-  <script src="/js/stories.js?v=17"></script>
+  <script src="/js/stories.js?v=18"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
       const el = document.getElementById('version-tag');
