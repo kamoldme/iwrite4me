@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0] - 2026-06-20
+
+### Added
+- **Focus mode** — a dedicated toggle in the editor's top-right toolbar dims every paragraph except the line you're writing (Calmly-style). Remembered across sessions (`iwrite_focus_mode`).
+- **Typewriter sounds** — optional keystroke clicks, synthesized via WebAudio (no asset). Toggle in the editor's audio dropdown under "Writing feel".
+- **Smart punctuation** — straight quotes become curly, `...` becomes an ellipsis (em dash already existed). On by default; toggle in "Writing feel".
+- **OpenDyslexic font** — a dyslexia-friendly, self-hosted accessibility font, added as an option in the editor's font picker.
+- **Markdown & plain-text export** — export any document as `.md` or `.txt` (free) from the document menu, alongside the existing Pro PDF export.
+
+### Notes
+- Considered but intentionally skipped: the "Markdown WYSIWYG" rebuild (would fight the anti-paste / word-count model and pull iWrite toward being a document editor); desktop apps, local-file storage, and pay-once pricing (off-strategy vs. iWrite's gamified, server-backed, subscription model).
+
 ## [3.2.0] - 2026-06-20
 
 ### Added

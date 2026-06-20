@@ -837,6 +837,16 @@ const App = {
     // Editor toolbar: fullscreen toggle
     document.getElementById('editor-fullscreen-btn').addEventListener('click', () => Editor.toggleFullscreen());
 
+    // Editor toolbar: focus mode toggle (dim everything but the current line)
+    const focusBtn = document.getElementById('editor-focus-btn');
+    if (focusBtn) focusBtn.addEventListener('click', () => Editor.toggleFocusMode());
+
+    // Writing-feel preferences (typewriter sounds + smart punctuation), in the audio dropdown
+    const prefTypewriter = document.getElementById('pref-typewriter');
+    if (prefTypewriter) prefTypewriter.addEventListener('change', () => Editor.setTypewriterSound(prefTypewriter.checked));
+    const prefSmartPunct = document.getElementById('pref-smartpunct');
+    if (prefSmartPunct) prefSmartPunct.addEventListener('change', () => Editor.setSmartPunct(prefSmartPunct.checked));
+
     // Timer toggle + add time
     document.getElementById('editor-timer-toggle').addEventListener('click', () => Editor.toggleTimerVisibility());
     document.getElementById('add-time-1').addEventListener('click', () => {
@@ -4057,6 +4067,81 @@ const App = {
     }
   },
 
+  // --- Free export: Markdown & plain text ---
+  async exportDocMarkdown(id) {
+    try {
+      const data = await API.exportDocument(id);
+      const title = data.title || 'Untitled';
+      const body = this._htmlToMarkdown(data.content || '');
+      this._downloadBlob(this._safeFilename(title) + '.md', `# ${title}\n\n${body}\n`, 'text/markdown');
+      this.toast('Exported as Markdown', 'success');
+    } catch { this.toast('Failed to export document', 'error'); }
+  },
+
+  async exportDocText(id) {
+    try {
+      const data = await API.exportDocument(id);
+      const title = data.title || 'Untitled';
+      const body = this._htmlToPlainText(data.content || '');
+      this._downloadBlob(this._safeFilename(title) + '.txt', `${title}\n\n${body}\n`, 'text/plain');
+      this.toast('Exported as text', 'success');
+    } catch { this.toast('Failed to export document', 'error'); }
+  },
+
+  _safeFilename(name) {
+    return (name || 'document').replace(/[^\w\s.-]/g, '').replace(/\s+/g, '-').slice(0, 60) || 'document';
+  },
+
+  _downloadBlob(filename, text, mime) {
+    const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+
+  _htmlToPlainText(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    div.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
+    div.querySelectorAll('div,p,h1,h2,h3,h4,h5,h6,li,blockquote').forEach(el => el.appendChild(document.createTextNode('\n')));
+    return (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+  },
+
+  // Lightweight HTML → Markdown for the contenteditable editor / story content.
+  _htmlToMarkdown(html) {
+    const container = document.createElement('div');
+    container.innerHTML = html || '';
+    const walk = (node) => {
+      let out = '';
+      node.childNodes.forEach(child => {
+        if (child.nodeType === Node.TEXT_NODE) { out += child.textContent; return; }
+        if (child.nodeType !== Node.ELEMENT_NODE) return;
+        const tag = child.nodeName.toLowerCase();
+        const inner = walk(child);
+        switch (tag) {
+          case 'h1': out += `\n# ${inner}\n\n`; break;
+          case 'h2': out += `\n## ${inner}\n\n`; break;
+          case 'h3': case 'h4': case 'h5': case 'h6': out += `\n### ${inner}\n\n`; break;
+          case 'b': case 'strong': out += `**${inner}**`; break;
+          case 'i': case 'em': out += `*${inner}*`; break;
+          case 'a': out += `[${inner}](${child.getAttribute('href') || ''})`; break;
+          case 'br': out += '\n'; break;
+          case 'blockquote': out += inner.split('\n').map(l => l.trim() ? `> ${l}` : '>').join('\n') + '\n\n'; break;
+          case 'ul': out += '\n' + Array.from(child.children).map(li => `- ${walk(li).trim()}`).join('\n') + '\n\n'; break;
+          case 'ol': out += '\n' + Array.from(child.children).map((li, i) => `${i + 1}. ${walk(li).trim()}`).join('\n') + '\n\n'; break;
+          case 'li': out += inner; break;
+          case 'div': case 'p': out += inner + '\n'; break;
+          default: out += inner;
+        }
+      });
+      return out;
+    };
+    return walk(container).replace(/\n{3,}/g, '\n\n').trim();
+  },
+
   async deleteDoc(id) {
     const ok = await this.showConfirm('Delete this document?');
     if (!ok) return;
@@ -5938,6 +6023,8 @@ const App = {
       ${isFailed ? '' : `<button data-action="publish"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M5 19h14"/></svg> Publish to Stories</button>`}
       ${isFailed ? '' : `<button data-action="pin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"/><path d="M4.93 10.93l2.83 2.83"/><path d="M19.07 10.93l-2.83 2.83"/><path d="M8 16h8"/><path d="M12 16v6"/><circle cx="12" cy="10" r="2"/></svg> ${doc.pinned ? 'Unpin' : 'Pin to top'}${!isPro ? ' <span style="color:#f59e0b;font-size:10px">PRO</span>' : ''}</button>`}
       ${isFailed ? '' : `<button data-action="export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Export PDF${!isPro ? ' <span style="color:#f59e0b;font-size:10px">PRO</span>' : ''}</button>`}
+      ${isFailed ? '' : `<button data-action="export-md"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Markdown</button>`}
+      ${isFailed ? '' : `<button data-action="export-txt"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Text</button>`}
       ${isFailed ? '' : `<button data-action="share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16,6 12,2 8,6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Share</button>`}
       <button data-action="delete" style="color:var(--danger)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete</button>
     `;
@@ -5976,9 +6063,11 @@ const App = {
       };
       menu.querySelector('[data-action="export"]').onclick = async (e) => {
         e.stopPropagation(); close();
-        if (!isPro) { this.toast('Export is a Pro feature. Upgrade to Pro!', 'warning'); this.openPricing(); return; }
+        if (!isPro) { this.toast('PDF export is a Pro feature. Markdown & text export are free.', 'warning'); this.openPricing(); return; }
         this.exportDocPDF(doc.id);
       };
+      menu.querySelector('[data-action="export-md"]').onclick = (e) => { e.stopPropagation(); close(); this.exportDocMarkdown(doc.id); };
+      menu.querySelector('[data-action="export-txt"]').onclick = (e) => { e.stopPropagation(); close(); this.exportDocText(doc.id); };
     }
     menu.querySelector('[data-action="delete"]').onclick = (e) => { e.stopPropagation(); close(); this.deleteDoc(doc.id); };
   },

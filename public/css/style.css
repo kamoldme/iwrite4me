@@ -8265,6 +8265,41 @@ body.editor-active .mobile-sidebar-toggle {
   line-height: 1.8;
 }
 
+/* OpenDyslexic — self-hosted accessibility font (SIL OFL) */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('/fonts/opendyslexic-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('/fonts/opendyslexic-700.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+.editor-textarea.font-dyslexic,
+.story-editor.font-dyslexic {
+  font-family: 'OpenDyslexic', Comic Sans MS, sans-serif;
+  letter-spacing: 0.2px;
+  line-height: 1.9;
+}
+
+/* Focus mode — dim everything except the block/line containing the caret.
+   Bare text nodes (the first line before any Enter) aren't `> *` children,
+   so they stay full opacity automatically. */
+.editor-textarea.focus-mode > * { opacity: 0.25; transition: opacity 0.3s ease; }
+.editor-textarea.focus-mode > .is-focus-line { opacity: 1; }
+
+/* Active state for toolbar toggle buttons (focus mode) */
+.doc-action-btn.is-active { color: var(--accent); background: rgba(var(--accent-rgb), 0.16); }
+
+/* Writing-feel preference rows in the audio dropdown */
+.audio-pref-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 6px 4px; font-size: 13px;
+  color: var(--text-primary); cursor: pointer;
+}
+.audio-pref-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
 /* ===== FORMAT BAR FONT SELECT ===== */
 .fmt-font-wrap {
   display: flex;

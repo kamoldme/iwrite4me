@@ -223,6 +223,7 @@ const Editor = {
     this.textarea.addEventListener('input', this.onInput);
     this.textarea.addEventListener('keydown', this.onKeydown);
     this.textarea.addEventListener('paste', this.onPaste);
+    this.loadWritingPrefs();
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     document.addEventListener('fullscreenchange', this.onFullscreenChange);
     window.addEventListener('blur', this.onWindowBlur);
@@ -400,9 +401,15 @@ const Editor = {
     Editor.textarea.classList.remove('fading');
     Editor.vignette.classList.remove('active');
     Editor.vignette.style.opacity = 0;
+
+    if (Editor._focusMode) Editor._updateFocusLine();
   },
 
   onKeydown: (e) => {
+    // Typewriter sound — fire on character keys, space, enter, backspace
+    if (Editor._typewriterSound && e.key && (e.key.length === 1 || e.key === 'Enter' || e.key === 'Backspace')) {
+      Editor._playTypeClick();
+    }
     // Block new words at word limit (allow delete, backspace, arrows, shortcuts)
     if ((Editor.active || Editor.isEditing) && App.user) {
       const limit = Editor.getWordLimit();
@@ -512,6 +519,33 @@ const Editor = {
     if (node.nodeType !== Node.TEXT_NODE) return;
     const text = node.textContent;
     const offset = range.startOffset;
+
+    // Smart punctuation: curly quotes + ellipsis (toggle: iwrite_smart_punct)
+    if (Editor._smartPunct) {
+      const setCaret = (n, pos) => {
+        const r = document.createRange();
+        r.setStart(n, pos); r.collapse(true);
+        sel.removeAllRanges(); sel.addRange(r);
+      };
+      // "..." → "…"
+      if (offset >= 3 && text.slice(offset - 3, offset) === '...') {
+        node.textContent = text.slice(0, offset - 3) + '…' + text.slice(offset);
+        setCaret(node, offset - 2);
+        return;
+      }
+      // straight quote just typed → curly (opening vs closing by preceding char)
+      const ch = text[offset - 1];
+      if (ch === '"' || ch === "'") {
+        const prev = offset >= 2 ? text[offset - 2] : '';
+        const opensContext = offset < 2 || prev === '' || /[\s(\[{—–>-]/.test(prev);
+        const repl = ch === '"'
+          ? (opensContext ? '“' : '”')
+          : (opensContext ? '‘' : '’');
+        node.textContent = text.slice(0, offset - 1) + repl + text.slice(offset);
+        setCaret(node, offset);
+        return;
+      }
+    }
 
     // "-- " → "— " (em dash)
     if (offset >= 3 && text.slice(offset - 3, offset) === '-- ') {
@@ -1329,6 +1363,7 @@ const Editor = {
 
       this.textarea.addEventListener('input', this.onInput);
       this.textarea.addEventListener('keydown', this.onKeydown);
+      this.loadWritingPrefs();
       document.addEventListener('visibilitychange', this.onVisibilityChange);
       document.addEventListener('fullscreenchange', this.onFullscreenChange);
       window.addEventListener('blur', this.onWindowBlur);
@@ -1797,7 +1832,7 @@ const Editor = {
   },
 
   // --- Font switcher ---
-  _fontClasses: ['font-serif', 'font-mono', 'font-georgia', 'font-garamond', 'font-courier'],
+  _fontClasses: ['font-serif', 'font-mono', 'font-georgia', 'font-garamond', 'font-courier', 'font-dyslexic'],
   setFont(font) {
     this._currentFont = font;
     this._fontClasses.forEach(c => this.textarea.classList.remove(c));
@@ -1805,6 +1840,97 @@ const Editor = {
     const sel = document.getElementById('fmt-font-select');
     if (sel) sel.value = font;
     localStorage.setItem('iwrite_editor_font', font);
+  },
+
+  // --- Writing preferences: focus mode, typewriter sounds, smart punctuation ---
+  _focusMode: false,
+  _typewriterSound: false,
+  _smartPunct: true, // on by default — curly quotes/ellipsis are nice for prose
+  _typeAudioCtx: null,
+
+  // Read persisted prefs and apply them. Called whenever the editor opens.
+  loadWritingPrefs() {
+    let focus = false, typer = false, punct = true;
+    try {
+      focus = localStorage.getItem('iwrite_focus_mode') === '1';
+      typer = localStorage.getItem('iwrite_typewriter_sound') === '1';
+      const sp = localStorage.getItem('iwrite_smart_punct');
+      punct = sp === null ? true : sp === '1';
+    } catch {}
+    this.setFocusMode(focus);
+    this.setTypewriterSound(typer);
+    this.setSmartPunct(punct);
+    // Bind the caret tracker for focus mode once
+    if (!this._focusListenerBound) {
+      this._focusListenerBound = true;
+      document.addEventListener('selectionchange', () => {
+        if (this._focusMode && this.textarea && document.activeElement === this.textarea) {
+          this._updateFocusLine();
+        }
+      });
+    }
+  },
+
+  toggleFocusMode() { this.setFocusMode(!this._focusMode); },
+  setFocusMode(on) {
+    this._focusMode = on;
+    const ta = this.textarea;
+    if (ta) ta.classList.toggle('focus-mode', on);
+    const btn = document.getElementById('editor-focus-btn');
+    if (btn) btn.classList.toggle('is-active', on);
+    try { localStorage.setItem('iwrite_focus_mode', on ? '1' : '0'); } catch {}
+    if (on) this._updateFocusLine(); else this._clearFocusLine();
+  },
+  _clearFocusLine() {
+    const ta = this.textarea; if (!ta) return;
+    ta.querySelectorAll('.is-focus-line').forEach(el => el.classList.remove('is-focus-line'));
+  },
+  // Mark the block element containing the caret so CSS can keep it bright while
+  // dimming the rest. Bare text nodes (the very first line before any Enter) are
+  // not `> *` children, so they naturally stay bright — no marker needed.
+  _updateFocusLine() {
+    const ta = this.textarea;
+    if (!ta || !this._focusMode) return;
+    this._clearFocusLine();
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    let node = sel.anchorNode;
+    if (!node || !ta.contains(node)) return;
+    while (node && node.parentNode !== ta) node = node.parentNode;
+    if (node && node.nodeType === Node.ELEMENT_NODE) node.classList.add('is-focus-line');
+  },
+
+  setTypewriterSound(on) {
+    this._typewriterSound = on;
+    const cb = document.getElementById('pref-typewriter');
+    if (cb) cb.checked = on;
+    try { localStorage.setItem('iwrite_typewriter_sound', on ? '1' : '0'); } catch {}
+  },
+  // Synthesize a short typewriter-ish click via WebAudio (no asset / CSP needed).
+  _playTypeClick() {
+    if (!this._typewriterSound) return;
+    try {
+      let ctx = this._typeAudioCtx;
+      if (!ctx) { ctx = this._typeAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(820 + Math.random() * 260, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.05, now + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.05);
+    } catch {}
+  },
+
+  setSmartPunct(on) {
+    this._smartPunct = on;
+    const cb = document.getElementById('pref-smartpunct');
+    if (cb) cb.checked = on;
+    try { localStorage.setItem('iwrite_smart_punct', on ? '1' : '0'); } catch {}
   },
 
   // --- Theme toggle (in editor) ---

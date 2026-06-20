@@ -19,7 +19,7 @@
   <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Story+Script&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=127">
+  <link rel="stylesheet" href="/css/style.css?v=128">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -925,6 +925,9 @@
           <button class="doc-action-btn" id="editor-fullscreen-btn" title="Toggle fullscreen" style="width:30px;height:30px;flex-shrink:0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
           </button>
+          <button class="doc-action-btn" id="editor-focus-btn" title="Focus mode — dim everything but the line you're writing" style="width:30px;height:30px;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </button>
           <button class="doc-action-btn" id="editor-research-btn" title="Research — Wikipedia + AI" style="width:30px;height:30px;flex-shrink:0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           </button>
@@ -932,6 +935,11 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
           </button>
           <div class="editor-audio-dropdown" id="editor-audio-dropdown" style="display:none">
+            <div class="audio-section">
+              <div class="audio-section-label">Writing feel</div>
+              <label class="audio-pref-row"><span>Typewriter sounds</span><input type="checkbox" id="pref-typewriter"></label>
+              <label class="audio-pref-row"><span>Smart punctuation</span><input type="checkbox" id="pref-smartpunct"></label>
+            </div>
             <div class="audio-section">
               <div class="audio-section-label">Ambient Sounds</div>
               <div class="audio-track" data-audio="lofi1">
@@ -1031,6 +1039,7 @@
             <option value="georgia">Georgia</option>
             <option value="garamond">Garamond</option>
             <option value="courier">Courier</option>
+            <option value="dyslexic">OpenDyslexic</option>
           </select>
         </div>
         <div class="fmt-separator"></div>
@@ -1604,8 +1613,8 @@
   <script src="/js/api.js?v=21"></script>
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
-  <script src="/js/editor.js?v=48"></script>
-  <script src="/js/app.js?v=124"></script>
+  <script src="/js/editor.js?v=49"></script>
+  <script src="/js/app.js?v=125"></script>
   <script src="/js/stories.js?v=18"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
