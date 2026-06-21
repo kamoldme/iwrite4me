@@ -70,6 +70,10 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  // Google Sign-In popup postMessages the credential back to window.opener.
+  // Helmet's default COOP (same-origin) nulls out window.opener for cross-origin
+  // popups, stranding the user on accounts.google.com/gsi/transform.
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
@@ -146,6 +150,15 @@ const { stripeWebhookHandler } = require('./routes/stripe');
 app.post('/api/stripe/webhook',
   express.raw({ type: 'application/json' }),
   stripeWebhookHandler
+);
+
+// Local payment-provider routes (Click; Payme/Atmos to follow). Their server-to-server
+// callbacks must bypass the rate limiter — like the Stripe webhook — so they're mounted
+// here, before apiLimiter, with their own body parsers (Click posts urlencoded).
+app.use('/api/click',
+  express.urlencoded({ extended: true }),
+  express.json(),
+  require('./routes/click')
 );
 
 app.use('/api/auth/register', registerLimiter);

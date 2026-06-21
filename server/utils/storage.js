@@ -27,7 +27,8 @@ const TABLE_MAP = {
   'announcements.json': 'announcements',
   'announcement-views.json': 'announcement_views',
   'announcement-likes.json': 'announcement_likes',
-  'duel-queue.json': 'duel_queue'
+  'duel-queue.json': 'duel_queue',
+  'payment-transactions.json': 'payment_transactions'
 };
 
 function getTable(filename) {
