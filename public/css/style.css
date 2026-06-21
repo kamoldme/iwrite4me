@@ -8283,6 +8283,9 @@ body.editor-active .mobile-sidebar-toggle {
 
 /* Upgrade-tab payment options (UZS providers + secure-payment logos) */
 .upgrade-payments { max-width: 760px; margin: 6px auto 0; }
+/* Secure-payment logos sit just under the hero subtitle, centered, no divider */
+.upgrade-pay-logos { margin: 14px auto 2px; }
+.upgrade-pay-logos .pricing-payments { margin-top: 0; padding-top: 0; border-top: none; gap: 6px; }
 .uzs-pay { margin: 4px 0 18px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card); }
 .uzs-pay-head { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; text-align: center; }
 .uzs-pay-btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }

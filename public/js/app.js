@@ -5276,45 +5276,47 @@ const App = {
   },
 
   _renderUpgradePayments(isPro) {
-    const el = document.getElementById('upgrade-payments');
-    if (!el) return;
     const cfg = this._payCfg || { providers: {}, localEnabled: false };
     const p = cfg.providers || {};
 
-    // UZS provider buttons — only for non-Pro users, only when local pay is live
-    let uzsHtml = '';
-    if (!isPro && cfg.localEnabled) {
-      const btns = [];
-      if (p.click) btns.push('<button class="uzs-pay-btn uzs-pay-click" data-provider="click">Pay with Click</button>');
-      if (p.payme) btns.push('<button class="uzs-pay-btn uzs-pay-payme" data-provider="payme">Pay with Payme</button>');
-      if (p.atmos) btns.push('<button class="uzs-pay-btn uzs-pay-card" data-provider="atmos">Pay by card</button>');
-      if (btns.length) {
-        uzsHtml = `<div class="uzs-pay"><div class="uzs-pay-head">Pay in UZS (Uzbekistan)</div><div class="uzs-pay-btns">${btns.join('')}</div></div>`;
+    // UZS provider buttons (below the plan cards) — non-Pro users, only when local pay is live
+    const el = document.getElementById('upgrade-payments');
+    if (el) {
+      let uzsHtml = '';
+      if (!isPro && cfg.localEnabled) {
+        const btns = [];
+        if (p.click) btns.push('<button class="uzs-pay-btn uzs-pay-click" data-provider="click">Pay with Click</button>');
+        if (p.payme) btns.push('<button class="uzs-pay-btn uzs-pay-payme" data-provider="payme">Pay with Payme</button>');
+        if (p.atmos) btns.push('<button class="uzs-pay-btn uzs-pay-card" data-provider="atmos">Pay by card</button>');
+        if (btns.length) {
+          uzsHtml = `<div class="uzs-pay"><div class="uzs-pay-head">Pay in UZS (Uzbekistan)</div><div class="uzs-pay-btns">${btns.join('')}</div></div>`;
+        }
       }
+      el.innerHTML = uzsHtml;
+      el.querySelectorAll('.uzs-pay-btn').forEach(btn => {
+        btn.addEventListener('click', () => this._payWithProvider(btn.dataset.provider, btn));
+      });
     }
 
-    // "Secure payment via" — Stripe always; Payme/Click appear once they're enabled
-    const logos = [];
-    if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
-    // Official SVGs if present (drop payme.svg / click.svg into public/img/), else a chip.
-    if (p.payme) logos.push('<img src="/img/payme.svg?v=1" alt="Payme" class="pay-logo pay-logo-payme" data-chip="payme">');
-    if (p.click) logos.push('<img src="/img/click.svg?v=1" alt="Click" class="pay-logo pay-logo-click" data-chip="click">');
-
-    el.innerHTML = `${uzsHtml}<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
-
-    el.querySelectorAll('.uzs-pay-btn').forEach(btn => {
-      btn.addEventListener('click', () => this._payWithProvider(btn.dataset.provider, btn));
-    });
-    // If an official logo SVG is missing, fall back to a branded text chip (CSP-safe).
-    el.querySelectorAll('.pay-logo[data-chip]').forEach(img => {
-      img.addEventListener('error', () => {
-        const k = img.dataset.chip;
-        const span = document.createElement('span');
-        span.className = `pay-chip pay-chip-${k}`;
-        span.textContent = k === 'payme' ? 'Payme' : 'Click';
-        img.replaceWith(span);
+    // "Secure payment via" logos — centered, just below the hero subtitle.
+    const logosEl = document.getElementById('upgrade-pay-logos');
+    if (logosEl) {
+      const logos = [];
+      if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
+      // Official SVGs if present (drop payme.svg / click.svg into public/img/), else a chip.
+      if (p.payme) logos.push('<img src="/img/payme.svg?v=1" alt="Payme" class="pay-logo pay-logo-payme" data-chip="payme">');
+      if (p.click) logos.push('<img src="/img/click.svg?v=1" alt="Click" class="pay-logo pay-logo-click" data-chip="click">');
+      logosEl.innerHTML = `<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
+      logosEl.querySelectorAll('.pay-logo[data-chip]').forEach(img => {
+        img.addEventListener('error', () => {
+          const k = img.dataset.chip;
+          const span = document.createElement('span');
+          span.className = `pay-chip pay-chip-${k}`;
+          span.textContent = k === 'payme' ? 'Payme' : 'Click';
+          img.replaceWith(span);
+        });
       });
-    });
+    }
   },
 
   async _payWithProvider(provider, btn) {
