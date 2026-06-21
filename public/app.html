@@ -19,7 +19,7 @@
   <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Story+Script&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=129">
+  <link rel="stylesheet" href="/css/style.css?v=130">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -809,6 +809,7 @@
             <p class="upgrade-subtitle">Select the plan that matches your goals. Upgrade anytime and cancel whenever you want.</p>
           </div>
           <div class="upgrade-cards" id="upgrade-plan-cards"></div>
+          <div class="upgrade-payments" id="upgrade-payments"></div>
         </div>
         <!-- SUPPORT VIEW -->
         <div id="view-support" class="view" style="display:none">
@@ -1623,13 +1624,6 @@
       <h2 class="pricing-title">Choose Your Plan</h2>
       <p class="pricing-sub">See what you're missing on Free</p>
       <div class="pricing-cards" id="pricing-cards-inner"></div>
-      <div class="pricing-payments" id="pricing-payments">
-        <span class="pricing-payments-label">Secure payment via</span>
-        <div class="pricing-payments-logos">
-          <img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">
-          <!-- Payme + Click logos go here once local payments are live -->
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1653,7 +1647,7 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=49"></script>
-  <script src="/js/app.js?v=125"></script>
+  <script src="/js/app.js?v=126"></script>
   <script src="/js/stories.js?v=18"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

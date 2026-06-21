@@ -837,15 +837,40 @@ const App = {
     // Editor toolbar: fullscreen toggle
     document.getElementById('editor-fullscreen-btn').addEventListener('click', () => Editor.toggleFullscreen());
 
-    // Editor toolbar: focus mode toggle (dim everything but the current line)
+    // Editor toolbar: focus mode — button opens a dropdown with a big toggle
     const focusBtn = document.getElementById('editor-focus-btn');
-    if (focusBtn) focusBtn.addEventListener('click', () => Editor.toggleFocusMode());
+    const focusDropdown = document.getElementById('editor-focus-dropdown');
+    if (focusBtn && focusDropdown) {
+      // Escape .editor-container stacking context same as audio dropdown
+      if (focusDropdown.parentElement !== document.body) document.body.appendChild(focusDropdown);
+      focusBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Pro gate
+        if (!App.user || App.user.plan !== 'premium') { App.openPricing(); return; }
+        const open = focusDropdown.style.display === 'none';
+        const audioDD = document.getElementById('editor-audio-dropdown');
+        if (audioDD) audioDD.style.display = 'none';
+        if (open) {
+          const rect = focusBtn.getBoundingClientRect();
+          const W = 224;
+          // Right-align dropdown to button, but clamp so it stays inside viewport
+          let left = rect.right - W;
+          if (left < 8) left = 8;
+          focusDropdown.style.top = (rect.bottom + 4) + 'px';
+          focusDropdown.style.left = left + 'px';
+          focusDropdown.style.right = 'auto';
+        }
+        focusDropdown.style.display = open ? 'block' : 'none';
+      });
+      focusDropdown.addEventListener('click', (e) => e.stopPropagation());
+      document.getElementById('focus-big-toggle-btn').addEventListener('click', () => {
+        Editor.toggleFocusMode();
+      });
+    }
 
-    // Writing-feel preferences (typewriter sounds + smart punctuation), in the audio dropdown
+    // Writing-feel preferences (typewriter sounds), in the audio dropdown
     const prefTypewriter = document.getElementById('pref-typewriter');
     if (prefTypewriter) prefTypewriter.addEventListener('change', () => Editor.setTypewriterSound(prefTypewriter.checked));
-    const prefSmartPunct = document.getElementById('pref-smartpunct');
-    if (prefSmartPunct) prefSmartPunct.addEventListener('change', () => Editor.setSmartPunct(prefSmartPunct.checked));
 
     // Timer toggle + add time
     document.getElementById('editor-timer-toggle').addEventListener('click', () => Editor.toggleTimerVisibility());
@@ -934,9 +959,11 @@ const App = {
       e.stopPropagation(); // Don't close when clicking inside the dropdown
     });
 
-    // Close audio dropdown when clicking elsewhere
+    // Close audio + focus dropdowns when clicking elsewhere
     document.addEventListener('click', () => {
       audioDrop.style.display = 'none';
+      const fd = document.getElementById('editor-focus-dropdown');
+      if (fd) fd.style.display = 'none';
     });
 
     // Restore saved font preference
@@ -1083,6 +1110,13 @@ const App = {
     document.getElementById('save-profile-btn').addEventListener('click', () => this.saveProfile());
     document.getElementById('change-password-btn').addEventListener('click', () => this.changePassword());
 
+    document.getElementById('delete-account-btn').addEventListener('click', () => this._openDeleteModal());
+    document.getElementById('delete-account-cancel-btn').addEventListener('click', () => this._closeDeleteModal());
+    document.getElementById('delete-account-submit-btn').addEventListener('click', () => this._submitDeleteAccount());
+    document.getElementById('delete-account-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) this._closeDeleteModal();
+    });
+
     document.getElementById('create-folder-btn').addEventListener('click', () => {
       if (this.user && this.user.plan !== 'premium') {
         this.toast('Folders are a Pro feature. Upgrade to Pro!', 'info');
@@ -1177,6 +1211,7 @@ const App = {
     if (view === 'friends' && (!this._friendsLoaded || this._friendsDirty)) this.loadFriends();
     if (view === 'support') { this.loadSupport(); this.initSupportImageUpload(); }
     if (view === 'analytics' && (!this._analyticsLoaded || this._analyticsDirty)) this.loadAnalytics();
+    if (view === 'friends' && !this._analyticsLoaded) this.loadAnalytics();
     if (view === 'upgrade') this.loadUpgrade();
     if (view === 'user-profile' && username) this.loadUserProfile(username);
     if (view === 'duels') {
@@ -3240,6 +3275,63 @@ const App = {
     }
   },
 
+  _openDeleteModal() {
+    const modal = document.getElementById('delete-account-modal');
+    const isGoogleUser = this.user && this.user.googleId;
+    document.getElementById('delete-account-password-field').style.display = isGoogleUser ? 'none' : '';
+    document.getElementById('delete-account-confirm-field').style.display = isGoogleUser ? '' : 'none';
+    document.getElementById('delete-account-password').value = '';
+    document.getElementById('delete-account-confirm-text').value = '';
+    document.getElementById('delete-account-error').textContent = '';
+    document.getElementById('delete-account-error').className = 'auth-error';
+    modal.style.display = 'flex';
+  },
+
+  _closeDeleteModal() {
+    document.getElementById('delete-account-modal').style.display = 'none';
+  },
+
+  async _submitDeleteAccount() {
+    const errorEl = document.getElementById('delete-account-error');
+    const submitBtn = document.getElementById('delete-account-submit-btn');
+    const isGoogleUser = this.user && this.user.googleId;
+
+    let body = {};
+    if (isGoogleUser) {
+      const text = document.getElementById('delete-account-confirm-text').value.trim();
+      if (text.toUpperCase() !== 'DELETE') {
+        errorEl.textContent = 'Please type DELETE to confirm.';
+        errorEl.classList.add('visible');
+        return;
+      }
+      body = { confirmation: text };
+    } else {
+      const pw = document.getElementById('delete-account-password').value;
+      if (!pw) {
+        errorEl.textContent = 'Password is required.';
+        errorEl.classList.add('visible');
+        return;
+      }
+      body = { password: pw };
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Deleting...';
+    errorEl.className = 'auth-error';
+
+    try {
+      await API.deleteAccount(body);
+      // Wipe local state and redirect to landing
+      localStorage.clear();
+      window.location.href = '/';
+    } catch (err) {
+      errorEl.textContent = err.message || 'Failed to delete account.';
+      errorEl.classList.add('visible');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Delete Forever';
+    }
+  },
+
   async openDuelModal(preselectedId) {
     document.getElementById('duel-modal').classList.add('active');
     const select = document.getElementById('duel-friend-select');
@@ -5167,6 +5259,74 @@ const App = {
       subHistOverlay._bound = true;
       subHistOverlay.addEventListener('click', () => this.closeSubscriptionHistory());
     }
+
+    // Local (UZS) payment options + "secure payment via" logos, gated by server config
+    this._loadPaymentsConfig().then(() => this._renderUpgradePayments(isPro));
+  },
+
+  async _loadPaymentsConfig() {
+    if (this._payCfg) return this._payCfg;
+    try {
+      const res = await fetch('/api/payments/config');
+      this._payCfg = await res.json();
+    } catch {
+      this._payCfg = { providers: { stripe: true }, localEnabled: false, uzs: {} };
+    }
+    return this._payCfg;
+  },
+
+  _renderUpgradePayments(isPro) {
+    const el = document.getElementById('upgrade-payments');
+    if (!el) return;
+    const cfg = this._payCfg || { providers: {}, localEnabled: false };
+    const p = cfg.providers || {};
+
+    // UZS provider buttons — only for non-Pro users, only when local pay is live
+    let uzsHtml = '';
+    if (!isPro && cfg.localEnabled) {
+      const btns = [];
+      if (p.click) btns.push('<button class="uzs-pay-btn uzs-pay-click" data-provider="click">Pay with Click</button>');
+      if (p.payme) btns.push('<button class="uzs-pay-btn uzs-pay-payme" data-provider="payme">Pay with Payme</button>');
+      if (p.atmos) btns.push('<button class="uzs-pay-btn uzs-pay-card" data-provider="atmos">Pay by card</button>');
+      if (btns.length) {
+        uzsHtml = `<div class="uzs-pay"><div class="uzs-pay-head">Pay in UZS (Uzbekistan)</div><div class="uzs-pay-btns">${btns.join('')}</div></div>`;
+      }
+    }
+
+    // "Secure payment via" — Stripe always; Payme/Click appear once they're enabled
+    const logos = [];
+    if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
+    if (p.payme) logos.push('<span class="pay-chip pay-chip-payme">Payme</span>');
+    if (p.click) logos.push('<span class="pay-chip pay-chip-click">Click</span>');
+
+    el.innerHTML = `${uzsHtml}<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
+
+    el.querySelectorAll('.uzs-pay-btn').forEach(btn => {
+      btn.addEventListener('click', () => this._payWithProvider(btn.dataset.provider, btn));
+    });
+  },
+
+  async _payWithProvider(provider, btn) {
+    if (provider === 'atmos') {
+      // The card form (card number + OTP) is a separate flow, pending the PCI decision.
+      this.toast('Card payments are coming soon.', 'info');
+      return;
+    }
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Redirecting…'; }
+    try {
+      const res = await fetch(`/api/${provider}/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.getToken()}` },
+        body: JSON.stringify({ duration: this._selectedDuration })
+      });
+      const data = await res.json();
+      if (data.url) { window.location.href = data.url; return; }
+      this.toast(data.error || 'Could not start payment.', 'error');
+    } catch {
+      this.toast('Could not start payment.', 'error');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = original; }
   },
 
   async openSubscriptionHistory() {
@@ -5651,7 +5811,7 @@ const App = {
           <div class="doc-card" style="margin-bottom:8px">
             <div class="doc-card-info">
               <h4>${this.escapeHtml(s.name)}</h4>
-              <div class="doc-card-meta"><span>${s.mutualCount} mutual friend${s.mutualCount !== 1 ? 's' : ''}</span><span>Level ${this.calcXPLevel(s.xp || 0).level}</span></div>
+              <div class="doc-card-meta"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;opacity:.7"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> ${s.mutualCount} mutual</span><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;opacity:.7"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Lv.${this.calcXPLevel(s.xp || 0).level}</span></div>
             </div>
             <div class="doc-card-actions">
               <button class="btn btn-small btn-primary" onclick="App.addFriendById('${s.email}')" title="Send friend request">
