@@ -1,18 +1,17 @@
-// ATMOS — "pay by card" (UZCARD / HUMO / Visa / Mastercard). One-time UZS passes.
+// ATMOS — "pay by card" (UZCARD / HUMO / Visa / Mastercard) via the HOSTED checkout.
+// One-time UZS passes.
 //
-// Direct card flow (user types their card):
-//   1. POST /api/atmos/create    (auth)  -> pending order + Atmos transaction
-//   2. POST /api/atmos/pre-apply (auth)  -> send card_number+expiry, Atmos texts an OTP
-//   3. POST /api/atmos/apply     (auth)  -> submit OTP, charge completes, grant premium
+//   1. POST /api/atmos/create   (auth)            -> pending order + Atmos transaction,
+//      returns the hosted checkout URL. The frontend redirects there; the card number is
+//      entered on Atmos's PCI-compliant page and never touches iWrite (PCI SAQ A).
+//   2. POST /api/atmos/callback (server-to-server) -> on success, grant the premium pass.
 //
 // Env-gated: dormant until ATMOS_CONSUMER_KEY / ATMOS_CONSUMER_SECRET / ATMOS_STORE_ID set.
 // Amounts to Atmos are in TIYIN.
 //
-// ⚠️ PCI NOTE: this direct flow means the card number passes through iWrite's server,
-// which raises PCI scope (SAQ A-EP+). The lower-burden alternative is Atmos's HOSTED card
-// page (PAN never touches us, SAQ A). Decide which before enabling — see PAYMENTS.md.
-// Endpoint paths/field names below follow the standard Atmos API; confirm against
-// docs.atmos.uz during onboarding.
+// NOTE: the create-response field that carries the hosted URL, and the callback's payload +
+// signature, must be confirmed against docs.atmos.uz during onboarding. The structure here
+// follows the standard Atmos flow.
 
 const express = require('express');
 const crypto = require('crypto');
@@ -33,7 +32,7 @@ function cfg() {
 }
 function atmosReady() { const c = cfg(); return !!(c.key && c.secret && c.storeId); }
 
-// ── OAuth token (client credentials), cached until ~1 min before expiry ──
+// OAuth token (client credentials), cached until ~1 min before expiry.
 let _token = null, _tokenExp = 0;
 async function getToken() {
   if (_token && Date.now() < _tokenExp - 60000) return _token;
@@ -60,7 +59,7 @@ async function atmosPost(path, body) {
   return resp.json();
 }
 
-// ── 1. Create order + Atmos transaction ──
+// ── 1. Create order + Atmos transaction, return the hosted checkout URL ──
 router.post('/create', authenticate, async (req, res) => {
   try {
     if (!atmosReady()) return res.status(503).json({ error: 'Card payments are not configured yet.' });
@@ -81,69 +80,43 @@ router.post('/create', authenticate, async (req, res) => {
       amount: amountTiyin, account: orderId, store_id: c.storeId, lang: 'ru'
     });
     const atmosTxnId = created.transaction_id || created.transactionId;
-    if (!atmosTxnId) {
+    // The hosted-page URL is usually returned by create; fall back to the standard pattern.
+    const checkoutUrl = created.redirect_url || created.url || created.pay_url
+      || (atmosTxnId ? `${BASE}/merchant/pay/checkout/${atmosTxnId}` : null);
+    if (!checkoutUrl) {
       await updateOne('payment-transactions.json', t => t.id === orderId, { state: 'failed', atmosError: created });
       return res.status(502).json({ error: 'Could not start card payment.' });
     }
     await updateOne('payment-transactions.json', t => t.id === orderId, { atmosTxnId, state: 'created' });
-    res.json({ orderId });
+    res.json({ url: checkoutUrl, orderId });
   } catch (err) {
     logAction('atmos_create_error', { message: err.message });
     res.status(500).json({ error: 'Could not start card payment.' });
   }
 });
 
-// ── 2. Send card → Atmos texts an OTP to the cardholder ──
-router.post('/pre-apply', authenticate, async (req, res) => {
+// ── 2. Atmos success callback (server-to-server) → grant premium ──
+router.post('/callback', async (req, res) => {
   try {
-    if (!atmosReady()) return res.status(503).json({ error: 'Card payments are not configured yet.' });
-    const { orderId, cardNumber, expiry } = req.body;
-    const order = await findOne('payment-transactions.json', t => t.id === orderId && t.provider === 'atmos' && t.userId === req.user.id);
-    if (!order || !order.atmosTxnId) return res.status(404).json({ error: 'Order not found.' });
-    if (order.state === 'paid') return res.status(409).json({ error: 'Already paid.' });
+    if (!atmosReady()) return res.status(503).json({ status: 0 });
+    // TODO(onboarding): verify the Atmos signature on this payload before trusting it.
+    const b = req.body || {};
+    const txnId = b.transaction_id || b.transactionId || b.invoice;
+    const order = await findOne('payment-transactions.json', t => t.atmosTxnId === txnId && t.provider === 'atmos');
+    if (!order) return res.json({ status: 0, message: 'Order not found' });
 
-    const result = await atmosPost('/merchant/pay/pre-apply', {
-      transaction_id: order.atmosTxnId,
-      card_number: String(cardNumber || '').replace(/\s+/g, ''),
-      expiry: String(expiry || '').replace(/\D/g, '')
-    });
-    if (result && (result.status === 'success' || result.result?.code === 'OK' || result.otp_sent)) {
-      return res.json({ otpSent: true });
+    const success = b.status === 1 || b.status === 'success' || b.success === true;
+    if (success && order.state !== 'paid') {
+      await grantPremiumPass(order.userId, order.duration, 'atmos', {
+        lastPaymentProvider: 'atmos', lastPaymentAt: new Date().toISOString()
+      });
+      await updateOne('payment-transactions.json', t => t.id === order.id, { state: 'paid', paidAt: new Date().toISOString() });
+      logAction('atmos_payment_verified', { duration: order.duration, amount: order.amount, orderId: order.id }, order.userId);
     }
-    res.status(400).json({ error: result?.message || result?.result?.description || 'Card was declined.' });
+    res.json({ status: 1 });
   } catch (err) {
-    logAction('atmos_preapply_error', { message: err.message });
-    res.status(500).json({ error: 'Could not process the card.' });
-  }
-});
-
-// ── 3. Submit OTP → charge completes → grant premium ──
-router.post('/apply', authenticate, async (req, res) => {
-  try {
-    if (!atmosReady()) return res.status(503).json({ error: 'Card payments are not configured yet.' });
-    const { orderId, otp } = req.body;
-    const order = await findOne('payment-transactions.json', t => t.id === orderId && t.provider === 'atmos' && t.userId === req.user.id);
-    if (!order || !order.atmosTxnId) return res.status(404).json({ error: 'Order not found.' });
-    if (order.state === 'paid') return res.json({ success: true, alreadyPaid: true });
-
-    const result = await atmosPost('/merchant/pay/apply', {
-      transaction_id: order.atmosTxnId,
-      otp: String(otp || '').replace(/\D/g, '')
-    });
-    const ok = result && (result.status === 'success' || result.result?.code === 'OK' || result.success);
-    if (!ok) {
-      return res.status(400).json({ error: result?.message || result?.result?.description || 'Incorrect code.' });
-    }
-
-    await grantPremiumPass(order.userId, order.duration, 'atmos', {
-      lastPaymentProvider: 'atmos', lastPaymentAt: new Date().toISOString()
-    });
-    await updateOne('payment-transactions.json', t => t.id === order.id, { state: 'paid', paidAt: new Date().toISOString() });
-    logAction('atmos_payment_verified', { duration: order.duration, amount: order.amount, orderId: order.id }, order.userId);
-    res.json({ success: true });
-  } catch (err) {
-    logAction('atmos_apply_error', { message: err.message });
-    res.status(500).json({ error: 'Could not confirm the payment.' });
+    logAction('atmos_callback_error', { message: err.message });
+    res.json({ status: 0 });
   }
 });
 

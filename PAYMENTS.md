@@ -13,9 +13,13 @@ keys are set in Railway, so nothing can charge anyone before your merchant accou
 | Provider | Type | Backend | Status |
 |----------|------|---------|--------|
 | Click | wallet redirect | `server/routes/click.js` | ✅ built, sandbox-ready |
-| Payme | wallet (JSON-RPC) | `server/routes/payme.js` | ⏳ planned |
-| Atmos | card form (UZCARD/HUMO/Visa/MC) | `server/routes/atmos.js` | ⏳ planned |
-| Pricing UI (UZS buttons + region detect) | — | `public/` | ⏳ planned |
+| Payme | wallet (JSON-RPC) | `server/routes/payme.js` | ✅ built, sandbox-ready |
+| Atmos | card via **hosted** checkout (UZCARD/HUMO/Visa/MC) | `server/routes/atmos.js` | ✅ built, sandbox-ready |
+| Pricing UI (UZS buttons + secure-pay logos) | — | `public/js/app.js` | ✅ built |
+
+Atmos uses its **hosted card page** (the card number is entered on Atmos, never on iWrite —
+PCI SAQ A). Once Payme/Click go live, drop their official logo SVGs into
+`public/img/payme.svg` and `public/img/click.svg` and they replace the text chips automatically.
 
 ## What YOU need to register (the long pole — start now)
 
@@ -56,8 +60,8 @@ Rough pricing guide: ~12,000–13,000 UZS per USD — set the exact som amounts 
 ## Callback URLs to configure in each provider's cabinet
 
 - **Click** — Prepare URL: `https://iwrite4.me/api/click/prepare` · Complete URL: `https://iwrite4.me/api/click/complete`
-- **Payme** — endpoint: `https://iwrite4.me/api/payme` (when built)
-- **Atmos** — per Atmos dashboard (when built)
+- **Payme** — endpoint: `https://iwrite4.me/api/payme`
+- **Atmos** — success callback: `https://iwrite4.me/api/atmos/callback` (confirm field names + signature at onboarding)
 
 ## Before go-live
 

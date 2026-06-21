@@ -162,6 +162,8 @@ app.use('/api/click',
 );
 // Payme's JSON-RPC endpoint is also a server-to-server callback — bypass the limiter.
 app.use('/api/payme', express.json(), require('./routes/payme'));
+// Atmos hosted checkout + its success callback (server-to-server) — bypass the limiter too.
+app.use('/api/atmos', express.json(), require('./routes/atmos'));
 
 app.use('/api/auth/register', registerLimiter);
 app.use('/api/auth/login', loginLimiter);
@@ -449,9 +451,6 @@ app.use('/api/follow', require('./routes/follow'));
 app.use('/api/prompts', require('./routes/prompts').router);
 app.use('/api/research', require('./routes/research'));
 app.use('/api/announcements', require('./routes/announcements'));
-// Atmos card endpoints are user-driven (card + OTP) — keep them behind the rate limiter
-// (anti card-testing). Payments config is a public read.
-app.use('/api/atmos', require('./routes/atmos'));
 app.use('/api/payments', require('./routes/payments'));
 
 const { findOne, findMany, insertOne, updateOne } = require('./utils/storage');

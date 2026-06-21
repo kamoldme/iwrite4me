@@ -5296,22 +5296,28 @@ const App = {
     // "Secure payment via" — Stripe always; Payme/Click appear once they're enabled
     const logos = [];
     if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
-    if (p.payme) logos.push('<span class="pay-chip pay-chip-payme">Payme</span>');
-    if (p.click) logos.push('<span class="pay-chip pay-chip-click">Click</span>');
+    // Official SVGs if present (drop payme.svg / click.svg into public/img/), else a chip.
+    if (p.payme) logos.push('<img src="/img/payme.svg?v=1" alt="Payme" class="pay-logo pay-logo-payme" data-chip="payme">');
+    if (p.click) logos.push('<img src="/img/click.svg?v=1" alt="Click" class="pay-logo pay-logo-click" data-chip="click">');
 
     el.innerHTML = `${uzsHtml}<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
 
     el.querySelectorAll('.uzs-pay-btn').forEach(btn => {
       btn.addEventListener('click', () => this._payWithProvider(btn.dataset.provider, btn));
     });
+    // If an official logo SVG is missing, fall back to a branded text chip (CSP-safe).
+    el.querySelectorAll('.pay-logo[data-chip]').forEach(img => {
+      img.addEventListener('error', () => {
+        const k = img.dataset.chip;
+        const span = document.createElement('span');
+        span.className = `pay-chip pay-chip-${k}`;
+        span.textContent = k === 'payme' ? 'Payme' : 'Click';
+        img.replaceWith(span);
+      });
+    });
   },
 
   async _payWithProvider(provider, btn) {
-    if (provider === 'atmos') {
-      // The card form (card number + OTP) is a separate flow, pending the PCI decision.
-      this.toast('Card payments are coming soon.', 'info');
-      return;
-    }
     const original = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Redirecting…'; }
     try {
