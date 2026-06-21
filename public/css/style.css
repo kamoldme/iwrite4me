@@ -2249,7 +2249,7 @@ button.test-only { display: none; }
 .stories-mode-feed .stories-feed-panel > #stories-feed { min-width: 0; }
 .stories-mode-feed .stories-feed-panel > #stories-feed .stories-feed-shell { max-width: none; margin: 0; }
 .stories-popular-panel { display: none; }
-.stories-mode-feed .stories-popular-panel { display: block; position: sticky; top: 16px; }
+.stories-mode-feed .stories-popular-panel { display: block; position: sticky; top: 16px; align-self: end; margin-inline-end: 24px; }
 .stories-popular-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -8265,6 +8265,22 @@ body.editor-active .mobile-sidebar-toggle {
   line-height: 1.8;
 }
 
+/* Payment trust row in the pricing modal */
+.pricing-payments {
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border);
+}
+.pricing-payments-label {
+  font-size: 12px; letter-spacing: 0.3px; color: var(--text-secondary);
+}
+.pricing-payments-logos {
+  display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;
+}
+.pay-logo { height: 26px; width: auto; opacity: 0.9; }
+.pay-logo-stripe { height: 32px; }
+/* Stripe's logo is brand-purple; lift it on dark themes for contrast */
+.dark .pay-logo-stripe, .sepia .pay-logo-stripe { filter: brightness(1.5); }
+
 /* OpenDyslexic — self-hosted accessibility font (SIL OFL) */
 @font-face {
   font-family: 'OpenDyslexic';
@@ -8283,14 +8299,92 @@ body.editor-active .mobile-sidebar-toggle {
   line-height: 1.9;
 }
 
-/* Focus mode — dim everything except the block/line containing the caret.
-   Bare text nodes (the first line before any Enter) aren't `> *` children,
-   so they stay full opacity automatically. */
-.editor-textarea.focus-mode > * { opacity: 0.25; transition: opacity 0.3s ease; }
+/* Focus mode — dim everything except the block/line containing the caret. */
+.editor-textarea.focus-mode > * { opacity: 0.2; transition: opacity 0.35s ease; }
 .editor-textarea.focus-mode > .is-focus-line { opacity: 1; }
+
+/* Pulse glow on the focused line when focus mode first activates */
+@keyframes focusLineGlow {
+  0%   { background: transparent; }
+  25%  { background: rgba(var(--accent-rgb), 0.10); border-radius: 3px; }
+  100% { background: transparent; }
+}
+.editor-textarea.focus-mode-entering > .is-focus-line {
+  animation: focusLineGlow 0.65s ease forwards;
+}
 
 /* Active state for toolbar toggle buttons (focus mode) */
 .doc-action-btn.is-active { color: var(--accent); background: rgba(var(--accent-rgb), 0.16); }
+
+/* ── Focus mode dropdown ── */
+.editor-focus-dropdown {
+  position: fixed;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg, var(--shadow));
+  z-index: 99999;
+  width: 224px;
+  padding: 14px 14px 12px;
+}
+.focus-drop-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 7px;
+}
+.focus-drop-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0 0 13px;
+}
+.focus-big-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: left;
+}
+.focus-big-toggle.on {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent);
+}
+.focus-toggle-track {
+  width: 34px;
+  height: 19px;
+  border-radius: 10px;
+  background: var(--border);
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.focus-big-toggle.on .focus-toggle-track { background: var(--accent); }
+.focus-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.28);
+}
+.focus-big-toggle.on .focus-toggle-thumb { transform: translateX(15px); }
+.focus-toggle-label { flex: 1; }
 
 /* Writing-feel preference rows in the audio dropdown */
 .audio-pref-row {
@@ -10784,13 +10878,14 @@ body.editor-active .mobile-sidebar-toggle {
 .settings-layout {
   grid-template-columns: 1fr 1fr;
   gap: 32px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .settings-col {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  height: 100%;
 }
 
 .profile-left {
