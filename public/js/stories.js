@@ -363,7 +363,7 @@
     },
 
     // ===== POPULAR WRITERS (Community feed sidebar) =====
-    async loadPopularWriters() {
+    async loadPopularWriters(attempt = 0) {
       const el = document.getElementById('stories-popular');
       if (!el) return;
       // Wire up SPA navigation once
@@ -377,21 +377,29 @@
           if (username) App.switchView('user-profile', { username });
         });
       }
-      // Render instantly from cache ONLY when we actually have writers. An empty or failed
-      // result is not cached as "loaded", so the panel retries and recovers on the next
-      // Community visit instead of vanishing for the rest of the session.
+      // Render instantly when writers are already cached.
       if (this._popularWriters && this._popularWriters.length) {
         el.innerHTML = this._renderPopularWriters(this._popularWriters);
         return;
       }
-      el.innerHTML = `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3><div style="padding:8px 0;color:var(--text-muted);font-size:12px">Loading…</div></div>`;
+      // Show the loading card only on the first attempt (don't flash it on retries).
+      if (attempt === 0 && !el.querySelector('.stories-popular-item')) {
+        el.innerHTML = `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3><div style="padding:8px 0;color:var(--text-muted);font-size:12px">Loading…</div></div>`;
+      }
       try {
         const list = await API.request('/follow/popular');
-        this._popularWriters = Array.isArray(list) ? list : null;
-        el.innerHTML = this._renderPopularWriters(this._popularWriters || []);
+        if (!Array.isArray(list)) throw new Error('Unexpected response');
+        this._popularWriters = list;
+        el.innerHTML = this._renderPopularWriters(list);
       } catch {
-        this._popularWriters = null; // don't cache the failure — retry on next Community visit
-        el.innerHTML = '';
+        // The first fetch can fail transiently (init timing, a server restart). The data is
+        // obtainable, so retry with backoff instead of blanking the panel for the session.
+        this._popularWriters = null;
+        if (attempt < 3) {
+          setTimeout(() => this.loadPopularWriters(attempt + 1), 700 * (attempt + 1));
+        } else if (!el.querySelector('.stories-popular-item')) {
+          el.innerHTML = '';
+        }
       }
     },
 
