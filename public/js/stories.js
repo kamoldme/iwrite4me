@@ -377,16 +377,22 @@
           if (username) App.switchView('user-profile', { username });
         });
       }
-      // Render instantly from cache, otherwise fetch
-      if (this._popularWriters) { el.innerHTML = this._renderPopularWriters(this._popularWriters); return; }
+      // Render instantly from cache ONLY when we actually have writers. An empty or failed
+      // result is not cached as "loaded", so the panel retries and recovers on the next
+      // Community visit instead of vanishing for the rest of the session.
+      if (this._popularWriters && this._popularWriters.length) {
+        el.innerHTML = this._renderPopularWriters(this._popularWriters);
+        return;
+      }
       el.innerHTML = `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3><div style="padding:8px 0;color:var(--text-muted);font-size:12px">Loading…</div></div>`;
       try {
         const list = await API.request('/follow/popular');
-        this._popularWriters = Array.isArray(list) ? list : [];
+        this._popularWriters = Array.isArray(list) ? list : null;
+        el.innerHTML = this._renderPopularWriters(this._popularWriters || []);
       } catch {
-        this._popularWriters = [];
+        this._popularWriters = null; // don't cache the failure — retry on next Community visit
+        el.innerHTML = '';
       }
-      el.innerHTML = this._renderPopularWriters(this._popularWriters);
     },
 
     _renderPopularWriters(list) {
