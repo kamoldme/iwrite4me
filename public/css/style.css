@@ -2249,7 +2249,7 @@ button.test-only { display: none; }
 .stories-mode-feed .stories-feed-panel > #stories-feed { min-width: 0; }
 .stories-mode-feed .stories-feed-panel > #stories-feed .stories-feed-shell { max-width: none; margin: 0; }
 .stories-popular-panel { display: none; }
-.stories-mode-feed .stories-popular-panel { display: block; position: sticky; top: 16px; align-self: end; margin-inline-end: 24px; }
+.stories-mode-feed .stories-popular-panel { display: block; position: sticky; top: 16px; align-self: start; margin-inline-end: 24px; }
 .stories-popular-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
