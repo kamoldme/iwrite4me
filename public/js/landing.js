@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const label = dreamToggle.querySelector('span');
       if (label) label.textContent = enabled ? 'Classic Style' : 'Dream Style';
     }
+    window.dispatchEvent(new CustomEvent('landing-style-change'));
   };
 
   const requestedLandingDesign = new URLSearchParams(window.location.search).get('style');
@@ -176,14 +177,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Growth Chart (organic, fluctuating) ──
   let chartDrawn = false;
+  let chartDrawnStyle = '';
+  let lastGrowthTotal = 0;
+
+  window.addEventListener('landing-style-change', () => {
+    if (lastGrowthTotal > 0) drawGrowthChart(lastGrowthTotal);
+  });
 
   function drawGrowthChart(totalWords) {
-    if (chartDrawn) {
+    const currentChartStyle = document.body.classList.contains('dream-landing')
+      ? 'dream'
+      : document.documentElement.classList.contains('sepia')
+        ? 'sepia'
+        : document.documentElement.classList.contains('light')
+          ? 'light'
+          : 'dark';
+
+    if (chartDrawn && chartDrawnStyle === currentChartStyle) {
       const el = document.getElementById('growth-total');
       if (el) el.textContent = totalWords.toLocaleString();
       return;
     }
     chartDrawn = true;
+    chartDrawnStyle = currentChartStyle;
+    lastGrowthTotal = totalWords;
 
     const canvas = document.getElementById('growth-chart');
     if (!canvas) return;
@@ -262,7 +279,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : isSepia ? 'rgba(100,65,20,0.08)' : 'rgba(0,0,0,0.06)';
     const labelColor = isDark ? 'rgba(255,255,255,0.35)' : isSepia ? 'rgba(100,65,20,0.5)' : 'rgba(0,0,0,0.4)';
     const isLight = document.documentElement.classList.contains('light');
-    const accentColor = isSepia ? '#C37E3F' : isLight ? '#22c55e' : '#4ade80';
+    const isDreamLanding = document.body.classList.contains('dream-landing');
+    const accentColor = isDreamLanding ? '#fb5d6c' : isSepia ? '#C37E3F' : isLight ? '#22c55e' : '#4ade80';
+    const areaColor = isDreamLanding
+      ? ['rgba(251, 93, 108, 0.26)', 'rgba(251, 93, 108, 0.08)', 'rgba(251, 93, 108, 0.01)']
+      : ['rgba(74, 222, 128, 0.22)', 'rgba(74, 222, 128, 0.06)', 'rgba(74, 222, 128, 0.01)'];
 
     const gridLines = 4;
 
@@ -326,9 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.closePath();
 
       const grad = ctx.createLinearGradient(0, padTop, 0, padTop + chartH);
-      grad.addColorStop(0, 'rgba(74, 222, 128, 0.22)');
-      grad.addColorStop(0.6, 'rgba(74, 222, 128, 0.06)');
-      grad.addColorStop(1, 'rgba(74, 222, 128, 0.01)');
+      grad.addColorStop(0, areaColor[0]);
+      grad.addColorStop(0.6, areaColor[1]);
+      grad.addColorStop(1, areaColor[2]);
       ctx.fillStyle = grad;
       ctx.fill();
 
