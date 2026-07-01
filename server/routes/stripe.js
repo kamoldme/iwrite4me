@@ -121,7 +121,22 @@ router.post('/create-checkout-session', authenticate, async (req, res) => {
       sessionConfig.subscription_data.trial_period_days = 7;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionConfig);
+    } catch (createErr) {
+      // Stale customer ID — Stripe deleted the customer but the DB still has it.
+      // Clear it and retry without a customer so Stripe creates a fresh one.
+      if (createErr.code === 'resource_missing' && sessionConfig.customer) {
+        console.warn('Stale stripeCustomerId, retrying without customer:', sessionConfig.customer);
+        await updateOne('users.json', u => u.id === user.id, { stripeCustomerId: null });
+        delete sessionConfig.customer;
+        sessionConfig.customer_email = user.email;
+        session = await stripe.checkout.sessions.create(sessionConfig);
+      } else {
+        throw createErr;
+      }
+    }
 
     logAction('stripe_checkout_created', {
       duration,

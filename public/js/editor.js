@@ -130,6 +130,9 @@ const Editor = {
 
     this.startTime = Date.now();
     this.lastKeystroke = Date.now();
+    this._pausedMs = 0;
+    this._pauseStart = null;
+    this._activeWritingSeconds = 0;
 
     this.container.classList.add('active');
     document.body.classList.add('editor-active');
@@ -369,7 +372,12 @@ const Editor = {
   },
 
   onInput: () => {
-    Editor.lastKeystroke = Date.now();
+    const _now = Date.now();
+    // Accumulate real typing time — only count gaps < 30s between inputs
+    if (Editor.lastKeystroke && (_now - Editor.lastKeystroke) < 30000) {
+      Editor._activeWritingSeconds += (_now - Editor.lastKeystroke) / 1000;
+    }
+    Editor.lastKeystroke = _now;
 
     // Auto-replace shortcuts (-- → em dash, * → bullet)
     Editor._handleAutoReplace();
@@ -631,9 +639,18 @@ const Editor = {
     }, 500);
   },
 
+  // Total ms the session has been paused (tab hidden); subtract from all elapsed calculations
+  _effectivePaused() {
+    return (this._pausedMs || 0) + (this._pauseStart ? Date.now() - this._pauseStart : 0);
+  },
+
   onTabLeave() {
     if (this.abandoned || !this.active) return;
-    if (this.mode === 'zen') return;
+    if (this.mode === 'zen') {
+      // In zen mode, pause the session timer instead of threatening deletion
+      if (!this._pauseStart) this._pauseStart = Date.now();
+      return;
+    }
     if (this.tabCountdown) return;
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
@@ -664,6 +681,11 @@ const Editor = {
   ],
 
   onTabReturn() {
+    // Accumulate paused time (zen mode)
+    if (this._pauseStart) {
+      this._pausedMs = (this._pausedMs || 0) + (Date.now() - this._pauseStart);
+      this._pauseStart = null;
+    }
     if (this.tabCountdown && this.tabLeftTime) {
       const awaySeconds = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = this.tabGracePeriod - awaySeconds;
@@ -950,7 +972,7 @@ const Editor = {
     // Auto-show in last 3 minutes
     if (this.duration > 0) {
       const totalSeconds = this.duration * 60;
-      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       const remaining = totalSeconds - elapsed;
       if (remaining <= 180) {
         this._timerMasked = false;
@@ -970,7 +992,7 @@ const Editor = {
 
   updateTimer() {
     if (this.duration === 0) {
-      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       const min = Math.floor(elapsed / 60);
       const sec = elapsed % 60;
       this.timerEl.textContent = this._timerMasked ? '**:**' : `${min}:${String(sec).padStart(2, '0')}`;
@@ -985,7 +1007,7 @@ const Editor = {
       remaining = Math.max(0, Math.ceil((this._duelEndAt - Date.now()) / 1000));
     } else {
       const totalSeconds = this.duration * 60;
-      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       remaining = Math.max(0, totalSeconds - elapsed);
     }
     const min = Math.floor(remaining / 60);
@@ -1394,7 +1416,7 @@ const Editor = {
   _isTimerExpired() {
     if (this.duration === 0) return false; // unlimited sessions can always complete
     const totalSeconds = this.duration * 60;
-    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+    const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
     return elapsed >= totalSeconds;
   },
 
@@ -1454,7 +1476,7 @@ const Editor = {
     this.cleanup();
 
     const wordCount = this.getWordCount();
-    const duration = Math.floor((Date.now() - this.startTime) / 1000);
+    const duration = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
 
     // If no words were written, silently discard — no XP, no streak, no stats
     if (wordCount === 0) {
@@ -1480,7 +1502,8 @@ const Editor = {
         wordCount, duration, xpEarned,
         earlyComplete: !!this._earlyComplete,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content: this.textarea.innerHTML,
+        activeWritingSeconds: Math.round(this._activeWritingSeconds)
       });
     } catch {
       this.container.classList.remove('active'); document.body.classList.remove('editor-active');
@@ -1875,29 +1898,73 @@ const Editor = {
   setFocusMode(on) {
     this._focusMode = on;
     const ta = this.textarea;
-    if (ta) ta.classList.toggle('focus-mode', on);
+    if (ta) {
+      if (on) this._normalizeFocusFirstLine();
+      ta.classList.toggle('focus-mode', on);
+    }
+    // Toolbar button active state
     const btn = document.getElementById('editor-focus-btn');
     if (btn) btn.classList.toggle('is-active', on);
+    // Big toggle button in the dropdown
+    const toggleBtn = document.getElementById('focus-big-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.classList.toggle('on', on);
+      const lbl = toggleBtn.querySelector('.focus-toggle-label');
+      if (lbl) lbl.textContent = on ? 'On' : 'Off';
+    }
     try { localStorage.setItem('iwrite_focus_mode', on ? '1' : '0'); } catch {}
-    if (on) this._updateFocusLine(); else this._clearFocusLine();
+    if (on) { this._playFocusActivateAnim(); this._updateFocusLine(); }
+    else this._clearFocusLine();
   },
+  // Wrap a leading bare text node in <p> so CSS `> *` can dim it like any other line.
+  _normalizeFocusFirstLine() {
+    const ta = this.textarea; if (!ta) return;
+    const child = ta.firstChild;
+    if (child && child.nodeType === Node.TEXT_NODE) {
+      const p = document.createElement('p');
+      ta.insertBefore(p, child);
+      p.appendChild(child);
+    }
+  },
+  _playFocusActivateAnim() {
+    // Brief camera-flash: dark overlay snaps in then fades out
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99998;background:rgba(0,0,0,0);transition:background 0.1s ease';
+    document.body.appendChild(flash);
+    requestAnimationFrame(() => {
+      flash.style.background = 'rgba(0,0,0,0.18)';
+      setTimeout(() => {
+        flash.style.background = 'rgba(0,0,0,0)';
+        setTimeout(() => flash.remove(), 180);
+      }, 110);
+    });
+    // Glow pulse on the focused line
+    const ta = this.textarea; if (!ta) return;
+    ta.classList.add('focus-mode-entering');
+    setTimeout(() => ta.classList.remove('focus-mode-entering'), 700);
+  },
+  _lastFocusLineNode: null,
   _clearFocusLine() {
     const ta = this.textarea; if (!ta) return;
+    this._lastFocusLineNode = null;
     ta.querySelectorAll('.is-focus-line').forEach(el => el.classList.remove('is-focus-line'));
   },
-  // Mark the block element containing the caret so CSS can keep it bright while
-  // dimming the rest. Bare text nodes (the very first line before any Enter) are
-  // not `> *` children, so they naturally stay bright — no marker needed.
   _updateFocusLine() {
     const ta = this.textarea;
     if (!ta || !this._focusMode) return;
-    this._clearFocusLine();
+    // Wrap any leading bare text node so CSS `> *` can dim it
+    const fc = ta.firstChild;
+    if (fc && fc.nodeType === Node.TEXT_NODE) this._normalizeFocusFirstLine();
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     let node = sel.anchorNode;
     if (!node || !ta.contains(node)) return;
     while (node && node.parentNode !== ta) node = node.parentNode;
-    if (node && node.nodeType === Node.ELEMENT_NODE) node.classList.add('is-focus-line');
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return;
+    if (node === this._lastFocusLineNode) return; // same line — skip to avoid flicker
+    this._clearFocusLine();
+    this._lastFocusLineNode = node;
+    node.classList.add('is-focus-line');
   },
 
   setTypewriterSound(on) {

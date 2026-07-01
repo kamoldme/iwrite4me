@@ -273,6 +273,13 @@ const API = {
     });
   },
 
+  async deleteAccount(body) {
+    return this.request('/auth/account', {
+      method: 'DELETE',
+      body: JSON.stringify(body)
+    });
+  },
+
   async getLeaderboard() {
     return this.request('/leaderboard');
   },

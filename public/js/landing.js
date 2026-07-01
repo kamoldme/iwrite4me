@@ -9,6 +9,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('[data-aos]').forEach(el => observer.observe(el));
 
+  const dreamToggle = document.getElementById('dream-style-toggle');
+  const dreamStorageKey = 'iwrite_landing_design';
+  const setDreamLanding = (enabled) => {
+    document.body.classList.toggle('dream-landing', enabled);
+    if (dreamToggle) {
+      dreamToggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      const label = dreamToggle.querySelector('span');
+      if (label) label.textContent = enabled ? 'Classic Style' : 'Dream Style';
+    }
+  };
+
+  const requestedLandingDesign = new URLSearchParams(window.location.search).get('style');
+  const savedLandingDesign = localStorage.getItem(dreamStorageKey);
+  setDreamLanding(requestedLandingDesign === 'dream' || (requestedLandingDesign !== 'classic' && savedLandingDesign === 'dream'));
+
+  if (dreamToggle) {
+    dreamToggle.addEventListener('click', () => {
+      const enabled = !document.body.classList.contains('dream-landing');
+      setDreamLanding(enabled);
+      localStorage.setItem(dreamStorageKey, enabled ? 'dream' : 'classic');
+    });
+  }
+
   // Toggle scrolled state on landing nav for gradient blur background
   const landingNav = document.querySelector('body.landing .nav');
   if (landingNav) {

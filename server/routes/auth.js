@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const sharp = require('sharp');
-const { findOne, insertOne, updateOne } = require('../utils/storage');
+const { findOne, insertOne, updateOne, pool } = require('../utils/storage');
 const { generateToken, authenticate, checkSubscriptionExpiry } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 const { OAuth2Client } = require('google-auth-library');
@@ -618,6 +618,75 @@ router.get('/referral', authenticate, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ===== ACCOUNT DELETION =====
+router.delete('/account', authenticate, async (req, res) => {
+  try {
+    const user = await findOne('users.json', u => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const { password: confirmPassword, confirmation } = req.body;
+
+    if (user.googleId) {
+      if ((confirmation || '').toUpperCase() !== 'DELETE') {
+        return res.status(400).json({ error: 'Please type DELETE to confirm.' });
+      }
+    } else {
+      if (!confirmPassword) {
+        return res.status(400).json({ error: 'Password is required.' });
+      }
+      const match = await bcrypt.compare(confirmPassword, user.password);
+      if (!match) {
+        return res.status(400).json({ error: 'Incorrect password.' });
+      }
+    }
+
+    // Cancel Stripe subscription
+    if (user.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const Stripe = require('stripe');
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' });
+        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+      } catch (_) {}
+    }
+
+    // Delete uploaded files (avatar, banner)
+    for (const dir of ['avatars', 'banners']) {
+      const dirPath = path.join(__dirname, '../data', dir);
+      if (fs.existsSync(dirPath)) {
+        fs.readdirSync(dirPath)
+          .filter(f => f.startsWith(user.id))
+          .forEach(f => { try { fs.unlinkSync(path.join(dirPath, f)); } catch (_) {} });
+      }
+    }
+
+    const uid = user.id;
+
+    // Delete all user-owned data
+    await pool.query(`DELETE FROM documents WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM stories WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM story_comments WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM story_likes WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM story_comment_likes WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM notifications WHERE data->>'userId' = $1 OR data->>'fromUserId' = $1`, [uid]);
+    await pool.query(`DELETE FROM activities WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM duels WHERE data->>'challengerId' = $1 OR data->>'opponentId' = $1`, [uid]);
+    await pool.query(`DELETE FROM duel_queue WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM support WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM announcement_views WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM announcement_likes WHERE data->>'userId' = $1`, [uid]);
+
+    // Delete the user record
+    await pool.query(`DELETE FROM users WHERE id = $1`, [uid]);
+
+    logAction('account_deleted', { email: user.email }, uid);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Account deletion error:', err);
+    res.status(500).json({ error: 'Failed to delete account. Please try again.' });
   }
 });
 
