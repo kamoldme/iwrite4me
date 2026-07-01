@@ -31,8 +31,8 @@
   <meta name="twitter:image" content="https://iwrite4.me/og-image.png">
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Baloo+2:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=31">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Baloo+2:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=33">
 </head>
 <body class="landing">
   <nav class="nav">
@@ -45,6 +45,7 @@
       </a>
       <div class="nav-links">
         <a href="#features">Features</a>
+        <a href="#demo-video">Demo</a>
         <a href="#how-it-works">How It Works</a>
         <a href="#pricing">Pricing</a>
         <a href="/app" class="btn btn-small">Launch App</a>
@@ -89,6 +90,55 @@
           <div class="mock-line typing" style="--delay: 2s">No tabs. No distractions. Just you and the blank page.</div>
           <div class="mock-line typing" style="--delay: 4s">Write or lose everything — the choice is yours.</div>
           <div class="mock-cursor"></div>
+        </div>
+      </div>
+    </div>
+    <img class="hero-object hero-object-vase" src="/media/hero-vase-flowers.png" alt="" aria-hidden="true">
+    <img class="hero-object hero-object-notebook" src="/media/hero-notebook-pen.png" alt="" aria-hidden="true">
+  </section>
+
+  <section class="ad-showcase" id="demo-video" aria-labelledby="ad-showcase-title">
+    <div class="ad-showcase-inner">
+      <div class="ad-copy" data-aos>
+        <span class="ad-kicker">Advertisement reel</span>
+        <h2 id="ad-showcase-title">Chaos outside. Focus inside.</h2>
+        <p>The ad brings the noisy internet into the landing page, then iWrite4.me answers it with one calm place to keep typing.</p>
+        <div class="ad-option-grid" aria-label="Design directions for the advertisement">
+          <article class="ad-option">
+            <span class="ad-option-num">01</span>
+            <h3>Soft launch frame</h3>
+            <p>Pastel glass, rounded controls, and a calm product-first story.</p>
+          </article>
+          <article class="ad-option">
+            <span class="ad-option-num">02</span>
+            <h3>Pressure cut</h3>
+            <p>Comic jolts, alert shapes, and a sharper before-and-after contrast.</p>
+          </article>
+          <article class="ad-option">
+            <span class="ad-option-num">03</span>
+            <h3>Proof reel</h3>
+            <p>Use the video as proof that distractions are the villain.</p>
+          </article>
+        </div>
+      </div>
+      <div class="ad-video-stage" data-aos>
+        <div class="ad-flight-layer" aria-hidden="true">
+          <span class="ad-fly ad-fly-tab">TAB</span>
+          <span class="ad-fly ad-fly-dm">DM</span>
+          <span class="ad-fly ad-fly-ai">AI</span>
+          <span class="ad-fly ad-fly-bolt"></span>
+          <span class="ad-fly ad-fly-paper"></span>
+        </div>
+        <div class="ad-video-shell">
+          <div class="ad-video-bar" aria-hidden="true">
+            <span class="ad-dot"></span>
+            <span class="ad-dot"></span>
+            <span class="ad-dot"></span>
+            <strong>10 sec ad preview</strong>
+          </div>
+          <video class="ad-video" autoplay muted loop playsinline controls preload="metadata" poster="/media/iwrite-ad-chaos-poster.jpg">
+            <source src="/media/iwrite-ad-chaos.mp4" type="video/mp4">
+          </video>
         </div>
       </div>
     </div>
