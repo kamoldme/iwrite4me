@@ -4073,13 +4073,24 @@ body.landing.dream-landing .upgrade-card {
   -webkit-backdrop-filter: blur(16px);
 }
 
+body.landing.dream-landing .steps {
+  max-width: 1120px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr) 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 22px;
+}
+
 body.landing.dream-landing .step {
-  min-height: 320px;
-  border-radius: 34px;
+  width: 100%;
+  min-height: 350px;
+  aspect-ratio: 0.94 / 1;
+  border-radius: 42px;
+  padding: 34px 28px 32px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   overflow: hidden;
 }
 
@@ -4088,10 +4099,10 @@ body.landing.dream-landing .step::before {
 }
 
 body.landing.dream-landing .step-icon {
-  width: 92px;
-  height: 92px;
-  margin-bottom: 20px;
-  border-radius: 30px;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 22px;
+  border-radius: 32px;
   display: grid;
   place-items: center;
   color: #fff;
@@ -4136,14 +4147,31 @@ body.landing.dream-landing .step-num {
 
 body.landing.dream-landing .step h3 {
   font-family: 'Baloo 2', 'Nunito', var(--font-display);
+  min-height: 34px;
   font-size: 25px;
   letter-spacing: 0;
 }
 
+body.landing.dream-landing .step p {
+  max-width: 230px;
+  min-height: 68px;
+}
+
 body.landing.dream-landing .step-arrow {
+  width: 76px;
+  height: 76px;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
   color: #fb5d6c;
-  opacity: 0.55;
+  background: rgba(255, 255, 255, 0.44);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  box-shadow: 0 18px 42px rgba(117, 71, 132, 0.1);
+  opacity: 0.8;
+  padding-top: 0;
   font-weight: 800;
+  font-size: 28px;
+  margin: 0;
 }
 
 body.landing.dream-landing .feature-icon {
@@ -4173,13 +4201,19 @@ body.landing.dream-landing .footer {
 }
 
 body.landing.dream-landing .growth-chart-wrap {
-  background: #fff8fb;
-  border-color: rgba(251, 93, 108, 0.16);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(34, 197, 94, 0.12), transparent 26%),
+    rgba(255, 248, 251, 0.72);
+  border-color: rgba(34, 197, 94, 0.22);
 }
 
 body.landing.dream-landing .growth-total-num {
-  color: #fb5d6c;
-  text-shadow: 0 12px 28px rgba(251, 93, 108, 0.18);
+  color: #16a34a;
+  text-shadow: 0 12px 28px rgba(34, 197, 94, 0.18);
+}
+
+body.landing.dream-landing .growth-total-label {
+  color: rgba(53, 22, 79, 0.62);
 }
 
 body.landing.dream-landing .upgrade-card {
@@ -11283,10 +11317,28 @@ body.editor-active .mobile-sidebar-toggle {
     flex-direction: column;
   }
 
+  body.landing.dream-landing .steps {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
   .step-arrow {
     transform: rotate(90deg);
     padding: 0;
     text-align: center;
+  }
+
+  body.landing.dream-landing .step {
+    max-width: 330px;
+    min-height: 330px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+  }
+
+  body.landing.dream-landing .step-arrow {
+    width: 62px;
+    height: 62px;
+    margin: 0 auto;
   }
 
   .stats-grid {

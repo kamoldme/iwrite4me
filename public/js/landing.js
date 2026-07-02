@@ -9,6 +9,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('[data-aos]').forEach(el => observer.observe(el));
 
+  const landingVideos = document.querySelectorAll('.ad-video');
+  if (landingVideos.length) {
+    const videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const video = entry.target;
+        if (entry.isIntersecting) {
+          video.loop = true;
+          video.playsInline = true;
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      });
+    }, { threshold: 0.55, rootMargin: '-8% 0px -8% 0px' });
+
+    landingVideos.forEach(video => {
+      video.muted = true;
+      video.loop = true;
+      videoObserver.observe(video);
+    });
+  }
+
   const dreamToggle = document.getElementById('dream-style-toggle');
   const dreamStorageKey = 'iwrite_landing_design';
   const setDreamLanding = (enabled) => {
@@ -263,10 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     cumulative[cumulative.length - 1] = totalWords;
 
-    const padLeft = 52;
-    const padRight = 20;
+    const padLeft = 64;
+    const padRight = 28;
     const padTop = 16;
-    const padBottom = 32;
+    const padBottom = 44;
     const chartW = w - padLeft - padRight;
     const chartH = h - padTop - padBottom;
     const maxVal = totalWords * 1.12;
@@ -274,15 +296,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function xPos(i) { return padLeft + (i / (days - 1)) * chartW; }
     function yPos(v) { return padTop + chartH - (v / maxVal) * chartH; }
 
-    const isSepia = document.documentElement.classList.contains('sepia');
-    const isDark = !document.documentElement.classList.contains('light') && !isSepia;
-    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : isSepia ? 'rgba(100,65,20,0.08)' : 'rgba(0,0,0,0.06)';
-    const labelColor = isDark ? 'rgba(255,255,255,0.35)' : isSepia ? 'rgba(100,65,20,0.5)' : 'rgba(0,0,0,0.4)';
-    const isLight = document.documentElement.classList.contains('light');
     const isDreamLanding = document.body.classList.contains('dream-landing');
-    const accentColor = isDreamLanding ? '#fb5d6c' : isSepia ? '#C37E3F' : isLight ? '#22c55e' : '#4ade80';
+    const isSepia = document.documentElement.classList.contains('sepia');
+    const isDark = !isDreamLanding && !document.documentElement.classList.contains('light') && !isSepia;
+    const gridColor = isDreamLanding
+      ? 'rgba(53, 22, 79, 0.12)'
+      : isDark ? 'rgba(255,255,255,0.06)' : isSepia ? 'rgba(100,65,20,0.08)' : 'rgba(0,0,0,0.06)';
+    const labelColor = isDreamLanding
+      ? 'rgba(53, 22, 79, 0.62)'
+      : isDark ? 'rgba(255,255,255,0.35)' : isSepia ? 'rgba(100,65,20,0.5)' : 'rgba(0,0,0,0.4)';
+    const isLight = document.documentElement.classList.contains('light');
+    const accentColor = isDreamLanding ? '#22c55e' : isSepia ? '#C37E3F' : isLight ? '#22c55e' : '#4ade80';
     const areaColor = isDreamLanding
-      ? ['rgba(251, 93, 108, 0.26)', 'rgba(251, 93, 108, 0.08)', 'rgba(251, 93, 108, 0.01)']
+      ? ['rgba(34, 197, 94, 0.28)', 'rgba(34, 197, 94, 0.09)', 'rgba(34, 197, 94, 0.01)']
       : ['rgba(74, 222, 128, 0.22)', 'rgba(74, 222, 128, 0.06)', 'rgba(74, 222, 128, 0.01)'];
 
     const gridLines = 4;
@@ -330,6 +356,15 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText(labels[i].toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), xPos(i), h - 8);
       }
       ctx.fillText(labels[days - 1].toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), xPos(days - 1), h - 8);
+
+      ctx.save();
+      ctx.fillStyle = labelColor;
+      ctx.font = '700 11px "Instrument Sans", system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Words', padLeft, 11);
+      ctx.textAlign = 'right';
+      ctx.fillText('Last 8 weeks', w - padRight, h - 24);
+      ctx.restore();
 
       // Filled area
       ctx.beginPath();
