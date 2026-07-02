@@ -2771,10 +2771,14 @@ a {
 html.light .logo-img-dark { display: none; }
 html.light .logo-img-light { display: inline; }
 .logo-knight {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   fill: currentColor;
   filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.dream-only-link {
+  display: none;
 }
 
 .nav-links {
@@ -2984,11 +2988,11 @@ html.light .logo-img-light { display: inline; }
 }
 
 .hero-title {
-  font-family: 'Nunito Sans', var(--font-display);
+  font-family: var(--font-display);
   font-size: clamp(60px, 10vw, 120px);
   font-weight: 900;
   line-height: 0.95;
-  letter-spacing: 0;
+  letter-spacing: -2px;
   margin-bottom: 32px;
   position: relative;
   text-transform: none;
@@ -3132,6 +3136,7 @@ html.light .logo-img-light { display: inline; }
 
 /* ===== AD SHOWCASE ===== */
 .ad-showcase {
+  display: none;
   padding: 110px 32px 120px;
   background:
     radial-gradient(circle at 16% 18%, rgba(239, 68, 68, 0.12), transparent 30%),
@@ -3146,9 +3151,8 @@ html.light .logo-img-light { display: inline; }
 .ad-showcase-inner {
   max-width: 1120px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 0.86fr) minmax(420px, 1.14fr);
-  gap: 54px;
+  display: flex;
+  justify-content: center;
   align-items: center;
   position: relative;
   z-index: 1;
@@ -3276,6 +3280,7 @@ html.light .logo-img-light { display: inline; }
 
 .ad-video-stage {
   min-height: 430px;
+  width: 100%;
   display: grid;
   place-items: center;
   opacity: 0;
@@ -3290,7 +3295,7 @@ html.light .logo-img-light { display: inline; }
 }
 
 .ad-video-shell {
-  width: min(100%, 620px);
+  width: min(100%, 860px);
   border: 1px solid var(--border);
   border-radius: 26px;
   background: var(--bg-card);
@@ -3371,8 +3376,8 @@ html.light .logo-img-light { display: inline; }
 }
 
 .ad-fly-tab {
-  top: 34px;
-  right: 24px;
+  top: 8px;
+  right: 78px;
   width: 78px;
   height: 42px;
   border-radius: 14px;
@@ -3381,8 +3386,8 @@ html.light .logo-img-light { display: inline; }
 }
 
 .ad-fly-dm {
-  left: 2px;
-  top: 128px;
+  left: 54px;
+  top: 118px;
   width: 62px;
   height: 62px;
   border-radius: 20px 20px 20px 7px;
@@ -3391,8 +3396,8 @@ html.light .logo-img-light { display: inline; }
 }
 
 .ad-fly-ai {
-  right: 8px;
-  bottom: 62px;
+  right: 58px;
+  bottom: 34px;
   width: 58px;
   height: 58px;
   border-radius: 50%;
@@ -3401,8 +3406,8 @@ html.light .logo-img-light { display: inline; }
 }
 
 .ad-fly-bolt {
-  left: 52px;
-  bottom: 70px;
+  left: 108px;
+  bottom: 48px;
   width: 28px;
   height: 66px;
   background: #f59e0b;
@@ -3411,8 +3416,8 @@ html.light .logo-img-light { display: inline; }
 }
 
 .ad-fly-paper {
-  top: 16px;
-  left: 80px;
+  top: -20px;
+  left: 138px;
   width: 52px;
   height: 68px;
   border-radius: 8px;
@@ -3434,6 +3439,9 @@ html.light .logo-img-light { display: inline; }
 body.landing.dream-landing {
   --accent-rgb: 251, 104, 106;
   --ink-rgb: 60, 31, 84;
+  --dream-image-section-bg:
+    linear-gradient(135deg, rgba(255, 248, 242, 0.72), rgba(255, 235, 244, 0.46)),
+    url('/media/hero-dream-background.png') center center / cover no-repeat;
   --bg-primary: #fff7ef;
   --bg-secondary: rgba(255, 239, 244, 0.72);
   --bg-card: rgba(255, 255, 255, 0.58);
@@ -3523,8 +3531,8 @@ body.landing.dream-landing .logo-img {
 }
 
 body.landing.dream-landing .logo-knight {
-  width: 31px;
-  height: 31px;
+  width: 17px;
+  height: 17px;
   fill: #35164f;
   filter: drop-shadow(0 8px 12px rgba(53, 22, 79, 0.16));
 }
@@ -3609,11 +3617,11 @@ body.landing.dream-landing .hero-title {
   max-width: 650px;
   margin: 0 auto 22px;
   color: #371555;
-  font-family: 'Nunito Sans', 'Nunito', var(--font-display);
+  font-family: "Nunito Sans", sans-serif;
   font-size: clamp(64px, 8.5vw, 106px);
   font-weight: 900;
   line-height: 0.95;
-  letter-spacing: 0;
+  letter-spacing: -0.04em;
   text-shadow: 0 12px 30px rgba(55, 21, 85, 0.13);
 }
 
@@ -3772,13 +3780,19 @@ body.landing.dream-landing .mock-cursor {
   box-shadow: 0 0 12px rgba(135, 88, 231, 0.34);
 }
 
+body.landing.dream-landing .dream-only-link {
+  display: inline-flex;
+}
+
 body.landing.dream-landing .ad-showcase {
-  padding-top: 104px;
-  padding-bottom: 118px;
+  display: block;
+  padding-top: 96px;
+  padding-bottom: 132px;
   background:
-    radial-gradient(circle at 9% 22%, rgba(255, 255, 255, 0.72) 0 10%, transparent 28%),
-    radial-gradient(circle at 90% 18%, rgba(126, 213, 222, 0.38), transparent 27%),
-    linear-gradient(135deg, #ffe3e6 0%, #fff6ed 48%, #ead7f2 100%);
+    radial-gradient(circle at 12% 20%, rgba(255, 255, 255, 0.76) 0 10%, transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(126, 213, 222, 0.38), transparent 27%),
+    radial-gradient(circle at 70% 82%, rgba(251, 93, 108, 0.18), transparent 28%),
+    linear-gradient(135deg, #ffe1e6 0%, #fff6e8 46%, #ead7f2 100%);
 }
 
 body.landing.dream-landing .ad-showcase::before {
@@ -3794,7 +3808,17 @@ body.landing.dream-landing .ad-showcase::before {
 }
 
 body.landing.dream-landing .ad-showcase-inner {
-  grid-template-columns: minmax(0, 0.82fr) minmax(430px, 1.18fr);
+  max-width: 980px;
+}
+
+body.landing.dream-landing .ad-video-stage {
+  min-height: 560px;
+}
+
+body.landing.dream-landing .ad-video-shell {
+  width: min(100%, 920px);
+  border-radius: 34px;
+  transform: rotate(-0.7deg);
 }
 
 body.landing.dream-landing .ad-kicker {
@@ -3968,16 +3992,28 @@ body.landing.dream-landing .footer {
 }
 
 body.landing.dream-landing .stats-bar {
-  background: #ffd9e0;
+  background:
+    radial-gradient(circle at 18% 34%, rgba(255, 255, 255, 0.74), transparent 25%),
+    radial-gradient(circle at 82% 42%, rgba(126, 213, 222, 0.26), transparent 30%),
+    radial-gradient(circle at 54% 88%, rgba(251, 93, 108, 0.18), transparent 28%),
+    linear-gradient(135deg, #ffd9e0 0%, #fff3e7 52%, #eadcf4 100%);
 }
 
 body.landing.dream-landing .how-it-works {
-  background: #fff1e8;
+  background:
+    radial-gradient(circle at 15% 18%, rgba(255, 191, 87, 0.22), transparent 28%),
+    radial-gradient(circle at 85% 72%, rgba(251, 93, 108, 0.18), transparent 30%),
+    radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.68), transparent 25%),
+    linear-gradient(135deg, #fff1e8 0%, #ffe0e8 48%, #eef8f7 100%);
 }
 
 body.landing.dream-landing .growth-section {
   max-width: none;
-  background: #f8d7e8;
+  background:
+    radial-gradient(circle at 17% 24%, rgba(126, 213, 222, 0.34), transparent 28%),
+    radial-gradient(circle at 82% 68%, rgba(139, 92, 246, 0.18), transparent 30%),
+    radial-gradient(circle at 48% 8%, rgba(255, 255, 255, 0.62), transparent 24%),
+    linear-gradient(135deg, #effafa 0%, #f8d7e8 48%, #fff2dc 100%);
 }
 
 body.landing.dream-landing .growth-section .section-header,
@@ -3988,11 +4024,18 @@ body.landing.dream-landing .growth-chart-wrap {
 }
 
 body.landing.dream-landing .landing-pricing {
-  background: #f4d5e8;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.72), transparent 24%),
+    radial-gradient(circle at 78% 22%, rgba(255, 191, 87, 0.24), transparent 28%),
+    radial-gradient(circle at 68% 78%, rgba(126, 213, 222, 0.2), transparent 30%),
+    linear-gradient(135deg, #f5e0f2 0%, #fff7ea 52%, #ffe1e5 100%);
 }
 
 body.landing.dream-landing .features {
-  background: #fff8f1;
+  background:
+    radial-gradient(circle at 12% 28%, rgba(251, 93, 108, 0.18), transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(255, 191, 87, 0.2), transparent 26%),
+    linear-gradient(135deg, #fff8f1 0%, #ffe4eb 52%, #edf7f6 100%);
   max-width: none;
 }
 
@@ -4004,11 +4047,17 @@ body.landing.dream-landing .features-grid {
 }
 
 body.landing.dream-landing .cta {
-  background: #ffe6e3;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.72), transparent 24%),
+    radial-gradient(circle at 78% 64%, rgba(126, 213, 222, 0.26), transparent 28%),
+    linear-gradient(135deg, #ffe6e3 0%, #fff7eb 50%, #e9dcf5 100%);
 }
 
 body.landing.dream-landing .footer {
-  background: #271136;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(251, 93, 108, 0.18), transparent 30%),
+    radial-gradient(circle at 86% 72%, rgba(126, 213, 222, 0.14), transparent 28%),
+    linear-gradient(135deg, #271136 0%, #3b184b 48%, #2b234f 100%);
   color: rgba(255, 247, 252, 0.9);
   border-top-color: rgba(255, 255, 255, 0.1);
 }
@@ -4035,29 +4084,41 @@ body.landing.dream-landing .step {
 }
 
 body.landing.dream-landing .step::before {
-  content: '';
-  width: 86px;
-  height: 86px;
-  margin-bottom: 22px;
-  border-radius: 28px;
+  display: none;
+}
+
+body.landing.dream-landing .step-icon {
+  width: 92px;
+  height: 92px;
+  margin-bottom: 20px;
+  border-radius: 30px;
+  display: grid;
+  place-items: center;
+  color: #fff;
   background:
-    radial-gradient(circle at 50% 50%, #fff 0 28%, transparent 29%),
-    conic-gradient(from -55deg, #fb5d6c 0 72%, rgba(251, 93, 108, 0.16) 72% 100%);
-  box-shadow: 0 16px 34px rgba(251, 93, 108, 0.2);
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.72), transparent 22%),
+    linear-gradient(135deg, #ff7371 0%, #8b5cf6 100%);
+  box-shadow: 0 18px 36px rgba(117, 71, 132, 0.2);
   animation: dreamStepPulse 3.6s ease-in-out infinite;
 }
 
-body.landing.dream-landing .step:nth-child(3)::before {
+body.landing.dream-landing .step:nth-child(3) .step-icon {
   background:
-    linear-gradient(#fff 0 0) 50% 50% / 46px 56px no-repeat,
-    linear-gradient(135deg, #fb5d6c, #8b5cf6);
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.72), transparent 22%),
+    linear-gradient(135deg, #7ed5de 0%, #8b5cf6 100%);
+  animation-delay: 0.25s;
 }
 
-body.landing.dream-landing .step:nth-child(5)::before {
+body.landing.dream-landing .step:nth-child(5) .step-icon {
   background:
-    linear-gradient(135deg, transparent 43%, #fff 44% 56%, transparent 57%),
-    radial-gradient(circle at 50% 50%, #fb5d6c 0 38%, transparent 39%),
-    linear-gradient(135deg, #ffb0b8, #8b5cf6);
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.72), transparent 22%),
+    linear-gradient(135deg, #ffbf57 0%, #fb5d6c 100%);
+  animation-delay: 0.5s;
+}
+
+body.landing.dream-landing .step-icon svg {
+  width: 46px;
+  height: 46px;
 }
 
 body.landing.dream-landing .step-num {
@@ -4168,6 +4229,11 @@ body.landing.dream-landing .footer .logo,
 body.landing.dream-landing .footer .logo-knight {
   color: #fff7fc;
   fill: #fff7fc;
+}
+
+body.landing.dream-landing .footer .logo-knight {
+  width: 20px;
+  height: 20px;
 }
 
 body.landing.dream-landing .footer-brand p,
@@ -11021,7 +11087,8 @@ body.editor-active .mobile-sidebar-toggle {
   }
 
   body.landing.dream-landing .logo {
-    font-size: 18px;
+    min-width: 0;
+    font-size: 17px;
     padding-right: 96px;
   }
 
@@ -11031,8 +11098,8 @@ body.editor-active .mobile-sidebar-toggle {
   }
 
   body.landing.dream-landing .logo-knight {
-    width: 26px;
-    height: 26px;
+    width: 15px;
+    height: 15px;
   }
 
   body.landing.dream-landing .hero {
@@ -11048,8 +11115,8 @@ body.editor-active .mobile-sidebar-toggle {
   }
 
   body.landing.dream-landing .hero-title {
-    max-width: 340px;
-    font-size: clamp(40px, 11.5vw, 50px);
+    max-width: 320px;
+    font-size: clamp(38px, 10.5vw, 48px);
     line-height: 0.96;
   }
 
@@ -11064,7 +11131,7 @@ body.editor-active .mobile-sidebar-toggle {
   }
 
   body.landing.dream-landing .hero-sub {
-    max-width: 292px;
+    max-width: min(292px, calc(100vw - 48px));
     font-size: 16px;
   }
 
@@ -11075,6 +11142,20 @@ body.editor-active .mobile-sidebar-toggle {
 
   body.landing.dream-landing .mock-editor {
     width: calc(100vw - 32px);
+  }
+
+  body.landing.dream-landing .mock-content {
+    margin: 0 12px 14px;
+    padding: 34px 18px 32px;
+  }
+
+  body.landing.dream-landing .mock-line {
+    max-width: 250px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 14px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
   }
 
   .ad-showcase {
@@ -11166,7 +11247,7 @@ body.editor-active .mobile-sidebar-toggle {
   }
 
   body.landing.dream-landing .ad-video-stage {
-    min-height: auto;
+    min-height: 300px;
   }
 
   body.landing.dream-landing .ad-video-shell {
