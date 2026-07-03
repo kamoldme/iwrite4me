@@ -9,27 +9,127 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('[data-aos]').forEach(el => observer.observe(el));
 
-  const landingVideos = document.querySelectorAll('.ad-video');
-  if (landingVideos.length) {
-    const videoObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        const video = entry.target;
-        if (entry.isIntersecting) {
-          video.loop = true;
-          video.playsInline = true;
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      });
-    }, { threshold: 0.55, rootMargin: '-8% 0px -8% 0px' });
+  const rotatingProjectWord = document.getElementById('rotating-project-word');
+  const projectWords = ['book', 'essay', 'novel', 'thesis', 'story', 'draft', 'memoir', 'chapter'];
+  if (rotatingProjectWord) {
+    let projectWordIndex = 0;
+    setInterval(() => {
+      projectWordIndex = (projectWordIndex + 1) % projectWords.length;
+      rotatingProjectWord.classList.add('is-changing');
+      window.setTimeout(() => {
+        rotatingProjectWord.textContent = projectWords[projectWordIndex];
+        rotatingProjectWord.classList.remove('is-changing');
+      }, 180);
+    }, 3000);
+  }
 
-    landingVideos.forEach(video => {
-      video.muted = true;
-      video.loop = true;
-      videoObserver.observe(video);
+  const trialModal = document.getElementById('trial-writing-modal');
+  const trialOpen = document.getElementById('try-writing-here');
+  const trialClose = document.getElementById('trial-close');
+  const trialArea = document.getElementById('trial-writing-area');
+  const trialTimer = document.getElementById('trial-timer');
+  const trialWordCount = document.getElementById('trial-word-count');
+  const trialLock = document.getElementById('trial-lock');
+  const trialCopy = document.getElementById('trial-copy');
+  let trialStarted = false;
+  let trialLocked = false;
+  let trialSecondsLeft = 60;
+  let trialInterval = null;
+
+  function countTrialWords() {
+    if (!trialArea) return 0;
+    return trialArea.value.trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  function updateTrialMeta() {
+    if (trialWordCount) {
+      const words = countTrialWords();
+      trialWordCount.textContent = `${words} ${words === 1 ? 'word' : 'words'}`;
+    }
+    if (trialTimer) {
+      const minutes = Math.floor(trialSecondsLeft / 60);
+      const seconds = String(trialSecondsLeft % 60).padStart(2, '0');
+      trialTimer.textContent = `${String(minutes).padStart(2, '0')}:${seconds}`;
+    }
+  }
+
+  function lockTrial() {
+    if (trialLocked) return;
+    trialLocked = true;
+    if (trialInterval) window.clearInterval(trialInterval);
+    if (trialArea) trialArea.readOnly = true;
+    if (trialLock) trialLock.setAttribute('aria-hidden', 'false');
+  }
+
+  function startTrialTimer() {
+    if (trialStarted || trialLocked) return;
+    trialStarted = true;
+    trialInterval = window.setInterval(() => {
+      trialSecondsLeft -= 1;
+      updateTrialMeta();
+      if (trialSecondsLeft <= 0) lockTrial();
+    }, 1000);
+  }
+
+  function resetTrial() {
+    trialStarted = false;
+    trialLocked = false;
+    trialSecondsLeft = 60;
+    if (trialInterval) window.clearInterval(trialInterval);
+    trialInterval = null;
+    if (trialArea) {
+      trialArea.value = '';
+      trialArea.readOnly = false;
+    }
+    if (trialLock) trialLock.setAttribute('aria-hidden', 'true');
+    updateTrialMeta();
+  }
+
+  function openTrial() {
+    if (!trialModal) return;
+    resetTrial();
+    trialModal.classList.add('active');
+    trialModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('trial-open');
+    window.setTimeout(() => trialArea?.focus(), 80);
+  }
+
+  function closeTrial() {
+    if (!trialModal) return;
+    trialModal.classList.remove('active');
+    trialModal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('trial-open');
+    if (trialInterval) window.clearInterval(trialInterval);
+  }
+
+  if (trialOpen) trialOpen.addEventListener('click', openTrial);
+  if (trialClose) trialClose.addEventListener('click', closeTrial);
+  if (trialModal) {
+    trialModal.addEventListener('click', (event) => {
+      if (event.target === trialModal) closeTrial();
     });
   }
+  if (trialArea) {
+    trialArea.addEventListener('input', () => {
+      startTrialTimer();
+      updateTrialMeta();
+      if (countTrialWords() >= 120) lockTrial();
+    });
+  }
+  if (trialCopy) {
+    trialCopy.addEventListener('click', async () => {
+      const text = trialArea?.value || '';
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        trialCopy.textContent = 'Copied';
+        window.setTimeout(() => { trialCopy.textContent = 'Copy my text'; }, 1400);
+      } catch {
+        trialArea?.select();
+      }
+    });
+  }
+  updateTrialMeta();
 
   const dreamToggle = document.getElementById('dream-style-toggle');
   const dreamStorageKey = 'iwrite_landing_design';
