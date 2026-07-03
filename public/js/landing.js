@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const requestedLandingDesign = new URLSearchParams(window.location.search).get('style');
   const savedLandingDesign = localStorage.getItem(dreamStorageKey);
-  setDreamLanding(requestedLandingDesign === 'dream' || (requestedLandingDesign !== 'classic' && savedLandingDesign === 'dream'));
+  setDreamLanding(requestedLandingDesign !== 'classic' && savedLandingDesign !== 'classic');
 
   if (dreamToggle) {
     dreamToggle.addEventListener('click', () => {
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(step);
   }
 
-  let currentStats = { totalWords: 0, totalHours: 0, totalWriters: 0 };
+  let currentStats = { totalWords: 0, totalHours: 0, totalWriters: 0, activeNow: 0 };
   let statsVisible = false;
 
   async function fetchStats() {
@@ -102,15 +102,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const wordEl = document.getElementById('stat-words');
       const sessionEl = document.getElementById('stat-sessions');
       const writerEl = document.getElementById('stat-writers');
+      const activeEl = document.getElementById('stat-active');
 
       if (statsVisible) {
-        animateValue(wordEl, currentStats.totalWords, data.totalWords, 800);
-        animateValue(sessionEl, currentStats.totalHours, data.totalHours, 800);
-        animateValue(writerEl, currentStats.totalWriters, data.totalWriters, 800);
+        if (wordEl) animateValue(wordEl, currentStats.totalWords, data.totalWords, 800);
+        if (sessionEl) animateValue(sessionEl, currentStats.totalHours, data.totalHours, 800);
+        if (writerEl) animateValue(writerEl, currentStats.totalWriters, data.totalWriters, 800);
+        if (activeEl) animateValue(activeEl, currentStats.activeNow || 0, data.activeNow || 0, 800);
       } else {
-        wordEl.textContent = data.totalWords.toLocaleString();
-        sessionEl.textContent = data.totalHours.toLocaleString();
-        writerEl.textContent = data.totalWriters.toLocaleString();
+        if (wordEl) wordEl.textContent = data.totalWords.toLocaleString();
+        if (sessionEl) sessionEl.textContent = data.totalHours.toLocaleString();
+        if (writerEl) writerEl.textContent = data.totalWriters.toLocaleString();
+        if (activeEl) activeEl.textContent = (data.activeNow || 0).toLocaleString();
       }
 
       currentStats = data;

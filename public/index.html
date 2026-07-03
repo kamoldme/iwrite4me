@@ -11,14 +11,14 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>iWrite4.me — Distraction-Free Writing</title>
-  <meta name="description" content="A writing tool that keeps you focused. If you stop typing, it deletes your work.">
+  <title>iWrite4.me — A Soft Space for Focused Writing</title>
+  <meta name="description" content="A calm writing workspace with focus sessions, dangerous mode, streaks, duels, sharing, analytics, and gentle progress tracking.">
   <link rel="canonical" href="https://iwrite4.me/">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="iWrite4.me — Distraction-Free Writing">
-  <meta property="og:description" content="A writing tool that keeps you focused. If you stop typing, it deletes your work.">
+  <meta property="og:title" content="iWrite4.me — A Soft Space for Focused Writing">
+  <meta property="og:description" content="A calm writing workspace with focus sessions, dangerous mode, streaks, duels, sharing, analytics, and gentle progress tracking.">
   <meta property="og:image" content="https://iwrite4.me/og-image.png">
   <meta property="og:url" content="https://iwrite4.me">
   <meta property="og:type" content="website">
@@ -26,15 +26,15 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="iWrite4.me — Distraction-Free Writing">
-  <meta name="twitter:description" content="A writing tool that keeps you focused. If you stop typing, it deletes your work.">
+  <meta name="twitter:title" content="iWrite4.me — A Soft Space for Focused Writing">
+  <meta name="twitter:description" content="A calm writing workspace with focus sessions, dangerous mode, streaks, duels, sharing, analytics, and gentle progress tracking.">
   <meta name="twitter:image" content="https://iwrite4.me/og-image.png">
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Baloo+2:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=37">
+  <link rel="stylesheet" href="/css/style.css?v=38">
 </head>
-<body class="landing">
+<body class="landing dream-landing">
   <nav class="nav">
     <div class="nav-inner">
       <a href="/" class="logo">
@@ -44,11 +44,12 @@
         <span>iWrite4.me</span>
       </a>
       <div class="nav-links">
-        <a href="#features">Features</a>
+        <a href="#features">Product</a>
         <a href="#demo-video" class="dream-only-link">Demo</a>
-        <a href="#how-it-works">How It Works</a>
+        <a href="#how-it-works">Flow</a>
+        <a href="#community">Community</a>
         <a href="#pricing">Pricing</a>
-        <a href="/app" class="btn btn-small">Launch App</a>
+        <a href="/app" class="btn btn-small">Start Writing</a>
       </div>
       <button class="design-toggle" id="dream-style-toggle" type="button" aria-pressed="false" title="Switch landing style">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -65,31 +66,45 @@
 
   <section class="hero">
     <h1 class="hero-title">
-      <span class="hero-line">Write it.</span>
-      <span class="hero-line">Or <em>lose</em> it.</span>
+      <span class="hero-line">A softer space</span>
+      <span class="hero-line">to <em>keep writing.</em></span>
     </h1>
     <p class="hero-sub">
-      A distraction-free brainstorming space that locks you in,
-      rewards your focus, and deletes your work if you dare to leave.
+      iWrite4.me gives you a calm desk for drafts, focus sessions, streaks,
+      duels, and progress. The pressure is still there when you need it.
+      The room around it is gentler now.
     </p>
     <div class="hero-actions">
       <a href="/app" class="btn btn-primary btn-large">Start Writing</a>
-      <a href="#how-it-works" class="btn btn-ghost btn-large">How It Works</a>
+      <a href="#features" class="btn btn-ghost btn-large">Explore the Space</a>
     </div>
     <div class="hero-visual">
-      <div class="mock-editor">
+      <div class="mock-editor soft-editor">
         <div class="mock-toolbar">
           <div class="mock-dots">
             <span></span><span></span><span></span>
           </div>
-          <div class="mock-timer">04:32</div>
-          <div class="mock-xp">+12 XP</div>
+          <div class="mock-timer">Focus session · 24:18</div>
+          <div class="mock-xp">+128 XP</div>
         </div>
         <div class="mock-content">
-          <div class="mock-line typing" style="--delay: 0s">The best ideas come when you can't escape your own thoughts.</div>
-          <div class="mock-line typing" style="--delay: 2s">No tabs. No distractions. Just you and the blank page.</div>
-          <div class="mock-line typing" style="--delay: 4s">Write or lose everything — the choice is yours.</div>
-          <div class="mock-cursor"></div>
+          <aside class="soft-editor-sidebar" aria-hidden="true">
+            <div class="soft-sidebar-title">Today</div>
+            <div class="soft-sidebar-item active">Morning draft</div>
+            <div class="soft-sidebar-item">Story notes</div>
+            <div class="soft-sidebar-item">Duel prep</div>
+            <div class="soft-sidebar-progress">
+              <span>Daily goal</span>
+              <strong>720 / 1,000</strong>
+              <i></i>
+            </div>
+          </aside>
+          <div class="soft-editor-page">
+            <div class="mock-line typing" style="--delay: 0s">The page feels quiet enough to hear the idea arrive.</div>
+            <div class="mock-line typing" style="--delay: 2s">The timer keeps watch, but it does not shout.</div>
+            <div class="mock-line typing" style="--delay: 4s">One sentence becomes a streak. One streak becomes a tree.</div>
+            <div class="mock-cursor"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -123,6 +138,7 @@
   </section>
 
   <section class="stats-bar">
+    <p class="stats-kicker">Growing with every focused session</p>
     <div class="stats-inner">
       <div class="stat">
         <span class="stat-num" id="stat-words">0</span>
@@ -136,13 +152,17 @@
         <span class="stat-num" id="stat-writers">0</span>
         <span class="stat-label">Writers</span>
       </div>
+      <div class="stat">
+        <span class="stat-num" id="stat-active">0</span>
+        <span class="stat-label">Active Now</span>
+      </div>
     </div>
   </section>
 
   <section id="features" class="features">
     <div class="section-header">
-      <h2>Built for <em>real</em> thinking.</h2>
-      <p>In a world drowning in AI-generated content, iWrite4.me gives you a space to think for yourself.</p>
+      <h2>Everything you need, <em>right where you write.</em></h2>
+      <p>iWrite4.me keeps the writing surface simple, then surrounds it with small tools for rhythm, accountability, and momentum.</p>
     </div>
     <div class="features-grid">
       <div class="feature-card" data-aos>
@@ -152,8 +172,13 @@
             <path d="M3 9h18M9 3v18"/>
           </svg>
         </div>
-        <h3>Tab Lock</h3>
-        <p>Leave the tab and your writing disappears. Stay focused or pay the price.</p>
+        <h3>Calm Focus Desk</h3>
+        <p>Write in a quiet editor with timers, formatting, folders, pinned documents, and fewer things fighting for your attention.</p>
+        <div class="feature-widget soft-goal-widget" aria-hidden="true">
+          <span>Daily Draft Goal</span>
+          <strong>72%</strong>
+          <i></i>
+        </div>
       </div>
       <div class="feature-card" data-aos>
         <div class="feature-icon">
@@ -163,7 +188,11 @@
           </svg>
         </div>
         <h3>Timed Sessions</h3>
-        <p>Set your timer. 5 minutes or 5 hours. The clock keeps you honest.</p>
+        <p>Choose a normal, zen, research, or timed session. Complete it to save your draft and build your writing history.</p>
+        <div class="feature-widget soft-timer-widget" aria-hidden="true">
+          <strong>24:18</strong>
+          <span>session remaining</span>
+        </div>
       </div>
       <div class="feature-card" data-aos>
         <div class="feature-icon">
@@ -172,7 +201,11 @@
           </svg>
         </div>
         <h3>Dangerous Mode</h3>
-        <p>Stop typing for 6 seconds and your session fails. Keep writing or lose everything.</p>
+        <p>Turn pressure on when you want it: stop typing, leave the tab, or lose focus and the session can fail.</p>
+        <div class="feature-widget soft-danger-widget" aria-hidden="true">
+          <span>Inactivity window</span>
+          <strong>6 sec</strong>
+        </div>
       </div>
       <div class="feature-card" data-aos>
         <div class="feature-icon">
@@ -182,7 +215,10 @@
           </svg>
         </div>
         <h3>Growing Tree</h3>
-        <p>Your tree grows with every session. Break your streak and watch the leaves fall.</p>
+        <p>Your streak turns into a living writing tree with 12 stages, from seed to forest.</p>
+        <div class="feature-widget soft-tree-widget" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
       </div>
       <div class="feature-card" data-aos>
         <div class="feature-icon">
@@ -190,8 +226,12 @@
             <polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9"/>
           </svg>
         </div>
-        <h3>XP / Levels</h3>
-        <p>Earn experience for every word. Level up. Writing is your game now.</p>
+        <h3>XP, Levels, Analytics</h3>
+        <p>Earn XP for words, track your rhythm, find your best writing days, and share a beautiful progress card.</p>
+        <div class="feature-widget soft-heatmap-widget" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
       </div>
       <div class="feature-card" data-aos>
         <div class="feature-icon">
@@ -201,15 +241,20 @@
             <line x1="12" y1="2" x2="12" y2="15"/>
           </svg>
         </div>
-        <h3>Share / Collaborate</h3>
-        <p>Share with view, comment, or edit links. Brainstorm together.</p>
+        <h3>Friends, Duels, Stories</h3>
+        <p>Challenge friends to word-count duels, share documents, and publish stories into the iWrite community feed.</p>
+        <div class="feature-widget soft-community-widget" aria-hidden="true">
+          <span>2 writers dueling</span>
+          <strong>814 · 779</strong>
+        </div>
       </div>
     </div>
   </section>
 
   <section id="how-it-works" class="how-it-works">
     <div class="section-header">
-      <h2>Simple. Brutal. Effective.</h2>
+      <h2>A simple writing flow.</h2>
+      <p>Start soft. Add pressure only when it helps.</p>
     </div>
     <div class="steps">
       <div class="step" data-aos>
@@ -220,8 +265,8 @@
           </svg>
         </div>
         <div class="step-num">01</div>
-        <h3>Set Your Timer</h3>
-        <p>Choose how long you want to brainstorm. 5, 15, 30 minutes — or go untimed.</p>
+        <h3>Choose Your Room</h3>
+        <p>Pick normal, zen, research, timed, dangerous, or duel mode depending on the kind of focus you need.</p>
       </div>
       <div class="step-arrow">&rarr;</div>
       <div class="step" data-aos>
@@ -232,8 +277,8 @@
           </svg>
         </div>
         <div class="step-num">02</div>
-        <h3>Start Writing</h3>
-        <p>Your tab is locked. The timer starts. It's just you and your thoughts now.</p>
+        <h3>Write in One Place</h3>
+        <p>Draft, format, organize, and keep notes without leaving the page or breaking the session rhythm.</p>
       </div>
       <div class="step-arrow">&rarr;</div>
       <div class="step" data-aos>
@@ -244,8 +289,8 @@
           </svg>
         </div>
         <div class="step-num">03</div>
-        <h3>Stay or Lose</h3>
-        <p>Leave the tab and your work vanishes. Complete the session to save and earn XP.</p>
+        <h3>Save the Momentum</h3>
+        <p>Finish to save your draft, grow your streak, earn XP, update your tree, and add to your analytics.</p>
       </div>
     </div>
   </section>
@@ -264,11 +309,41 @@
     </div>
   </section>
 
+  <section class="community-section" id="community">
+    <div class="community-copy">
+      <p class="section-kicker">Built around real writing momentum</p>
+      <h2>Meet the writers building streaks beside you.</h2>
+      <p>
+        Add friends, challenge them to focused writing duels, climb the leaderboard,
+        share drafts for feedback, and publish stories when a private session turns
+        into something worth showing.
+      </p>
+      <a href="/app" class="btn btn-ghost btn-large">Enter the Workspace</a>
+    </div>
+    <div class="community-stack" aria-hidden="true">
+      <div class="community-card community-card-one">
+        <span>Writing duel</span>
+        <strong>Most words wins</strong>
+        <i>10 · 30 · 45 min</i>
+      </div>
+      <div class="community-card community-card-two">
+        <span>Leaderboard</span>
+        <strong>Streaks, time, referrals</strong>
+        <i>Updated from your app data</i>
+      </div>
+      <div class="community-card community-card-three">
+        <span>Shared drafts</span>
+        <strong>View, comment, edit links</strong>
+        <i>Collaborate when the session ends</i>
+      </div>
+    </div>
+  </section>
+
 
   <section class="landing-pricing" id="pricing">
     <div class="landing-pricing-header">
-      <h2>Choose Your Plan</h2>
-      <p>Write freely. Upgrade when you're ready for more.</p>
+      <h2>Start free. Upgrade when the habit sticks.</h2>
+      <p>Keep the writing room simple, then unlock deeper customization and analytics when you need them.</p>
     </div>
     <div class="upgrade-cards" style="padding-bottom:64px">
       <div class="upgrade-card" style="animation-delay:0.1s">
@@ -330,8 +405,8 @@
   </section>
 
   <section class="cta">
-    <h2>Your thoughts are worth protecting.<br>Start writing them down.</h2>
-    <a href="/app" class="btn btn-primary btn-large">Launch iWrite4.me</a>
+    <h2>Your next draft deserves a room that feels easy to enter.</h2>
+    <a href="/app" class="btn btn-primary btn-large">Open iWrite4.me</a>
   </section>
 
 
@@ -349,8 +424,9 @@
       <div class="footer-links">
         <div class="footer-col">
           <h4>Product</h4>
-          <a href="#features">Features</a>
-          <a href="#how-it-works">How It Works</a>
+          <a href="#features">Product</a>
+          <a href="#how-it-works">Flow</a>
+          <a href="#community">Community</a>
           <a href="#pricing">Pricing</a>
         </div>
         <div class="footer-col">
@@ -365,6 +441,6 @@
     </div>
   </footer>
 
-  <script src="/js/landing.js?v=11"></script>
+  <script src="/js/landing.js?v=12"></script>
 </body>
 </html>
