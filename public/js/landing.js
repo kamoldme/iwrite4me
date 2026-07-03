@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-aos]').forEach(el => observer.observe(el));
 
   const rotatingProjectWord = document.getElementById('rotating-project-word');
-  const projectWords = ['book', 'essay', 'novel', 'thesis', 'story', 'draft', 'memoir', 'chapter'];
+  const projectWords = ['book', 'essay', 'thesis', 'novel', 'chapter', 'draft', 'story', 'memoir'];
   if (rotatingProjectWord) {
     let projectWordIndex = 0;
     let projectTypingTimer = null;

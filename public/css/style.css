@@ -17266,6 +17266,7 @@ body.landing.dream-landing .mock-cursor {
 body.landing.dream-landing .stats-bar,
 body.landing.dream-landing .features,
 body.landing.dream-landing .how-it-works,
+body.landing.dream-landing .principles-section,
 body.landing.dream-landing .growth-section,
 body.landing.dream-landing .community-section,
 body.landing.dream-landing .landing-pricing,
@@ -17326,14 +17327,16 @@ body.landing.dream-landing .stat-label {
 }
 
 body.landing.dream-landing .features,
-body.landing.dream-landing .how-it-works {
+body.landing.dream-landing .how-it-works,
+body.landing.dream-landing .principles-section {
   max-width: none;
   padding: 132px 32px;
 }
 
 body.landing.dream-landing .features .section-header,
 body.landing.dream-landing .features-grid,
-body.landing.dream-landing .steps {
+body.landing.dream-landing .steps,
+body.landing.dream-landing .principles-grid {
   max-width: 1120px;
 }
 
@@ -17367,6 +17370,7 @@ body.landing.dream-landing .features-grid {
 
 body.landing.dream-landing .feature-card,
 body.landing.dream-landing .step,
+body.landing.dream-landing .principle-card,
 body.landing.dream-landing .growth-chart-wrap,
 body.landing.dream-landing .upgrade-card,
 body.landing.dream-landing .community-card {
@@ -17570,6 +17574,53 @@ body.landing.dream-landing .step-arrow {
   color: #4f7fa6;
   background: rgba(255, 255, 255, 0.58);
   box-shadow: none;
+}
+
+body.landing.dream-landing .principles-section {
+  background:
+    linear-gradient(180deg, rgba(239, 246, 252, 0.96), rgba(248, 250, 252, 0.96)),
+    radial-gradient(circle at 18% 8%, rgba(217, 120, 126, 0.12), transparent 30%),
+    radial-gradient(circle at 82% 18%, rgba(143, 207, 199, 0.16), transparent 32%);
+}
+
+body.landing.dream-landing .principles-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 auto;
+}
+
+body.landing.dream-landing .principle-card {
+  min-height: 250px;
+  padding: 28px;
+}
+
+body.landing.dream-landing .principle-card span {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 28px;
+  border-radius: 10px;
+  background: rgba(22, 99, 79, 0.08);
+  color: #16634f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+body.landing.dream-landing .principle-card h3 {
+  margin: 0 0 12px;
+  color: #253650;
+  font-size: 22px;
+  line-height: 1.12;
+}
+
+body.landing.dream-landing .principle-card p {
+  margin: 0;
+  color: rgba(37, 54, 80, 0.64);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.55;
 }
 
 body.landing.dream-landing .growth-section {
@@ -18404,6 +18455,22 @@ body.landing.dream-landing .hero-actions {
   justify-content: center;
 }
 
+body.landing.dream-landing .hero-pressure {
+  position: relative;
+  z-index: 2;
+  width: fit-content;
+  margin: 0 auto 18px;
+  padding: 8px 14px;
+  border: 1px solid rgba(22, 99, 79, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.56);
+  color: #16634f;
+  box-shadow: 0 12px 32px rgba(37, 54, 80, 0.08);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+
 body.landing.dream-landing .hero-title em::after {
   content: '';
   display: inline-block;
@@ -18501,6 +18568,24 @@ body.landing.dream-landing .hero-visual:focus-within .visual-try-button {
     max-width: calc(100vw - 44px);
     margin-inline: auto;
     font-size: 16px;
+  }
+
+  body.landing.dream-landing .hero-pressure {
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+
+  body.landing.dream-landing .principles-section {
+    padding: 86px 18px;
+  }
+
+  body.landing.dream-landing .principles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.landing.dream-landing .principle-card {
+    min-height: 0;
+    padding: 24px;
   }
 
   .visual-writing-overlay,
