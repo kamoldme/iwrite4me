@@ -13,13 +13,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const projectWords = ['book', 'essay', 'novel', 'thesis', 'story', 'draft', 'memoir', 'chapter'];
   if (rotatingProjectWord) {
     let projectWordIndex = 0;
-    setInterval(() => {
+    let projectTypingTimer = null;
+    const typeProjectWord = (nextWord) => {
+      window.clearTimeout(projectTypingTimer);
+      const currentWord = rotatingProjectWord.textContent || '';
+      let deleteIndex = currentWord.length;
+      let typeIndex = 0;
+
+      const deleteStep = () => {
+        if (deleteIndex > 0) {
+          deleteIndex -= 1;
+          rotatingProjectWord.textContent = currentWord.slice(0, deleteIndex);
+          projectTypingTimer = window.setTimeout(deleteStep, 42);
+          return;
+        }
+        projectTypingTimer = window.setTimeout(typeStep, 120);
+      };
+
+      const typeStep = () => {
+        if (typeIndex < nextWord.length) {
+          typeIndex += 1;
+          rotatingProjectWord.textContent = nextWord.slice(0, typeIndex);
+          projectTypingTimer = window.setTimeout(typeStep, 74);
+        }
+      };
+
+      deleteStep();
+    };
+
+    window.setInterval(() => {
       projectWordIndex = (projectWordIndex + 1) % projectWords.length;
-      rotatingProjectWord.classList.add('is-changing');
-      window.setTimeout(() => {
-        rotatingProjectWord.textContent = projectWords[projectWordIndex];
-        rotatingProjectWord.classList.remove('is-changing');
-      }, 180);
+      typeProjectWord(projectWords[projectWordIndex]);
     }, 3000);
   }
 

@@ -18342,3 +18342,176 @@ body.trial-open {
     padding: 28px 22px;
   }
 }
+
+/* ===== HERO ENGRAVING BACKGROUND ===== */
+body.landing.dream-landing .hero {
+  background:
+    linear-gradient(180deg, rgba(247, 249, 252, 0.86) 0%, rgba(247, 249, 252, 0.76) 44%, rgba(239, 246, 252, 0.97) 100%),
+    linear-gradient(90deg, rgba(247, 249, 252, 0.94) 0%, rgba(247, 249, 252, 0.58) 50%, rgba(247, 249, 252, 0.94) 100%),
+    url('/media/hero-classical-background.jpg') center top / cover no-repeat;
+}
+
+.hero-bg-motion {
+  display: none;
+}
+
+body.landing.dream-landing .nav {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(37, 54, 80, 0.08);
+  box-shadow: 0 8px 28px rgba(37, 54, 80, 0.04);
+}
+
+body.landing.dream-landing .nav-inner {
+  max-width: 1180px;
+  height: 58px;
+  padding: 0 28px;
+}
+
+body.landing.dream-landing .logo {
+  font-family: 'Nunito', var(--font-sans);
+  font-size: 20px;
+  font-weight: 900;
+  color: #253650;
+}
+
+body.landing.dream-landing .nav-links {
+  gap: 30px;
+}
+
+body.landing.dream-landing .nav-links a:not(.btn) {
+  padding: 8px 0;
+  color: rgba(37, 54, 80, 0.68);
+  font-size: 14px;
+  font-weight: 800;
+  background: transparent;
+}
+
+body.landing.dream-landing .nav-links a:not(.btn):hover {
+  color: #16634f;
+  background: transparent;
+}
+
+body.landing.dream-landing .nav-links .btn-small {
+  margin-left: 4px;
+  padding: 14px 22px;
+  border-radius: 10px;
+  background: #16634f;
+  color: #ffffff;
+  box-shadow: 0 16px 34px rgba(22, 99, 79, 0.18);
+}
+
+body.landing.dream-landing .hero-actions {
+  justify-content: center;
+}
+
+body.landing.dream-landing .hero-title em::after {
+  content: '';
+  display: inline-block;
+  width: 0.07em;
+  height: 0.82em;
+  margin-left: 0.08em;
+  translate: 0 0.1em;
+  border-radius: 2px;
+  background: currentColor;
+  animation: projectCursorBlink 900ms steps(2, start) infinite;
+}
+
+@keyframes projectCursorBlink {
+  0%, 42% { opacity: 1; }
+  43%, 100% { opacity: 0; }
+}
+
+body.landing.dream-landing .hero-visual {
+  position: relative;
+}
+
+.visual-writing-overlay,
+.visual-try-button {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) translateY(12px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.visual-writing-overlay {
+  z-index: 3;
+  width: min(420px, calc(100% - 48px));
+  height: 148px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 22px 70px rgba(37, 54, 80, 0.18);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+.visual-try-button {
+  z-index: 4;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(22, 99, 79, 0.24);
+  color: #16634f;
+  box-shadow: 0 14px 34px rgba(37, 54, 80, 0.14);
+}
+
+body.landing.dream-landing .hero-visual:hover .visual-writing-overlay,
+body.landing.dream-landing .hero-visual:hover .visual-try-button,
+body.landing.dream-landing .hero-visual:focus-within .visual-writing-overlay,
+body.landing.dream-landing .hero-visual:focus-within .visual-try-button {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 768px) {
+  body.landing.dream-landing .hero {
+    background:
+      linear-gradient(180deg, rgba(247, 249, 252, 0.9) 0%, rgba(247, 249, 252, 0.78) 42%, rgba(239, 246, 252, 0.98) 100%),
+      linear-gradient(90deg, rgba(247, 249, 252, 0.95) 0%, rgba(247, 249, 252, 0.64) 50%, rgba(247, 249, 252, 0.95) 100%),
+      url('/media/hero-classical-background.jpg') center top / cover no-repeat;
+    width: 100%;
+    max-width: 100vw;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  body.landing.dream-landing .nav-inner {
+    height: 58px;
+    padding: 0 18px;
+  }
+
+  body.landing.dream-landing .hero-title {
+    width: min(100%, 300px);
+    max-width: calc(100vw - 32px);
+    min-height: 98px;
+    margin-inline: auto;
+    font-size: clamp(36px, 9.8vw, 42px);
+    line-height: 1.04;
+    overflow-wrap: normal;
+  }
+
+  body.landing.dream-landing .hero-title em {
+    min-width: 0;
+  }
+
+  body.landing.dream-landing .hero-sub {
+    width: min(100%, 286px);
+    max-width: calc(100vw - 44px);
+    margin-inline: auto;
+    font-size: 16px;
+  }
+
+  .visual-writing-overlay,
+  .visual-try-button {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+  }
+
+  .visual-writing-overlay {
+    width: min(300px, calc(100% - 42px));
+    height: 118px;
+  }
+}
