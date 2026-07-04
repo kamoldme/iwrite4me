@@ -32,7 +32,7 @@
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Baloo+2:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=42">
+  <link rel="stylesheet" href="/css/style.css?v=45">
 </head>
 <body class="landing dream-landing">
   <nav class="nav">
@@ -46,7 +46,12 @@
         <a href="#principles">About</a>
         <a href="#growth">Resources</a>
         <a href="#pricing">Pricing</a>
-        <a href="/app" class="btn btn-small">Join for Free</a>
+        <a href="/app" class="btn btn-small cta-shine-button">
+          <span>Write for free</span>
+          <svg class="cta-shine-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z" clip-rule="evenodd"></path>
+          </svg>
+        </a>
       </div>
       <button class="design-toggle" id="dream-style-toggle" type="button" aria-pressed="false" title="Switch landing style">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -81,7 +86,12 @@
       drifting away.
     </p>
     <div class="hero-actions">
-      <a href="/app" class="btn btn-primary btn-large">Join for Free</a>
+      <a href="/app" class="btn btn-primary btn-large cta-shine-button">
+        <span>Write for free</span>
+        <svg class="cta-shine-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z" clip-rule="evenodd"></path>
+        </svg>
+      </a>
     </div>
     <div class="hero-visual">
       <div class="mock-editor soft-editor">
@@ -112,37 +122,37 @@
           </div>
         </div>
       </div>
-      <div class="visual-writing-overlay" aria-hidden="true"></div>
       <button class="btn btn-ghost btn-large visual-try-button" id="try-writing-here" type="button">Try writing here</button>
     </div>
   </section>
 
-  <section class="principles-section" id="principles">
-    <div class="section-header">
-      <p class="section-kicker">Soft does not mean toothless</p>
-      <h2>A writing room with a little consequence.</h2>
-      <p>iWrite4.me is not trying to become a social feed, a content machine, or another place to organize unfinished ideas forever.</p>
-    </div>
-    <div class="principles-grid">
-      <div class="principle-card" data-aos>
-        <span>01</span>
-        <h3>Focus over feeds</h3>
-        <p>The main surface is for writing. Community and progress exist to pull you back to the draft, not away from it.</p>
+  <section class="principles-section writer-owned-section" id="principles">
+    <div class="writer-owned-inner">
+      <div class="writer-owned-copy">
+        <h2>Built by writers, run by writers, owned by writers</h2>
+        <div class="writer-owned-values" aria-label="iWrite4.me principles">
+          <button type="button">Your words are yours <span>&rarr;</span></button>
+          <button type="button">All words by humans <span>&rarr;</span></button>
+          <button type="button">Craft over shortcuts <span>&rarr;</span></button>
+          <button type="button">Community over competition <span>&rarr;</span></button>
+        </div>
       </div>
-      <div class="principle-card" data-aos>
-        <span>02</span>
-        <h3>Pressure over procrastination</h3>
-        <p>When soft mode is not enough, timed and dangerous sessions make the cost of stopping visible.</p>
-      </div>
-      <div class="principle-card" data-aos>
-        <span>03</span>
-        <h3>Your words stay yours</h3>
-        <p>Draft privately, share deliberately, and keep the work connected to your own rhythm and record.</p>
-      </div>
-      <div class="principle-card" data-aos>
-        <span>04</span>
-        <h3>Finished sessions win</h3>
-        <p>The product rewards completed attempts: saved drafts, streaks, XP, trees, and proof that you showed up.</p>
+      <div class="writer-owned-media">
+        <div class="writer-video-placeholder" aria-label="Founder video placeholder">
+          <button type="button" aria-label="Play video preview">
+            <span>&#9658;</span>
+          </button>
+          <div class="writer-video-times">
+            <span>1:09</span>
+            <span>1:14</span>
+          </div>
+        </div>
+        <p>
+          iWrite4.me is a writing room for people who want finished pages, not just
+          organized intentions. Join the writers shaping a calmer, more accountable
+          way to draft, share, and return to the work.
+        </p>
+        <a href="/app" class="btn btn-primary writer-owned-cta">Tell me more</a>
       </div>
     </div>
   </section>
@@ -261,46 +271,26 @@
     </div>
   </section>
 
-  <section id="how-it-works" class="how-it-works">
-    <div class="section-header">
-      <h2>A simple writing flow.</h2>
-      <p>Start soft. Add pressure only when it helps.</p>
+  <section id="how-it-works" class="writer-notes-section">
+    <div class="writer-notes-heading">
+      <h2>Join 17,781 writers</h2>
     </div>
-    <div class="steps">
-      <div class="step" data-aos>
-        <div class="step-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="13" r="7"/>
-            <path d="M9 2h6M12 6v7l4 2"/>
-          </svg>
-        </div>
-        <div class="step-num">01</div>
-        <h3>Choose Your Room</h3>
-        <p>Pick normal, zen, research, timed, dangerous, or duel mode depending on the kind of focus you need.</p>
+    <div class="writer-notes-rails" aria-label="Writer notes about iWrite4.me">
+      <div class="writer-notes-rail rail-left">
+        <article class="writer-note wide"><span class="note-avatar">E</span><div><strong>Emi</strong><p>This makes writing feel so much easier because everything is in one place.</p></div></article>
+        <article class="writer-note compact"><span class="note-avatar">J</span><div><strong>Jensen</strong><p>I have been looking for something like this.</p></div></article>
+        <article class="writer-note wide"><span class="note-avatar">L</span><div><strong>lauralearnstolive</strong><p>This is exactly what I have been looking for. I actually gasped.</p></div></article>
+        <article class="writer-note compact"><span class="note-avatar">Z</span><div><strong>ZaizaVika</strong><p>I started writing in your app and forgot it was work.</p></div></article>
       </div>
-      <div class="step-arrow">&rarr;</div>
-      <div class="step" data-aos>
-        <div class="step-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 3h9l3 3v15H6z"/>
-            <path d="M15 3v4h4M9 12h6M9 16h4"/>
-          </svg>
-        </div>
-        <div class="step-num">02</div>
-        <h3>Write in One Place</h3>
-        <p>Draft, format, organize, and keep notes without leaving the page or breaking the session rhythm.</p>
+      <div class="writer-notes-rail rail-right">
+        <article class="writer-note compact"><span class="note-avatar">D</span><div><strong>DarkJedi Plays</strong><p>I have already written more than I had in months.</p></div></article>
+        <article class="writer-note wide"><span class="note-avatar">L</span><div><strong>lola</strong><p>I wanted to write a book and never knew where to start. Now I keep coming back.</p></div></article>
+        <article class="writer-note wide"><span class="note-avatar">A</span><div><strong>Alex | Author</strong><p>Thank you for creating something so many writers needed.</p></div></article>
       </div>
-      <div class="step-arrow">&rarr;</div>
-      <div class="step" data-aos>
-        <div class="step-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3l7 3v5c0 5-3.5 8.2-7 10-3.5-1.8-7-5-7-10V6z"/>
-            <path d="M9 12l2 2 4-5"/>
-          </svg>
-        </div>
-        <div class="step-num">03</div>
-        <h3>Save the Momentum</h3>
-        <p>Finish to save your draft, grow your streak, earn XP, update your tree, and add to your analytics.</p>
+      <div class="writer-notes-rail rail-left rail-low">
+        <article class="writer-note compact"><span class="note-avatar">D</span><div><strong>Devon Gadberry</strong><p>Already love it more than any other writing doc.</p></div></article>
+        <article class="writer-note wide"><span class="note-avatar">K</span><div><strong>kyrvenan</strong><p>The fixed font and focused page make my paragraphs finally look neat.</p></div></article>
+        <article class="writer-note compact"><span class="note-avatar">H</span><div><strong>hannah day</strong><p>The more I write here, the more convinced I am.</p></div></article>
       </div>
     </div>
   </section>
@@ -461,7 +451,12 @@
           <h3>Log in to save this draft and keep writing.</h3>
           <p>Your trial text stays on this screen, but saving, XP, streaks, tree growth, and full sessions start after you join.</p>
           <div class="trial-lock-actions">
-            <a href="/app" class="btn btn-primary btn-large">Join for Free</a>
+            <a href="/app" class="btn btn-primary btn-large cta-shine-button">
+              <span>Write for free</span>
+              <svg class="cta-shine-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z" clip-rule="evenodd"></path>
+              </svg>
+            </a>
             <button class="btn btn-ghost btn-large" id="trial-copy" type="button">Copy my text</button>
           </div>
         </div>

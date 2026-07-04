@@ -126,7 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (trialInterval) window.clearInterval(trialInterval);
   }
 
-  if (trialOpen) trialOpen.addEventListener('click', openTrial);
+  if (trialOpen) {
+    trialOpen.addEventListener('click', () => {
+      window.location.href = '/app?intent=try-writing';
+    });
+  }
   if (trialClose) trialClose.addEventListener('click', closeTrial);
   if (trialModal) {
     trialModal.addEventListener('click', (event) => {
@@ -188,6 +192,21 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     updateNavScrolled();
     window.addEventListener('scroll', updateNavScrolled, { passive: true });
+  }
+
+  const writerNotesSection = document.querySelector('.writer-notes-section');
+  if (writerNotesSection) {
+    const updateWriterNotesMotion = () => {
+      const rect = writerNotesSection.getBoundingClientRect();
+      const viewport = window.innerHeight || 1;
+      const progress = Math.min(1, Math.max(0, (viewport - rect.top) / (viewport + rect.height)));
+      const shift = Math.round((progress - 0.5) * 210);
+      writerNotesSection.style.setProperty('--notes-scroll-shift', `${shift}px`);
+      writerNotesSection.style.setProperty('--notes-scroll-shift-low', `${Math.round(shift * 0.72)}px`);
+    };
+    updateWriterNotesMotion();
+    window.addEventListener('scroll', updateWriterNotesMotion, { passive: true });
+    window.addEventListener('resize', updateWriterNotesMotion);
   }
 
   const mobileMenu = document.querySelector('.mobile-menu');
