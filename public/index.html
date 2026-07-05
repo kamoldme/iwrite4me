@@ -32,7 +32,7 @@
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Baloo+2:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=46">
+  <link rel="stylesheet" href="/css/style.css?v=47">
 </head>
 <body class="landing dream-landing">
   <nav class="nav">
@@ -42,7 +42,7 @@
       </a>
       <div class="nav-links">
         <a href="#features">Product</a>
-        <a href="#community">Community</a>
+        <a href="#how-it-works">Writers</a>
         <a href="#principles">About</a>
         <a href="#growth">Resources</a>
         <a href="#pricing">Pricing</a>
@@ -163,20 +163,26 @@
     </div>
     <div class="writer-notes-rails" aria-label="Writer notes about iWrite4.me">
       <div class="writer-notes-rail rail-left">
+        <article class="writer-note compact"><span class="note-avatar">M</span><div><strong>Mina</strong><p>I wrote more in one sprint than I did all weekend.</p></div></article>
         <article class="writer-note wide"><span class="note-avatar">E</span><div><strong>Emi</strong><p>This makes writing feel so much easier because everything is in one place.</p></div></article>
         <article class="writer-note compact"><span class="note-avatar">J</span><div><strong>Jensen</strong><p>I have been looking for something like this.</p></div></article>
         <article class="writer-note wide"><span class="note-avatar">L</span><div><strong>lauralearnstolive</strong><p>This is exactly what I have been looking for. I actually gasped.</p></div></article>
         <article class="writer-note compact"><span class="note-avatar">Z</span><div><strong>ZaizaVika</strong><p>I started writing in your app and forgot it was work.</p></div></article>
+        <article class="writer-note wide"><span class="note-avatar">N</span><div><strong>Nodira</strong><p>The timer makes the page feel calm, but serious. I needed that.</p></div></article>
       </div>
       <div class="writer-notes-rail rail-right">
+        <article class="writer-note wide"><span class="note-avatar">S</span><div><strong>Sam</strong><p>The streak tree is weirdly motivating in the best way.</p></div></article>
         <article class="writer-note compact"><span class="note-avatar">D</span><div><strong>DarkJedi Plays</strong><p>I have already written more than I had in months.</p></div></article>
         <article class="writer-note wide"><span class="note-avatar">L</span><div><strong>lola</strong><p>I wanted to write a book and never knew where to start. Now I keep coming back.</p></div></article>
         <article class="writer-note wide"><span class="note-avatar">A</span><div><strong>Alex | Author</strong><p>Thank you for creating something so many writers needed.</p></div></article>
+        <article class="writer-note compact"><span class="note-avatar">R</span><div><strong>Ravshan</strong><p>Dangerous mode finally stops me from wandering away.</p></div></article>
       </div>
       <div class="writer-notes-rail rail-left rail-low">
         <article class="writer-note compact"><span class="note-avatar">D</span><div><strong>Devon Gadberry</strong><p>Already love it more than any other writing doc.</p></div></article>
         <article class="writer-note wide"><span class="note-avatar">K</span><div><strong>kyrvenan</strong><p>The fixed font and focused page make my paragraphs finally look neat.</p></div></article>
         <article class="writer-note compact"><span class="note-avatar">H</span><div><strong>hannah day</strong><p>The more I write here, the more convinced I am.</p></div></article>
+        <article class="writer-note wide"><span class="note-avatar">T</span><div><strong>Timur</strong><p>I like that the app keeps pushing me back to the draft.</p></div></article>
+        <article class="writer-note compact"><span class="note-avatar">I</span><div><strong>Iman</strong><p>The daily goal panel makes progress feel visible.</p></div></article>
       </div>
     </div>
   </section>
@@ -254,6 +260,27 @@
             <span></span>
           </div>
         </article>
+        <article class="dashboard-panel time-panel" data-aos>
+          <div class="panel-heading">
+            <h3>Total writing time</h3>
+            <span>community</span>
+          </div>
+          <div class="time-visual" aria-hidden="true">
+            <div class="clock-face">
+              <span></span>
+              <i></i>
+            </div>
+            <div>
+              <strong>115h</strong>
+              <p>spent in focused sessions</p>
+            </div>
+          </div>
+          <div class="time-rings" aria-hidden="true">
+            <span style="--w: 72%"></span>
+            <span style="--w: 54%"></span>
+            <span style="--w: 86%"></span>
+          </div>
+        </article>
       </div>
       <div class="dashboard-column dashboard-column-right">
         <article class="dashboard-panel goals-panel" data-aos>
@@ -284,21 +311,6 @@
           </div>
           <a href="/app">All stories <span>&rarr;</span></a>
         </article>
-        <article class="dashboard-panel bars-panel" data-aos>
-          <div class="panel-heading">
-            <h3>Words written</h3>
-            <span>Last 7 days</span>
-          </div>
-          <div class="bar-chart-preview" aria-hidden="true">
-            <span style="--h: 34%"></span>
-            <span style="--h: 58%"></span>
-            <span style="--h: 46%"></span>
-            <span style="--h: 72%"></span>
-            <span style="--h: 61%"></span>
-            <span style="--h: 88%"></span>
-            <span style="--h: 42%"></span>
-          </div>
-        </article>
       </div>
     </div>
   </section>
@@ -316,37 +328,6 @@
       </div>
     </div>
   </section>
-
-  <section class="community-section" id="community">
-    <div class="community-copy">
-      <p class="section-kicker">Built around real writing momentum</p>
-      <h2>Meet the writers building streaks beside you.</h2>
-      <p>
-        Add friends, challenge them to focused writing duels, climb the leaderboard,
-        share drafts for feedback, and publish stories when a private session turns
-        into something worth showing.
-      </p>
-      <a href="/app" class="btn btn-ghost btn-large">Enter the Workspace</a>
-    </div>
-    <div class="community-stack" aria-hidden="true">
-      <div class="community-card community-card-one">
-        <span>Writing duel</span>
-        <strong>Most words wins</strong>
-        <i>10 · 30 · 45 min</i>
-      </div>
-      <div class="community-card community-card-two">
-        <span>Leaderboard</span>
-        <strong>Streaks, time, referrals</strong>
-        <i>Updated from your app data</i>
-      </div>
-      <div class="community-card community-card-three">
-        <span>Shared drafts</span>
-        <strong>View, comment, edit links</strong>
-        <i>Collaborate when the session ends</i>
-      </div>
-    </div>
-  </section>
-
 
   <section class="landing-pricing" id="pricing">
     <div class="landing-pricing-header">
@@ -413,18 +394,41 @@
   </section>
 
   <footer class="footer">
+    <div class="footer-visual" aria-hidden="true">
+      <span></span><span></span><span></span><span></span>
+    </div>
     <div class="footer-inner">
       <div class="footer-brand">
         <span class="logo"><span>iWrite4.me</span></span>
         <p>Think for yourself. Write for yourself.</p>
+        <div class="footer-mini-dashboard" aria-hidden="true">
+          <div>
+            <span>Today</span>
+            <strong>984 words</strong>
+          </div>
+          <div>
+            <span>Focus</span>
+            <strong>24:18</strong>
+          </div>
+          <div>
+            <span>Streak</span>
+            <strong>14 days</strong>
+          </div>
+        </div>
       </div>
       <div class="footer-links">
         <div class="footer-col">
           <h4>Product</h4>
           <a href="#features">Product</a>
           <a href="#how-it-works">Flow</a>
-          <a href="#community">Community</a>
+          <a href="#growth">Growth</a>
           <a href="#pricing">Pricing</a>
+        </div>
+        <div class="footer-col">
+          <h4>Writing</h4>
+          <a href="/app">Start a session</a>
+          <a href="/app">Dangerous mode</a>
+          <a href="/app">Writing duels</a>
         </div>
         <div class="footer-col">
           <h4>Legal</h4>
@@ -472,6 +476,6 @@
     </div>
   </div>
 
-  <script src="/js/landing.js?v=13"></script>
+  <script src="/js/landing.js?v=14"></script>
 </body>
 </html>

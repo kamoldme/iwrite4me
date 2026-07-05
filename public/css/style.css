@@ -19105,6 +19105,8 @@ body.landing.dream-landing .writer-notes-rails {
 }
 
 body.landing.dream-landing .writer-notes-rail {
+  position: relative;
+  left: 50%;
   display: flex;
   align-items: center;
   gap: 44px;
@@ -19113,15 +19115,15 @@ body.landing.dream-landing .writer-notes-rail {
 }
 
 body.landing.dream-landing .writer-notes-rail.rail-left {
-  transform: translateX(calc(-170px + var(--notes-scroll-shift)));
+  transform: translateX(calc(-50% + var(--notes-scroll-shift)));
 }
 
 body.landing.dream-landing .writer-notes-rail.rail-right {
-  transform: translateX(calc(-40px - var(--notes-scroll-shift)));
+  transform: translateX(calc(-50% - var(--notes-scroll-shift)));
 }
 
 body.landing.dream-landing .writer-notes-rail.rail-low {
-  transform: translateX(calc(-210px + var(--notes-scroll-shift-low)));
+  transform: translateX(calc(-50% + var(--notes-scroll-shift-low)));
 }
 
 body.landing.dream-landing .writer-note {
@@ -19255,7 +19257,7 @@ body.landing.dream-landing .writer-note p {
 
 /* ===== PLATFORM DASHBOARD COLLAGE ===== */
 body.landing.dream-landing .platform-dashboard-section {
-  padding: clamp(42px, 5vw, 72px) 24px clamp(220px, 22vw, 380px);
+  padding: clamp(34px, 4vw, 58px) 24px clamp(160px, 17vw, 300px);
   background:
     linear-gradient(180deg, rgba(251, 248, 239, 0.96) 0%, rgba(251, 248, 239, 0.88) 42%, rgba(251, 248, 239, 0.64) 72%, rgba(251, 248, 239, 0.3) 100%),
     url('/media/features-classical-background.jpg') center bottom / min(100%, 2200px) auto no-repeat;
@@ -19274,7 +19276,7 @@ body.landing.dream-landing .platform-dashboard-grid {
 
 body.landing.dream-landing .dashboard-column {
   display: grid;
-  gap: 26px;
+  gap: 20px;
 }
 
 body.landing.dream-landing .dashboard-column-center {
@@ -19313,19 +19315,19 @@ body.landing.dream-landing .dashboard-panel p {
 }
 
 body.landing.dream-landing .streak-panel {
-  padding: 28px 30px;
-  min-height: 188px;
+  padding: 22px 24px;
+  min-height: 154px;
 }
 
 body.landing.dream-landing .panel-title-row {
   display: flex;
   align-items: flex-start;
   gap: 18px;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 body.landing.dream-landing .panel-title-row h3 {
-  font-size: clamp(23px, 2vw, 30px);
+  font-size: clamp(21px, 1.8vw, 26px);
   line-height: 1.12;
   letter-spacing: 0;
   text-transform: none;
@@ -19333,7 +19335,7 @@ body.landing.dream-landing .panel-title-row h3 {
 
 body.landing.dream-landing .panel-title-row p {
   margin: 8px 0 0;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 body.landing.dream-landing .panel-symbol {
@@ -19348,7 +19350,7 @@ body.landing.dream-landing .panel-symbol {
 }
 
 body.landing.dream-landing .habit-copy {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #263149;
   font-size: 18px;
   font-weight: 650;
@@ -19396,38 +19398,43 @@ body.landing.dream-landing .playlists-panel,
 body.landing.dream-landing .word-count-panel,
 body.landing.dream-landing .productivity-panel,
 body.landing.dream-landing .today-panel,
+body.landing.dream-landing .time-panel,
 body.landing.dream-landing .goals-panel,
 body.landing.dream-landing .reading-panel,
 body.landing.dream-landing .bars-panel {
-  padding: 28px;
+  padding: 22px;
 }
 
 body.landing.dream-landing .community-panel {
-  min-height: 310px;
+  min-height: 254px;
 }
 
 body.landing.dream-landing .playlists-panel {
-  min-height: 250px;
+  min-height: 210px;
 }
 
 body.landing.dream-landing .word-count-panel {
-  min-height: 240px;
+  min-height: 198px;
 }
 
 body.landing.dream-landing .productivity-panel {
-  min-height: 270px;
+  min-height: 228px;
 }
 
 body.landing.dream-landing .today-panel {
-  min-height: 220px;
+  min-height: 180px;
+}
+
+body.landing.dream-landing .time-panel {
+  min-height: 182px;
 }
 
 body.landing.dream-landing .goals-panel {
-  min-height: 292px;
+  min-height: 248px;
 }
 
 body.landing.dream-landing .reading-panel {
-  min-height: 350px;
+  min-height: 306px;
   padding: 0;
 }
 
@@ -19496,9 +19503,9 @@ body.landing.dream-landing .large-metric {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  margin: 48px 0 34px;
+  margin: 30px 0 22px;
   color: #263149;
-  font-size: clamp(40px, 4vw, 58px);
+  font-size: clamp(34px, 3.4vw, 48px);
   font-weight: 800;
   letter-spacing: 0;
 }
@@ -19513,7 +19520,7 @@ body.landing.dream-landing .metric-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
-  padding-top: 24px;
+  padding-top: 18px;
   border-top: 1px solid rgba(135, 149, 173, 0.2);
 }
 
@@ -19527,14 +19534,14 @@ body.landing.dream-landing .metric-row span {
 
 body.landing.dream-landing .metric-row strong {
   color: #263149;
-  font-size: 24px;
+  font-size: 20px;
 }
 
 body.landing.dream-landing .heatmap-preview {
   display: grid;
   grid-template-columns: repeat(14, 1fr);
   gap: 10px;
-  margin: 34px 0 26px;
+  margin: 24px 0 18px;
 }
 
 body.landing.dream-landing .heatmap-preview span {
@@ -19550,14 +19557,14 @@ body.landing.dream-landing .heatmap-preview span:nth-child(7n) { background: #19
 body.landing.dream-landing .today-number {
   margin-top: 16px;
   color: #263149;
-  font-size: 42px;
+  font-size: 36px;
   font-weight: 820;
 }
 
 body.landing.dream-landing .line-chart-preview {
   position: relative;
-  height: 82px;
-  margin: 18px -28px -28px;
+  height: 64px;
+  margin: 14px -22px -22px;
   background: linear-gradient(180deg, transparent 0%, rgba(150, 198, 255, 0.28) 100%);
 }
 
@@ -19577,7 +19584,7 @@ body.landing.dream-landing .bars-panel h3 {
 
 body.landing.dream-landing .goal-card {
   margin-top: 22px;
-  padding: 20px;
+  padding: 16px;
   border: 1px solid rgba(135, 149, 173, 0.22);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.82);
@@ -19604,7 +19611,7 @@ body.landing.dream-landing .goal-card p {
 }
 
 body.landing.dream-landing .reading-panel h3 {
-  padding: 28px 28px 20px;
+  padding: 22px 22px 16px;
   border-bottom: 1px solid rgba(135, 149, 173, 0.2);
   font-size: 24px;
   letter-spacing: 0;
@@ -19613,16 +19620,16 @@ body.landing.dream-landing .reading-panel h3 {
 
 body.landing.dream-landing .reading-item {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 16px;
   align-items: center;
-  padding: 18px 28px;
+  padding: 14px 22px;
   border-bottom: 1px solid rgba(135, 149, 173, 0.2);
 }
 
 body.landing.dream-landing .reading-item span {
-  width: 72px;
-  height: 72px;
+  width: 58px;
+  height: 58px;
   border-radius: 6px;
   background:
     linear-gradient(135deg, rgba(22, 99, 79, 0.24), rgba(169, 212, 255, 0.34)),
@@ -19633,12 +19640,12 @@ body.landing.dream-landing .reading-item span {
 body.landing.dream-landing .reading-item p {
   margin: 0;
   color: #263149;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 520;
 }
 
 body.landing.dream-landing .reading-panel > a {
-  margin: 24px 28px 28px auto;
+  margin: 18px 22px 22px auto;
   width: fit-content;
   min-width: 132px;
   background: transparent;
@@ -19663,6 +19670,246 @@ body.landing.dream-landing .bar-chart-preview span {
   background: #294ea5;
 }
 
+body.landing.dream-landing .time-visual {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+body.landing.dream-landing .clock-face {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border: 9px solid rgba(22, 99, 79, 0.16);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.88) 0 44%, transparent 45%),
+    conic-gradient(#16634f 0 74%, #e8edf4 74% 100%);
+  box-shadow: inset 0 0 0 1px rgba(22, 99, 79, 0.08);
+}
+
+body.landing.dream-landing .clock-face span,
+body.landing.dream-landing .clock-face i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: 4px;
+  border-radius: 999px;
+  background: #16634f;
+  transform-origin: center bottom;
+}
+
+body.landing.dream-landing .clock-face span {
+  height: 24px;
+  transform: translate(-50%, -100%) rotate(48deg);
+}
+
+body.landing.dream-landing .clock-face i {
+  height: 18px;
+  transform: translate(-50%, -100%) rotate(-34deg);
+}
+
+body.landing.dream-landing .time-visual strong {
+  display: block;
+  color: #263149;
+  font-size: 38px;
+  line-height: 1;
+}
+
+body.landing.dream-landing .time-visual p {
+  margin: 8px 0 0;
+  font-size: 15px;
+}
+
+body.landing.dream-landing .time-rings {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+body.landing.dream-landing .time-rings span {
+  display: block;
+  width: var(--w);
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #16634f, #78d7c8);
+}
+
+/* ===== LANDING SECTION OVERRIDES ===== */
+body.landing.dream-landing .growth-section {
+  position: relative;
+  overflow: hidden;
+  padding: 98px 24px;
+  background:
+    linear-gradient(180deg, #f7fbf8 0%, #eef8f4 100%);
+}
+
+body.landing.dream-landing .growth-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(22, 99, 79, 0.1), transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(169, 212, 255, 0.22), transparent 28%);
+}
+
+body.landing.dream-landing .growth-section .section-header,
+body.landing.dream-landing .growth-chart-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+body.landing.dream-landing .growth-section .section-header h2 {
+  color: #173c35;
+}
+
+body.landing.dream-landing .growth-section .section-header p {
+  color: rgba(23, 60, 53, 0.68);
+}
+
+body.landing.dream-landing .growth-chart-wrap {
+  border: 1px solid rgba(22, 99, 79, 0.16);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 24px 70px rgba(22, 99, 79, 0.12);
+}
+
+body.landing.dream-landing .growth-total {
+  border-color: rgba(22, 99, 79, 0.14);
+  background: rgba(247, 251, 248, 0.72);
+}
+
+body.landing.dream-landing .growth-total-num {
+  color: #16634f;
+}
+
+body.landing.dream-landing .upgrade-card-featured,
+body.landing.dream-landing .upgrade-card-featured:hover {
+  box-shadow: 0 24px 62px rgba(99, 153, 196, 0.12);
+}
+
+body.landing.dream-landing .upgrade-card-btn-primary,
+body.landing.dream-landing .upgrade-card-btn-primary:hover:not(:disabled) {
+  background: #16634f;
+  border-color: #16634f;
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(22, 99, 79, 0.16);
+}
+
+body.landing.dream-landing .footer {
+  position: relative;
+  overflow: hidden;
+  padding-top: 96px;
+  background:
+    linear-gradient(180deg, rgba(18, 25, 43, 0.97), rgba(13, 22, 32, 1)),
+    url('/media/hero-classical-background.jpg') center bottom / cover no-repeat;
+}
+
+body.landing.dream-landing .footer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(18, 25, 43, 0.95), rgba(18, 25, 43, 0.76), rgba(18, 25, 43, 0.95)),
+    radial-gradient(circle at 20% 8%, rgba(169, 212, 255, 0.12), transparent 26%);
+}
+
+body.landing.dream-landing .footer-visual,
+body.landing.dream-landing .footer-inner,
+body.landing.dream-landing .footer-bottom {
+  position: relative;
+  z-index: 1;
+}
+
+body.landing.dream-landing .footer-visual {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: min(980px, calc(100% - 48px));
+  margin: 0 auto 46px;
+}
+
+body.landing.dream-landing .footer-visual span {
+  height: 9px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #16634f, #a9d4ff);
+  opacity: 0.86;
+}
+
+body.landing.dream-landing .footer-visual span:nth-child(2) { opacity: 0.54; }
+body.landing.dream-landing .footer-visual span:nth-child(3) { opacity: 0.34; }
+body.landing.dream-landing .footer-visual span:nth-child(4) { opacity: 0.72; }
+
+body.landing.dream-landing .footer-inner {
+  align-items: start;
+}
+
+body.landing.dream-landing .footer-brand {
+  max-width: 520px;
+}
+
+body.landing.dream-landing .footer-brand p {
+  max-width: 380px;
+  margin-bottom: 24px;
+  color: rgba(223, 231, 245, 0.72);
+  font-size: 18px;
+}
+
+body.landing.dream-landing .footer-mini-dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 460px;
+}
+
+body.landing.dream-landing .footer-mini-dashboard div {
+  padding: 14px;
+  border: 1px solid rgba(223, 231, 245, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.landing.dream-landing .footer-mini-dashboard span,
+body.landing.dream-landing .footer-mini-dashboard strong {
+  display: block;
+}
+
+body.landing.dream-landing .footer-mini-dashboard span {
+  margin-bottom: 6px;
+  color: rgba(223, 231, 245, 0.5);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+body.landing.dream-landing .footer-mini-dashboard strong {
+  color: #ffffff;
+  font-size: 16px;
+}
+
+body.landing.dream-landing .footer-links {
+  gap: 56px;
+}
+
+body.landing.dream-landing .footer-col h4 {
+  color: #ffffff;
+}
+
+body.landing.dream-landing .footer-col a {
+  color: rgba(223, 231, 245, 0.66);
+}
+
+body.landing.dream-landing .footer-col a:hover {
+  color: #a9d4ff;
+}
+
+body.landing.dream-landing .footer-bottom {
+  border-top-color: rgba(223, 231, 245, 0.12);
+}
+
 @media (max-width: 1100px) {
   body.landing.dream-landing .platform-dashboard-grid {
     grid-template-columns: 1fr;
@@ -19676,7 +19923,7 @@ body.landing.dream-landing .bar-chart-preview span {
 
 @media (max-width: 768px) {
   body.landing.dream-landing .platform-dashboard-section {
-    padding: 54px 16px 220px;
+    padding: 48px 16px 180px;
     background-size: auto min(72vw, 340px);
   }
 
@@ -19690,6 +19937,7 @@ body.landing.dream-landing .bar-chart-preview span {
   body.landing.dream-landing .word-count-panel,
   body.landing.dream-landing .productivity-panel,
   body.landing.dream-landing .today-panel,
+  body.landing.dream-landing .time-panel,
   body.landing.dream-landing .goals-panel,
   body.landing.dream-landing .bars-panel {
     min-height: 0;
@@ -19729,5 +19977,26 @@ body.landing.dream-landing .bar-chart-preview span {
 
   body.landing.dream-landing .reading-item p {
     font-size: 17px;
+  }
+
+  body.landing.dream-landing .time-visual {
+    grid-template-columns: 62px minmax(0, 1fr);
+  }
+
+  body.landing.dream-landing .clock-face {
+    width: 62px;
+    height: 62px;
+  }
+
+  body.landing.dream-landing .footer {
+    padding-top: 72px;
+  }
+
+  body.landing.dream-landing .footer-visual {
+    grid-template-columns: 1fr 0.7fr;
+  }
+
+  body.landing.dream-landing .footer-mini-dashboard {
+    grid-template-columns: 1fr;
   }
 }

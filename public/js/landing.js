@@ -233,45 +233,56 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(step);
   }
 
-  let currentStats = { totalWords: 0, totalHours: 0, totalWriters: 0, activeNow: 0 };
+  const fallbackStats = { totalWords: 144076, totalHours: 115, totalWriters: 524, activeNow: 0 };
+  let currentStats = { ...fallbackStats };
   let statsVisible = false;
+
+  function renderPublicStats(data) {
+    const wordEl = document.getElementById('stat-words');
+    const sessionEl = document.getElementById('stat-sessions');
+    const writerEl = document.getElementById('stat-writers');
+    const activeEl = document.getElementById('stat-active');
+
+    if (statsVisible) {
+      if (wordEl) animateValue(wordEl, currentStats.totalWords, data.totalWords, 800);
+      if (sessionEl) animateValue(sessionEl, currentStats.totalHours, data.totalHours, 800);
+      if (writerEl) animateValue(writerEl, currentStats.totalWriters, data.totalWriters, 800);
+      if (activeEl) animateValue(activeEl, currentStats.activeNow || 0, data.activeNow || 0, 800);
+    } else {
+      if (wordEl) wordEl.textContent = data.totalWords.toLocaleString();
+      if (sessionEl) sessionEl.textContent = data.totalHours.toLocaleString();
+      if (writerEl) writerEl.textContent = data.totalWriters.toLocaleString();
+      if (activeEl) activeEl.textContent = (data.activeNow || 0).toLocaleString();
+    }
+
+    currentStats = data;
+    if (data.totalWords > 0) drawGrowthChart(data.totalWords);
+  }
 
   async function fetchStats() {
     try {
       const res = await fetch('/api/stats/public');
-      if (!res.ok) return;
-      const data = await res.json();
-
-      const wordEl = document.getElementById('stat-words');
-      const sessionEl = document.getElementById('stat-sessions');
-      const writerEl = document.getElementById('stat-writers');
-      const activeEl = document.getElementById('stat-active');
-
-      if (statsVisible) {
-        if (wordEl) animateValue(wordEl, currentStats.totalWords, data.totalWords, 800);
-        if (sessionEl) animateValue(sessionEl, currentStats.totalHours, data.totalHours, 800);
-        if (writerEl) animateValue(writerEl, currentStats.totalWriters, data.totalWriters, 800);
-        if (activeEl) animateValue(activeEl, currentStats.activeNow || 0, data.activeNow || 0, 800);
-      } else {
-        if (wordEl) wordEl.textContent = data.totalWords.toLocaleString();
-        if (sessionEl) sessionEl.textContent = data.totalHours.toLocaleString();
-        if (writerEl) writerEl.textContent = data.totalWriters.toLocaleString();
-        if (activeEl) activeEl.textContent = (data.activeNow || 0).toLocaleString();
+      if (!res.ok) {
+        renderPublicStats(fallbackStats);
+        return;
       }
-
-      currentStats = data;
-      if (data.totalWords > 0) drawGrowthChart(data.totalWords);
-    } catch {}
+      const data = { ...fallbackStats, ...(await res.json()) };
+      renderPublicStats(data);
+    } catch {
+      renderPublicStats(fallbackStats);
+    }
   }
 
   const statsBar = document.querySelector('.stats-bar');
-  const statsObserver = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !statsVisible) {
-      statsVisible = true;
-      fetchStats();
-    }
-  }, { threshold: 0.3 });
-  statsObserver.observe(statsBar);
+  if (statsBar) {
+    const statsObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !statsVisible) {
+        statsVisible = true;
+        fetchStats();
+      }
+    }, { threshold: 0.3 });
+    statsObserver.observe(statsBar);
+  }
 
   fetchStats();
   setInterval(fetchStats, 30000);
@@ -446,15 +457,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const isSepia = document.documentElement.classList.contains('sepia');
     const isDark = !isDreamLanding && !document.documentElement.classList.contains('light') && !isSepia;
     const gridColor = isDreamLanding
-      ? 'rgba(53, 22, 79, 0.12)'
+      ? 'rgba(22, 99, 79, 0.12)'
       : isDark ? 'rgba(255,255,255,0.06)' : isSepia ? 'rgba(100,65,20,0.08)' : 'rgba(0,0,0,0.06)';
     const labelColor = isDreamLanding
-      ? 'rgba(53, 22, 79, 0.62)'
+      ? 'rgba(23, 60, 53, 0.62)'
       : isDark ? 'rgba(255,255,255,0.35)' : isSepia ? 'rgba(100,65,20,0.5)' : 'rgba(0,0,0,0.4)';
     const isLight = document.documentElement.classList.contains('light');
-    const accentColor = isDreamLanding ? '#22c55e' : isSepia ? '#C37E3F' : isLight ? '#22c55e' : '#4ade80';
+    const accentColor = isDreamLanding ? '#16634f' : isSepia ? '#C37E3F' : isLight ? '#22c55e' : '#4ade80';
     const areaColor = isDreamLanding
-      ? ['rgba(34, 197, 94, 0.28)', 'rgba(34, 197, 94, 0.09)', 'rgba(34, 197, 94, 0.01)']
+      ? ['rgba(22, 99, 79, 0.24)', 'rgba(120, 215, 200, 0.12)', 'rgba(120, 215, 200, 0.01)']
       : ['rgba(74, 222, 128, 0.22)', 'rgba(74, 222, 128, 0.06)', 'rgba(74, 222, 128, 0.01)'];
 
     const gridLines = 4;
