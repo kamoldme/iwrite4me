@@ -480,6 +480,7 @@ app.get('/api/stats/public', async (req, res) => {
       totalWords: users.reduce((sum, u) => sum + (u.totalWords || 0), 0),
       totalHours: Math.round(totalSeconds / 3600),
       totalWriters: users.filter(u => u.role !== 'admin').length,
+      totalDocuments: docs.filter(d => !d.deleted && !d.deletedBySystem && !d.deactivatedByAdmin).length,
       activeNow: activeUsers.size
     });
   } catch {

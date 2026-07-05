@@ -233,15 +233,38 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(step);
   }
 
-  const fallbackStats = { totalWords: 144076, totalHours: 115, totalWriters: 524, activeNow: 0 };
+  function formatCompactNumber(value) {
+    const num = Number(value) || 0;
+    const abs = Math.abs(num);
+    const units = [
+      { value: 1_000_000_000, suffix: 'B' },
+      { value: 1_000_000, suffix: 'M' },
+      { value: 1_000, suffix: 'K' }
+    ];
+    const unit = units.find(item => abs >= item.value);
+    if (!unit) return Math.round(num).toLocaleString();
+    const scaled = num / unit.value;
+    const rounded = scaled >= 100 ? Math.round(scaled).toString() : scaled.toFixed(scaled >= 10 ? 1 : 1).replace(/\.0$/, '');
+    return `${rounded}${unit.suffix}`;
+  }
+
+  const fallbackStats = { totalWords: 144076, totalHours: 115, totalWriters: 524, totalDocuments: 368, activeNow: 0 };
   let currentStats = { ...fallbackStats };
   let statsVisible = false;
 
   function renderPublicStats(data) {
+    data = { ...fallbackStats, ...data };
     const wordEl = document.getElementById('stat-words');
     const sessionEl = document.getElementById('stat-sessions');
     const writerEl = document.getElementById('stat-writers');
     const activeEl = document.getElementById('stat-active');
+    const landingWriterEl = document.getElementById('landing-stat-writers');
+    const landingWordEl = document.getElementById('landing-stat-words');
+    const landingDocumentEl = document.getElementById('landing-stat-documents');
+
+    if (landingWriterEl) landingWriterEl.textContent = formatCompactNumber(data.totalWriters);
+    if (landingWordEl) landingWordEl.textContent = formatCompactNumber(data.totalWords);
+    if (landingDocumentEl) landingDocumentEl.textContent = formatCompactNumber(data.totalDocuments);
 
     if (statsVisible) {
       if (wordEl) animateValue(wordEl, currentStats.totalWords, data.totalWords, 800);
