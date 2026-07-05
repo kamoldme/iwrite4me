@@ -18867,9 +18867,11 @@ body.landing.dream-landing .cta-shine-button:hover {
 }
 
 body.landing.dream-landing .nav-links .btn-small {
-  min-height: 42px;
-  padding: 0.45rem 1rem;
-  font-size: 14px;
+  min-height: 34px;
+  padding: 0.34rem 0.78rem;
+  border-width: 2px;
+  font-size: 12px;
+  font-weight: 620;
 }
 
 body.landing.dream-landing .hero-actions .btn-primary {
@@ -18878,6 +18880,20 @@ body.landing.dream-landing .hero-actions .btn-primary {
 
 body.landing.dream-landing .hero-actions .cta-shine-button {
   width: min(286px, calc(100vw - 64px));
+  background: linear-gradient(135deg, #16634f 0%, #0f8067 100%);
+  color: #ffffff;
+  box-shadow: 0 14px 34px rgba(22, 99, 79, 0.26);
+}
+
+body.landing.dream-landing .hero-actions .cta-shine-button:hover {
+  background: linear-gradient(135deg, #1b725c 0%, #109175 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 38px rgba(22, 99, 79, 0.3);
+}
+
+body.landing.dream-landing .nav-links .cta-shine-icon {
+  width: 18px;
+  height: 18px;
 }
 
 body.landing.dream-landing .hero-visual .mock-editor {
@@ -18886,8 +18902,8 @@ body.landing.dream-landing .hero-visual .mock-editor {
 
 body.landing.dream-landing .hero-visual:hover .mock-editor,
 body.landing.dream-landing .hero-visual:focus-within .mock-editor {
-  filter: blur(8px);
-  opacity: 0.72;
+  filter: blur(4px);
+  opacity: 0.82;
 }
 
 .visual-writing-overlay {
@@ -19185,8 +19201,8 @@ body.landing.dream-landing .writer-note p {
   }
 
   body.landing.dream-landing .nav-links .btn-small {
-    min-height: 44px;
-    font-size: 15px;
+    min-height: 36px;
+    font-size: 13px;
   }
 
   body.landing.dream-landing .hero-actions .btn-primary {
@@ -19204,8 +19220,8 @@ body.landing.dream-landing .writer-note p {
   }
 
   body.landing.dream-landing .hero-visual .mock-editor {
-    filter: blur(3px);
-    opacity: 0.82;
+    filter: blur(0.75px);
+    opacity: 0.94;
   }
 
   body.landing.dream-landing .writer-notes-rails {
@@ -19234,5 +19250,484 @@ body.landing.dream-landing .writer-note p {
 
   body.landing.dream-landing .writer-owned-copy h2 {
     margin-bottom: 34px;
+  }
+}
+
+/* ===== PLATFORM DASHBOARD COLLAGE ===== */
+body.landing.dream-landing .platform-dashboard-section {
+  padding: clamp(42px, 5vw, 72px) 24px clamp(220px, 22vw, 380px);
+  background:
+    linear-gradient(180deg, rgba(251, 248, 239, 0.96) 0%, rgba(251, 248, 239, 0.88) 42%, rgba(251, 248, 239, 0.64) 72%, rgba(251, 248, 239, 0.3) 100%),
+    url('/media/features-classical-background.jpg') center bottom / min(100%, 2200px) auto no-repeat;
+}
+
+body.landing.dream-landing .platform-dashboard-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 26px;
+  width: min(1360px, 100%);
+  margin: 0 auto;
+  align-items: start;
+}
+
+body.landing.dream-landing .dashboard-column {
+  display: grid;
+  gap: 26px;
+}
+
+body.landing.dream-landing .dashboard-column-center {
+  padding-top: 16px;
+}
+
+body.landing.dream-landing .dashboard-column-right {
+  padding-top: 4px;
+}
+
+body.landing.dream-landing .dashboard-panel {
+  overflow: hidden;
+  border: 1px solid rgba(135, 149, 173, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 16px 38px rgba(40, 53, 76, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #263149;
+}
+
+body.landing.dream-landing .dashboard-panel h3 {
+  margin: 0;
+  color: #263149;
+  font-family: "Instrument Sans", "Inter", system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 740;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+body.landing.dream-landing .dashboard-panel p {
+  color: #6f7a94;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+body.landing.dream-landing .streak-panel {
+  padding: 28px 30px;
+  min-height: 188px;
+}
+
+body.landing.dream-landing .panel-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+body.landing.dream-landing .panel-title-row h3 {
+  font-size: clamp(23px, 2vw, 30px);
+  line-height: 1.12;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+body.landing.dream-landing .panel-title-row p {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+
+body.landing.dream-landing .panel-symbol {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(22, 99, 79, 0.12);
+  color: #16634f;
+  font-weight: 800;
+}
+
+body.landing.dream-landing .habit-copy {
+  margin-bottom: 16px;
+  color: #263149;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+body.landing.dream-landing .progress-meta,
+body.landing.dream-landing .goal-counts {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: #7a849b;
+  font-size: 15px;
+}
+
+body.landing.dream-landing .progress-meta strong {
+  color: #b92fd5;
+}
+
+body.landing.dream-landing .dashboard-progress {
+  height: 10px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef1f7;
+}
+
+body.landing.dream-landing .dashboard-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+body.landing.dream-landing .dashboard-progress.purple span {
+  width: 82%;
+  background: #b92fd5;
+}
+
+body.landing.dream-landing .dashboard-progress.green span {
+  width: 78%;
+  background: #39d3bd;
+}
+
+body.landing.dream-landing .community-panel,
+body.landing.dream-landing .playlists-panel,
+body.landing.dream-landing .word-count-panel,
+body.landing.dream-landing .productivity-panel,
+body.landing.dream-landing .today-panel,
+body.landing.dream-landing .goals-panel,
+body.landing.dream-landing .reading-panel,
+body.landing.dream-landing .bars-panel {
+  padding: 28px;
+}
+
+body.landing.dream-landing .community-panel {
+  min-height: 310px;
+}
+
+body.landing.dream-landing .playlists-panel {
+  min-height: 250px;
+}
+
+body.landing.dream-landing .word-count-panel {
+  min-height: 240px;
+}
+
+body.landing.dream-landing .productivity-panel {
+  min-height: 270px;
+}
+
+body.landing.dream-landing .today-panel {
+  min-height: 220px;
+}
+
+body.landing.dream-landing .goals-panel {
+  min-height: 292px;
+}
+
+body.landing.dream-landing .reading-panel {
+  min-height: 350px;
+  padding: 0;
+}
+
+body.landing.dream-landing .bars-panel {
+  min-height: 250px;
+}
+
+body.landing.dream-landing .panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+body.landing.dream-landing .panel-heading span,
+body.landing.dream-landing .today-panel .panel-heading span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(22, 99, 79, 0.12);
+  color: #16634f;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+body.landing.dream-landing .community-panel > a,
+body.landing.dream-landing .goals-panel > a,
+body.landing.dream-landing .reading-panel > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  margin-top: 22px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: rgba(80, 85, 250, 0.1);
+  color: #5055fa;
+  text-decoration: none;
+  font-weight: 680;
+}
+
+body.landing.dream-landing .panel-link-list,
+body.landing.dream-landing .mini-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+body.landing.dream-landing .panel-link-list span,
+body.landing.dream-landing .mini-list span {
+  display: flex;
+  justify-content: space-between;
+  min-height: 38px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: #f0f1fb;
+  color: #66718a;
+  font-weight: 680;
+}
+
+body.landing.dream-landing .large-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 48px 0 34px;
+  color: #263149;
+  font-size: clamp(40px, 4vw, 58px);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+body.landing.dream-landing .large-metric span {
+  color: #75809a;
+  font-size: 19px;
+  font-weight: 520;
+}
+
+body.landing.dream-landing .metric-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(135, 149, 173, 0.2);
+}
+
+body.landing.dream-landing .metric-row span {
+  display: grid;
+  gap: 8px;
+  color: #75809a;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+body.landing.dream-landing .metric-row strong {
+  color: #263149;
+  font-size: 24px;
+}
+
+body.landing.dream-landing .heatmap-preview {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 10px;
+  margin: 34px 0 26px;
+}
+
+body.landing.dream-landing .heatmap-preview span {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: #e8edf4;
+}
+
+body.landing.dream-landing .heatmap-preview span:nth-child(3n) { background: #b9f2cf; }
+body.landing.dream-landing .heatmap-preview span:nth-child(4n) { background: #54d98b; }
+body.landing.dream-landing .heatmap-preview span:nth-child(7n) { background: #199956; }
+
+body.landing.dream-landing .today-number {
+  margin-top: 16px;
+  color: #263149;
+  font-size: 42px;
+  font-weight: 820;
+}
+
+body.landing.dream-landing .line-chart-preview {
+  position: relative;
+  height: 82px;
+  margin: 18px -28px -28px;
+  background: linear-gradient(180deg, transparent 0%, rgba(150, 198, 255, 0.28) 100%);
+}
+
+body.landing.dream-landing .line-chart-preview span {
+  position: absolute;
+  inset: 18px 0 0;
+  border-top: 4px solid #9ac9ff;
+  border-radius: 60% 45% 0 0;
+  transform: skewY(-6deg);
+}
+
+body.landing.dream-landing .goals-panel h3,
+body.landing.dream-landing .reading-panel h3,
+body.landing.dream-landing .bars-panel h3 {
+  margin-bottom: 22px;
+}
+
+body.landing.dream-landing .goal-card {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid rgba(135, 149, 173, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+body.landing.dream-landing .goal-card strong,
+body.landing.dream-landing .goal-card span {
+  display: block;
+}
+
+body.landing.dream-landing .goal-card strong {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+body.landing.dream-landing .goal-card > span {
+  margin-bottom: 10px;
+  color: #7a849b;
+}
+
+body.landing.dream-landing .goal-card p {
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+
+body.landing.dream-landing .reading-panel h3 {
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid rgba(135, 149, 173, 0.2);
+  font-size: 24px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+body.landing.dream-landing .reading-item {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  padding: 18px 28px;
+  border-bottom: 1px solid rgba(135, 149, 173, 0.2);
+}
+
+body.landing.dream-landing .reading-item span {
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(22, 99, 79, 0.24), rgba(169, 212, 255, 0.34)),
+    url('/media/hero-classical-background.jpg') center / cover;
+  filter: grayscale(100%);
+}
+
+body.landing.dream-landing .reading-item p {
+  margin: 0;
+  color: #263149;
+  font-size: 20px;
+  font-weight: 520;
+}
+
+body.landing.dream-landing .reading-panel > a {
+  margin: 24px 28px 28px auto;
+  width: fit-content;
+  min-width: 132px;
+  background: transparent;
+  color: #6f7a94;
+}
+
+body.landing.dream-landing .bar-chart-preview {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: end;
+  gap: 14px;
+  height: 150px;
+  padding: 16px 0 0;
+  border-top: 1px solid rgba(135, 149, 173, 0.2);
+}
+
+body.landing.dream-landing .bar-chart-preview span {
+  display: block;
+  height: var(--h);
+  min-height: 18px;
+  border-radius: 6px 6px 0 0;
+  background: #294ea5;
+}
+
+@media (max-width: 1100px) {
+  body.landing.dream-landing .platform-dashboard-grid {
+    grid-template-columns: 1fr;
+    width: min(680px, 100%);
+  }
+
+  body.landing.dream-landing .dashboard-column {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  body.landing.dream-landing .platform-dashboard-section {
+    padding: 54px 16px 220px;
+    background-size: auto min(72vw, 340px);
+  }
+
+  body.landing.dream-landing .dashboard-panel {
+    border-radius: 8px;
+  }
+
+  body.landing.dream-landing .streak-panel,
+  body.landing.dream-landing .community-panel,
+  body.landing.dream-landing .playlists-panel,
+  body.landing.dream-landing .word-count-panel,
+  body.landing.dream-landing .productivity-panel,
+  body.landing.dream-landing .today-panel,
+  body.landing.dream-landing .goals-panel,
+  body.landing.dream-landing .bars-panel {
+    min-height: 0;
+    padding: 22px;
+  }
+
+  body.landing.dream-landing .reading-panel {
+    min-height: 0;
+  }
+
+  body.landing.dream-landing .large-metric {
+    display: grid;
+    gap: 4px;
+    margin: 30px 0 24px;
+    font-size: 38px;
+  }
+
+  body.landing.dream-landing .metric-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  body.landing.dream-landing .heatmap-preview {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+  }
+
+  body.landing.dream-landing .reading-item {
+    grid-template-columns: 56px minmax(0, 1fr);
+    padding: 16px 22px;
+  }
+
+  body.landing.dream-landing .reading-item span {
+    width: 56px;
+    height: 56px;
+  }
+
+  body.landing.dream-landing .reading-item p {
+    font-size: 17px;
   }
 }
