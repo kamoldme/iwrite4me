@@ -16,8 +16,10 @@
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=35">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
+  <link rel="stylesheet" href="/css/style.css?v=36">
   <style>
     .admin-layout { display: flex; min-height: 100vh; }
     .admin-sidebar {
@@ -276,25 +278,6 @@
   </style>
 </head>
 <body class="admin-keep-scrollbar">
-  <!-- AUTH SCREEN (centered) -->
-  <div id="admin-auth" class="admin-login-screen">
-    <div class="admin-login-card">
-      <a href="/" class="logo">iWrite4.me</a>
-      <h2>Login</h2>
-      <p class="auth-sub">Enter your admin credentials</p>
-      <div class="auth-error" id="admin-error"></div>
-      <div class="auth-field">
-        <label>Email</label>
-        <input type="email" id="admin-email">
-      </div>
-      <div class="auth-field">
-        <label>Password</label>
-        <input type="password" id="admin-password">
-      </div>
-      <button class="btn btn-primary btn-full" id="admin-login-btn" style="margin-top:8px">Sign In</button>
-    </div>
-  </div>
-
   <!-- ADMIN PANEL -->
   <div id="admin-panel" style="display:none">
     <div class="admin-layout">
@@ -420,14 +403,21 @@
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
                 <option value="premium">Pro Only</option>
+                <option value="followers-desc">Most Followers</option>
+                <option value="followers-asc">Fewest Followers</option>
                 <option value="streak">By Streak</option>
                 <option value="words">By Words</option>
                 <option value="docs">By Docs</option>
               </select>
+              <select id="users-followers-filter" class="admin-search" style="width:auto;max-width:180px;padding:6px 10px">
+                <option value="all">All followers</option>
+                <option value="has-followers">Has followers</option>
+                <option value="no-followers">No followers</option>
+              </select>
             </div>
           </div>
           <table class="admin-table" id="users-table">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Plan</th><th>Level</th><th>XP</th><th>Streak</th><th>Words</th><th>Sessions</th><th>Docs</th><th style="font-size:11px">Joined</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Plan</th><th>Level</th><th>XP</th><th>Followers</th><th>Streak</th><th>Words</th><th>Sessions</th><th>Docs</th><th style="font-size:11px">Joined</th><th>Actions</th></tr></thead>
             <tbody></tbody>
           </table>
           <div id="users-pager" class="admin-pager"></div>
@@ -1062,7 +1052,10 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    let adminToken = localStorage.getItem('iwrite_admin_token');
+    let adminToken = localStorage.getItem('iwrite_admin_token') || localStorage.getItem('iwrite_token');
+    if (!adminToken) {
+      window.location.replace('/login');
+    }
     let allUsers = [];
     let allDocs = [];
     let allStories = [];
@@ -1182,38 +1175,6 @@
       return res.json();
     }
 
-    // ===== AUTH =====
-    document.getElementById('admin-login-btn').addEventListener('click', async () => {
-      const email = document.getElementById('admin-email').value;
-      const password = document.getElementById('admin-password').value;
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        if (data.user.role !== 'admin') {
-          // Non-admin: store token for /app and redirect
-          localStorage.setItem('iwrite_token', data.token);
-          window.location.href = '/app';
-          return;
-        }
-        adminToken = data.token;
-        localStorage.setItem('iwrite_admin_token', adminToken);
-        showPanel();
-      } catch (err) {
-        const el = document.getElementById('admin-error');
-        el.textContent = err.message;
-        el.classList.add('visible');
-      }
-    });
-
-    document.getElementById('admin-password').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('admin-login-btn').click();
-    });
-
     // ===== TAB SWITCHING =====
     function switchAdminTab(tabName) {
       document.querySelectorAll('.admin-nav-item[data-tab]').forEach(b => b.classList.remove('active'));
@@ -1223,6 +1184,7 @@
       const tabEl = document.getElementById(`tab-${tabName}`);
       if (tabEl) tabEl.style.display = 'block';
       localStorage.setItem('iwrite_admin_tab', tabName);
+      if (history.replaceState) history.replaceState(null, '', '#' + tabName);
       if (tabName === 'stories') loadStoriesAdmin();
       if (tabName === 'prompts') loadPrompts();
       if (tabName === 'announcements') { loadAnnouncementsAdmin(); resetAnnouncementForm(); loadAnnAiQuota(); }
@@ -1234,7 +1196,9 @@
 
     document.getElementById('admin-logout').addEventListener('click', () => {
       localStorage.removeItem('iwrite_admin_token');
-      location.reload();
+      localStorage.removeItem('iwrite_token');
+      localStorage.removeItem('iwrite_user_cache');
+      window.location.href = '/login';
     });
 
     // ===== THEME TOGGLE =====
@@ -1374,19 +1338,24 @@
     // ===== SEARCH =====
     document.getElementById('users-search').addEventListener('input', (e) => {
       _usersPage = 1;
-      const q = e.target.value.toLowerCase();
-      renderUsersTable(allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q)));
+      renderUsersTable(getVisibleUsers());
     });
     // Restore saved sort preference
     const savedSort = localStorage.getItem('admin_users_sort');
     if (savedSort) document.getElementById('users-sort').value = savedSort;
+    const savedFollowersFilter = localStorage.getItem('admin_users_followers_filter');
+    if (savedFollowersFilter) document.getElementById('users-followers-filter').value = savedFollowersFilter;
 
     document.getElementById('users-sort').addEventListener('change', () => {
       _usersPage = 1;
       localStorage.setItem('admin_users_sort', document.getElementById('users-sort').value);
-      const q = document.getElementById('users-search').value.toLowerCase();
-      const filtered = q ? allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q)) : allUsers;
-      renderUsersTable(filtered);
+      renderUsersTable(getVisibleUsers());
+    });
+
+    document.getElementById('users-followers-filter').addEventListener('change', () => {
+      _usersPage = 1;
+      localStorage.setItem('admin_users_followers_filter', document.getElementById('users-followers-filter').value);
+      renderUsersTable(getVisibleUsers());
     });
     let _docsSearchTimer = null;
     document.getElementById('docs-search').addEventListener('input', () => {
@@ -1453,9 +1422,9 @@
 
     // ===== SHOW PANEL =====
     async function showPanel() {
-      document.getElementById('admin-auth').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
-      const savedTab = localStorage.getItem('iwrite_admin_tab') || 'overview';
+      const hashTab = location.hash ? location.hash.slice(1) : '';
+      const savedTab = hashTab || localStorage.getItem('iwrite_admin_tab') || 'overview';
       switchAdminTab(savedTab);
       await Promise.all([loadOverview(), loadUsers(), loadDocs(), loadLogs(), loadSupport(), loadDuels(), loadStoriesAdmin()]);
       renderAdminCharts();
@@ -1611,8 +1580,25 @@
       try {
         allUsers = await adminRequest('/admin/users');
         document.getElementById('users-count').textContent = allUsers.filter(u => u.role !== 'admin').length;
-        renderUsersTable(allUsers);
+        renderUsersTable(getVisibleUsers());
       } catch { toast('Failed to load users', 'error'); }
+    }
+
+    function getUserFollowerCount(user) {
+      return Array.isArray(user.followers) ? user.followers.length : Number(user.followerCount || 0);
+    }
+
+    function getVisibleUsers() {
+      const q = (document.getElementById('users-search')?.value || '').toLowerCase();
+      const followerFilter = document.getElementById('users-followers-filter')?.value || 'all';
+      return allUsers.filter(u => {
+        const matchesSearch = !q || (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q);
+        const followerCount = getUserFollowerCount(u);
+        const matchesFollowers = followerFilter === 'all'
+          || (followerFilter === 'has-followers' && followerCount > 0)
+          || (followerFilter === 'no-followers' && followerCount === 0);
+        return matchesSearch && matchesFollowers;
+      });
     }
 
     function sortAndFilterUsers(users) {
@@ -1624,6 +1610,8 @@
         if (sort === 'name-desc') return (b.name || '').localeCompare(a.name || '');
         if (sort === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
         if (sort === 'oldest') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+        if (sort === 'followers-desc') return getUserFollowerCount(b) - getUserFollowerCount(a);
+        if (sort === 'followers-asc') return getUserFollowerCount(a) - getUserFollowerCount(b);
         if (sort === 'streak') return (b.streak || 0) - (a.streak || 0);
         if (sort === 'words') return (b.totalWords || 0) - (a.totalWords || 0);
         if (sort === 'docs') return (b.docCount || 0) - (a.docCount || 0);
@@ -1632,7 +1620,7 @@
       return filtered;
     }
 
-    function goUsersPage(p) { _usersPage = p; renderUsersTable(allUsers); }
+    function goUsersPage(p) { _usersPage = p; renderUsersTable(getVisibleUsers()); }
     function renderUsersTable(users) {
       const sorted = sortAndFilterUsers(users);
       const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
@@ -1651,6 +1639,7 @@
           <td><span class="badge badge-${u.plan}">${u.plan === 'premium' ? 'Pro' : 'Free'}</span></td>
           <td>${calcLevel(u.xp || 0)}</td>
           <td>${(u.xp || 0).toLocaleString()}</td>
+          <td>${getUserFollowerCount(u).toLocaleString()}</td>
           <td>${u.streak || 0}</td>
           <td>${(u.totalWords || 0).toLocaleString()}</td>
           <td>${u.totalSessions || 0}</td>
@@ -1694,6 +1683,7 @@
               <div class="user-detail-stat"><div class="label">Longest Streak</div><div class="value">${u.longestStreak || 0}</div></div>
               <div class="user-detail-stat"><div class="label">Total Words</div><div class="value">${(u.totalWords || 0).toLocaleString()}</div></div>
               <div class="user-detail-stat"><div class="label">Sessions</div><div class="value">${u.totalSessions || 0}</div></div>
+              <div class="user-detail-stat"><div class="label">Followers</div><div class="value">${getUserFollowerCount(u).toLocaleString()}</div></div>
               <div class="user-detail-stat"><div class="label">Tree Stage</div><div class="value">${u.treeStage || 0}</div></div>
               <div class="user-detail-stat"><div class="label">Documents</div><div class="value">${u.totalDocuments}</div></div>
             </div>
@@ -3818,6 +3808,8 @@
         startMaintenancePolling();
       }).catch(() => {
         localStorage.removeItem('iwrite_admin_token');
+        localStorage.removeItem('iwrite_token');
+        window.location.replace('/login');
       });
     }
   </script>

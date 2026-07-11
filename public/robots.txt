@@ -8,7 +8,6 @@ Allow: /story/
 Disallow: /app
 Disallow: /app/
 Disallow: /app?
-Disallow: /manual-login
 Disallow: /admin
 Disallow: /api/
 Disallow: /shared/

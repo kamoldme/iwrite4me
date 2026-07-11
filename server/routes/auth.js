@@ -6,12 +6,17 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const sharp = require('sharp');
-const { findOne, insertOne, updateOne } = require('../utils/storage');
+const crypto = require('crypto');
+const { findOne, insertOne, updateOne, pool } = require('../utils/storage');
 const { generateToken, authenticate, checkSubscriptionExpiry } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
+const { sendBrevoEmail } = require('../utils/brevo');
 const { OAuth2Client } = require('google-auth-library');
 
 const MIN_PASSWORD_LENGTH = 8;
+const EMAIL_CODE_TTL_MS = 15 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 15 * 60 * 1000;
+const APP_URL = (process.env.APP_URL || 'https://iwrite4.me').replace(/\/$/, '');
 
 // Top guessable passwords — quick deny-list. Not exhaustive (zxcvbn would be
 // stronger), but blocks the obvious offenders that brute-forcers try first.
@@ -41,6 +46,168 @@ function validateEmail(email) {
   if (email.length > 254) return 'Email is too long';
   if (!validator.isEmail(email)) return 'Please enter a valid email address';
   return null;
+}
+
+function escapeHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function createVerificationCode() {
+  const code = String(crypto.randomInt(100000, 1000000));
+  const hash = crypto.createHash('sha256').update(code).digest('hex');
+  return { code, hash };
+}
+
+function buildEmailCodeBlock(safeCode) {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:340px;margin:0 auto;border-radius:18px;background:#0f5e49;background-image:linear-gradient(135deg,#0e6a50 0%,#0b4f3f 100%);box-shadow:0 14px 32px rgba(15,94,73,0.28);">
+    <tr>
+      <td align="center" style="padding:28px 24px;">
+        <div style="font-family:'DM Mono','Courier New',monospace;font-size:44px;line-height:1;font-weight:800;letter-spacing:14px;color:#ffffff;text-shadow:0 2px 8px rgba(0,0,0,0.18);white-space:nowrap;user-select:all;">${safeCode}</div>
+      </td>
+    </tr>
+  </table>`;
+}
+
+function buildVerificationEmail({ name, code }) {
+  const safeName = escapeHtml(name || 'writer');
+  const safeCode = escapeHtml(code);
+  const logoUrl = `${APP_URL}/media/iwrite-logo.png`;
+  const classicalImageUrl = `${APP_URL}/media/features-classical-background.jpg`;
+  const codeBlock = buildEmailCodeBlock(safeCode);
+  return `<!doctype html>
+<html>
+  <body style="margin:0;background:#f3eee5;font-family:'Nunito',Arial,Helvetica,sans-serif;color:#17342d;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3eee5;padding:34px 14px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:680px;background:#fffdf7;border:1px solid #ddd2c3;border-radius:22px;overflow:hidden;box-shadow:0 16px 42px rgba(40,31,22,0.16);">
+            <tr>
+              <td align="center" style="padding:58px 28px 24px;background:#fffdf7;background-image:linear-gradient(180deg,#fffdf9 0%,#fbf7ee 100%);">
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 48px;">
+                  <tr>
+                    <td style="padding:0 9px 0 0;">
+                      <img src="${logoUrl}" width="27" height="27" alt="" style="display:block;border:0;border-radius:0;object-fit:contain;">
+                    </td>
+                    <td style="font-family:'Nunito',Arial,Helvetica,sans-serif;font-size:23px;line-height:1;font-weight:800;color:#35164f;letter-spacing:0;">iWrite4.me</td>
+                  </tr>
+                </table>
+                <h1 style="margin:0;font-family:'Nunito Sans','Nunito',Arial,Helvetica,sans-serif;font-size:54px;line-height:0.98;font-weight:900;color:#371555;letter-spacing:0;text-shadow:0 12px 30px rgba(55,21,85,0.13);">Your code to start writing.</h1>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px auto 0;">
+                  <tr>
+                    <td style="width:48px;height:1px;background:#cdbb9f;font-size:0;line-height:0;">&nbsp;</td>
+                    <td style="padding:0 14px;font-size:19px;line-height:1;color:#c0ad90;">&#10022;</td>
+                    <td style="width:48px;height:1px;background:#cdbb9f;font-size:0;line-height:0;">&nbsp;</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:16px 28px 24px;background:#fffdf7;">
+                <p style="margin:0 0 24px;font-size:18px;line-height:1.55;color:#62726b;">Hi ${safeName}, enter this code on iWrite4.me</p>
+                ${codeBlock}
+                <p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#7b8781;">Expires in 15 minutes</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0;background:#fffdf7;">
+                <img src="${classicalImageUrl}" width="680" alt="" style="display:block;width:100%;max-width:680px;height:auto;border:0;">
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:28px 24px 34px;background:#fffdf7;">
+                <p style="margin:0;font-size:17px;line-height:1.5;color:#596c63;">Focused writing with real stakes.</p>
+                <p style="margin:18px 0 0;font-size:12px;line-height:1.5;color:#8a938d;">If you did not create an iWrite4.me account, you can ignore this email.</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:18px 0 0;font-size:12px;color:#8a938d;">iWrite4.me &middot; Email verification</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+function buildPasswordResetEmail({ name, code }) {
+  const safeName = escapeHtml(name || 'writer');
+  const safeCode = escapeHtml(code);
+  const logoUrl = `${APP_URL}/media/iwrite-logo.png`;
+  const codeBlock = buildEmailCodeBlock(safeCode);
+  return `<!doctype html>
+<html>
+  <body style="margin:0;background:#f3eee5;font-family:'Nunito',Arial,Helvetica,sans-serif;color:#17342d;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3eee5;padding:34px 14px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#fffdf7;border:1px solid #ddd2c3;border-radius:22px;overflow:hidden;box-shadow:0 16px 42px rgba(40,31,22,0.16);">
+            <tr>
+              <td align="center" style="padding:48px 28px 22px;background:#fffdf7;background-image:linear-gradient(180deg,#fffdf9 0%,#fbf7ee 100%);">
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 36px;">
+                  <tr>
+                    <td style="padding:0 9px 0 0;">
+                      <img src="${logoUrl}" width="27" height="27" alt="" style="display:block;border:0;border-radius:0;object-fit:contain;">
+                    </td>
+                    <td style="font-family:'Nunito',Arial,Helvetica,sans-serif;font-size:23px;line-height:1;font-weight:800;color:#35164f;letter-spacing:0;">iWrite4.me</td>
+                  </tr>
+                </table>
+                <h1 style="margin:0;font-family:'Nunito Sans','Nunito',Arial,Helvetica,sans-serif;font-size:54px;line-height:0.98;font-weight:900;color:#371555;letter-spacing:0;text-shadow:0 12px 30px rgba(55,21,85,0.13);">Reset your password.</h1>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:16px 28px 42px;background:#fffdf7;">
+                <p style="margin:0 0 24px;font-size:18px;line-height:1.55;color:#62726b;">Hi ${safeName}, enter this code on iWrite4.me to choose a new password.</p>
+                ${codeBlock}
+                <p style="margin:24px 0 0;font-size:15px;line-height:1.6;color:#7b8781;">Expires in 15 minutes</p>
+                <p style="margin:18px 0 0;font-size:12px;line-height:1.5;color:#8a938d;">If you did not request this, ignore this email. Your password will stay unchanged.</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:18px 0 0;font-size:12px;color:#8a938d;">iWrite4.me &middot; Password reset</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+async function sendTransactionalEmail({ user, subject, htmlContent }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.MAIL_FROM_EMAIL || process.env.BREVO_SENDER_EMAIL;
+  const senderName = process.env.MAIL_FROM_NAME || process.env.BREVO_SENDER_NAME || 'iWrite4.me';
+  if (!apiKey || !senderEmail) {
+    throw new Error('Brevo is not configured. Set BREVO_API_KEY and MAIL_FROM_EMAIL.');
+  }
+
+  return sendBrevoEmail({
+    apiKey,
+    senderEmail,
+    senderName,
+    toEmail: user.email,
+    toName: user.name,
+    subject,
+    htmlContent
+  });
+}
+
+async function sendVerificationEmail(user, code) {
+  return sendTransactionalEmail({
+    user,
+    subject: 'Your iWrite4.me verification code',
+    htmlContent: buildVerificationEmail({ name: user.name, code })
+  });
+}
+
+async function sendPasswordResetEmail(user, code) {
+  return sendTransactionalEmail({
+    user,
+    subject: 'Your iWrite4.me password reset code',
+    htmlContent: buildPasswordResetEmail({ name: user.name, code })
+  });
 }
 
 // Streak → tree stage mapping (30 days = max)
@@ -104,14 +271,25 @@ function generateRandomUsername() {
   return `${adj}_${noun}_${num}`;
 }
 
+async function markTermsAcceptedIfMissing(user) {
+  if (!user || user.acceptedTermsAt) return user;
+  return updateOne('users.json', u => u.id === user.id, {
+    acceptedTermsAt: user.createdAt || new Date().toISOString()
+  });
+}
+
 const router = express.Router();
 
 router.post('/register', async (req, res) => {
   try {
     const { name, password, username } = req.body;
     const email = normalizeEmail(req.body.email);
+    const acceptedTerms = req.body.acceptedTerms === true;
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
+    }
+    if (!acceptedTerms) {
+      return res.status(400).json({ error: 'You must agree to the Privacy Policy and Terms of Service.' });
     }
     if (containsBadWord(name)) {
       return res.status(400).json({ error: 'Name contains inappropriate content' });
@@ -138,6 +316,7 @@ router.post('/register', async (req, res) => {
     }
 
     const hash = await bcrypt.hash(password, 12);
+    const verification = createVerificationCode();
     const user = {
       id: uuid(),
       name,
@@ -176,8 +355,24 @@ router.post('/register', async (req, res) => {
       following: [],
       banner: null,
       bannerUpdatedAt: null,
+      emailVerified: false,
+      emailVerificationCodeHash: verification.hash,
+      emailVerificationExpiresAt: new Date(Date.now() + EMAIL_CODE_TTL_MS).toISOString(),
+      emailVerificationAttempts: 0,
+      emailVerificationSentAt: new Date().toISOString(),
+      acceptedTermsAt: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
+
+    let emailSent = false;
+    try {
+      emailSent = await sendVerificationEmail(user, verification.code);
+    } catch (mailErr) {
+      console.error('[email] verification send failed:', mailErr.message);
+    }
+    if (!emailSent) {
+      return res.status(503).json({ error: 'Could not send verification code. Please try again in a few minutes.' });
+    }
 
     // Handle referral — credit the referrer
     const { ref } = req.body;
@@ -205,11 +400,79 @@ router.post('/register', async (req, res) => {
     await insertOne('users.json', user);
     logAction('user_registered', { name: user.name, email: user.email, referredBy: ref || null }, user.id);
     try { require('../telegram').notifyUserRegistered(user, 'Email'); } catch {}
-    const token = generateToken(user);
-    const { password: _, ...safeUser } = user;
-    res.status(201).json({ token, user: safeUser });
+    res.status(201).json({ requiresVerification: true, email: user.email, emailSent });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/verify-email', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const code = String(req.body.code || '').replace(/\D/g, '');
+    if (!email || !code) return res.status(400).json({ error: 'Email and verification code are required' });
+    if (code.length !== 6) return res.status(400).json({ error: 'Enter the 6-digit verification code.' });
+
+    const user = await findOne('users.json', u => normalizeEmail(u.email) === email);
+    if (!user) return res.status(404).json({ error: 'Account not found' });
+    if (user.emailVerified) {
+      const token = generateToken(user);
+      const { password: _, ...safeUser } = user;
+      return res.json({ token, user: safeUser });
+    }
+    if (!user.emailVerificationCodeHash || !user.emailVerificationExpiresAt) {
+      return res.status(400).json({ error: 'No active verification code. Request a new code.' });
+    }
+    if (new Date(user.emailVerificationExpiresAt).getTime() < Date.now()) {
+      return res.status(400).json({ error: 'Verification code expired. Request a new code.' });
+    }
+    const attempts = Number(user.emailVerificationAttempts || 0);
+    if (attempts >= 5) {
+      return res.status(429).json({ error: 'Too many attempts. Request a new code.' });
+    }
+    const hash = crypto.createHash('sha256').update(code).digest('hex');
+    if (hash !== user.emailVerificationCodeHash) {
+      await updateOne('users.json', u => u.id === user.id, { emailVerificationAttempts: attempts + 1 });
+      return res.status(400).json({ error: 'Invalid verification code.' });
+    }
+    const verifiedUser = await updateOne('users.json', u => u.id === user.id, {
+      emailVerified: true,
+      emailVerifiedAt: new Date().toISOString(),
+      emailVerificationCodeHash: null,
+      emailVerificationExpiresAt: null,
+      emailVerificationAttempts: 0
+    });
+    const token = generateToken(verifiedUser);
+    const { password: _, ...safeUser } = verifiedUser;
+    res.json({ token, user: safeUser });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const user = await findOne('users.json', u => normalizeEmail(u.email) === email);
+    if (!user) return res.status(404).json({ error: 'Account not found' });
+    if (user.emailVerified) return res.json({ ok: true });
+    const lastSent = user.emailVerificationSentAt ? new Date(user.emailVerificationSentAt).getTime() : 0;
+    if (Date.now() - lastSent < 60 * 1000) {
+      return res.status(429).json({ error: 'Wait a minute before requesting another code.' });
+    }
+    const verification = createVerificationCode();
+    await sendVerificationEmail(user, verification.code);
+    await updateOne('users.json', u => u.id === user.id, {
+      emailVerificationCodeHash: verification.hash,
+      emailVerificationExpiresAt: new Date(Date.now() + EMAIL_CODE_TTL_MS).toISOString(),
+      emailVerificationAttempts: 0,
+      emailVerificationSentAt: new Date().toISOString()
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[email] resend verification failed:', err.message);
+    res.status(500).json({ error: 'Could not send verification code.' });
   }
 });
 
@@ -223,16 +486,20 @@ router.post('/login', async (req, res) => {
 
     const user = await findOne('users.json', u => normalizeEmail(u.email) === email);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(404).json({ error: 'No account found. Register first.' });
     }
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    if (user.emailVerified === false && !user.googleId) {
+      return res.status(403).json({ error: 'Please verify your email before logging in.' });
+    }
 
-    const token = generateToken(user);
-    const { password: _, ...safeUser } = user;
+    const acceptedUser = await markTermsAcceptedIfMissing(user);
+    const token = generateToken(acceptedUser);
+    const { password: _, ...safeUser } = acceptedUser;
     res.json({ token, user: safeUser });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -375,6 +642,93 @@ router.post('/change-password', authenticate, async (req, res) => {
   }
 });
 
+router.post('/request-password-reset', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const emailError = validateEmail(email);
+    if (emailError) return res.status(400).json({ error: emailError });
+
+    const user = await findOne('users.json', u => normalizeEmail(u.email) === email);
+    if (!user || !user.password || user.provider === 'google') {
+      return res.json({ ok: true });
+    }
+
+    const lastSent = user.passwordResetSentAt ? new Date(user.passwordResetSentAt).getTime() : 0;
+    if (Date.now() - lastSent < 60 * 1000) {
+      return res.status(429).json({ error: 'Wait a minute before requesting another code.' });
+    }
+
+    const reset = createVerificationCode();
+    await sendPasswordResetEmail(user, reset.code);
+    await updateOne('users.json', u => u.id === user.id, {
+      passwordResetCodeHash: reset.hash,
+      passwordResetExpiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString(),
+      passwordResetAttempts: 0,
+      passwordResetSentAt: new Date().toISOString()
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[email] password reset send failed:', err.message);
+    res.status(503).json({ error: 'Could not send password reset code. Please try again in a few minutes.' });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const code = String(req.body.code || '').replace(/\D/g, '');
+    const { newPassword, confirmPassword } = req.body;
+
+    const emailError = validateEmail(email);
+    if (emailError) return res.status(400).json({ error: emailError });
+    if (!code || code.length !== 6) return res.status(400).json({ error: 'Enter the 6-digit reset code.' });
+    if (!newPassword || !confirmPassword) return res.status(400).json({ error: 'New password and confirmation are required.' });
+
+    const user = await findOne('users.json', u => normalizeEmail(u.email) === email);
+    if (!user || !user.password || user.provider === 'google') {
+      return res.status(400).json({ error: 'Password reset is not available for this account.' });
+    }
+    if (!user.passwordResetCodeHash || !user.passwordResetExpiresAt) {
+      return res.status(400).json({ error: 'No active reset code. Request a new code.' });
+    }
+    if (new Date(user.passwordResetExpiresAt).getTime() < Date.now()) {
+      return res.status(400).json({ error: 'Reset code expired. Request a new code.' });
+    }
+    const attempts = Number(user.passwordResetAttempts || 0);
+    if (attempts >= 5) {
+      return res.status(429).json({ error: 'Too many attempts. Request a new code.' });
+    }
+
+    const hash = crypto.createHash('sha256').update(code).digest('hex');
+    if (hash !== user.passwordResetCodeHash) {
+      await updateOne('users.json', u => u.id === user.id, { passwordResetAttempts: attempts + 1 });
+      return res.status(400).json({ error: 'Invalid reset code.' });
+    }
+
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) return res.status(400).json({ error: passwordError.replace(/^Password/, 'New password') });
+    if (newPassword !== confirmPassword) return res.status(400).json({ error: 'New passwords do not match.' });
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    const updated = await updateOne('users.json', u => u.id === user.id, {
+      password: passwordHash,
+      emailVerified: true,
+      emailVerifiedAt: user.emailVerified ? user.emailVerifiedAt : new Date().toISOString(),
+      passwordResetCodeHash: null,
+      passwordResetExpiresAt: null,
+      passwordResetAttempts: 0,
+      passwordResetSentAt: null
+    });
+    const token = generateToken(updated);
+    const { password: _, ...safeUser } = updated;
+    res.json({ token, user: safeUser });
+  } catch (err) {
+    console.error('[auth] reset password failed:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ===== GOOGLE OAUTH =====
 router.post('/google', async (req, res) => {
   try {
@@ -404,7 +758,13 @@ router.post('/google', async (req, res) => {
         // Link Google to existing email account
         await updateOne('users.json', u => u.id === user.id, {
           googleId,
-          provider: 'google'
+          provider: 'google',
+          emailVerified: true,
+          emailVerifiedAt: user.emailVerifiedAt || new Date().toISOString(),
+          emailVerificationCodeHash: null,
+          emailVerificationExpiresAt: null,
+          emailVerificationAttempts: 0,
+          acceptedTermsAt: user.acceptedTermsAt || user.createdAt || new Date().toISOString()
         });
         user = await findOne('users.json', u => u.id === user.id);
       }
@@ -450,6 +810,9 @@ router.post('/google', async (req, res) => {
         trialUsed: false,
         planPaymentFailed: false,
         needsProfile: true,
+        emailVerified: true,
+        emailVerifiedAt: new Date().toISOString(),
+        acceptedTermsAt: new Date().toISOString(),
         createdAt: new Date().toISOString()
       };
 
@@ -480,6 +843,7 @@ router.post('/google', async (req, res) => {
       try { require('../telegram').notifyUserRegistered(user, 'Google'); } catch {}
     }
 
+    user = await markTermsAcceptedIfMissing(user);
     const token = generateToken(user);
     const { password: _, ...safeUser } = user;
     res.json({ token, user: safeUser, isNewUser });
@@ -618,6 +982,75 @@ router.get('/referral', authenticate, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ===== ACCOUNT DELETION =====
+router.delete('/account', authenticate, async (req, res) => {
+  try {
+    const user = await findOne('users.json', u => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const { password: confirmPassword, confirmation } = req.body;
+
+    if (user.googleId) {
+      if ((confirmation || '').toUpperCase() !== 'DELETE') {
+        return res.status(400).json({ error: 'Please type DELETE to confirm.' });
+      }
+    } else {
+      if (!confirmPassword) {
+        return res.status(400).json({ error: 'Password is required.' });
+      }
+      const match = await bcrypt.compare(confirmPassword, user.password);
+      if (!match) {
+        return res.status(400).json({ error: 'Incorrect password.' });
+      }
+    }
+
+    // Cancel Stripe subscription
+    if (user.stripeSubscriptionId && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const Stripe = require('stripe');
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' });
+        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+      } catch (_) {}
+    }
+
+    // Delete uploaded files (avatar, banner)
+    for (const dir of ['avatars', 'banners']) {
+      const dirPath = path.join(__dirname, '../data', dir);
+      if (fs.existsSync(dirPath)) {
+        fs.readdirSync(dirPath)
+          .filter(f => f.startsWith(user.id))
+          .forEach(f => { try { fs.unlinkSync(path.join(dirPath, f)); } catch (_) {} });
+      }
+    }
+
+    const uid = user.id;
+
+    // Delete all user-owned data
+    await pool.query(`DELETE FROM documents WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM stories WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM story_comments WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM story_likes WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM story_comment_likes WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM notifications WHERE data->>'userId' = $1 OR data->>'fromUserId' = $1`, [uid]);
+    await pool.query(`DELETE FROM activities WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM duels WHERE data->>'challengerId' = $1 OR data->>'opponentId' = $1`, [uid]);
+    await pool.query(`DELETE FROM duel_queue WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM support WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM announcement_views WHERE data->>'userId' = $1`, [uid]);
+    await pool.query(`DELETE FROM announcement_likes WHERE data->>'userId' = $1`, [uid]);
+
+    // Delete the user record
+    await pool.query(`DELETE FROM users WHERE id = $1`, [uid]);
+
+    logAction('account_deleted', { email: user.email }, uid);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Account deletion error:', err);
+    res.status(500).json({ error: 'Failed to delete account. Please try again.' });
   }
 });
 

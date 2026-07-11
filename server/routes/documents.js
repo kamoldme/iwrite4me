@@ -281,7 +281,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 router.post('/:id/complete', async (req, res) => {
-  const { wordCount, duration, xpEarned, earlyComplete, content, title } = req.body;
+  const { wordCount, duration, xpEarned, earlyComplete, content, title, activeWritingSeconds } = req.body;
   const doc = await findOne('documents.json', d => d.id === req.params.id && d.userId === req.user.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
 
@@ -316,6 +316,7 @@ router.post('/:id/complete', async (req, res) => {
     wordCount: wordCount || doc.wordCount,
     duration: duration || 0,
     xpEarned: xpEarned || 0,
+    activeWritingSeconds: activeWritingSeconds || 0,
     completed: true,
     completedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

@@ -32,12 +32,44 @@ const API = {
     return data;
   },
 
-  async register(name, email, password) {
+  async register(name, email, password, acceptedTerms = false) {
     const data = await this.request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, acceptedTerms })
     });
-    this.setToken(data.token);
+    if (data.token) this.setToken(data.token);
+    return data;
+  },
+
+  async verifyEmail(email, code) {
+    const data = await this.request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ email, code })
+    });
+    if (data.token) this.setToken(data.token);
+    return data;
+  },
+
+  async resendVerification(email) {
+    return this.request('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  },
+
+  async requestPasswordReset(email) {
+    return this.request('/auth/request-password-reset', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  },
+
+  async resetPassword(email, code, newPassword, confirmPassword) {
+    const data = await this.request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, newPassword, confirmPassword })
+    });
+    if (data.token) this.setToken(data.token);
     return data;
   },
 
@@ -270,6 +302,13 @@ const API = {
     return this.request('/auth/change-password', {
       method: 'POST',
       body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+    });
+  },
+
+  async deleteAccount(body) {
+    return this.request('/auth/account', {
+      method: 'DELETE',
+      body: JSON.stringify(body)
     });
   },
 
