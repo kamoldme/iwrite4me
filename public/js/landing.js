@@ -194,13 +194,58 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('scroll', updateNavScrolled, { passive: true });
   }
 
+  const writerVideoPlayer = document.querySelector('[data-writer-video-player]');
+  if (writerVideoPlayer) {
+    const writerVideo = writerVideoPlayer.querySelector('video');
+    const writerVideoPlay = writerVideoPlayer.querySelector('.writer-video-play');
+    const writerVideoProgress = writerVideoPlayer.querySelector('.writer-video-progress');
+    const writerVideoProgressFill = writerVideoProgress?.querySelector('span');
+
+    const updateWriterVideoProgress = () => {
+      if (!writerVideo || !writerVideoProgressFill || !Number.isFinite(writerVideo.duration) || writerVideo.duration <= 0) return;
+      const progress = Math.min(100, Math.max(0, (writerVideo.currentTime / writerVideo.duration) * 100));
+      writerVideoProgressFill.style.width = `${progress}%`;
+    };
+
+    const toggleWriterVideo = () => {
+      if (!writerVideo) return;
+      if (writerVideo.paused || writerVideo.ended) {
+        writerVideo.play().catch(() => {});
+      } else {
+        writerVideo.pause();
+      }
+    };
+
+    writerVideoPlay?.addEventListener('click', toggleWriterVideo);
+    writerVideo?.addEventListener('click', toggleWriterVideo);
+    writerVideo?.addEventListener('play', () => {
+      writerVideoPlayer.classList.add('has-played', 'is-playing');
+    });
+    writerVideo?.addEventListener('pause', () => {
+      writerVideoPlayer.classList.remove('is-playing');
+    });
+    writerVideo?.addEventListener('ended', () => {
+      writerVideoPlayer.classList.remove('is-playing');
+      updateWriterVideoProgress();
+    });
+    writerVideo?.addEventListener('timeupdate', updateWriterVideoProgress);
+    writerVideo?.addEventListener('loadedmetadata', updateWriterVideoProgress);
+    writerVideoProgress?.addEventListener('click', (event) => {
+      if (!writerVideo || !Number.isFinite(writerVideo.duration) || writerVideo.duration <= 0) return;
+      const rect = writerVideoProgress.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+      writerVideo.currentTime = ratio * writerVideo.duration;
+      updateWriterVideoProgress();
+    });
+  }
+
   const writerNotesSection = document.querySelector('.writer-notes-section');
   if (writerNotesSection) {
     const updateWriterNotesMotion = () => {
       const rect = writerNotesSection.getBoundingClientRect();
       const viewport = window.innerHeight || 1;
       const progress = Math.min(1, Math.max(0, (viewport - rect.top) / (viewport + rect.height)));
-      const shift = Math.round((progress - 0.5) * 210);
+      const shift = Math.round((progress - 0.5) * 320);
       writerNotesSection.style.setProperty('--notes-scroll-shift', `${shift}px`);
       writerNotesSection.style.setProperty('--notes-scroll-shift-low', `${Math.round(shift * 0.72)}px`);
     };
@@ -248,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${rounded}${unit.suffix}`;
   }
 
-  const fallbackStats = { totalWords: 144076, totalHours: 115, totalWriters: 524, totalDocuments: 368, activeNow: 0 };
+  const fallbackStats = { totalWords: 146000, totalHours: 115, totalWriters: 524, totalDocuments: 628, activeNow: 0 };
   let currentStats = { ...fallbackStats };
   let statsVisible = false;
 

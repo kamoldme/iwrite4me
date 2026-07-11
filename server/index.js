@@ -25,8 +25,8 @@ function liveStreak(user) {
 app.set('trust proxy', 1);
 
 // Security headers via helmet. CSP allows the third-party services the app
-// actually uses: Google (analytics, OAuth, Fonts), Stripe (payments), and
-// inline scripts/styles already present across the static HTML pages.
+// actually uses: Google (analytics, OAuth, Fonts), Stripe (payments), YouTube
+// embeds, and inline scripts/styles already present across the static HTML pages.
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: true,
@@ -59,7 +59,9 @@ app.use(helmet({
         "'self'",
         'https://accounts.google.com',
         'https://js.stripe.com',
-        'https://hooks.stripe.com'
+        'https://hooks.stripe.com',
+        'https://www.youtube.com',
+        'https://www.youtube-nocookie.com'
       ],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
@@ -169,6 +171,8 @@ app.use('/api/auth/register', registerLimiter);
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/google', authLimiter);
 app.use('/api/auth/change-password', authLimiter);
+app.use('/api/auth/request-password-reset', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 app.use('/api', apiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
@@ -215,7 +219,7 @@ app.get('/uploads/banners/:file', (req, res) => {
 // Force no-cache on HTML/CSS/JS so deployments are instant
 app.use((req, res, next) => {
   const url = req.url.split('?')[0];
-  if (url.endsWith('.html') || url === '/' || url === '/app' || url === '/manual-login' || url.startsWith('/story/') || url.startsWith('/app/profile/')) {
+  if (url.endsWith('.html') || url === '/' || url === '/app' || url === '/login' || url === '/register' || url === '/forgot-password' || url === '/admin' || url.startsWith('/story/') || url.startsWith('/app/profile/')) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
   } else if (url.endsWith('.css') || url.endsWith('.js')) {
@@ -684,7 +688,16 @@ app.post('/api/migrate-volume', async (req, res) => {
 app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'app.html'));
 });
-app.get('/manual-login', (req, res) => {
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app.html'));
+});
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app.html'));
+});
+app.get('/forgot-password', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app.html'));
+});
+app.get('/admin', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -868,6 +881,19 @@ async function start() {
       }
     }
     if (migrated > 0) console.log(`Assigned random usernames to ${migrated} existing users`);
+
+    // Migrate: accounts created before Privacy/Terms consent existed should not be
+    // blocked by current auth flows. Treat continued login as acceptance from creation.
+    let termsBackfilled = 0;
+    for (const u of allUsers) {
+      if (!u.acceptedTermsAt) {
+        await updateOne('users.json', usr => usr.id === u.id, {
+          acceptedTermsAt: u.createdAt || new Date().toISOString()
+        });
+        termsBackfilled++;
+      }
+    }
+    if (termsBackfilled > 0) console.log(`Backfilled terms acceptance for ${termsBackfilled} existing user(s)`);
 
     // One-time cleanup: clear stripeSubscriptionId on free users.
     // Stale links from cancelled trials caused phantom "Subscription Renewed"

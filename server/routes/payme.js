@@ -27,6 +27,10 @@ function cfg() {
   return { merchantId: process.env.PAYME_MERCHANT_ID, key: process.env.PAYME_KEY };
 }
 function paymeReady() { const c = cfg(); return !!(c.merchantId && c.key); }
+function checkoutBaseUrl() {
+  if (process.env.PAYME_CHECKOUT_URL) return process.env.PAYME_CHECKOUT_URL.replace(/\/$/, '');
+  return process.env.PAYME_MODE === 'live' ? 'https://checkout.paycom.uz' : 'https://test.paycom.uz';
+}
 
 // Payme transaction states
 const STATE = { CREATED: 1, PERFORMED: 2, CANCELLED: -1, CANCELLED_AFTER_PERFORM: -2 };
@@ -56,7 +60,7 @@ router.post('/create', authenticate, async (req, res) => {
     const c = cfg();
     const returnUrl = `${APP_URL}/app.html?pay=payme`;
     const raw = `m=${c.merchantId};ac.${ACCOUNT_FIELD}=${orderId};a=${amountTiyin};c=${returnUrl}`;
-    const url = `https://checkout.paycom.uz/${Buffer.from(raw).toString('base64')}`;
+    const url = `${checkoutBaseUrl()}/${Buffer.from(raw).toString('base64')}`;
     res.json({ url, orderId });
   } catch (err) {
     logAction('payme_create_error', { message: err.message });

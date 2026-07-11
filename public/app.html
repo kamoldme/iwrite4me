@@ -18,8 +18,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Story+Script&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/style.css?v=132">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
+  <link rel="stylesheet" href="/css/style.css?v=143">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -33,24 +35,169 @@
     </div>
   </div>
   <div id="auth-view" class="auth-container" style="display:none">
-    <div class="auth-monsters-panel">
-      <div class="auth-brand-title">
-        <span class="auth-brand-i">i</span><span class="auth-brand-write">Write</span>
+    <div class="auth-monsters-panel auth-visual-panel">
+      <div class="auth-visual-bg" aria-hidden="true">
+        <span class="auth-visual-bg-layer active" style="background-image: url('/media/auth-writing-background.jpeg')"></span>
+        <span class="auth-visual-bg-layer" style="background-image: url('/media/auth-slide-2.jpg')"></span>
+        <span class="auth-visual-bg-layer" style="background-image: url('/media/auth-slide-3-desk.jpg')"></span>
       </div>
-      <p class="auth-brand-sub">Your distraction-free writing space</p>
+      <div class="auth-visual-content">
+        <div class="auth-visual-slides" aria-live="polite">
+          <article class="auth-visual-slide active">
+            <div class="auth-visual-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M5 19.5c4.5-2.1 9.1-2.1 14 0V6.2c-4.9-2.2-9.5-2.2-14 0v13.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <path d="M8 8.6c2.6-.7 5.2-.7 8 0M8 12c2.6-.7 5.2-.7 8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h1>First step to a finished draft</h1>
+            <p>Write in a calmer room, then keep the streak going with sessions, goals, and real progress.</p>
+          </article>
+          <article class="auth-visual-slide">
+            <div class="auth-visual-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 4v16M5 12h14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+                <path d="M7.5 6.5c3-2 6-2 9 0M7.5 17.5c3 2 6 2 9 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h1>Keep the page alive</h1>
+            <p>Focused writing works best when the room is soft, but the session still asks you to stay.</p>
+          </article>
+          <article class="auth-visual-slide">
+            <div class="auth-visual-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M7 5h10v14H7z" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M9.5 8h5M9.5 11h5M9.5 14h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h1>Return before it fades</h1>
+            <p>Drafts grow through repeated returns: one session, one streak, one page saved before it is lost.</p>
+          </article>
+        </div>
+        <div class="auth-visual-dots" aria-label="Auth welcome slides">
+          <button type="button" class="active" data-auth-slide="0" aria-label="Show first slide"></button>
+          <button type="button" data-auth-slide="1" aria-label="Show second slide"></button>
+          <button type="button" data-auth-slide="2" aria-label="Show third slide"></button>
+        </div>
+      </div>
       <div id="auth-monsters"></div>
     </div>
     <div class="auth-form-panel">
-    <a href="/" class="auth-back-btn" id="auth-back-global">&#8592; Back</a>
-    <div class="auth-card">
-      <a href="/" class="logo">iWrite4.me</a>
-      <div id="login-form">
-        <h2>Welcome to iWrite4.me</h2>
-        <p class="auth-sub">Sign in with Google to start writing</p>
-        <div class="auth-error" id="login-error"></div>
-        <div id="google-login-btn" class="google-signin-btn"></div>
+      <a href="/" class="auth-back-btn" id="auth-back-global">&#8592; Back</a>
+      <div class="auth-card">
+        <a href="/" class="logo auth-card-logo">
+          <img src="/media/iwrite-logo.png" alt="" class="auth-card-logo-mark">
+          <span>iWrite4.me</span>
+        </a>
+        <div class="auth-mode-tabs" role="tablist" aria-label="Authentication mode">
+          <button type="button" class="active" data-auth-mode="login">Login</button>
+          <button type="button" data-auth-mode="register">Register</button>
+        </div>
+        <form id="login-form" class="auth-form-stack" novalidate>
+          <h2>Welcome back</h2>
+          <p class="auth-sub">Sign in and continue the draft.</p>
+          <div class="auth-error" id="login-error"></div>
+          <div class="auth-field">
+            <label for="login-email">Email</label>
+            <input id="login-email" type="text" name="email" autocomplete="username" placeholder="you@email.com" required>
+          </div>
+          <div class="auth-field">
+            <div class="auth-password-row">
+              <label for="login-password">Password</label>
+              <a href="#" data-auth-mode="forgot">Forgot password?</a>
+            </div>
+            <input id="login-password" type="password" name="password" autocomplete="current-password" placeholder="Your password" required>
+          </div>
+          <button type="submit" class="btn btn-primary auth-submit-btn">Login</button>
+          <div class="auth-divider"><span>or</span></div>
+          <div id="google-login-btn" class="google-signin-btn"></div>
+          <p class="auth-switch">No account? <a href="#" data-auth-mode="register">Register for free</a></p>
+        </form>
+        <form id="forgot-password-form" class="auth-form-stack" novalidate hidden>
+          <h2>Reset password</h2>
+          <p class="auth-sub">We will send a 6-digit code to your email.</p>
+          <div class="auth-error" id="forgot-password-error"></div>
+          <div class="forgot-request-step">
+            <div class="auth-field">
+              <label for="forgot-password-email">Email</label>
+              <input id="forgot-password-email" type="email" name="email" autocomplete="email" placeholder="you@email.com" required>
+            </div>
+            <button type="submit" class="btn btn-primary auth-submit-btn">Send reset code</button>
+            <p class="auth-switch">Remembered it? <a href="#" data-auth-mode="login">Back to login</a></p>
+          </div>
+          <div class="forgot-reset-step" hidden>
+            <p class="verification-copy">We sent a 6-digit reset code to <strong id="forgot-password-reset-email"></strong>.</p>
+            <div class="auth-field verification-code-field">
+              <label id="password-reset-code-label" for="password-reset-code-1">Reset code</label>
+              <input id="password-reset-code" class="verification-code-value" type="text" inputmode="numeric" maxlength="6" tabindex="-1" aria-hidden="true">
+              <div class="verification-code-grid" role="group" aria-labelledby="password-reset-code-label">
+                <input id="password-reset-code-1" class="verification-code-box" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" data-password-reset-digit aria-label="Password reset code digit 1">
+                <input id="password-reset-code-2" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-password-reset-digit aria-label="Password reset code digit 2">
+                <input id="password-reset-code-3" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-password-reset-digit aria-label="Password reset code digit 3">
+                <input id="password-reset-code-4" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-password-reset-digit aria-label="Password reset code digit 4">
+                <input id="password-reset-code-5" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-password-reset-digit aria-label="Password reset code digit 5">
+                <input id="password-reset-code-6" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-password-reset-digit aria-label="Password reset code digit 6">
+              </div>
+            </div>
+            <div class="auth-field">
+              <label for="forgot-new-password">New password</label>
+              <input id="forgot-new-password" type="password" autocomplete="new-password" placeholder="Min 8 characters" required minlength="8">
+            </div>
+            <div class="auth-field">
+              <label for="forgot-confirm-password">Confirm new password</label>
+              <input id="forgot-confirm-password" type="password" autocomplete="new-password" placeholder="Re-enter new password" required minlength="8">
+            </div>
+            <button type="submit" class="btn btn-primary auth-submit-btn">Reset password</button>
+            <button type="button" class="auth-resend-button" id="resend-password-reset-code">Resend code</button>
+            <p class="auth-switch">Wrong email? <a href="#" data-reset-password-request data-auth-mode="forgot">Start again</a></p>
+          </div>
+        </form>
+        <form id="register-form" class="auth-form-stack" novalidate hidden>
+          <h2>Create your account</h2>
+          <p class="auth-sub">Start writing free. Upgrade later.</p>
+          <div class="auth-error" id="register-error"></div>
+          <div class="register-account-fields">
+            <div class="auth-field">
+              <label for="register-name">Name</label>
+              <input id="register-name" type="text" name="name" autocomplete="name" placeholder="Your name" required>
+            </div>
+            <div class="auth-field">
+              <label for="register-email">Email</label>
+              <input id="register-email" type="email" name="email" autocomplete="email" placeholder="you@email.com" required>
+            </div>
+            <div class="auth-field">
+              <label for="register-password">Password</label>
+              <input id="register-password" type="password" name="password" autocomplete="new-password" placeholder="Create a password" required minlength="8">
+            </div>
+            <label class="auth-consent">
+              <input id="register-privacy-consent" type="checkbox" required>
+              <span>I agree to the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> and <a href="/terms" target="_blank" rel="noopener">Terms of Service</a>.</span>
+            </label>
+            <button type="submit" class="btn btn-primary auth-submit-btn">Create account</button>
+            <div class="auth-divider"><span>or</span></div>
+            <div id="google-register-btn" class="google-signin-btn"></div>
+            <p class="auth-switch">Already registered? <a href="#" data-auth-mode="login">Login instead</a></p>
+          </div>
+          <div class="register-verification" hidden>
+            <p class="verification-copy">We sent a 6-digit verification code to <strong id="register-verification-email"></strong>.</p>
+            <div class="auth-field verification-code-field">
+              <label id="verification-code-label" for="verification-code-1">Verification code</label>
+              <input id="register-verification-code" class="verification-code-value" type="text" inputmode="numeric" maxlength="6" tabindex="-1" aria-hidden="true">
+              <div class="verification-code-grid" role="group" aria-labelledby="verification-code-label">
+                <input id="verification-code-1" class="verification-code-box" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" data-verification-digit aria-label="Verification code digit 1">
+                <input id="verification-code-2" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-verification-digit aria-label="Verification code digit 2">
+                <input id="verification-code-3" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-verification-digit aria-label="Verification code digit 3">
+                <input id="verification-code-4" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-verification-digit aria-label="Verification code digit 4">
+                <input id="verification-code-5" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-verification-digit aria-label="Verification code digit 5">
+                <input id="verification-code-6" class="verification-code-box" type="text" inputmode="numeric" maxlength="1" data-verification-digit aria-label="Verification code digit 6">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary auth-submit-btn">Verify and enter</button>
+            <button type="button" class="auth-resend-button" id="resend-verification-code">Resend code</button>
+            <p class="auth-switch">Wrong email? <a href="#" data-reset-register data-auth-mode="register">Start again</a></p>
+          </div>
+        </form>
       </div>
-    </div>
     </div>
   </div>
 
@@ -1644,11 +1791,11 @@
     </div>
   </div>
 
-  <script src="/js/api.js?v=21"></script>
+  <script src="/js/api.js?v=23"></script>
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=49"></script>
-  <script src="/js/app.js?v=128"></script>
+  <script src="/js/app.js?v=139"></script>
   <script src="/js/stories.js?v=20"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

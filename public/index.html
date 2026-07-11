@@ -14,7 +14,9 @@
   <title>iWrite4.me — A Soft Space for Focused Writing</title>
   <meta name="description" content="A calm writing workspace with focus sessions, dangerous mode, streaks, duels, sharing, analytics, and gentle progress tracking.">
   <link rel="canonical" href="https://iwrite4.me/">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
 
   <!-- Open Graph -->
   <meta property="og:title" content="iWrite4.me — A Soft Space for Focused Writing">
@@ -32,7 +34,7 @@
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Baloo+2:wght@600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=48">
+  <link rel="stylesheet" href="/css/style.css?v=59">
 </head>
 <body class="landing dream-landing">
   <nav class="nav">
@@ -42,12 +44,12 @@
         <span>iWrite4.me</span>
       </a>
       <div class="nav-links">
-        <a href="#features">Product</a>
-        <a href="#how-it-works">Writers</a>
         <a href="#principles">About</a>
         <a href="#growth">Resources</a>
+        <a href="#how-it-works">Writers</a>
+        <a href="#features">Product</a>
         <a href="#pricing">Pricing</a>
-        <a href="/app" class="btn btn-small cta-shine-button">
+        <a href="/login" class="btn btn-small cta-shine-button">
           <span>Write for free</span>
           <svg class="cta-shine-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z" clip-rule="evenodd"></path>
@@ -76,24 +78,15 @@
       <span class="motion-line motion-line-two"></span>
       <span class="motion-line motion-line-three"></span>
     </div>
-    <p class="hero-pressure">Write it or lose it.</p>
     <h1 class="hero-title">
       <span class="hero-line">Finally finish that</span>
       <span class="hero-line"><em id="rotating-project-word">book</em></span>
     </h1>
     <p class="hero-sub">
-      iWrite4.me gives you a calm desk with real stakes. Draft in a softer room,
-      then let focused sessions, streaks, duels, and progress keep you from
-      drifting away.
+      iWrite4.me gives you a calm desk for focused writing: keep the words moving
+      before the moment disappears. Draft in a softer room, then let sessions,
+      streaks, duels, and visible progress pull you back.
     </p>
-    <div class="hero-actions">
-      <a href="/app" class="btn btn-primary btn-large cta-shine-button">
-        <span>Write for free</span>
-        <svg class="cta-shine-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z" clip-rule="evenodd"></path>
-        </svg>
-      </a>
-    </div>
     <div class="hero-visual">
       <div class="mock-editor soft-editor">
         <div class="mock-toolbar">
@@ -139,13 +132,13 @@
         </div>
       </div>
       <div class="writer-owned-media">
-        <div class="writer-video-placeholder" aria-label="Founder video placeholder">
-          <button type="button" aria-label="Play video preview">
-            <span>&#9658;</span>
+        <div class="writer-video-placeholder writer-video-player" data-writer-video-player aria-label="iWrite4.me video">
+          <video class="writer-video" src="/media/writersparadise.mp4" preload="metadata" playsinline></video>
+          <button type="button" class="writer-video-play" aria-label="Play video">
+            <span aria-hidden="true"></span>
           </button>
-          <div class="writer-video-times">
-            <span>1:09</span>
-            <span>1:14</span>
+          <div class="writer-video-progress" aria-hidden="true">
+            <span></span>
           </div>
         </div>
         <p>
@@ -159,21 +152,11 @@
   </section>
 
   <section class="community-stats-section" id="growth" aria-label="iWrite4.me community statistics">
-    <div class="community-stats-bg" aria-hidden="true">
-      <span>one focused page becomes another one focused page becomes another</span>
-      <span>write it or lose it write it or lose it write it or lose it</span>
-      <span>drafts become chapters chapters become finished work</span>
-    </div>
     <div class="community-stats-inner">
-      <p>Powering focused writers.</p>
       <h2>
-        <span class="community-stats-line">
-          <span id="landing-stat-writers" data-stat="writers">524</span> writers have written
-          <span id="landing-stat-words" data-stat="words">144K</span> words in
-        </span>
-        <span class="community-stats-line">
-          <span id="landing-stat-documents" data-stat="documents">368</span> work documents.
-        </span>
+        <span id="landing-stat-writers" data-stat="writers">524</span> writers have written
+        <span id="landing-stat-words" data-stat="words">146K</span> words in
+        <span id="landing-stat-documents" data-stat="documents">628</span> work documents.
       </h2>
     </div>
   </section>
@@ -184,32 +167,38 @@
     </div>
     <div class="writer-notes-rails" aria-label="Writer notes about iWrite4.me">
       <div class="writer-notes-rail rail-left">
-        <article class="writer-note compact"><span class="note-avatar">M</span><div><strong>Mina</strong><p>I wrote more in one sprint than I did all weekend.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">E</span><div><strong>Emi</strong><p>This makes writing feel so much easier because everything is in one place.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">J</span><div><strong>Jensen</strong><p>I have been looking for something like this.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">L</span><div><strong>lauralearnstolive</strong><p>This is exactly what I have been looking for. I actually gasped.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">Z</span><div><strong>ZaizaVika</strong><p>I started writing in your app and forgot it was work.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">N</span><div><strong>Nodira</strong><p>The timer makes the page feel calm, but serious. I needed that.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">O</span><div><strong>Otabek</strong><p>The first five minutes are easier here.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">Y</span><div><strong>Yasmin</strong><p>I finally stopped opening three apps just to finish one scene.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-16deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=12" alt=""></span><div><strong>Mina ✍️</strong><p>I wrote more in one sprint than I did all weekend.</p></div></article>
+        <article class="writer-note wide" style="--tilt:13deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=32" alt=""></span><div><strong>Emi</strong><p>This makes writing feel easier because everything is in one place.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-19deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=5" alt=""></span><div><strong>Jensen 🌙</strong><p>I have been looking for something like this.</p></div></article>
+        <article class="writer-note wide" style="--tilt:17deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=48" alt=""></span><div><strong>lauralearnstolive</strong><p>This is exactly what I have been looking for. I actually gasped.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-12deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=22" alt=""></span><div><strong>ZaizaVika</strong><p>I started writing here and forgot it was work.</p></div></article>
+        <article class="writer-note compact" style="--tilt:19deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=56" alt=""></span><div><strong>Nodira</strong><p>The timer feels calm, but serious.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-15deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=18" alt=""></span><div><strong>Otabek</strong><p>The first five minutes are easier here.</p></div></article>
+        <article class="writer-note wide" style="--tilt:14deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=44" alt=""></span><div><strong>Yasmin 💚</strong><p>I finally stopped opening three apps just to finish one scene.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-18deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=60" alt=""></span><div><strong>Aziza</strong><p>My messy draft finally has a rhythm.</p></div></article>
+        <article class="writer-note compact" style="--tilt:15deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=8" alt=""></span><div><strong>Rustam</strong><p>I came back the next day. That is rare.</p></div></article>
       </div>
       <div class="writer-notes-rail rail-right">
-        <article class="writer-note wide"><span class="note-avatar">S</span><div><strong>Sam</strong><p>The streak tree is weirdly motivating in the best way.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">D</span><div><strong>DarkJedi Plays</strong><p>I have already written more than I had in months.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">L</span><div><strong>lola</strong><p>I wanted to write a book and never knew where to start. Now I keep coming back.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">A</span><div><strong>Alex | Author</strong><p>Thank you for creating something so many writers needed.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">R</span><div><strong>Ravshan</strong><p>Dangerous mode finally stops me from wandering away.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">C</span><div><strong>Cam</strong><p>The word-count duel made drafting feel social without becoming noisy.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">F</span><div><strong>Farida</strong><p>It turns pressure into a small ritual.</p></div></article>
+        <article class="writer-note wide" style="--tilt:16deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=25" alt=""></span><div><strong>Sam 🌱</strong><p>The streak tree is weirdly motivating in the best way.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-14deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=65" alt=""></span><div><strong>DarkJedi Plays</strong><p>I have written more than I had in months.</p></div></article>
+        <article class="writer-note wide" style="--tilt:19deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=41" alt=""></span><div><strong>lola</strong><p>I wanted to write a book and never knew where to start. Now I keep coming back.</p></div></article>
+        <article class="writer-note wide" style="--tilt:-17deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=16" alt=""></span><div><strong>Alex | Author</strong><p>Thank you for creating something so many writers needed.</p></div></article>
+        <article class="writer-note compact" style="--tilt:12deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=36" alt=""></span><div><strong>Ravshan</strong><p>Dangerous mode stops me wandering away.</p></div></article>
+        <article class="writer-note wide" style="--tilt:-20deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=53" alt=""></span><div><strong>Cam ⚡</strong><p>The word-count duel made drafting feel social without becoming noisy.</p></div></article>
+        <article class="writer-note compact" style="--tilt:18deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=2" alt=""></span><div><strong>Farida</strong><p>It turns pressure into a small ritual.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-13deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=68" alt=""></span><div><strong>Malika</strong><p>I like seeing the words stack up.</p></div></article>
+        <article class="writer-note wide" style="--tilt:15deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=29" alt=""></span><div><strong>Daler</strong><p>The room feels private, but I still feel accountable.</p></div></article>
       </div>
       <div class="writer-notes-rail rail-left rail-low">
-        <article class="writer-note compact"><span class="note-avatar">D</span><div><strong>Devon Gadberry</strong><p>Already love it more than any other writing doc.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">K</span><div><strong>kyrvenan</strong><p>The fixed font and focused page make my paragraphs finally look neat.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">H</span><div><strong>hannah day</strong><p>The more I write here, the more convinced I am.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">T</span><div><strong>Timur</strong><p>I like that the app keeps pushing me back to the draft.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">I</span><div><strong>Iman</strong><p>The daily goal panel makes progress feel visible.</p></div></article>
-        <article class="writer-note wide"><span class="note-avatar">B</span><div><strong>Bekzod</strong><p>I came for the timer and stayed for the simple writing room.</p></div></article>
-        <article class="writer-note compact"><span class="note-avatar">A</span><div><strong>Aisha</strong><p>Less setup. More sentences.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-18deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=11" alt=""></span><div><strong>Devon Gadberry</strong><p>Already love it more than any other writing doc.</p></div></article>
+        <article class="writer-note wide" style="--tilt:14deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=70" alt=""></span><div><strong>kyrvenan 🍉</strong><p>The fixed font and focused page make my paragraphs finally look neat.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-12deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=49" alt=""></span><div><strong>hannah day</strong><p>The more I write here, the more convinced I am.</p></div></article>
+        <article class="writer-note wide" style="--tilt:20deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=21" alt=""></span><div><strong>Timur</strong><p>I like that the app keeps pushing me back to the draft.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-15deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=33" alt=""></span><div><strong>Iman</strong><p>The daily goal panel makes progress visible.</p></div></article>
+        <article class="writer-note wide" style="--tilt:17deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=57" alt=""></span><div><strong>Bekzod</strong><p>I came for the timer and stayed for the simple writing room.</p></div></article>
+        <article class="writer-note compact" style="--tilt:-19deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=6" alt=""></span><div><strong>Aisha</strong><p>Less setup. More sentences.</p></div></article>
+        <article class="writer-note compact" style="--tilt:13deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=39" alt=""></span><div><strong>Sardor</strong><p>The clean page helps me stay there.</p></div></article>
+        <article class="writer-note wide" style="--tilt:-16deg"><span class="note-avatar"><img src="https://i.pravatar.cc/80?img=64" alt=""></span><div><strong>Madina ✨</strong><p>My draft finally feels like something I can return to tomorrow.</p></div></article>
       </div>
     </div>
   </section>
@@ -247,11 +236,23 @@
             <h3>Writing rhythm</h3>
             <span>XP</span>
           </div>
-          <p>Your sessions feed streaks, levels, analytics, and a growing writing tree.</p>
-          <div class="mini-list">
-            <span>Level 12 progress <i>&rarr;</i></span>
-            <span>Tree stage 7 of 12 <i>&rarr;</i></span>
-            <span>Share progress card <i>&rarr;</i></span>
+          <div class="rhythm-tree-widget" aria-hidden="true">
+            <div class="rhythm-tree">
+              <span class="tree-leaf leaf-1"></span>
+              <span class="tree-leaf leaf-2"></span>
+              <span class="tree-leaf leaf-3"></span>
+              <span class="tree-leaf leaf-4"></span>
+              <span class="tree-trunk"></span>
+            </div>
+            <div class="rhythm-tree-copy">
+              <strong>Stage 7</strong>
+              <p>Grown by 115 focused hours</p>
+            </div>
+          </div>
+          <div class="rhythm-actions">
+            <button type="button">Level 12</button>
+            <button type="button">Tree stage</button>
+            <button type="button">Share card</button>
           </div>
         </article>
       </div>
@@ -339,7 +340,7 @@
 
   <section class="landing-pricing" id="pricing">
     <div class="landing-pricing-header">
-      <h2>Start free. Upgrade when the habit sticks.</h2>
+      <h2>Start <span class="pricing-free-word">free</span>. Upgrade later.</h2>
       <p>Keep the writing room simple, then unlock deeper customization and analytics when you need them.</p>
     </div>
     <div class="upgrade-cards" style="padding-bottom:64px">
@@ -409,6 +410,12 @@
       <div class="footer-brand">
         <span class="logo"><img src="/media/iwrite-logo.png" alt="" class="brand-mark" aria-hidden="true"><span>iWrite4.me</span></span>
         <p>Think for yourself. Write for yourself.</p>
+        <a href="/login" class="btn btn-small cta-shine-button footer-cta-button">
+          <span>Write for free</span>
+          <svg class="cta-shine-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z" clip-rule="evenodd"></path>
+          </svg>
+        </a>
       </div>
       <div class="footer-links">
         <div class="footer-col">
@@ -421,6 +428,8 @@
         <div class="footer-col">
           <h4>Writing</h4>
           <a href="/app">Start a session</a>
+          <a href="/login">Log in</a>
+          <a href="/register">Register</a>
           <a href="/app">Dangerous mode</a>
           <a href="/app">Writing duels</a>
         </div>
@@ -458,7 +467,7 @@
           <h3>Log in to save this draft and keep writing.</h3>
           <p>Your trial text stays on this screen, but saving, XP, streaks, tree growth, and full sessions start after you join.</p>
           <div class="trial-lock-actions">
-            <a href="/app" class="btn btn-primary btn-large cta-shine-button">
+            <a href="/login" class="btn btn-primary btn-large cta-shine-button">
               <span>Write for free</span>
               <svg class="cta-shine-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z" clip-rule="evenodd"></path>
@@ -471,6 +480,6 @@
     </div>
   </div>
 
-  <script src="/js/landing.js?v=15"></script>
+  <script src="/js/landing.js?v=17"></script>
 </body>
 </html>

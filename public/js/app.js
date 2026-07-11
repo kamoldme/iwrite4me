@@ -114,6 +114,7 @@ const App = {
     }
 
     const token = API.getToken();
+    const authPath = location.pathname === '/login' || location.pathname === '/register';
 
     // Resolve current URL to a view using the route table
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -140,8 +141,12 @@ const App = {
       this.user = await API.getMe();
       if (this.user.role === 'admin') {
         localStorage.setItem('iwrite_admin_token', token);
-        window.location.href = '/manual-login';
+        localStorage.removeItem('iwrite_token');
+        window.location.href = '/admin';
         return;
+      }
+      if (authPath) {
+        window.history.replaceState({}, document.title, '/app');
       }
       this.showApp();
       if (this.user.needsProfile) {
@@ -180,12 +185,70 @@ const App = {
     document.getElementById('auth-view').style.display = 'flex';
     document.getElementById('app-view').style.display = 'none';
     this.bindAuthEvents();
+    this.initAuthCarousel();
     this.initGoogleSignIn();
     Monsters.init();
   },
 
+  initAuthCarousel() {
+    const panel = document.querySelector('.auth-visual-panel');
+    const slides = Array.from(document.querySelectorAll('.auth-visual-slide'));
+    const dots = Array.from(document.querySelectorAll('.auth-visual-dots [data-auth-slide]'));
+    const bgLayers = Array.from(document.querySelectorAll('.auth-visual-bg-layer'));
+    if (!panel || !slides.length) return;
+
+    const setSlide = (index) => {
+      const next = ((index % slides.length) + slides.length) % slides.length;
+      const current = Number(panel.dataset.authSlide || 0);
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === next));
+      dots.forEach((dot, i) => dot.classList.toggle('active', i === next));
+      bgLayers.forEach((layer, i) => {
+        layer.classList.toggle('active', i === next);
+        if (i === current && i !== next) {
+          layer.classList.add('leaving');
+          window.setTimeout(() => layer.classList.remove('leaving'), 560);
+        } else if (i !== next) {
+          layer.classList.remove('leaving');
+        }
+      });
+      panel.dataset.authSlide = String(next);
+    };
+
+    if (!this._authCarouselBound) {
+      this._authCarouselBound = true;
+      dots.forEach(dot => {
+        dot.addEventListener('click', () => {
+          const index = Number(dot.dataset.authSlide || 0);
+          setSlide(index);
+          if (this._authCarouselTimer) clearInterval(this._authCarouselTimer);
+          this._authCarouselTimer = setInterval(() => {
+            const current = Number(panel.dataset.authSlide || 0);
+            setSlide(current + 1);
+          }, 4800);
+        });
+      });
+    }
+
+    setSlide(Number(panel.dataset.authSlide || 0));
+    if (!this._authCarouselTimer) {
+      this._authCarouselTimer = setInterval(() => {
+        const current = Number(panel.dataset.authSlide || 0);
+        setSlide(current + 1);
+      }, 4800);
+    }
+  },
+
   async initGoogleSignIn() {
     try {
+      if (!window.google?.accounts?.id) {
+        this._googleInitAttempts = (this._googleInitAttempts || 0) + 1;
+        if (this._googleInitAttempts <= 20) {
+          setTimeout(() => this.initGoogleSignIn(), 250);
+        }
+        return;
+      }
+
+      if (this._googleClientReady) return;
       const res = await fetch('/api/auth/google-client-id');
       const { clientId } = await res.json();
       if (!clientId) return;
@@ -196,34 +259,64 @@ const App = {
         callback: this.handleGoogleCredential.bind(this),
         auto_select: true
       });
+      this._googleClientReady = true;
 
       // Try One Tap auto-sign-in first (silent for returning users)
       window.google.accounts.id.prompt();
 
-      // Render button as fallback
-      const loginBtn = document.getElementById('google-login-btn');
-      if (loginBtn) {
-        const cardWidth = loginBtn.closest('.auth-card')?.offsetWidth || 380;
-        window.google.accounts.id.renderButton(loginBtn, {
+      document.querySelectorAll('.google-signin-btn').forEach(button => {
+        button.innerHTML = '';
+        window.google.accounts.id.renderButton(button, {
           type: 'standard',
           theme: 'outline',
           size: 'large',
           shape: 'rectangular',
           width: 320
         });
-      }
+      });
     } catch (err) {
       console.error('Failed to initialize Google Sign-In:', err);
     }
   },
 
-  async handleGoogleCredential(response) {
-    const errorEl = document.getElementById('login-error');
+  triggerGoogleSignIn() {
+    const visibleForm = document.querySelector('.auth-form-stack:not([hidden])');
+    const errorEl = visibleForm?.querySelector('.auth-error') || document.getElementById('login-error');
+    const showError = (message) => {
+      if (!errorEl) return;
+      errorEl.textContent = message;
+      errorEl.classList.add('visible');
+    };
+
+    if (!window.google?.accounts?.id) {
+      showError('Google sign-in is still loading. Try again in a moment.');
+      return;
+    }
+
     try {
+      window.google.accounts.id.prompt((notification) => {
+        if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) {
+          showError('Google sign-in could not open. Use email for now, or try again.');
+        }
+      });
+    } catch (err) {
+      console.error('Google prompt error:', err);
+      showError('Google sign-in failed to start.');
+    }
+  },
+
+  async handleGoogleCredential(response) {
+    const registerForm = document.getElementById('register-form');
+    const errorEl = registerForm && !registerForm.hidden
+      ? document.getElementById('register-error')
+      : document.getElementById('login-error');
+    try {
+      const privacyConsent = document.getElementById('register-privacy-consent');
+      const acceptedTerms = Boolean(registerForm && !registerForm.hidden && privacyConsent?.checked);
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: response.credential, ref: localStorage.getItem('iwrite_ref') || undefined })
+        body: JSON.stringify({ credential: response.credential, ref: localStorage.getItem('iwrite_ref') || undefined, acceptedTerms })
       });
 
       if (!res.ok) {
@@ -239,8 +332,12 @@ const App = {
       this.user = data.user;
       if (this.user.role === 'admin') {
         localStorage.setItem('iwrite_admin_token', data.token);
-        window.location.href = '/manual-login';
+        localStorage.removeItem('iwrite_token');
+        window.location.href = '/admin';
         return;
+      }
+      if (location.pathname === '/login' || location.pathname === '/register') {
+        history.replaceState(null, '', '/app');
       }
       this.showApp();
       // Show profile completion modal for new Google users
@@ -255,6 +352,10 @@ const App = {
   },
 
   showApp() {
+    if (this._authCarouselTimer) {
+      clearInterval(this._authCarouselTimer);
+      this._authCarouselTimer = null;
+    }
     Monsters.destroy();
     document.getElementById('auth-view').style.display = 'none';
     document.getElementById('app-view').style.display = 'block';
@@ -452,7 +553,461 @@ const App = {
   },
 
   bindAuthEvents() {
-    // Google Sign-In only — no email/password bindings needed
+    if (this._authEventsBound) return;
+    this._authEventsBound = true;
+
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    const modeButtons = document.querySelectorAll('[data-auth-mode]');
+    const loginError = document.getElementById('login-error');
+    const registerError = document.getElementById('register-error');
+    const forgotPasswordError = document.getElementById('forgot-password-error');
+    const registerAccountFields = registerForm?.querySelector('.register-account-fields');
+    const registerVerification = registerForm?.querySelector('.register-verification');
+    const registerVerificationEmail = document.getElementById('register-verification-email');
+    const verificationCodeInput = document.getElementById('register-verification-code');
+    const verificationDigitInputs = Array.from(document.querySelectorAll('[data-verification-digit]'));
+    const privacyConsent = document.getElementById('register-privacy-consent');
+    const resendVerificationBtn = document.getElementById('resend-verification-code');
+    const forgotRequestStep = forgotPasswordForm?.querySelector('.forgot-request-step');
+    const forgotResetStep = forgotPasswordForm?.querySelector('.forgot-reset-step');
+    const forgotResetEmail = document.getElementById('forgot-password-reset-email');
+    const passwordResetCodeInput = document.getElementById('password-reset-code');
+    const passwordResetDigitInputs = Array.from(document.querySelectorAll('[data-password-reset-digit]'));
+    const resendPasswordResetBtn = document.getElementById('resend-password-reset-code');
+    let pendingVerificationEmail = '';
+    let pendingPasswordResetEmail = '';
+
+    const setError = (el, message) => {
+      if (!el) return;
+      el.textContent = message || '';
+      el.classList.toggle('visible', Boolean(message));
+    };
+
+    const syncVerificationCode = () => {
+      if (!verificationCodeInput) return '';
+      const code = verificationDigitInputs.map(input => input.value).join('');
+      verificationCodeInput.value = code;
+      return code;
+    };
+
+    const setVerificationDigits = (value = '', startIndex = 0) => {
+      const digits = String(value).replace(/\D/g, '').slice(0, 6).split('');
+      const offset = digits.length === 6 ? 0 : startIndex;
+      if (digits.length === 6) {
+        verificationDigitInputs.forEach(input => { input.value = ''; });
+      }
+      digits.forEach((digit, index) => {
+        const target = verificationDigitInputs[offset + index];
+        if (target) target.value = digit;
+      });
+      const nextIndex = Math.min(offset + digits.length, verificationDigitInputs.length - 1);
+      syncVerificationCode();
+      verificationDigitInputs[nextIndex]?.focus();
+      verificationDigitInputs[nextIndex]?.select();
+    };
+
+    const clearVerificationDigits = () => {
+      verificationDigitInputs.forEach(input => { input.value = ''; });
+      syncVerificationCode();
+    };
+
+    const syncPasswordResetCode = () => {
+      if (!passwordResetCodeInput) return '';
+      const code = passwordResetDigitInputs.map(input => input.value).join('');
+      passwordResetCodeInput.value = code;
+      return code;
+    };
+
+    const setPasswordResetDigits = (value = '', startIndex = 0) => {
+      const digits = String(value).replace(/\D/g, '').slice(0, 6).split('');
+      const offset = digits.length === 6 ? 0 : startIndex;
+      if (digits.length === 6) {
+        passwordResetDigitInputs.forEach(input => { input.value = ''; });
+      }
+      digits.forEach((digit, index) => {
+        const target = passwordResetDigitInputs[offset + index];
+        if (target) target.value = digit;
+      });
+      const nextIndex = Math.min(offset + digits.length, passwordResetDigitInputs.length - 1);
+      syncPasswordResetCode();
+      passwordResetDigitInputs[nextIndex]?.focus();
+      passwordResetDigitInputs[nextIndex]?.select();
+    };
+
+    const clearPasswordResetDigits = () => {
+      passwordResetDigitInputs.forEach(input => { input.value = ''; });
+      syncPasswordResetCode();
+    };
+
+    verificationDigitInputs.forEach((input, index) => {
+      input.addEventListener('input', () => {
+        const digits = input.value.replace(/\D/g, '');
+        if (digits.length > 1) {
+          setVerificationDigits(digits, index);
+          return;
+        }
+        input.value = digits;
+        syncVerificationCode();
+        if (digits && index < verificationDigitInputs.length - 1) {
+          verificationDigitInputs[index + 1].focus();
+          verificationDigitInputs[index + 1].select();
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && index > 0) {
+          e.preventDefault();
+          verificationDigitInputs[index - 1].value = '';
+          verificationDigitInputs[index - 1].focus();
+          syncVerificationCode();
+        } else if (e.key === 'ArrowLeft' && index > 0) {
+          e.preventDefault();
+          verificationDigitInputs[index - 1].focus();
+        } else if (e.key === 'ArrowRight' && index < verificationDigitInputs.length - 1) {
+          e.preventDefault();
+          verificationDigitInputs[index + 1].focus();
+        }
+      });
+
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        setVerificationDigits(e.clipboardData?.getData('text') || '', index);
+      });
+
+      input.addEventListener('focus', () => input.select());
+    });
+
+    passwordResetDigitInputs.forEach((input, index) => {
+      input.addEventListener('input', () => {
+        const digits = input.value.replace(/\D/g, '');
+        if (digits.length > 1) {
+          setPasswordResetDigits(digits, index);
+          return;
+        }
+        input.value = digits;
+        syncPasswordResetCode();
+        if (digits && index < passwordResetDigitInputs.length - 1) {
+          passwordResetDigitInputs[index + 1].focus();
+          passwordResetDigitInputs[index + 1].select();
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && index > 0) {
+          e.preventDefault();
+          passwordResetDigitInputs[index - 1].value = '';
+          passwordResetDigitInputs[index - 1].focus();
+          syncPasswordResetCode();
+        } else if (e.key === 'ArrowLeft' && index > 0) {
+          e.preventDefault();
+          passwordResetDigitInputs[index - 1].focus();
+        } else if (e.key === 'ArrowRight' && index < passwordResetDigitInputs.length - 1) {
+          e.preventDefault();
+          passwordResetDigitInputs[index + 1].focus();
+        }
+      });
+
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        setPasswordResetDigits(e.clipboardData?.getData('text') || '', index);
+      });
+
+      input.addEventListener('focus', () => input.select());
+    });
+
+    const setMode = (mode, updateUrl = true) => {
+      const isRegister = mode === 'register';
+      const isForgot = mode === 'forgot';
+      if (loginForm) loginForm.hidden = isRegister || isForgot;
+      if (registerForm) registerForm.hidden = !isRegister;
+      if (forgotPasswordForm) forgotPasswordForm.hidden = !isForgot;
+      modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.authMode === mode));
+      setError(loginError, '');
+      setError(registerError, '');
+      setError(forgotPasswordError, '');
+      if (isRegister && !pendingVerificationEmail) {
+        registerForm?.classList.remove('awaiting-verification');
+        if (registerAccountFields) registerAccountFields.hidden = false;
+        if (registerVerification) registerVerification.hidden = true;
+      }
+      if (isForgot && !pendingPasswordResetEmail) {
+        if (forgotRequestStep) forgotRequestStep.hidden = false;
+        if (forgotResetStep) forgotResetStep.hidden = true;
+      }
+      const targetPath = isForgot ? '/forgot-password' : (isRegister ? '/register' : '/login');
+      if (updateUrl && location.pathname !== targetPath) {
+        history.pushState(null, '', targetPath);
+      }
+    };
+
+    const showVerificationStep = (email) => {
+      pendingVerificationEmail = email;
+      registerForm?.classList.add('awaiting-verification');
+      if (registerAccountFields) registerAccountFields.hidden = true;
+      if (registerVerification) registerVerification.hidden = false;
+      if (registerVerificationEmail) registerVerificationEmail.textContent = email;
+      if (verificationCodeInput) {
+        clearVerificationDigits();
+        verificationDigitInputs[0]?.focus();
+      }
+    };
+
+    const showPasswordResetStep = (email) => {
+      pendingPasswordResetEmail = email;
+      if (forgotRequestStep) forgotRequestStep.hidden = true;
+      if (forgotResetStep) forgotResetStep.hidden = false;
+      if (forgotResetEmail) forgotResetEmail.textContent = email;
+      clearPasswordResetDigits();
+      passwordResetDigitInputs[0]?.focus();
+    };
+
+    const finishAuth = (data) => {
+      this.user = data.user;
+      if (this.user.role === 'admin') {
+        localStorage.setItem('iwrite_admin_token', data.token || API.getToken());
+        localStorage.removeItem('iwrite_token');
+        window.location.href = '/admin';
+        return;
+      }
+      if (location.pathname === '/login' || location.pathname === '/register') {
+        history.replaceState(null, '', '/app');
+      }
+      this.showApp();
+      if (data.isNewUser || this.user.needsProfile) {
+        this.showProfileCompleteModal();
+      }
+    };
+
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (btn.hasAttribute('data-reset-register')) {
+          pendingVerificationEmail = '';
+          registerForm?.classList.remove('awaiting-verification');
+          if (registerAccountFields) registerAccountFields.hidden = false;
+          if (registerVerification) registerVerification.hidden = true;
+        }
+        if (btn.hasAttribute('data-reset-password-request')) {
+          pendingPasswordResetEmail = '';
+          if (forgotRequestStep) forgotRequestStep.hidden = false;
+          if (forgotResetStep) forgotResetStep.hidden = true;
+        }
+        setMode(btn.dataset.authMode);
+      });
+    });
+
+    document.querySelectorAll('.auth-password-row a').forEach(link => {
+      link.addEventListener('click', (e) => e.preventDefault());
+    });
+
+    document.querySelectorAll('[data-google-signin]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.triggerGoogleSignIn();
+      });
+    });
+
+    resendVerificationBtn?.addEventListener('click', async () => {
+      if (!pendingVerificationEmail) return;
+      setError(registerError, '');
+      resendVerificationBtn.disabled = true;
+      const originalText = resendVerificationBtn.textContent;
+      resendVerificationBtn.textContent = 'Sending...';
+      try {
+        await API.resendVerification(pendingVerificationEmail);
+        setError(registerError, 'A new code was sent. Check your email.');
+      } catch (err) {
+        setError(registerError, err.message || 'Could not resend the code.');
+      } finally {
+        resendVerificationBtn.disabled = false;
+        resendVerificationBtn.textContent = originalText;
+      }
+    });
+
+    resendPasswordResetBtn?.addEventListener('click', async () => {
+      if (!pendingPasswordResetEmail) return;
+      setError(forgotPasswordError, '');
+      resendPasswordResetBtn.disabled = true;
+      const originalText = resendPasswordResetBtn.textContent;
+      resendPasswordResetBtn.textContent = 'Sending...';
+      try {
+        await API.requestPasswordReset(pendingPasswordResetEmail);
+        setError(forgotPasswordError, 'A new reset code was sent. Check your email.');
+      } catch (err) {
+        setError(forgotPasswordError, err.message || 'Could not resend the code.');
+      } finally {
+        resendPasswordResetBtn.disabled = false;
+        resendPasswordResetBtn.textContent = originalText;
+      }
+    });
+
+    forgotPasswordForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setError(forgotPasswordError, '');
+      const button = pendingPasswordResetEmail
+        ? forgotResetStep?.querySelector('button[type="submit"]')
+        : forgotRequestStep?.querySelector('button[type="submit"]');
+
+      if (pendingPasswordResetEmail) {
+        const code = syncPasswordResetCode();
+        const newPassword = document.getElementById('forgot-new-password')?.value;
+        const confirmPassword = document.getElementById('forgot-confirm-password')?.value;
+        if (!code || code.replace(/\D/g, '').length !== 6) {
+          setError(forgotPasswordError, 'Enter the 6-digit reset code.');
+          return;
+        }
+        if (!newPassword || !confirmPassword) {
+          setError(forgotPasswordError, 'Enter and confirm your new password.');
+          return;
+        }
+        if (newPassword.length < 8) {
+          setError(forgotPasswordError, 'New password must be at least 8 characters.');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          setError(forgotPasswordError, 'New passwords do not match.');
+          return;
+        }
+        if (button) {
+          button.disabled = true;
+          button.textContent = 'Resetting...';
+        }
+        try {
+          const data = await API.resetPassword(pendingPasswordResetEmail, code, newPassword, confirmPassword);
+          pendingPasswordResetEmail = '';
+          finishAuth(data);
+        } catch (err) {
+          setError(forgotPasswordError, err.message || 'Password reset failed.');
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'Reset password';
+          }
+        }
+        return;
+      }
+
+      const email = document.getElementById('forgot-password-email')?.value.trim();
+      if (!email) {
+        setError(forgotPasswordError, 'Enter your email.');
+        return;
+      }
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Sending...';
+      }
+      try {
+        await API.requestPasswordReset(email);
+        showPasswordResetStep(email);
+      } catch (err) {
+        setError(forgotPasswordError, err.message || 'Could not send password reset code.');
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Send reset code';
+        }
+      }
+    });
+
+    loginForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setError(loginError, '');
+      const button = loginForm.querySelector('button[type="submit"]');
+      const email = document.getElementById('login-email')?.value.trim();
+      const password = document.getElementById('login-password')?.value;
+      if (!email || !password) {
+        setError(loginError, 'Enter your email and password.');
+        return;
+      }
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Logging in...';
+      }
+      try {
+        const data = await API.login(email, password);
+        finishAuth(data);
+      } catch (err) {
+        setError(loginError, err.message || 'Login failed.');
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Login';
+        }
+      }
+    });
+
+    registerForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setError(registerError, '');
+      const button = pendingVerificationEmail
+        ? registerVerification?.querySelector('button[type="submit"]')
+        : registerAccountFields?.querySelector('button[type="submit"]');
+      if (pendingVerificationEmail) {
+        const code = syncVerificationCode();
+        if (!code || code.replace(/\D/g, '').length !== 6) {
+          setError(registerError, 'Enter the 6-digit verification code.');
+          return;
+        }
+        if (button) {
+          button.disabled = true;
+          button.textContent = 'Verifying...';
+        }
+        try {
+          const data = await API.verifyEmail(pendingVerificationEmail, code);
+          localStorage.removeItem('iwrite_ref');
+          finishAuth({ ...data, isNewUser: true });
+        } catch (err) {
+          setError(registerError, err.message || 'Verification failed.');
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'Verify and enter';
+          }
+        }
+        return;
+      }
+      const name = document.getElementById('register-name')?.value.trim();
+      const email = document.getElementById('register-email')?.value.trim();
+      const password = document.getElementById('register-password')?.value;
+      if (!name || !email || !password) {
+        setError(registerError, 'Enter your name, email, and password.');
+        return;
+      }
+      if (password.length < 8) {
+        setError(registerError, 'Password must be at least 8 characters.');
+        return;
+      }
+      if (!privacyConsent?.checked) {
+        setError(registerError, 'Agree to the Privacy Policy and Terms of Service to create an account.');
+        return;
+      }
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Creating...';
+      }
+      try {
+        const data = await API.register(name, email, password, true);
+        if (data.requiresVerification) {
+          showVerificationStep(data.email || email);
+          if (data.emailSent === false) {
+            setError(registerError, 'Account created, but the first code could not be sent. Use resend code in a moment.');
+          }
+        } else {
+          localStorage.removeItem('iwrite_ref');
+          finishAuth({ ...data, isNewUser: true });
+        }
+      } catch (err) {
+        setError(registerError, err.message || 'Registration failed.');
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Create account';
+        }
+      }
+    });
+
+    setMode(location.pathname === '/forgot-password' ? 'forgot' : (location.pathname === '/register' ? 'register' : 'login'), false);
   },
 
   bindAppEvents() {
@@ -5085,11 +5640,66 @@ const App = {
 
   // Stripe pricing data
   _stripePricing: {
-    '1m': { price: '1.99', period: '/mo', uzs: '~25,000 UZS', savings: null },
-    '3m': { price: '4.99', period: '/3 months', uzs: '~62,000 UZS', savings: 'Save 17% vs monthly' },
-    '6m': { price: '8.99', period: '/6 months', uzs: '~112,000 UZS', savings: 'Save 25% vs monthly' }
+    '1m': { price: '1.99', period: '/month', label: '1 month', shortLabel: '1 Mo', stripeUzs: 25000, savings: null },
+    '3m': { price: '4.99', period: '/3 months', label: '3 months', shortLabel: '3 Mo', stripeUzs: 62000, savings: 'Popular' },
+    '6m': { price: '8.99', period: '/6 months', label: '6 months', shortLabel: '6 Mo', stripeUzs: 112000, savings: 'Best value' }
   },
   _selectedDuration: '1m',
+  _defaultPaymePrices: { '1m': 24990, '3m': 59990, '6m': 99990 },
+  _paymeLogoUrl: 'https://logo.clearbit.com/payme.uz',
+
+  _formatSom(amount) {
+    const n = Number(amount || 0);
+    return n ? `${n.toLocaleString('en-US')} so'm` : 'Not available';
+  },
+
+  _paymePrice(duration) {
+    return Number((this._payCfg && this._payCfg.uzs && this._payCfg.uzs[duration]) || this._defaultPaymePrices[duration] || 0);
+  },
+
+  _paymentLogo(provider, extraClass = '') {
+    if (provider === 'stripe') return `<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe ${extraClass}">`;
+    if (provider === 'payme') return `<img src="${this._paymeLogoUrl}" alt="Payme" class="pay-logo pay-logo-payme ${extraClass}" data-chip="payme">`;
+    return `<span class="pay-chip pay-chip-${provider} ${extraClass}">${provider}</span>`;
+  },
+
+  _bindPayLogoFallbacks(root = document) {
+    root.querySelectorAll('.pay-logo[data-chip]').forEach(img => {
+      if (img._fallbackBound) return;
+      img._fallbackBound = true;
+      img.addEventListener('error', () => {
+        const k = img.dataset.chip;
+        const span = document.createElement('span');
+        span.className = `pay-chip pay-chip-${k}`;
+        span.textContent = k === 'payme' ? 'Payme' : 'Click';
+        img.replaceWith(span);
+      });
+    });
+  },
+
+  _renderUpgradePriceRows() {
+    return Object.entries(this._stripePricing).map(([duration, d]) => {
+      const payme = this._paymePrice(duration);
+      const cheaper = payme && d.stripeUzs ? Math.max(0, d.stripeUzs - payme) : 0;
+      return `<div class="upgrade-price-option">
+        <div class="upgrade-price-option-main">
+          <strong>$${d.price}</strong>
+          <span>${d.period}</span>
+        </div>
+        <div class="upgrade-price-option-payments">
+          <div class="upgrade-provider-price">
+            ${this._paymentLogo('stripe')}
+            <span>${this._formatSom(d.stripeUzs)}</span>
+          </div>
+          <div class="upgrade-provider-price upgrade-provider-price-payme">
+            ${this._paymentLogo('payme')}
+            <span>${this._formatSom(payme)}</span>
+            <em>${cheaper ? `${this._formatSom(cheaper)} cheaper` : 'cheaper'}</em>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  },
 
   loadUpgrade() {
     const el = document.getElementById('upgrade-plan-cards');
@@ -5167,16 +5777,9 @@ const App = {
             ${u.planExpiresAt === 'infinite' ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Duration</span><span class="upgrade-pro-value">Lifetime</span></div>` : ''}
           </div>`;
           })() : `
-          <div class="upgrade-duration-tabs">
-            <button class="upgrade-duration-pill${this._selectedDuration === '1m' ? ' active' : ''}" data-duration="1m">1 Mo</button>
-            <button class="upgrade-duration-pill${this._selectedDuration === '3m' ? ' active' : ''}" data-duration="3m">3 Mo<span class="upgrade-popular-label">Popular</span></button>
-            <button class="upgrade-duration-pill${this._selectedDuration === '6m' ? ' active' : ''}" data-duration="6m">6 Mo</button>
+          <div class="upgrade-payment-comparison">
+            ${this._renderUpgradePriceRows()}
           </div>
-          <div class="upgrade-card-price" id="upgrade-price-display">
-            <span class="upgrade-price-dollar">$</span><span class="upgrade-price-amount">${dur.price}</span><span class="upgrade-price-period">${dur.period}</span>
-          </div>
-          ${dur.savings ? `<div class="upgrade-price-savings">${dur.savings}</div>` : ''}
-          <div class="upgrade-price-uzs">${dur.uzs}</div>
           `}
         </div>
         <div class="upgrade-card-btn-wrap">
@@ -5195,40 +5798,12 @@ const App = {
       </div>
     `;
 
-    // Bind duration tab clicks — update price inline, don't re-render everything
-    el.querySelectorAll('.upgrade-duration-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        this._selectedDuration = pill.dataset.duration;
-        const d = this._stripePricing[this._selectedDuration];
-        // Update active pill
-        el.querySelectorAll('.upgrade-duration-pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        // Update price display
-        const priceDisplay = document.getElementById('upgrade-price-display');
-        if (priceDisplay) {
-          priceDisplay.innerHTML = `<span class="upgrade-price-dollar">$</span><span class="upgrade-price-amount">${d.price}</span><span class="upgrade-price-period">${d.period}</span>`;
-        }
-        // Update savings line
-        const savingsEl = priceDisplay && priceDisplay.nextElementSibling;
-        if (savingsEl && savingsEl.classList.contains('upgrade-price-savings')) {
-          if (d.savings) { savingsEl.textContent = d.savings; savingsEl.style.display = ''; }
-          else { savingsEl.style.display = 'none'; }
-        } else if (d.savings && priceDisplay) {
-          const s = document.createElement('div');
-          s.className = 'upgrade-price-savings';
-          s.textContent = d.savings;
-          priceDisplay.insertAdjacentElement('afterend', s);
-        }
-        // Update UZS line
-        const uzsEl = el.querySelector('.upgrade-price-uzs');
-        if (uzsEl) uzsEl.textContent = d.uzs;
-      });
-    });
+    this._bindPayLogoFallbacks(el);
 
     // Bind purchase button
     const purchaseBtn = document.getElementById('purchase-plan-btn');
     if (purchaseBtn) {
-      purchaseBtn.addEventListener('click', () => this._startCheckout(false));
+      purchaseBtn.addEventListener('click', () => this.openPaymentChoiceModal());
     }
 
     // Bind trial link
@@ -5279,23 +5854,11 @@ const App = {
     const cfg = this._payCfg || { providers: {}, localEnabled: false };
     const p = cfg.providers || {};
 
-    // UZS provider buttons (below the plan cards) — non-Pro users, only when local pay is live
+    // The old separate UZS panel is intentionally empty now. The purchase flow
+    // chooses duration + provider inside the in-app payment modal.
     const el = document.getElementById('upgrade-payments');
     if (el) {
-      let uzsHtml = '';
-      if (!isPro && cfg.localEnabled) {
-        const btns = [];
-        if (p.click) btns.push('<button class="uzs-pay-btn uzs-pay-click" data-provider="click">Pay with Click</button>');
-        if (p.payme) btns.push('<button class="uzs-pay-btn uzs-pay-payme" data-provider="payme">Pay with Payme</button>');
-        if (p.atmos) btns.push('<button class="uzs-pay-btn uzs-pay-card" data-provider="atmos">Pay by card</button>');
-        if (btns.length) {
-          uzsHtml = `<div class="uzs-pay"><div class="uzs-pay-head">Pay in UZS (Uzbekistan)</div><div class="uzs-pay-btns">${btns.join('')}</div></div>`;
-        }
-      }
-      el.innerHTML = uzsHtml;
-      el.querySelectorAll('.uzs-pay-btn').forEach(btn => {
-        btn.addEventListener('click', () => this._payWithProvider(btn.dataset.provider, btn));
-      });
+      el.innerHTML = '';
     }
 
     // "Secure payment via" logos — centered, just below the hero subtitle.
@@ -5303,30 +5866,111 @@ const App = {
     if (logosEl) {
       const logos = [];
       if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
-      // Official SVGs if present (drop payme.svg / click.svg into public/img/), else a chip.
-      if (p.payme) logos.push('<img src="/img/payme.svg?v=1" alt="Payme" class="pay-logo pay-logo-payme" data-chip="payme">');
+      if (p.payme) logos.push(this._paymentLogo('payme'));
       if (p.click) logos.push('<img src="/img/click.svg?v=1" alt="Click" class="pay-logo pay-logo-click" data-chip="click">');
       logosEl.innerHTML = `<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
-      logosEl.querySelectorAll('.pay-logo[data-chip]').forEach(img => {
-        img.addEventListener('error', () => {
-          const k = img.dataset.chip;
-          const span = document.createElement('span');
-          span.className = `pay-chip pay-chip-${k}`;
-          span.textContent = k === 'payme' ? 'Payme' : 'Click';
-          img.replaceWith(span);
-        });
-      });
+      this._bindPayLogoFallbacks(logosEl);
     }
   },
 
-  async _payWithProvider(provider, btn) {
+  async openPaymentChoiceModal() {
+    await this._loadPaymentsConfig();
+    let modal = document.getElementById('payment-choice-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'payment-choice-modal';
+      modal.className = 'payment-choice-modal';
+      document.body.appendChild(modal);
+    }
+
+    const cfg = this._payCfg || { providers: {}, uzs: {} };
+    const providers = cfg.providers || {};
+    const hasStripe = providers.stripe !== false;
+    const hasPayme = !!providers.payme && !!cfg.localEnabled;
+    const selectedProvider = hasPayme ? 'payme' : 'stripe';
+    const selectedDuration = this._selectedDuration || '1m';
+
+    modal.innerHTML = `<div class="payment-choice-backdrop" data-close-payment-modal></div>
+      <div class="payment-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-choice-title">
+        <button class="payment-choice-close" type="button" data-close-payment-modal aria-label="Close">&times;</button>
+        <div class="payment-choice-head">
+          <span class="payment-choice-kicker">Choose your Pro plan</span>
+          <h3 id="payment-choice-title">Select duration and payment method</h3>
+          <p>Payme is cheaper in UZS. Stripe stays available for international cards.</p>
+        </div>
+        <div class="payment-choice-section">
+          <label>Duration</label>
+          <div class="payment-choice-durations">
+            ${Object.entries(this._stripePricing).map(([duration, d]) => `<button type="button" class="payment-choice-duration${duration === selectedDuration ? ' active' : ''}" data-duration="${duration}">
+              <strong>${d.shortLabel}</strong>
+              <span>$${d.price} ${d.period}</span>
+              ${d.savings ? `<em>${d.savings}</em>` : ''}
+            </button>`).join('')}
+          </div>
+        </div>
+        <div class="payment-choice-section">
+          <label>Payment method</label>
+          <div class="payment-choice-methods">
+            ${hasStripe ? `<button type="button" class="payment-choice-method${selectedProvider === 'stripe' ? ' active' : ''}" data-provider="stripe">
+              ${this._paymentLogo('stripe')}
+              <span class="payment-choice-method-copy"><strong>Stripe</strong><small data-stripe-price></small></span>
+            </button>` : ''}
+            ${hasPayme ? `<button type="button" class="payment-choice-method${selectedProvider === 'payme' ? ' active' : ''}" data-provider="payme">
+              ${this._paymentLogo('payme')}
+              <span class="payment-choice-method-copy"><strong>Payme</strong><small data-payme-price></small></span>
+              <em>cheaper</em>
+            </button>` : ''}
+          </div>
+        </div>
+        <button type="button" class="payment-choice-continue" data-payment-continue>Continue</button>
+      </div>`;
+
+    const state = { duration: selectedDuration, provider: selectedProvider };
+    const updatePrices = () => {
+      const stripe = this._stripePricing[state.duration];
+      const payme = this._paymePrice(state.duration);
+      const stripeLabel = modal.querySelector('[data-stripe-price]');
+      const paymeLabel = modal.querySelector('[data-payme-price]');
+      if (stripeLabel) stripeLabel.textContent = `${this._formatSom(stripe.stripeUzs)} equivalent`;
+      if (paymeLabel) paymeLabel.textContent = `${this._formatSom(payme)} in UZS`;
+    };
+    updatePrices();
+    this._bindPayLogoFallbacks(modal);
+
+    modal.querySelectorAll('[data-close-payment-modal]').forEach(node => {
+      node.addEventListener('click', () => modal.classList.remove('active'));
+    });
+    modal.querySelectorAll('.payment-choice-duration').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.duration = btn.dataset.duration;
+        this._selectedDuration = state.duration;
+        modal.querySelectorAll('.payment-choice-duration').forEach(b => b.classList.toggle('active', b === btn));
+        updatePrices();
+      });
+    });
+    modal.querySelectorAll('.payment-choice-method').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.provider = btn.dataset.provider;
+        modal.querySelectorAll('.payment-choice-method').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+    modal.querySelector('[data-payment-continue]')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      if (state.provider === 'payme') await this._payWithProvider('payme', btn, state.duration);
+      else await this._startCheckout(false, state.duration, btn);
+    });
+
+    modal.classList.add('active');
+  },
+
+  async _payWithProvider(provider, btn, duration = this._selectedDuration) {
     const original = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = 'Redirecting…'; }
     try {
       const res = await fetch(`/api/${provider}/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.getToken()}` },
-        body: JSON.stringify({ duration: this._selectedDuration })
+        body: JSON.stringify({ duration })
       });
       const data = await res.json();
       if (data.url) { window.location.href = data.url; return; }
@@ -5527,9 +6171,9 @@ const App = {
     return currentBlock + rows;
   },
 
-  async _startCheckout(isTrial) {
+  async _startCheckout(isTrial, duration = this._selectedDuration, triggerBtn = null) {
     try {
-      const purchaseBtn = document.getElementById('purchase-plan-btn');
+      const purchaseBtn = triggerBtn || document.getElementById('purchase-plan-btn');
       const trialLink = document.getElementById('start-trial-link');
       if (purchaseBtn) { purchaseBtn.disabled = true; purchaseBtn.textContent = 'Opening checkout...'; }
       if (trialLink) { trialLink.style.pointerEvents = 'none'; trialLink.style.opacity = '0.5'; }
@@ -5540,7 +6184,7 @@ const App = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API.getToken()}`
         },
-        body: JSON.stringify({ duration: this._selectedDuration, trial: isTrial })
+        body: JSON.stringify({ duration, trial: isTrial })
       });
 
       const data = await res.json();
@@ -5553,6 +6197,7 @@ const App = {
 
       // Open Stripe checkout in new tab
       window.open(data.url, '_blank');
+      document.getElementById('payment-choice-modal')?.classList.remove('active');
 
       // Update button to show waiting state
       if (purchaseBtn) { purchaseBtn.textContent = 'Waiting for payment...'; }
