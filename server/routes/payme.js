@@ -60,7 +60,8 @@ router.post('/create', authenticate, async (req, res) => {
     const c = cfg();
     const returnUrl = `${APP_URL}/app.html?pay=payme`;
     const raw = `m=${c.merchantId};ac.${ACCOUNT_FIELD}=${orderId};a=${amountTiyin};c=${returnUrl}`;
-    const url = `${checkoutBaseUrl()}/${Buffer.from(raw).toString('base64')}`;
+    const payload = encodeURIComponent(Buffer.from(raw).toString('base64'));
+    const url = `${checkoutBaseUrl()}/${payload}`;
     res.json({ url, orderId });
   } catch (err) {
     logAction('payme_create_error', { message: err.message });

@@ -9513,61 +9513,85 @@ body.editor-active .mobile-sidebar-toggle {
 
 .upgrade-payment-comparison {
   display: grid;
-  gap: 10px;
-  margin: 16px 0 22px;
+  gap: 9px;
+  margin: 16px 0 20px;
 }
 .upgrade-price-option {
   display: grid;
-  grid-template-columns: 118px minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
   align-items: center;
-  padding: 12px;
+  width: 100%;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: rgba(127,127,127,0.05);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s ease, background .15s ease, transform .08s ease;
+}
+.upgrade-price-option:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-hover);
+}
+.upgrade-price-option.active {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.08);
 }
 .upgrade-price-option-main strong {
   display: block;
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: 25px;
+  font-size: 28px;
   line-height: 1;
-  letter-spacing: -0.5px;
+  letter-spacing: 0;
 }
 .upgrade-price-option-main span {
   display: block;
-  margin-top: 5px;
+  margin-top: 6px;
   color: var(--text-muted);
   font-size: 12px;
 }
 .upgrade-price-option-payments {
   display: grid;
-  gap: 7px;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  min-width: 0;
 }
 .upgrade-provider-price {
-  display: flex;
+  display: grid;
+  grid-template-columns: 64px minmax(92px, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 28px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
+  min-width: 0;
 }
 .upgrade-provider-price .pay-logo {
-  width: 58px;
+  width: 60px;
   height: auto;
   max-height: 22px;
   object-fit: contain;
+  justify-self: start;
+}
+.upgrade-provider-price span {
+  min-width: 0;
+  white-space: nowrap;
 }
 .upgrade-provider-price-payme {
   color: var(--text-primary);
 }
 .upgrade-provider-price-payme em {
-  margin-left: auto;
   color: var(--accent);
-  font-size: 11px;
+  font-size: 12px;
   font-style: normal;
+  font-weight: 800;
   white-space: nowrap;
+  justify-self: end;
 }
 
 .payment-choice-modal {
@@ -10686,9 +10710,9 @@ body.editor-active .mobile-sidebar-toggle {
 }
 .upgrade-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  max-width: 720px;
+  grid-template-columns: minmax(280px, .82fr) minmax(360px, 1.18fr);
+  gap: 18px;
+  max-width: 920px;
   margin: 0 auto;
   padding: 0 24px 48px;
 }
@@ -11075,6 +11099,21 @@ body.editor-active .mobile-sidebar-toggle {
   .upgrade-hero { padding: 32px 16px 24px; }
   .upgrade-title { font-size: 1.6rem; }
   .upgrade-cards { grid-template-columns: 1fr; padding: 0 16px 32px; }
+  .upgrade-price-option { grid-template-columns: 1fr; gap: 11px; }
+  .upgrade-price-option-main {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .upgrade-price-option-main span { margin-top: 0; }
+  .upgrade-provider-price {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+  .upgrade-provider-price-payme em {
+    grid-column: 2;
+    justify-self: start;
+    white-space: normal;
+  }
 }
 
 .achievement-icon {

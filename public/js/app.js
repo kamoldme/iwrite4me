@@ -5646,7 +5646,7 @@ const App = {
   },
   _selectedDuration: '1m',
   _defaultPaymePrices: { '1m': 24990, '3m': 59990, '6m': 99990 },
-  _paymeLogoUrl: 'https://logo.clearbit.com/payme.uz',
+  _paymeLogoUrl: 'https://cdn.payme.uz/logo/pb_color_logo_horizontal.svg',
 
   _formatSom(amount) {
     const n = Number(amount || 0);
@@ -5655,6 +5655,14 @@ const App = {
 
   _paymePrice(duration) {
     return Number((this._payCfg && this._payCfg.uzs && this._payCfg.uzs[duration]) || this._defaultPaymePrices[duration] || 0);
+  },
+
+  _paymeValueLabel(duration) {
+    const d = this._stripePricing[duration] || {};
+    const payme = this._paymePrice(duration);
+    const delta = payme && d.stripeUzs ? Math.max(0, d.stripeUzs - payme) : 0;
+    if (!delta || delta < 100) return 'same value';
+    return `${this._formatSom(delta)} cheaper`;
   },
 
   _paymentLogo(provider, extraClass = '') {
@@ -5680,8 +5688,7 @@ const App = {
   _renderUpgradePriceRows() {
     return Object.entries(this._stripePricing).map(([duration, d]) => {
       const payme = this._paymePrice(duration);
-      const cheaper = payme && d.stripeUzs ? Math.max(0, d.stripeUzs - payme) : 0;
-      return `<div class="upgrade-price-option">
+      return `<button type="button" class="upgrade-price-option${duration === this._selectedDuration ? ' active' : ''}" data-upgrade-duration="${duration}">
         <div class="upgrade-price-option-main">
           <strong>$${d.price}</strong>
           <span>${d.period}</span>
@@ -5694,10 +5701,10 @@ const App = {
           <div class="upgrade-provider-price upgrade-provider-price-payme">
             ${this._paymentLogo('payme')}
             <span>${this._formatSom(payme)}</span>
-            <em>${cheaper ? `${this._formatSom(cheaper)} cheaper` : 'cheaper'}</em>
+            <em>${this._paymeValueLabel(duration)}</em>
           </div>
         </div>
-      </div>`;
+      </button>`;
     }).join('');
   },
 
@@ -5806,6 +5813,13 @@ const App = {
       purchaseBtn.addEventListener('click', () => this.openPaymentChoiceModal());
     }
 
+    el.querySelectorAll('[data-upgrade-duration]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._selectedDuration = btn.dataset.upgradeDuration;
+        this.loadUpgrade();
+      });
+    });
+
     // Bind trial link
     const trialLink = document.getElementById('start-trial-link');
     if (trialLink) {
@@ -5896,7 +5910,7 @@ const App = {
         <div class="payment-choice-head">
           <span class="payment-choice-kicker">Choose your Pro plan</span>
           <h3 id="payment-choice-title">Select duration and payment method</h3>
-          <p>Payme is cheaper in UZS. Stripe stays available for international cards.</p>
+          <p>Choose Stripe for international cards or Payme for local UZS payment.</p>
         </div>
         <div class="payment-choice-section">
           <label>Duration</label>
@@ -5918,7 +5932,7 @@ const App = {
             ${hasPayme ? `<button type="button" class="payment-choice-method${selectedProvider === 'payme' ? ' active' : ''}" data-provider="payme">
               ${this._paymentLogo('payme')}
               <span class="payment-choice-method-copy"><strong>Payme</strong><small data-payme-price></small></span>
-              <em>cheaper</em>
+              <em data-payme-value></em>
             </button>` : ''}
           </div>
         </div>
@@ -5931,8 +5945,10 @@ const App = {
       const payme = this._paymePrice(state.duration);
       const stripeLabel = modal.querySelector('[data-stripe-price]');
       const paymeLabel = modal.querySelector('[data-payme-price]');
+      const paymeValue = modal.querySelector('[data-payme-value]');
       if (stripeLabel) stripeLabel.textContent = `${this._formatSom(stripe.stripeUzs)} equivalent`;
       if (paymeLabel) paymeLabel.textContent = `${this._formatSom(payme)} in UZS`;
+      if (paymeValue) paymeValue.textContent = this._paymeValueLabel(state.duration);
     };
     updatePrices();
     this._bindPayLogoFallbacks(modal);
