@@ -64,15 +64,15 @@ body::-webkit-scrollbar,
   --text-primary: #1a1a1a;
   --text-secondary: rgba(0, 0, 0, 0.60);
   --text-muted: rgba(0, 0, 0, 0.40);
-  --accent: #22c55e;
-  --accent-soft: rgba(34, 197, 94, 0.10);
-  --accent-glow: rgba(34, 197, 94, 0.18);
+  --accent: #6e8a60;
+  --accent-soft: rgba(110, 138, 96, 0.14);
+  --accent-glow: rgba(110, 138, 96, 0.20);
   --danger: #ef4444;
   --danger-soft: rgba(239, 68, 68, 0.12);
-  --success: #22c55e;
-  --success-soft: rgba(34, 197, 94, 0.12);
+  --success: #6e8a60;
+  --success-soft: rgba(110, 138, 96, 0.14);
   --warning: #f59e0b;
-  --xp-color: #22c55e;
+  --xp-color: #778a6d;
   --border: rgba(0, 0, 0, 0.08);
   --border-light: rgba(0, 0, 0, 0.04);
   --border-hover: rgba(0, 0, 0, 0.16);
@@ -80,11 +80,11 @@ body::-webkit-scrollbar,
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0,0,0,0.04);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(0,0,0,0.04);
   --shadow-3d: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 30px rgba(34, 197, 94, 0.08);
+  --shadow-glow: 0 0 30px rgba(110, 138, 96, 0.10);
   --shadow-inset-glow: inset 0 1px 0 rgba(255,255,255,0.8);
   --gradient-card: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,245,240,0.5) 100%);
-  --gradient-accent: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(34,197,94,0.06) 0%, transparent 60%);
+  --gradient-accent: linear-gradient(135deg, #6e8a60 0%, #628a4d 100%);
+  --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(119, 138, 109, 0.08) 0%, transparent 60%);
 }
 
 /* ── Light: base overrides ── */
@@ -132,8 +132,8 @@ body::-webkit-scrollbar,
   box-shadow: 1px 0 8px rgba(0,0,0,0.04);
 }
 .light .sidebar-nav-item.active {
-  background: rgba(34, 197, 94, 0.10);
-  border-color: rgba(34, 197, 94, 0.24);
+  background: rgba(119, 138, 109, 0.14);
+  border-color: rgba(110, 138, 96, 0.30);
   box-shadow: none;
 }
 .light .user-avatar {
@@ -143,15 +143,15 @@ body::-webkit-scrollbar,
 /* ── Light: buttons ── */
 .light .btn-small,
 .light .btn-primary {
-  background: #22c55e;
+  background: #6e8a60;
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+  box-shadow: 0 2px 8px rgba(110, 138, 96, 0.25);
 }
 .light .btn-small:hover,
 .light .btn-primary:hover {
-  background: #16a34a;
+  background: #628a4d;
   color: #ffffff;
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.30);
+  box-shadow: 0 4px 16px rgba(98, 138, 77, 0.30);
 }
 .light .btn-ghost {
   border-color: var(--border);
@@ -240,27 +240,27 @@ body::-webkit-scrollbar,
 .light .heatmap-section::before {
   background: linear-gradient(90deg, transparent, rgba(0,0,0,0.03), transparent);
 }
-.light .heatmap-cell[data-level="0"] { background: rgba(34, 197, 94, 0.08); }
-.light .heatmap-cell[data-level="1"] { background: rgba(34, 197, 94, 0.25); }
-.light .heatmap-cell[data-level="2"] { background: rgba(34, 197, 94, 0.50); }
-.light .heatmap-cell[data-level="3"] { background: rgba(34, 197, 94, 0.75); }
+.light .heatmap-cell[data-level="0"] { background: rgba(119, 138, 109, 0.10); }
+.light .heatmap-cell[data-level="1"] { background: rgba(110, 138, 96, 0.28); }
+.light .heatmap-cell[data-level="2"] { background: rgba(110, 138, 96, 0.52); }
+.light .heatmap-cell[data-level="3"] { background: rgba(98, 138, 77, 0.76); }
 .light .heatmap-cell:hover {
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.25);
+  box-shadow: 0 0 6px rgba(110, 138, 96, 0.25);
 }
-.light .heatmap-legend-cell[data-level="0"] { background: rgba(34,197,94,0.08); }
-.light .heatmap-legend-cell[data-level="1"] { background: rgba(34,197,94,0.25); }
-.light .heatmap-legend-cell[data-level="2"] { background: rgba(34,197,94,0.50); }
+.light .heatmap-legend-cell[data-level="0"] { background: rgba(119, 138, 109, 0.10); }
+.light .heatmap-legend-cell[data-level="1"] { background: rgba(110, 138, 96, 0.28); }
+.light .heatmap-legend-cell[data-level="2"] { background: rgba(110, 138, 96, 0.52); }
 
 /* ── Light: accent-consistent overrides ── */
 /* Buttons */
-.light .btn-small:hover { box-shadow: 0 4px 16px rgba(34, 197, 94, 0.30); }
-.light .btn-primary:hover { box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35); }
-.light .btn-ghost:hover { border-color: rgba(34, 197, 94, 0.30); }
+.light .btn-small:hover { box-shadow: 0 4px 16px rgba(98, 138, 77, 0.30); }
+.light .btn-primary:hover { box-shadow: 0 8px 24px rgba(98, 138, 77, 0.35); }
+.light .btn-ghost:hover { border-color: rgba(110, 138, 96, 0.34); }
 
 /* Stories: filter buttons */
 .light .stories-filter-btn:hover,
 .light .stories-filter-btn.active {
-  border-color: rgba(34, 197, 94, 0.30);
+  border-color: rgba(110, 138, 96, 0.34);
 }
 
 /* Stories: hero card — no background override, inherits page bg */
@@ -285,13 +285,13 @@ body::-webkit-scrollbar,
 
 /* Stories: comment textarea focus */
 .light .story-comment-form textarea:focus {
-  border-color: rgba(34, 197, 94, 0.40);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  border-color: rgba(110, 138, 96, 0.46);
+  box-shadow: 0 0 0 3px rgba(119, 138, 109, 0.16);
 }
 
 /* Stories: float link input focus */
 .light .story-float-link-input input:focus {
-  border-color: rgba(34, 197, 94, 0.40);
+  border-color: rgba(110, 138, 96, 0.46);
 }
 
 /* Landing: feature cards */
@@ -321,7 +321,7 @@ body::-webkit-scrollbar,
 
 /* Analytics milestone */
 .light .analytics-milestone.unlocked {
-  background: rgba(34, 197, 94, 0.08);
+  background: rgba(119, 138, 109, 0.12);
 }
 
 /* Session panel */
@@ -333,8 +333,8 @@ body::-webkit-scrollbar,
 .light input:focus,
 .light textarea:focus,
 .light select:focus {
-  border-color: rgba(34, 197, 94, 0.40);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+  border-color: rgba(110, 138, 96, 0.46);
+  box-shadow: 0 0 0 3px rgba(119, 138, 109, 0.16);
 }
 
 /* Stories: action buttons liked state → red heart */
@@ -344,8 +344,8 @@ body::-webkit-scrollbar,
 
 /* Stories: compose format bar */
 .light .story-composer-formatbar button.active {
-  background: rgba(34, 197, 94, 0.12);
-  color: #16a34a;
+  background: rgba(119, 138, 109, 0.16);
+  color: #628a4d;
 }
 
 /* Elements with accent bg that need white text in light */
@@ -356,17 +356,17 @@ body::-webkit-scrollbar,
   color: #ffffff;
 }
 .light ::selection {
-  background: #22c55e;
+  background: #6e8a60;
   color: #ffffff;
 }
 
 /* Stories submit button (Post Comment, etc.) */
 .light .stories-submit-btn {
-  background: #22c55e;
+  background: #6e8a60;
   color: #ffffff;
 }
 .light .stories-submit-btn:hover {
-  background: #16a34a;
+  background: #628a4d;
 }
 
 /* ===== STORIES ===== */
@@ -1134,25 +1134,25 @@ body::-webkit-scrollbar,
     padding: 20px;
   }
 }
-.light .heatmap-legend-cell[data-level="3"] { background: rgba(34,197,94,0.62); }
+.light .heatmap-legend-cell[data-level="3"] { background: rgba(98, 138, 77, 0.68); }
 
 /* ── Light: tree ── */
 .light .tree-container {
   box-shadow: var(--shadow);
 }
 .light .tree-container::before {
-  background: linear-gradient(90deg, transparent, rgba(34,197,94,0.10), transparent);
+  background: linear-gradient(90deg, transparent, rgba(119, 138, 109, 0.14), transparent);
 }
 
 /* ── Light: XP bar ── */
 .light .xp-bar-fill {
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 8px rgba(110, 138, 96, 0.18);
 }
 
 /* ── Light: document cards ── */
 .light .doc-card:hover {
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
-  border-color: rgba(34, 197, 94, 0.16);
+  border-color: rgba(110, 138, 96, 0.20);
 }
 .light .doc-action-btn {
   background: rgba(0, 0, 0, 0.02);
@@ -1180,7 +1180,7 @@ body::-webkit-scrollbar,
   background: rgba(0, 0, 0, 0.30);
 }
 .light .session-complete::before {
-  background: radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(119, 138, 109, 0.10) 0%, transparent 60%);
 }
 .light .session-failed::before {
   background: radial-gradient(circle, rgba(239, 68, 68, 0.06) 0%, transparent 60%);
@@ -1188,7 +1188,7 @@ body::-webkit-scrollbar,
 
 /* ── Light: toast ── */
 .light .toast.success {
-  border-color: rgba(34, 197, 94, 0.25);
+  border-color: rgba(110, 138, 96, 0.30);
   box-shadow: var(--shadow-lg);
 }
 
@@ -1206,7 +1206,7 @@ body::-webkit-scrollbar,
   background: rgba(0, 0, 0, 0.02);
 }
 .light .leaderboard-table tr:hover td {
-  background: rgba(34, 197, 94, 0.04);
+  background: rgba(119, 138, 109, 0.06);
 }
 
 /* ── Light: leaderboard / podium ── */
@@ -1224,13 +1224,13 @@ body::-webkit-scrollbar,
   border: 1px solid rgba(205,127,50,0.35);
 }
 .light .podium-avatar {
-  box-shadow: 0 3px 12px rgba(34, 197, 94, 0.25);
+  box-shadow: 0 3px 12px rgba(110, 138, 96, 0.25);
 }
 .light .podium-name {
   color: var(--text-primary);
 }
 .light .leaderboard-me td {
-  background: rgba(34, 197, 94, 0.06) !important;
+  background: rgba(119, 138, 109, 0.09) !important;
 }
 .light .leaderboard-table-wrap {
   box-shadow: var(--shadow);
@@ -1242,15 +1242,15 @@ body::-webkit-scrollbar,
 }
 .light .achievement-card.earned:hover {
   box-shadow: var(--shadow-lg);
-  border-color: rgba(34, 197, 94, 0.25);
+  border-color: rgba(110, 138, 96, 0.30);
 }
 
 /* ── Light: duel cards ── */
 .light .duel-sent-card {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.04), var(--bg-card));
+  background: linear-gradient(135deg, rgba(119, 138, 109, 0.07), var(--bg-card));
 }
 .light .duel-bar {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(34, 197, 94, 0.03));
+  background: linear-gradient(135deg, rgba(110, 138, 96, 0.11), rgba(119, 138, 109, 0.05));
 }
 
 /* ── Light: selection popup ── */
@@ -1273,7 +1273,7 @@ body::-webkit-scrollbar,
   animation: none;
 }
 .light .motivate-toast {
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.12);
+  box-shadow: 0 4px 16px rgba(110, 138, 96, 0.14);
 }
 
 /* ── Light: duel button — solid green, no gradient ── */
@@ -1282,11 +1282,11 @@ body::-webkit-scrollbar,
   animation: duel-pulse-light 2.5s ease-in-out infinite;
 }
 .light .duel-big-btn:hover {
-  box-shadow: 0 8px 30px rgba(34, 197, 94, 0.3), var(--shadow-lg) !important;
+  box-shadow: 0 8px 30px rgba(98, 138, 77, 0.30), var(--shadow-lg) !important;
 }
 @keyframes duel-pulse-light {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.3), var(--shadow); }
-  50% { box-shadow: 0 0 16px 4px rgba(34, 197, 94, 0.15), var(--shadow-lg); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(98, 138, 77, 0.30), var(--shadow); }
+  50% { box-shadow: 0 0 16px 4px rgba(110, 138, 96, 0.18), var(--shadow-lg); }
 }
 
 /* ── Light: streak popup ── */
@@ -1309,7 +1309,7 @@ body::-webkit-scrollbar,
   box-shadow: var(--shadow-lg);
 }
 .light .upgrade-card-featured {
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.20), var(--shadow);
+  box-shadow: 0 0 0 1px rgba(110, 138, 96, 0.24), var(--shadow);
 }
 
 /* ── Light: share dropdown ── */
