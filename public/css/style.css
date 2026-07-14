@@ -13869,3 +13869,14 @@ html {
 .light .fmt-color-btn[data-color="#22c55e"] { color: var(--palette-green) !important; }
 .light .fmt-color-btn[data-color="#6c5ce7"] { color: var(--palette-taupe) !important; }
 .light .fmt-color-btn[data-color="#f59e0b"] { color: var(--palette-gold) !important; }
+
+/* Filled dark-green controls always need high-contrast labels. */
+.light .btn-primary,
+.light .btn-small,
+.light .stories-primary-btn,
+.light .stories-submit-btn,
+.light .duel-big-btn,
+.light .upgrade-card-btn-primary,
+.light .upgrade-duration-pill.active {
+  color: #ffffff !important;
+}
