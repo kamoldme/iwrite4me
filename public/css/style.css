@@ -93,6 +93,13 @@ body::-webkit-scrollbar,
   color: var(--text-primary);
 }
 
+/* Notebook texture on the exposed app canvas; cards and sidebar stay solid. */
+.light .main-content {
+  background-color: var(--bg-primary);
+  background-image: url("https://transparenttextures.com/patterns/notebook-dark.png");
+  background-repeat: repeat;
+}
+
 /* Grid pattern — subtle dark lines instead of white */
 .light body::before {
   background-image:
@@ -1389,6 +1396,12 @@ body::-webkit-scrollbar,
 .sepia body, .sepia {
   background: var(--bg-primary);
   color: var(--text-primary);
+}
+
+.sepia .main-content {
+  background-color: var(--bg-primary);
+  background-image: url("https://transparenttextures.com/patterns/notebook-dark.png");
+  background-repeat: repeat;
 }
 /* Paper texture — visible fiber grain + noise */
 .sepia body::before {
@@ -13752,4 +13765,3 @@ html {
   60%  { transform: scale(1.1) rotate(12deg); opacity: 0.6; }
   100% { transform: scale(0.6) rotate(20deg); opacity: 0; }
 }
-
