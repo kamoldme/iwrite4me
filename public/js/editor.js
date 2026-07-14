@@ -130,6 +130,9 @@ const Editor = {
 
     this.startTime = Date.now();
     this.lastKeystroke = Date.now();
+    this._pausedMs = 0;
+    this._pauseStart = null;
+    this._activeWritingSeconds = 0;
 
     this.container.classList.add('active');
     document.body.classList.add('editor-active');
@@ -183,7 +186,8 @@ const Editor = {
     // Show session controls (swap add-time buttons for duel mode)
     document.getElementById('editor-timer').style.display = '';
     document.getElementById('editor-timer-toggle').style.display = '';
-    document.querySelector('.editor-add-time').style.display = isDuel ? 'none' : '';
+    // Hide +1m/+5m for duels (fixed window) and Zen (no timer pressure / no XP — pointless)
+    document.querySelector('.editor-add-time').style.display = (isDuel || mode === 'zen') ? 'none' : '';
     document.getElementById('duel-add-time-btn').style.display = isDuel ? '' : 'none';
     this._timerHidden = false;
     this._timerMasked = false;
@@ -222,6 +226,7 @@ const Editor = {
     this.textarea.addEventListener('input', this.onInput);
     this.textarea.addEventListener('keydown', this.onKeydown);
     this.textarea.addEventListener('paste', this.onPaste);
+    this.loadWritingPrefs();
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     document.addEventListener('fullscreenchange', this.onFullscreenChange);
     window.addEventListener('blur', this.onWindowBlur);
@@ -367,7 +372,12 @@ const Editor = {
   },
 
   onInput: () => {
-    Editor.lastKeystroke = Date.now();
+    const _now = Date.now();
+    // Accumulate real typing time — only count gaps < 30s between inputs
+    if (Editor.lastKeystroke && (_now - Editor.lastKeystroke) < 30000) {
+      Editor._activeWritingSeconds += (_now - Editor.lastKeystroke) / 1000;
+    }
+    Editor.lastKeystroke = _now;
 
     // Auto-replace shortcuts (-- → em dash, * → bullet)
     Editor._handleAutoReplace();
@@ -399,9 +409,15 @@ const Editor = {
     Editor.textarea.classList.remove('fading');
     Editor.vignette.classList.remove('active');
     Editor.vignette.style.opacity = 0;
+
+    if (Editor._focusMode) Editor._updateFocusLine();
   },
 
   onKeydown: (e) => {
+    // Typewriter sound — fire on character keys, space, enter, backspace
+    if (Editor._typewriterSound && e.key && (e.key.length === 1 || e.key === 'Enter' || e.key === 'Backspace')) {
+      Editor._playTypeClick();
+    }
     // Block new words at word limit (allow delete, backspace, arrows, shortcuts)
     if ((Editor.active || Editor.isEditing) && App.user) {
       const limit = Editor.getWordLimit();
@@ -512,6 +528,33 @@ const Editor = {
     const text = node.textContent;
     const offset = range.startOffset;
 
+    // Smart punctuation: curly quotes + ellipsis (toggle: iwrite_smart_punct)
+    if (Editor._smartPunct) {
+      const setCaret = (n, pos) => {
+        const r = document.createRange();
+        r.setStart(n, pos); r.collapse(true);
+        sel.removeAllRanges(); sel.addRange(r);
+      };
+      // "..." → "…"
+      if (offset >= 3 && text.slice(offset - 3, offset) === '...') {
+        node.textContent = text.slice(0, offset - 3) + '…' + text.slice(offset);
+        setCaret(node, offset - 2);
+        return;
+      }
+      // straight quote just typed → curly (opening vs closing by preceding char)
+      const ch = text[offset - 1];
+      if (ch === '"' || ch === "'") {
+        const prev = offset >= 2 ? text[offset - 2] : '';
+        const opensContext = offset < 2 || prev === '' || /[\s(\[{—–>-]/.test(prev);
+        const repl = ch === '"'
+          ? (opensContext ? '“' : '”')
+          : (opensContext ? '‘' : '’');
+        node.textContent = text.slice(0, offset - 1) + repl + text.slice(offset);
+        setCaret(node, offset);
+        return;
+      }
+    }
+
     // "-- " → "— " (em dash)
     if (offset >= 3 && text.slice(offset - 3, offset) === '-- ') {
       node.textContent = text.slice(0, offset - 3) + '\u2014 ' + text.slice(offset);
@@ -596,9 +639,18 @@ const Editor = {
     }, 500);
   },
 
+  // Total ms the session has been paused (tab hidden); subtract from all elapsed calculations
+  _effectivePaused() {
+    return (this._pausedMs || 0) + (this._pauseStart ? Date.now() - this._pauseStart : 0);
+  },
+
   onTabLeave() {
     if (this.abandoned || !this.active) return;
-    if (this.mode === 'zen') return;
+    if (this.mode === 'zen') {
+      // In zen mode, pause the session timer instead of threatening deletion
+      if (!this._pauseStart) this._pauseStart = Date.now();
+      return;
+    }
     if (this.tabCountdown) return;
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
@@ -629,6 +681,11 @@ const Editor = {
   ],
 
   onTabReturn() {
+    // Accumulate paused time (zen mode)
+    if (this._pauseStart) {
+      this._pausedMs = (this._pausedMs || 0) + (Date.now() - this._pauseStart);
+      this._pauseStart = null;
+    }
     if (this.tabCountdown && this.tabLeftTime) {
       const awaySeconds = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = this.tabGracePeriod - awaySeconds;
@@ -846,11 +903,19 @@ const Editor = {
     if (!ta) return;
     const text = ta.innerText || '';
     if (!text.trim()) return;
-    // Drop the last 40% of words
-    const words = text.trim().split(/\s+/);
-    const dropCount = Math.max(1, Math.ceil(words.length * 0.4));
-    const keptWords = words.slice(0, Math.max(0, words.length - dropCount));
-    ta.innerText = keptWords.join(' ');
+    // Find all word positions in the original text so paragraph breaks and
+    // multi-space formatting survive when we drop the last 40% of words.
+    const matches = [];
+    const re = /\S+/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      matches.push({ start: m.index, end: m.index + m[0].length });
+    }
+    if (matches.length === 0) return;
+    const dropCount = Math.max(1, Math.ceil(matches.length * 0.4));
+    const keepCount = Math.max(0, matches.length - dropCount);
+    const sliced = keepCount === 0 ? '' : text.slice(0, matches[keepCount - 1].end);
+    ta.innerText = sliced;
     // Move cursor to end
     try {
       const range = document.createRange();
@@ -907,7 +972,7 @@ const Editor = {
     // Auto-show in last 3 minutes
     if (this.duration > 0) {
       const totalSeconds = this.duration * 60;
-      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       const remaining = totalSeconds - elapsed;
       if (remaining <= 180) {
         this._timerMasked = false;
@@ -927,7 +992,7 @@ const Editor = {
 
   updateTimer() {
     if (this.duration === 0) {
-      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       const min = Math.floor(elapsed / 60);
       const sec = elapsed % 60;
       this.timerEl.textContent = this._timerMasked ? '**:**' : `${min}:${String(sec).padStart(2, '0')}`;
@@ -942,7 +1007,7 @@ const Editor = {
       remaining = Math.max(0, Math.ceil((this._duelEndAt - Date.now()) / 1000));
     } else {
       const totalSeconds = this.duration * 60;
-      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       remaining = Math.max(0, totalSeconds - elapsed);
     }
     const min = Math.floor(remaining / 60);
@@ -1059,8 +1124,10 @@ const Editor = {
     if (this.documentId && this._duelInfo.duelId) {
       try { API.setDuelDoc(this._duelInfo.duelId, this.documentId); } catch {}
     }
-    // Reset forfeit notification flag
+    // Reset forfeit notification flag + hide opponent-left notice from any prior duel
     this._duelForfeitNotified = false;
+    const oppLeftNotice = document.getElementById('duel-opponent-left-notice');
+    if (oppLeftNotice) oppLeftNotice.style.display = 'none';
     // Poll every 3 seconds with backoff on failure
     this._duelPollDelay = 3000;
     this._duelPollTimer = setTimeout(() => this._pollDuel(), this._duelPollDelay);
@@ -1082,14 +1149,18 @@ const Editor = {
         this._duelEndAt = new Date(duel.endAt).getTime();
       }
 
-      // Update word counts — same layout for both sides: challenger left, opponent right
+      // Update word counts — same layout for both sides: challenger left, opponent right.
+      // If a player has forfeited, show "left" instead of their stale word count
+      // (which would otherwise sit at 0 and look like they just hadn't typed yet).
       const leftWords = document.getElementById('duel-bar-left-words');
       const rightWords = document.getElementById('duel-bar-right-words');
+      const challengerLeft = duel.forfeitedBy === duel.challengerId;
+      const opponentLeft = duel.forfeitedBy === duel.opponentId;
       if (this._duelInfo.isChallenger) {
         if (leftWords) leftWords.textContent = myWords;
-        if (rightWords) rightWords.textContent = duel.opponentWords || 0;
+        if (rightWords) rightWords.textContent = opponentLeft ? 'left' : (duel.opponentWords || 0);
       } else {
-        if (leftWords) leftWords.textContent = duel.challengerWords || 0;
+        if (leftWords) leftWords.textContent = challengerLeft ? 'left' : (duel.challengerWords || 0);
         if (rightWords) rightWords.textContent = myWords;
       }
 
@@ -1119,9 +1190,15 @@ const Editor = {
       if (duel.forfeitedBy && duel.forfeitedBy === oppId) {
         if (!this._duelForfeitNotified) {
           this._duelForfeitNotified = true;
-          App.toast(`${this._duelInfo.opponentName} left the duel!`, 'info');
-          const forfeitEl = document.getElementById('duel-bar-forfeit');
-          if (forfeitEl) forfeitEl.style.display = '';
+          // Compact info notice — matches the extra-time request style.
+          // Persistent until user dismisses or duel ends. Stays in the
+          // corner so it doesn't crowd the writing area.
+          const notice = document.getElementById('duel-opponent-left-notice');
+          const sub = document.getElementById('duel-opp-left-sub');
+          if (sub) {
+            sub.textContent = `${this._duelInfo.opponentName} left. Keep writing or finish anytime.`;
+          }
+          if (notice) notice.style.display = 'flex';
         }
       }
 
@@ -1154,6 +1231,37 @@ const Editor = {
       }
     } catch (e) {
       App.toast(e.message || 'Failed to request extra time', 'error');
+    }
+  },
+
+  // Hide the opponent-left notification (info-only — user dismisses manually)
+  dismissOpponentLeftNotice() {
+    const notice = document.getElementById('duel-opponent-left-notice');
+    if (notice) notice.style.display = 'none';
+  },
+
+  // Manually finish the duel after opponent has forfeited. Server respects
+  // endurance scoring (forfeiter loses; survivor wins). The Finish button
+  // is only shown via the opponent-left notice, which only appears after a
+  // detected forfeit, so the result is already determined.
+  async finishDuelEarly() {
+    if (!this._duelInfo) return;
+    const ok = await App.showConfirm('Finish the duel now? You\'ll keep your win.');
+    if (!ok) return;
+    try {
+      const wordCount = this.getWordCount();
+      await API.completeDuel(this._duelInfo.duelId, wordCount);
+      // Hide the notice — the duel-completed status from the next poll will
+      // trigger _showDuelResults which shows the final modal.
+      const notice = document.getElementById('duel-opponent-left-notice');
+      if (notice) notice.style.display = 'none';
+      // Trigger one more poll right away to pick up the completed state
+      if (this._duelPollTimer) {
+        clearTimeout(this._duelPollTimer);
+        this._duelPollTimer = setTimeout(() => this._pollDuel(), 100);
+      }
+    } catch (e) {
+      App.toast(e.message || 'Failed to finish duel', 'error');
     }
   },
 
@@ -1254,6 +1362,8 @@ const Editor = {
       document.getElementById('editor-comment-history-btn').style.display = 'none';
       document.getElementById('formatting-toolbar').style.display = this.mode === 'dangerous' ? 'none' : 'flex';
       document.getElementById('status-bar').style.display = 'flex';
+      const addTimeEl = document.querySelector('.editor-add-time');
+      if (addTimeEl) addTimeEl.style.display = this.mode === 'zen' ? 'none' : '';
       this.titleInput.readOnly = false;
 
       this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous' : 'Normal';
@@ -1275,6 +1385,7 @@ const Editor = {
 
       this.textarea.addEventListener('input', this.onInput);
       this.textarea.addEventListener('keydown', this.onKeydown);
+      this.loadWritingPrefs();
       document.addEventListener('visibilitychange', this.onVisibilityChange);
       document.addEventListener('fullscreenchange', this.onFullscreenChange);
       window.addEventListener('blur', this.onWindowBlur);
@@ -1305,12 +1416,20 @@ const Editor = {
   _isTimerExpired() {
     if (this.duration === 0) return false; // unlimited sessions can always complete
     const totalSeconds = this.duration * 60;
-    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+    const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
     return elapsed >= totalSeconds;
   },
 
   async completeSession(timerExpired) {
     if (!this.active || this.abandoned) return;
+    // Guard re-entrancy: the 100ms timer keeps firing updateTimer (which calls
+    // completeSession) while we await the title prompt — without this, an expired
+    // session resumed on page load awards XP many times over.
+    if (this._completing) return;
+    this._completing = true;
+    // An expired session is over: drop its saved state now so a refresh mid-prompt
+    // can't resume-and-complete it again (the "every refresh gives XP" bug).
+    if (timerExpired) this._clearSessionState();
 
     // Check early complete limit (only when user clicks Complete, not when timer expires)
     // Bypass during maintenance — unlimited saves/copies
@@ -1326,12 +1445,14 @@ const Editor = {
       const earlyLim = user.plan === 'premium' ? 15 : 3;
       if (usedThisMonth >= earlyLim) {
         App.toast(`Early complete limit reached (${earlyLim}/month). Wait for the timer to finish.`, 'warning');
+        this._completing = false;
         return;
       }
       const remaining = earlyLim - usedThisMonth;
       const ok = await App.showConfirm(`Are you sure you want to end this session early? You will use 1 of your ${remaining} early finishes left this month.`);
       if (!ok) {
         this.active = true;
+        this._completing = false;
         return;
       }
     }
@@ -1343,6 +1464,7 @@ const Editor = {
         const chosen = await App.promptTitle();
         if (chosen === null) {
           // User cancelled the prompt — don't complete
+          this._completing = false;
           return;
         }
         this.titleInput.value = chosen || 'Untitled';
@@ -1354,7 +1476,7 @@ const Editor = {
     this.cleanup();
 
     const wordCount = this.getWordCount();
-    const duration = Math.floor((Date.now() - this.startTime) / 1000);
+    const duration = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
 
     // If no words were written, silently discard — no XP, no streak, no stats
     if (wordCount === 0) {
@@ -1380,7 +1502,8 @@ const Editor = {
         wordCount, duration, xpEarned,
         earlyComplete: !!this._earlyComplete,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content: this.textarea.innerHTML,
+        activeWritingSeconds: Math.round(this._activeWritingSeconds)
       });
     } catch {
       this.container.classList.remove('active'); document.body.classList.remove('editor-active');
@@ -1656,19 +1779,35 @@ const Editor = {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || !sel.rangeCount) {
         popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
         return;
       }
       const text = sel.toString().trim();
-      if (!text) { popup.style.display = 'none'; return; }
+      if (!text) { popup.style.display = 'none'; Editor._selPopupAnchor = null; return; }
       const range = sel.getRangeAt(0);
       if (!Editor.textarea.contains(range.commonAncestorContainer)) {
         popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
         return;
       }
       const rect = range.getBoundingClientRect();
       popup.style.display = 'flex';
-      popup.style.left = Math.max(8, rect.left + rect.width / 2 - popup.offsetWidth / 2) + 'px';
-      popup.style.top = (rect.top - popup.offsetHeight - 14) + 'px';
+      // Center horizontally, clamped to viewport
+      const popupW = popup.offsetWidth;
+      const popupH = popup.offsetHeight;
+      const left = Math.max(8, Math.min(window.innerWidth - popupW - 8, rect.left + rect.width / 2 - popupW / 2));
+      popup.style.left = left + 'px';
+      // Prefer above the selection. If not enough room (would overlap toolbar
+      // or go off-screen), place below instead so it doesn't cover text.
+      const gap = 10;
+      const aboveTop = rect.top - popupH - gap;
+      if (aboveTop >= 60) {
+        popup.style.top = aboveTop + 'px';
+      } else {
+        popup.style.top = (rect.bottom + gap) + 'px';
+      }
+      // Remember the anchor — used to hide when cursor moves away from this selection
+      Editor._selPopupAnchor = { node: sel.anchorNode, offset: sel.anchorOffset };
     };
 
     // Show popup on mouseup (after selection is final) instead of selectionchange
@@ -1689,12 +1828,34 @@ const Editor = {
     document.addEventListener('mousedown', (e) => {
       if (!popup.contains(e.target) && e.target !== Editor.textarea && !Editor.textarea.contains(e.target)) {
         popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
+      }
+    });
+
+    // Hide when the selection collapses or moves to a different anchor.
+    // Covers: cursor moved with arrow keys (no shift), clicked elsewhere
+    // in editor, selection cleared by typing, etc.
+    document.addEventListener('selectionchange', () => {
+      if (popup.style.display === 'none' || !Editor._selPopupAnchor) return;
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) {
+        popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
+        return;
+      }
+      const a = Editor._selPopupAnchor;
+      // Anchor moved → user clicked or arrow-keyed somewhere else.
+      // (We deliberately don't compare focus — shift+arrow extends the
+      // selection, focus moves but anchor stays, popup should remain.)
+      if (sel.anchorNode !== a.node || sel.anchorOffset !== a.offset) {
+        popup.style.display = 'none';
+        Editor._selPopupAnchor = null;
       }
     });
   },
 
   // --- Font switcher ---
-  _fontClasses: ['font-serif', 'font-mono', 'font-georgia', 'font-garamond', 'font-courier'],
+  _fontClasses: ['font-serif', 'font-mono', 'font-georgia', 'font-garamond', 'font-courier', 'font-dyslexic'],
   setFont(font) {
     this._currentFont = font;
     this._fontClasses.forEach(c => this.textarea.classList.remove(c));
@@ -1702,6 +1863,141 @@ const Editor = {
     const sel = document.getElementById('fmt-font-select');
     if (sel) sel.value = font;
     localStorage.setItem('iwrite_editor_font', font);
+  },
+
+  // --- Writing preferences: focus mode, typewriter sounds, smart punctuation ---
+  _focusMode: false,
+  _typewriterSound: false,
+  _smartPunct: true, // on by default — curly quotes/ellipsis are nice for prose
+  _typeAudioCtx: null,
+
+  // Read persisted prefs and apply them. Called whenever the editor opens.
+  loadWritingPrefs() {
+    let focus = false, typer = false, punct = true;
+    try {
+      focus = localStorage.getItem('iwrite_focus_mode') === '1';
+      typer = localStorage.getItem('iwrite_typewriter_sound') === '1';
+      const sp = localStorage.getItem('iwrite_smart_punct');
+      punct = sp === null ? true : sp === '1';
+    } catch {}
+    this.setFocusMode(focus);
+    this.setTypewriterSound(typer);
+    this.setSmartPunct(punct);
+    // Bind the caret tracker for focus mode once
+    if (!this._focusListenerBound) {
+      this._focusListenerBound = true;
+      document.addEventListener('selectionchange', () => {
+        if (this._focusMode && this.textarea && document.activeElement === this.textarea) {
+          this._updateFocusLine();
+        }
+      });
+    }
+  },
+
+  toggleFocusMode() { this.setFocusMode(!this._focusMode); },
+  setFocusMode(on) {
+    this._focusMode = on;
+    const ta = this.textarea;
+    if (ta) {
+      if (on) this._normalizeFocusFirstLine();
+      ta.classList.toggle('focus-mode', on);
+    }
+    // Toolbar button active state
+    const btn = document.getElementById('editor-focus-btn');
+    if (btn) btn.classList.toggle('is-active', on);
+    // Big toggle button in the dropdown
+    const toggleBtn = document.getElementById('focus-big-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.classList.toggle('on', on);
+      const lbl = toggleBtn.querySelector('.focus-toggle-label');
+      if (lbl) lbl.textContent = on ? 'On' : 'Off';
+    }
+    try { localStorage.setItem('iwrite_focus_mode', on ? '1' : '0'); } catch {}
+    if (on) { this._playFocusActivateAnim(); this._updateFocusLine(); }
+    else this._clearFocusLine();
+  },
+  // Wrap a leading bare text node in <p> so CSS `> *` can dim it like any other line.
+  _normalizeFocusFirstLine() {
+    const ta = this.textarea; if (!ta) return;
+    const child = ta.firstChild;
+    if (child && child.nodeType === Node.TEXT_NODE) {
+      const p = document.createElement('p');
+      ta.insertBefore(p, child);
+      p.appendChild(child);
+    }
+  },
+  _playFocusActivateAnim() {
+    // Brief camera-flash: dark overlay snaps in then fades out
+    const flash = document.createElement('div');
+    flash.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99998;background:rgba(0,0,0,0);transition:background 0.1s ease';
+    document.body.appendChild(flash);
+    requestAnimationFrame(() => {
+      flash.style.background = 'rgba(0,0,0,0.18)';
+      setTimeout(() => {
+        flash.style.background = 'rgba(0,0,0,0)';
+        setTimeout(() => flash.remove(), 180);
+      }, 110);
+    });
+    // Glow pulse on the focused line
+    const ta = this.textarea; if (!ta) return;
+    ta.classList.add('focus-mode-entering');
+    setTimeout(() => ta.classList.remove('focus-mode-entering'), 700);
+  },
+  _lastFocusLineNode: null,
+  _clearFocusLine() {
+    const ta = this.textarea; if (!ta) return;
+    this._lastFocusLineNode = null;
+    ta.querySelectorAll('.is-focus-line').forEach(el => el.classList.remove('is-focus-line'));
+  },
+  _updateFocusLine() {
+    const ta = this.textarea;
+    if (!ta || !this._focusMode) return;
+    // Wrap any leading bare text node so CSS `> *` can dim it
+    const fc = ta.firstChild;
+    if (fc && fc.nodeType === Node.TEXT_NODE) this._normalizeFocusFirstLine();
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    let node = sel.anchorNode;
+    if (!node || !ta.contains(node)) return;
+    while (node && node.parentNode !== ta) node = node.parentNode;
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return;
+    if (node === this._lastFocusLineNode) return; // same line — skip to avoid flicker
+    this._clearFocusLine();
+    this._lastFocusLineNode = node;
+    node.classList.add('is-focus-line');
+  },
+
+  setTypewriterSound(on) {
+    this._typewriterSound = on;
+    const cb = document.getElementById('pref-typewriter');
+    if (cb) cb.checked = on;
+    try { localStorage.setItem('iwrite_typewriter_sound', on ? '1' : '0'); } catch {}
+  },
+  // Synthesize a short typewriter-ish click via WebAudio (no asset / CSP needed).
+  _playTypeClick() {
+    if (!this._typewriterSound) return;
+    try {
+      let ctx = this._typeAudioCtx;
+      if (!ctx) { ctx = this._typeAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(820 + Math.random() * 260, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.05, now + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.05);
+    } catch {}
+  },
+
+  setSmartPunct(on) {
+    this._smartPunct = on;
+    const cb = document.getElementById('pref-smartpunct');
+    if (cb) cb.checked = on;
+    try { localStorage.setItem('iwrite_smart_punct', on ? '1' : '0'); } catch {}
   },
 
   // --- Theme toggle (in editor) ---
@@ -1761,8 +2057,12 @@ const Editor = {
     this._audioElement = new Audio(src);
     this._audioElement.loop = true;
     this._audioElement.volume = vol / 100;
-    this._audioElement.crossOrigin = 'anonymous';
-    this._audioElement.play().catch(() => {});
+    // No crossOrigin: plain cross-origin playback needs no CORS, and setting it would
+    // require CORS on every redirect hop. (No Web Audio analyser here that would need it.)
+    this._audioElement.play().catch((err) => {
+      App.toast('Could not play audio — try again', 'error');
+      console.warn('[audio] play failed', err);
+    });
     this._audioPlaying = true;
     this._activeAudioKey = key;
     this._updateTrackUI();
@@ -1944,6 +2244,7 @@ const Editor = {
 
   cleanup() {
     this.active = false;
+    this._completing = false;
     if (this._originalTabTitle != null) {
       document.title = this._originalTabTitle;
       this._originalTabTitle = null;
@@ -2046,8 +2347,13 @@ const Editor = {
   },
 
   // ── Copy blocking during active sessions ──
+  _copyAllowed() {
+    return App._maintActive || (App.user && App.user.plan === 'premium');
+  },
+
   _onCopyBlock(e) {
     if (!Editor.active) return;
+    if (Editor._copyAllowed()) return; // Pro users (and maintenance) may copy during sessions
     // Allow copy from the research drawer (AI chat + Wiki results)
     const drawer = document.getElementById('research-drawer');
     if (drawer) {
@@ -2063,6 +2369,7 @@ const Editor = {
 
   _onContextMenuBlock(e) {
     if (!Editor.active) return;
+    if (Editor._copyAllowed()) return; // Pro users (and maintenance) may right-click during sessions
     const drawer = document.getElementById('research-drawer');
     if (drawer && e.target && drawer.contains(e.target)) return;
     e.preventDefault();
@@ -2072,9 +2379,11 @@ const Editor = {
     document.addEventListener('copy', this._onCopyBlock, true);
     document.addEventListener('cut', this._onCopyBlock, true);
     document.addEventListener('contextmenu', this._onContextMenuBlock, true);
-    // Block text selection in the editor during sessions
-    this.textarea.style.userSelect = 'none';
-    this.textarea.style.webkitUserSelect = 'none';
+    // Block text selection during sessions — but let Pro users (and maintenance) select to copy
+    if (!this._copyAllowed()) {
+      this.textarea.style.userSelect = 'none';
+      this.textarea.style.webkitUserSelect = 'none';
+    }
     // Still allow typing in contentEditable
     this.textarea.style.caretColor = 'var(--text-primary)';
   },

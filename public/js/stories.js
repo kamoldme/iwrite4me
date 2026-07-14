@@ -362,7 +362,72 @@
       }
     },
 
+    // ===== POPULAR WRITERS (Community feed sidebar) =====
+    async loadPopularWriters(attempt = 0) {
+      const el = document.getElementById('stories-popular');
+      if (!el) return;
+      // Wire up SPA navigation once
+      if (!this._popularBound) {
+        this._popularBound = true;
+        el.addEventListener('click', (e) => {
+          const item = e.target.closest('.stories-popular-item');
+          if (!item) return;
+          e.preventDefault();
+          const username = item.dataset.username;
+          if (username) App.switchView('user-profile', { username });
+        });
+      }
+      // Render instantly when writers are already cached.
+      if (this._popularWriters && this._popularWriters.length) {
+        el.innerHTML = this._renderPopularWriters(this._popularWriters);
+        return;
+      }
+      // Show the loading card only on the first attempt (don't flash it on retries).
+      if (attempt === 0 && !el.querySelector('.stories-popular-item')) {
+        el.innerHTML = `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3><div style="padding:8px 0;color:var(--text-muted);font-size:12px">Loading…</div></div>`;
+      }
+      try {
+        const list = await API.request('/follow/popular');
+        if (!Array.isArray(list)) throw new Error('Unexpected response');
+        this._popularWriters = list;
+        el.innerHTML = this._renderPopularWriters(list);
+      } catch {
+        // The first fetch can fail transiently (init timing, a server restart). The data is
+        // obtainable, so retry with backoff instead of blanking the panel for the session.
+        this._popularWriters = null;
+        if (attempt < 3) {
+          setTimeout(() => this.loadPopularWriters(attempt + 1), 700 * (attempt + 1));
+        } else if (!el.querySelector('.stories-popular-item')) {
+          el.innerHTML = '';
+        }
+      }
+    },
+
+    _renderPopularWriters(list) {
+      const el = document.getElementById('stories-popular');
+      if (!list || !list.length) { if (el) el.innerHTML = ''; return ''; }
+      const rows = list.map(u => {
+        const initial = esc((u.name || u.username || '?').charAt(0).toUpperCase());
+        const avatar = u.avatar
+          ? `<img class="stories-popular-avatar" src="${esc(u.avatar)}?t=${u.avatarUpdatedAt || 0}" alt="">`
+          : `<div class="stories-popular-avatar">${initial}</div>`;
+        const followers = u.followerCount === 1 ? '1 follower' : `${(u.followerCount || 0).toLocaleString()} followers`;
+        return `<a class="stories-popular-item" href="/app/profile/${encodeURIComponent(u.username)}" data-username="${esc(u.username)}">
+          ${avatar}
+          <div class="stories-popular-meta">
+            <div class="stories-popular-name">${esc(u.name)}</div>
+            <div class="stories-popular-handle">@${esc(u.username)}</div>
+          </div>
+          <div class="stories-popular-followers">${followers}</div>
+        </a>`;
+      }).join('');
+      return `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3>${rows}</div>`;
+    },
+
     async loadStories() {
+      App._storiesLoaded = true;
+      App._storiesDirty = false;
+      this.loadPopularWriters(); // populate the right-side "Popular writers" sidebar (cached)
       const feedEl = document.getElementById('stories-feed');
       if (feedEl) {
         const skeletonCard = `<div class="story-skeleton-card"><div class="story-skeleton-line skeleton-author"></div><div class="story-skeleton-line skeleton-title"></div><div class="story-skeleton-line skeleton-excerpt"></div><div class="story-skeleton-line skeleton-excerpt-short"></div><div class="story-skeleton-line skeleton-meta"></div></div>`;
@@ -1460,7 +1525,8 @@
     baseSwitchView(view, opts);
     if (view === 'stories') {
       this.syncStoryControls();
-      this.loadStories();
+      // Load once, then only re-fetch when there's new community content (see updateNotifBadge)
+      if (!this._storiesLoaded || this._storiesDirty) this.loadStories();
       // Mark community as seen — hide the green dot
       localStorage.setItem('iwrite_community_seen', new Date().toISOString());
       const dot = document.getElementById('community-new-dot');

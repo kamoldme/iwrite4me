@@ -1,12 +1,16 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Don't advertise the framework
+app.disable('x-powered-by');
 
 // Real-time streak: returns 0 if lastWritingDate is stale (older than yesterday)
 function liveStreak(user) {
@@ -19,6 +23,62 @@ function liveStreak(user) {
 
 // Trust Railway's reverse proxy
 app.set('trust proxy', 1);
+
+// Security headers via helmet. CSP allows the third-party services the app
+// actually uses: Google (analytics, OAuth, Fonts), Stripe (payments), YouTube
+// embeds, and inline scripts/styles already present across the static HTML pages.
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        'https://www.googletagmanager.com',
+        'https://www.google-analytics.com',
+        'https://accounts.google.com',
+        'https://apis.google.com',
+        'https://js.stripe.com',
+        'https://cdnjs.cloudflare.com'
+      ],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      // Background music streams from archive.org (/download/ 302-redirects to ia*.us.archive.org)
+      mediaSrc: ["'self'", 'https://archive.org', 'https://*.archive.org', 'blob:'],
+      connectSrc: [
+        "'self'",
+        'https://www.google-analytics.com',
+        'https://accounts.google.com',
+        'https://api.stripe.com'
+      ],
+      frameSrc: [
+        "'self'",
+        'https://accounts.google.com',
+        'https://js.stripe.com',
+        'https://hooks.stripe.com',
+        'https://www.youtube.com',
+        'https://www.youtube-nocookie.com'
+      ],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  // Google Sign-In popup postMessages the credential back to window.opener.
+  // Helmet's default COOP (same-origin) nulls out window.opener for cross-origin
+  // popups, stranding the user on accounts.google.com/gsi/transform.
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
 
 // CORS — lock to your domain
 const allowedOrigins = [
@@ -50,10 +110,29 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting — tighter buckets per attack surface.
+// Login is the most-attacked endpoint, so it gets the strictest cap.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many login attempts, please try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { error: 'Too many accounts created from this IP, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Google OAuth and password change are sensitive but lower-risk than email login.
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 attempts per window
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message: { error: 'Too many attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false
@@ -75,9 +154,25 @@ app.post('/api/stripe/webhook',
   stripeWebhookHandler
 );
 
-app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/login', authLimiter);
+// Local payment-provider routes (Click; Payme/Atmos to follow). Their server-to-server
+// callbacks must bypass the rate limiter — like the Stripe webhook — so they're mounted
+// here, before apiLimiter, with their own body parsers (Click posts urlencoded).
+app.use('/api/click',
+  express.urlencoded({ extended: true }),
+  express.json(),
+  require('./routes/click')
+);
+// Payme's JSON-RPC endpoint is also a server-to-server callback — bypass the limiter.
+app.use('/api/payme', express.json(), require('./routes/payme'));
+// Atmos hosted checkout + its success callback (server-to-server) — bypass the limiter too.
+app.use('/api/atmos', express.json(), require('./routes/atmos'));
+
+app.use('/api/auth/register', registerLimiter);
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/google', authLimiter);
+app.use('/api/auth/change-password', authLimiter);
+app.use('/api/auth/request-password-reset', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 app.use('/api', apiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
@@ -98,6 +193,17 @@ app.get('/uploads/avatars/:file', (req, res) => {
   res.setHeader('Content-Type', 'image/jpeg');
   res.send(fs.readFileSync(filepath));
 });
+
+// Serve announcement images (long-cache since filenames are uuid-stable)
+const announcementsDir = path.join(__dirname, 'data/announcements');
+if (!fs.existsSync(announcementsDir)) fs.mkdirSync(announcementsDir, { recursive: true });
+app.get('/uploads/announcements/:file', (req, res) => {
+  const filepath = path.join(announcementsDir, path.basename(req.params.file));
+  if (!fs.existsSync(filepath)) return res.status(404).end();
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.setHeader('Content-Type', 'image/jpeg');
+  res.send(fs.readFileSync(filepath));
+});
 const bannersDir = path.join(dataDir, 'banners');
 if (!fs.existsSync(bannersDir)) fs.mkdirSync(bannersDir, { recursive: true });
 // Serve banners dynamically to bypass all caching layers
@@ -113,7 +219,7 @@ app.get('/uploads/banners/:file', (req, res) => {
 // Force no-cache on HTML/CSS/JS so deployments are instant
 app.use((req, res, next) => {
   const url = req.url.split('?')[0];
-  if (url.endsWith('.html') || url === '/' || url === '/app' || url === '/manual-login' || url.startsWith('/story/') || url.startsWith('/app/profile/')) {
+  if (url.endsWith('.html') || url === '/' || url === '/app' || url === '/login' || url === '/register' || url === '/forgot-password' || url === '/admin' || url.startsWith('/story/') || url.startsWith('/app/profile/')) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
   } else if (url.endsWith('.css') || url.endsWith('.js')) {
@@ -264,11 +370,39 @@ app.get('/api/active-users', (req, res) => {
           id,
           email: data.email,
           minutesAgo: Math.round((now - data.lastSeen) / 60000),
-          writing: !!(data.writingAt && data.writingAt > writingCutoff)
+          writing: !!(data.writingAt && data.writingAt > writingCutoff),
+          onTab: !!(data.focusedAt && data.focusedAt > writingCutoff)
         });
       }
       res.json({ count: users.length, users: users.sort((a, b) => a.minutesAgo - b.minutesAgo) });
     });
+  });
+});
+
+// Tab visibility ping — frontend posts here whenever document.visibilityState
+// flips. Lets the admin distinguish "tab is open" (Online) from "tab is the
+// active window" (On Tab). Stays in-memory; resets on server boot like the
+// rest of activeUsers state.
+app.post('/api/tab-state', express.json(), (req, res) => {
+  const { authenticate } = require('./middleware/auth');
+  authenticate(req, res, () => {
+    const focused = !!req.body?.focused;
+    const entry = activeUsers.get(req.user.id);
+    if (entry) {
+      if (focused) {
+        entry.focusedAt = Date.now();
+      } else {
+        entry.focusedAt = null;
+      }
+      entry.lastSeen = Date.now();
+    } else {
+      activeUsers.set(req.user.id, {
+        email: req.user.email,
+        lastSeen: Date.now(),
+        focusedAt: focused ? Date.now() : null
+      });
+    }
+    res.json({ ok: true });
   });
 });
 
@@ -320,6 +454,8 @@ app.use('/api/profiles', require('./routes/profiles'));
 app.use('/api/follow', require('./routes/follow'));
 app.use('/api/prompts', require('./routes/prompts').router);
 app.use('/api/research', require('./routes/research'));
+app.use('/api/announcements', require('./routes/announcements'));
+app.use('/api/payments', require('./routes/payments'));
 
 const { findOne, findMany, insertOne, updateOne } = require('./utils/storage');
 const bcrypt = require('bcryptjs');
@@ -348,6 +484,7 @@ app.get('/api/stats/public', async (req, res) => {
       totalWords: users.reduce((sum, u) => sum + (u.totalWords || 0), 0),
       totalHours: Math.round(totalSeconds / 3600),
       totalWriters: users.filter(u => u.role !== 'admin').length,
+      totalDocuments: docs.filter(d => !d.deleted && !d.deletedBySystem && !d.deactivatedByAdmin).length,
       activeNow: activeUsers.size
     });
   } catch {
@@ -551,7 +688,16 @@ app.post('/api/migrate-volume', async (req, res) => {
 app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'app.html'));
 });
-app.get('/manual-login', (req, res) => {
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app.html'));
+});
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app.html'));
+});
+app.get('/forgot-password', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app.html'));
+});
+app.get('/admin', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -735,6 +881,31 @@ async function start() {
       }
     }
     if (migrated > 0) console.log(`Assigned random usernames to ${migrated} existing users`);
+
+    // Migrate: accounts created before Privacy/Terms consent existed should not be
+    // blocked by current auth flows. Treat continued login as acceptance from creation.
+    let termsBackfilled = 0;
+    for (const u of allUsers) {
+      if (!u.acceptedTermsAt) {
+        await updateOne('users.json', usr => usr.id === u.id, {
+          acceptedTermsAt: u.createdAt || new Date().toISOString()
+        });
+        termsBackfilled++;
+      }
+    }
+    if (termsBackfilled > 0) console.log(`Backfilled terms acceptance for ${termsBackfilled} existing user(s)`);
+
+    // One-time cleanup: clear stripeSubscriptionId on free users.
+    // Stale links from cancelled trials caused phantom "Subscription Renewed"
+    // Telegram pings when Stripe replayed events for those dead subs.
+    let cleared = 0;
+    for (const u of allUsers) {
+      if (u.plan !== 'premium' && u.stripeSubscriptionId) {
+        await updateOne('users.json', usr => usr.id === u.id, { stripeSubscriptionId: null });
+        cleared++;
+      }
+    }
+    if (cleared > 0) console.log(`Cleared stale stripeSubscriptionId on ${cleared} free user(s)`);
   } catch (e) {
     console.error('DB init error:', e.message || e);
     console.error('DATABASE_URL set:', !!process.env.DATABASE_URL);
@@ -747,6 +918,17 @@ async function start() {
     // Start Telegram bot (non-blocking, won't crash server if it fails)
     // Pass activeUsers map directly to avoid circular require
     try { require('./telegram').init(activeUsers); } catch (e) { console.error('[Telegram] Init failed:', e.message); }
+
+    // One-time reconciliation: restore users whose Stripe sub is still active
+    // but were silently downgraded (missed renewal webhook + sweep collision).
+    // Must run BEFORE the sweep so restored users aren't immediately re-downgraded.
+    const { reconcileStripeSubscriptions } = require('./routes/stripe');
+    const { sweepExpiredSubscriptions } = require('./middleware/auth');
+    (async () => {
+      await reconcileStripeSubscriptions();
+      await sweepExpiredSubscriptions();
+    })();
+    setInterval(sweepExpiredSubscriptions, 60 * 60 * 1000);
   });
 }
 

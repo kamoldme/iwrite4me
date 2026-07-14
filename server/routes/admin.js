@@ -28,9 +28,13 @@ router.get('/stats', async (req, res) => {
   const activeNow = activeUsersMap ? activeUsersMap.size : 0;
   const writingCutoff = Date.now() - 60000; // 60s window
   let writingNow = 0;
+  let onTabNow = 0;
   if (activeUsersMap) {
     for (const [, data] of activeUsersMap) {
       if (data.writingAt && data.writingAt > writingCutoff) writingNow++;
+      // "On Tab" = visibilityState was 'visible' within the last 60s.
+      // Online means the tab is just open; On Tab means it's actually focused.
+      if (data.focusedAt && data.focusedAt > writingCutoff) onTabNow++;
     }
   }
 
@@ -109,6 +113,7 @@ router.get('/stats', async (req, res) => {
   res.json({
     activeNow,
     writingNow,
+    onTabNow,
     totalUsers: users.filter(u => u.role !== 'admin').length,
     aiUsage: { used: aiUsed, capacity: aiCapacity, activeUsers: aiActiveUsers, week: isoWeek },
     totalDocuments: docs.length,
@@ -274,6 +279,11 @@ router.post('/users/:id/subscription', async (req, res) => {
       updates.planExpiresAt = expiresAt.toISOString();
     }
     updates.planExpired = false;
+    // Admin grants are not Stripe-billed. Clear any leftover payment-failure / cancel
+    // state so an admin-granted user never shows up as "Payment Failed".
+    updates.planPaymentFailed = false;
+    updates.planPaymentAttempts = 0;
+    updates.cancelAtPeriodEnd = false;
   }
 
   const updated = await updateOne('users.json', u => u.id === req.params.id, updates);
@@ -831,11 +841,49 @@ router.delete('/story-comments/:id', async (req, res) => {
 });
 
 // ===== STRIPE: SUBSCRIBER LIST =====
+// Detects+caches Stripe live/test mode per user. Filters test users by default
+// so the testing-period accounts don't pollute the production subscribers view.
+// Pass ?includeTest=1 to include them.
 router.get('/subscribers', async (req, res) => {
   try {
     const users = await findMany('users.json');
-    const subscribers = users
-      .filter(u => u.plan === 'premium' || u.planPaymentFailed)
+    // Active premium of any source, plus genuine Stripe payment failures. A non-Stripe
+    // (admin/referral) user with a stale planPaymentFailed flag is NOT a failed payment,
+    // so once their grant ends and they're downgraded they fall off this list.
+    let candidates = users.filter(u => u.plan === 'premium' || (u.planPaymentFailed && u.planSource === 'stripe'));
+
+    // Verify Stripe customers we don't yet have a stripeMode on. Cache result.
+    let stripeClient = null;
+    try { stripeClient = require('./stripe').getStripe?.(); } catch {}
+    // Fallback: instantiate Stripe directly if helper isn't exported
+    if (!stripeClient && process.env.STRIPE_SECRET_KEY) {
+      const Stripe = require('stripe');
+      stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' });
+    }
+
+    if (stripeClient) {
+      for (const u of candidates) {
+        if (!u.stripeCustomerId || u.stripeMode) continue;
+        try {
+          await stripeClient.customers.retrieve(u.stripeCustomerId);
+          await updateOne('users.json', x => x.id === u.id, { stripeMode: 'live' });
+          u.stripeMode = 'live';
+        } catch (err) {
+          // Only mark test on confirmed missing-resource — not on transient errors
+          if (err?.code === 'resource_missing' || /No such customer/i.test(err?.message || '')) {
+            await updateOne('users.json', x => x.id === u.id, { stripeMode: 'test' });
+            u.stripeMode = 'test';
+          }
+        }
+      }
+    }
+
+    const includeTest = req.query.includeTest === '1' || req.query.includeTest === 'true';
+    if (!includeTest) {
+      candidates = candidates.filter(u => u.stripeMode !== 'test');
+    }
+
+    const subscribers = candidates
       .map(u => ({
         id: u.id,
         name: u.name,
@@ -849,6 +897,8 @@ router.get('/subscribers', async (req, res) => {
         trialUsed: u.trialUsed || false,
         stripeCustomerId: u.stripeCustomerId || null,
         stripeSubscriptionId: u.stripeSubscriptionId || null,
+        stripeMode: u.stripeMode || null,
+        cancelAtPeriodEnd: !!u.cancelAtPeriodEnd,
         createdAt: u.createdAt
       }))
       .sort((a, b) => new Date(b.planStartedAt || b.createdAt) - new Date(a.planStartedAt || a.createdAt));
@@ -857,6 +907,20 @@ router.get('/subscribers', async (req, res) => {
   } catch (err) {
     console.error('Subscribers list error:', err);
     res.status(500).json({ error: 'Failed to load subscribers' });
+  }
+});
+
+// ===== ADMIN: SUBSCRIPTION HISTORY FOR ANY USER =====
+router.get('/users/:id/subscription-history', async (req, res) => {
+  try {
+    const user = await findOne('users.json', u => u.id === req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const { buildSubscriptionHistory } = require('./stripe');
+    const payload = await buildSubscriptionHistory(user);
+    res.json({ ...payload, user: { id: user.id, name: user.name, email: user.email, username: user.username || null } });
+  } catch (err) {
+    console.error('Admin subscription history error:', err);
+    res.status(500).json({ error: 'Failed to load subscription history' });
   }
 });
 

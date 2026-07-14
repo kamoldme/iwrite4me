@@ -11,92 +11,228 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iWrite4.me — Terms of Service</title>
-  <link rel="icon" type="image/png" href="/iWrite logo.png">
+  <title>iWrite4.me - Terms of Service</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=57">
   <style>
-    .legal-page { max-width: 760px; margin: 0 auto; padding: 120px 24px 80px; }
-    .legal-page h1 { font-family: var(--font-display); font-size: 2.4rem; font-weight: 800; margin-bottom: 8px; }
-    .legal-page .legal-date { color: var(--text-muted); font-size: 13px; margin-bottom: 40px; }
-    .legal-page h2 { font-size: 1.2rem; font-weight: 700; margin-top: 36px; margin-bottom: 12px; color: var(--accent); }
-    .legal-page p, .legal-page li { font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 12px; }
-    .legal-page ul { padding-left: 24px; }
-    .legal-page a { color: var(--accent); }
+    body.legal-public {
+      min-height: 100vh;
+      background: #f7f4ec;
+      color: #22342e;
+      font-family: "Instrument Sans", system-ui, sans-serif;
+    }
+    body.legal-public::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        linear-gradient(180deg, rgba(247,244,236,0.7), rgba(247,244,236,0.96) 54%, #f7f4ec),
+        url("/media/features-classical-background.jpg") center bottom / min(1600px, 140vw) auto no-repeat;
+      opacity: 0.58;
+    }
+    body.legal-public::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.82), transparent 48%);
+      pointer-events: none;
+    }
+    .legal-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(250, 247, 239, 0.82);
+      border-bottom: 1px solid rgba(42, 55, 48, 0.08);
+      backdrop-filter: blur(18px);
+    }
+    .legal-nav-inner {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .legal-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #17231f;
+      text-decoration: none;
+      font-weight: 650;
+    }
+    .legal-brand img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .legal-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .legal-nav-links a {
+      color: rgba(33,45,64,0.74);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 450;
+    }
+    .legal-nav-links .legal-cta {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #16634f;
+      color: #fff;
+      font-weight: 700;
+    }
+    .legal-shell {
+      width: min(960px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 92px 0 96px;
+    }
+    .legal-hero {
+      text-align: center;
+      margin-bottom: 42px;
+    }
+    .legal-kicker {
+      margin: 0 0 14px;
+      color: #16634f;
+      font-size: 13px;
+      font-weight: 750;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .legal-hero h1 {
+      margin: 0;
+      font-family: "Fraunces", Georgia, serif;
+      font-size: clamp(42px, 7vw, 78px);
+      font-weight: 560;
+      line-height: 0.98;
+      letter-spacing: 0;
+      color: #17231f;
+    }
+    .legal-date {
+      margin: 20px auto 0;
+      color: rgba(34,52,46,0.58);
+      font-size: 15px;
+    }
+    .legal-document {
+      padding: clamp(28px, 5vw, 58px);
+      border: 1px solid rgba(42, 55, 48, 0.10);
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.86);
+      box-shadow: 0 24px 80px rgba(87, 75, 54, 0.10);
+    }
+    .legal-document h2 {
+      margin: 34px 0 12px;
+      color: #16634f;
+      font-size: 20px;
+      font-weight: 720;
+    }
+    .legal-document h2:first-child {
+      margin-top: 0;
+    }
+    .legal-document p,
+    .legal-document li {
+      color: rgba(34,52,46,0.76);
+      font-size: 16px;
+      line-height: 1.75;
+    }
+    .legal-document ul {
+      padding-left: 22px;
+    }
+    .legal-document a {
+      color: #16634f;
+      font-weight: 650;
+    }
+    .legal-footer {
+      padding: 36px 20px;
+      text-align: center;
+      color: rgba(34,52,46,0.58);
+    }
+    @media (max-width: 720px) {
+      .legal-nav-inner { width: min(100% - 28px, 1120px); }
+      .legal-nav-links { gap: 12px; }
+      .legal-nav-links a:not(.legal-cta) { display: none; }
+      .legal-shell { padding-top: 64px; }
+      .legal-document { border-radius: 14px; }
+    }
   </style>
 </head>
-<body class="landing">
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="logo">iWrite4.me</a>
-      <div class="nav-links">
-        <a href="/app" class="btn btn-small">Launch App</a>
+<body class="legal-public">
+  <nav class="legal-nav">
+    <div class="legal-nav-inner">
+      <a href="/" class="legal-brand">
+        <img src="/media/iwrite-logo.png" alt="">
+        <span>iWrite4.me</span>
+      </a>
+      <div class="legal-nav-links">
+        <a href="/privacy">Privacy</a>
+        <a href="/login">Log in</a>
+        <a class="legal-cta" href="/register">Write for free</a>
       </div>
     </div>
   </nav>
 
-  <div class="legal-page">
-    <h1>Terms of Service</h1>
-    <p class="legal-date">Last updated: March 17, 2026</p>
+  <main class="legal-shell">
+    <header class="legal-hero">
+      <p class="legal-kicker">Terms</p>
+      <h1>Focused writing has rules.</h1>
+      <p class="legal-date">Last updated: July 6, 2026</p>
+    </header>
 
-    <h2>1. Acceptance of Terms</h2>
-    <p>By creating an account or using iWrite4.me, you agree to these Terms of Service. If you do not agree, do not use the service.</p>
+    <section class="legal-document">
+      <h2>1. Acceptance of Terms</h2>
+      <p>By creating an account or using iWrite4.me, you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use the service.</p>
 
-    <h2>2. Description of Service</h2>
-    <p>iWrite4.me is a distraction-free writing tool that uses timed sessions, tab-lock mechanics, and gamification to help you build a writing habit. The service includes document creation, sharing, collaborative features, writing duels, and progress tracking.</p>
+      <h2>2. Description of Service</h2>
+      <p>iWrite4.me is a focused writing tool with timed sessions, progress tracking, streaks, duels, sharing, publishing, and optional high-pressure writing modes.</p>
 
-    <h2>3. User Accounts</h2>
-    <ul>
-      <li>You must provide accurate information when creating an account.</li>
-      <li>You are responsible for maintaining the security of your account.</li>
-      <li>One account per person. Do not create multiple accounts.</li>
-    </ul>
+      <h2>3. User Accounts</h2>
+      <ul>
+        <li>You must provide accurate account information.</li>
+        <li>You are responsible for keeping your account secure.</li>
+        <li>Email/password accounts may require email verification before login.</li>
+        <li>One person should not create multiple accounts to abuse trials, leaderboards, referrals, or duels.</li>
+      </ul>
 
-    <h2>4. Your Content</h2>
-    <p>You retain ownership of everything you write on iWrite4.me. We do not claim any rights to your content. However, by using the sharing features, you grant us permission to display your shared content to the people you share it with.</p>
+      <h2>4. Your Content</h2>
+      <p>You retain ownership of what you write. We do not claim ownership over your drafts, documents, or stories. When you share or publish content, you give iWrite4.me permission to display that content according to the visibility settings you choose.</p>
 
-    <h2>5. Acceptable Use</h2>
-    <p>You agree not to:</p>
-    <ul>
-      <li>Use the service for any illegal purpose.</li>
-      <li>Harass, abuse, or threaten other users.</li>
-      <li>Attempt to gain unauthorized access to the service or other accounts.</li>
-      <li>Use bots, scripts, or automated tools to interact with the service.</li>
-      <li>Manipulate leaderboards, XP, or duel outcomes through exploits.</li>
-    </ul>
+      <h2>5. Acceptable Use</h2>
+      <p>You agree not to use iWrite4.me to harass others, break the law, attack the service, scrape private data, manipulate XP or leaderboards, or upload content that infringes another person's rights.</p>
 
-    <h2>6. Session Mechanics</h2>
-    <p>iWrite4.me is designed to encourage focused writing. In certain modes:</p>
-    <ul>
-      <li>Leaving the tab may result in your session being marked as failed and content being lost.</li>
-      <li>In Dangerous Mode, stopping typing for 6 seconds ends your session.</li>
-    </ul>
-    <p>These are core features of the service, not bugs. Use at your own discretion.</p>
+      <h2>6. Session Mechanics and Data Loss</h2>
+      <p>Some iWrite4.me modes are intentionally strict. Leaving a tab, stopping typing, or breaking a rule in a pressure mode may cause a session to fail or content to be lost. These mechanics are part of the product. Use them with care and keep separate backups for important work.</p>
 
-    <h2>7. Data Loss</h2>
-    <p>While we take reasonable measures to protect your data, we cannot guarantee against data loss. We recommend keeping backups of important writing outside the platform.</p>
+      <h2>7. Payments and Plans</h2>
+      <p>Free and paid plan details may change over time. Paid features, subscription terms, and pricing are shown in the app before purchase. Payment processing may be handled by third-party providers.</p>
 
-    <h2>8. Service Availability</h2>
-    <p>We strive to keep iWrite4.me available at all times but do not guarantee uninterrupted access. We may perform maintenance, updates, or changes that temporarily affect availability.</p>
+      <h2>8. Service Availability</h2>
+      <p>We try to keep iWrite4.me reliable, but we do not guarantee uninterrupted access. Maintenance, deploys, provider outages, or security work may temporarily affect service.</p>
 
-    <h2>9. Termination</h2>
-    <p>We reserve the right to suspend or terminate accounts that violate these terms. You may delete your account at any time through the in-app support system.</p>
+      <h2>9. Termination</h2>
+      <p>We may suspend or terminate accounts that violate these terms, abuse the service, or threaten platform safety. You may request account deletion through support.</p>
 
-    <h2>10. Limitation of Liability</h2>
-    <p>iWrite4.me is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the service, including loss of data or content.</p>
+      <h2>10. Limitation of Liability</h2>
+      <p>iWrite4.me is provided as is. To the maximum extent allowed by law, we are not liable for indirect damages, lost writing, lost profits, or interruptions caused by use of the service.</p>
 
-    <h2>11. Changes to Terms</h2>
-    <p>We may update these terms from time to time. Continued use of the service after changes constitutes acceptance of the updated terms.</p>
+      <h2>11. Changes to Terms</h2>
+      <p>We may update these terms as the product changes. Continued use after updates means you accept the updated terms.</p>
 
-    <h2>12. Contact</h2>
-    <p>For questions about these terms, use the in-app support system or email us at support@iwrite4.me.</p>
-  </div>
+      <h2>12. Contact</h2>
+      <p>For questions about these terms, contact <a href="mailto:hello@iwrite4.me">hello@iwrite4.me</a>.</p>
+    </section>
+  </main>
 
-  <footer class="footer">
-    <div class="footer-bottom">
-      <p>&copy; 2026 iWrite4.me. All rights reserved.</p>
-    </div>
+  <footer class="legal-footer">
+    <p>&copy; 2026 iWrite4.me. Think for yourself. Write for yourself.</p>
   </footer>
 </body>
 </html>

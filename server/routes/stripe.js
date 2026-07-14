@@ -1,6 +1,6 @@
 const express = require('express');
 const Stripe = require('stripe');
-const { findOne, updateOne } = require('../utils/storage');
+const { findOne, findMany, updateOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 
@@ -70,6 +70,26 @@ router.post('/create-checkout-session', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'You have already used your free trial.' });
     }
 
+    // Belt-and-suspenders: if local flag is missing but Stripe shows a prior
+    // trial subscription on this customer, mark trialUsed and reject.
+    // Catches edge cases where webhook never fired or flag was reset.
+    if (trial && user.stripeCustomerId) {
+      try {
+        const subs = await stripe.subscriptions.list({
+          customer: user.stripeCustomerId,
+          status: 'all',
+          limit: 100
+        });
+        const hadTrial = subs.data.some(s => s.trial_start || s.trial_end);
+        if (hadTrial) {
+          await updateOne('users.json', u => u.id === user.id, { trialUsed: true });
+          return res.status(400).json({ error: 'You have already used your free trial.' });
+        }
+      } catch (err) {
+        console.warn('Stripe trial-history check failed:', err.message);
+      }
+    }
+
     // Build the checkout session config
     const sessionConfig = {
       mode: 'subscription',
@@ -101,7 +121,22 @@ router.post('/create-checkout-session', authenticate, async (req, res) => {
       sessionConfig.subscription_data.trial_period_days = 7;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionConfig);
+    } catch (createErr) {
+      // Stale customer ID — Stripe deleted the customer but the DB still has it.
+      // Clear it and retry without a customer so Stripe creates a fresh one.
+      if (createErr.code === 'resource_missing' && sessionConfig.customer) {
+        console.warn('Stale stripeCustomerId, retrying without customer:', sessionConfig.customer);
+        await updateOne('users.json', u => u.id === user.id, { stripeCustomerId: null });
+        delete sessionConfig.customer;
+        sessionConfig.customer_email = user.email;
+        session = await stripe.checkout.sessions.create(sessionConfig);
+      } else {
+        throw createErr;
+      }
+    }
 
     logAction('stripe_checkout_created', {
       duration,
@@ -229,6 +264,175 @@ router.post('/create-portal-session', authenticate, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// GET /api/stripe/history
+// Returns a chronological subscription history for the current user.
+// Pulls from internal logs (covers trial/admin/promocode/referral grants)
+// and merges Stripe invoices when the user has a stripeCustomerId
+// (gives real paid amounts).
+// ─────────────────────────────────────────────
+// Reusable: build the full subscription-history payload for a given user.
+// Used by both the self endpoint (/api/stripe/history) and the admin endpoint.
+async function buildSubscriptionHistory(user) {
+  const STRIPE_ACTIONS = new Set([
+    'stripe_subscription_created',
+    'stripe_subscription_renewed',
+    'stripe_subscription_cancelled',
+    'stripe_subscription_auto_cancelled',
+    'stripe_subscription_will_cancel',
+    'stripe_subscription_uncancelled',
+    'stripe_payment_failed',
+    'stripe_payment_verified',
+    'subscription_expired',
+    'promocode_redeemed',
+    'admin_grant_pro',
+    'referral_pro_granted'
+  ]);
+
+  const allLogs = await findMany('logs.json', l =>
+    l.userId === user.id && STRIPE_ACTIONS.has(l.action)
+  );
+
+  const stripe = getStripe();
+  const hasStripeData = !!(stripe && user.stripeCustomerId);
+
+    // Try Stripe first — if it succeeds we'll suppress duplicated log entries.
+    // If it fails (e.g. test/live key mismatch, revoked key), we fall back to
+    // log entries only so the user always sees their history.
+    const REDUNDANT_WHEN_STRIPE = new Set([
+      'stripe_subscription_created',
+      'stripe_subscription_renewed',
+      'stripe_payment_verified'
+    ]);
+
+    const stripeInvoiceEvents = [];
+    let stripeFetchSucceeded = false;
+
+    if (hasStripeData) {
+      try {
+        const invoices = await stripe.invoices.list({
+          customer: user.stripeCustomerId,
+          limit: 50
+        });
+
+        // Cache: fetch each unique subscription once to read trial_start/trial_end
+        const subCache = {};
+        const getSub = async (subId) => {
+          if (!subId) return null;
+          if (subCache[subId] !== undefined) return subCache[subId];
+          try { subCache[subId] = await stripe.subscriptions.retrieve(subId); }
+          catch { subCache[subId] = null; }
+          return subCache[subId];
+        };
+
+        for (const inv of invoices.data) {
+          if (inv.status !== 'paid' && inv.status !== 'open') continue;
+
+          const totalDiscount = (inv.total_discount_amounts || []).reduce((s, d) => s + d.amount, 0);
+          const subtotal = inv.subtotal || 0;
+          const lineSubtotal = (inv.lines?.data || []).reduce((s, l) => s + (l.amount || 0), 0);
+          const isFullyDiscounted = totalDiscount > 0 && inv.amount_paid === 0 && lineSubtotal > 0;
+
+          const couponName = inv.discount?.coupon?.name || null;
+          const couponPercent = inv.discount?.coupon?.percent_off || null;
+          const couponAmountOff = inv.discount?.coupon?.amount_off || null;
+
+          // Detect trial: invoice was created during the subscription's trial window
+          let isTrial = false;
+          if (inv.subscription) {
+            const sub = await getSub(inv.subscription);
+            if (sub?.trial_start && sub?.trial_end) {
+              isTrial = inv.created >= sub.trial_start && inv.created <= sub.trial_end;
+            }
+          }
+
+          stripeInvoiceEvents.push({
+            type: 'stripe_invoice',
+            timestamp: new Date((inv.status_transitions?.paid_at || inv.created) * 1000).toISOString(),
+            duration: null,
+            source: 'stripe',
+            subscriptionId: inv.subscription || null,
+            details: {
+              amountPaid: inv.amount_paid,
+              subtotal,
+              currency: inv.currency,
+              status: inv.status,
+              billingReason: inv.billing_reason,
+              hostedInvoiceUrl: inv.hosted_invoice_url,
+              periodStart: inv.period_start ? new Date(inv.period_start * 1000).toISOString() : null,
+              periodEnd: inv.period_end ? new Date(inv.period_end * 1000).toISOString() : null,
+              isTrial,
+              isFullyDiscounted,
+              couponName,
+              couponPercent,
+              couponAmountOff,
+              discountAmount: totalDiscount
+            }
+          });
+        }
+        stripeFetchSucceeded = true;
+      } catch (err) {
+        console.warn('Stripe invoice fetch failed:', err.message);
+      }
+    }
+
+    // Only suppress log dupes if Stripe fetch actually succeeded.
+    // Otherwise, falling back to logs gives the user *something* to see.
+    const filteredLogs = stripeFetchSucceeded
+      ? allLogs.filter(l => !REDUNDANT_WHEN_STRIPE.has(l.action))
+      : allLogs;
+
+    const logEvents = filteredLogs.map(l => {
+      const dur = l.details?.duration || l.details?.planDuration || null;
+      let periodStart = null, periodEnd = null;
+      if (dur && DURATION_DAYS[dur]) {
+        periodStart = l.timestamp;
+        periodEnd = new Date(new Date(l.timestamp).getTime() + DURATION_DAYS[dur] * 86400000).toISOString();
+      }
+      return {
+        type: l.action,
+        timestamp: l.timestamp,
+        duration: dur,
+        source: l.details?.source || null,
+        subscriptionId: l.details?.subscriptionId || null,
+        details: {
+          ...(l.details || {}),
+          periodStart: l.details?.periodStart || periodStart,
+          periodEnd: l.details?.periodEnd || periodEnd
+        }
+      };
+    });
+
+    const events = [...logEvents, ...stripeInvoiceEvents];
+    events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return {
+      events,
+      currentPlan: {
+        plan: user.plan,
+        planSource: user.planSource || null,
+        planDuration: user.planDuration || null,
+        planStartedAt: user.planStartedAt || null,
+        planExpiresAt: user.planExpiresAt || null,
+        trialUsed: !!user.trialUsed,
+        cancelAtPeriodEnd: !!user.cancelAtPeriodEnd,
+        cancelAt: user.cancelAt || null
+      }
+    };
+}
+
+router.get('/history', authenticate, async (req, res) => {
+  try {
+    const user = await findOne('users.json', u => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const payload = await buildSubscriptionHistory(user);
+    res.json(payload);
+  } catch (err) {
+    console.error('Subscription history error:', err);
+    res.status(500).json({ error: 'Failed to load subscription history' });
+  }
+});
+
+// ─────────────────────────────────────────────
 // Webhook handler (exported separately — mounted
 // BEFORE express.json() in index.js)
 // ─────────────────────────────────────────────
@@ -332,13 +536,38 @@ async function stripeWebhookHandler(req, res) {
             break;
           }
 
+          // Guard: only process renewals for users who are actually on premium.
+          // Free users with stale stripeSubscriptionId (e.g. from a long-cancelled
+          // trial) were getting bogus "Subscription Renewed" notifications.
+          if (user.plan !== 'premium') {
+            console.warn(`Webhook: invoice.paid for non-premium user ${user.id} (sub ${subscriptionId}); clearing stale subscription link`);
+            await updateOne('users.json', u => u.id === user.id, { stripeSubscriptionId: null });
+            break;
+          }
+
+          // Confirm the subscription is still active in Stripe before treating
+          // this as a paid renewal (defends against replayed/late webhooks).
+          let stripeStatus = null;
+          try {
+            const sub = await stripe.subscriptions.retrieve(subscriptionId);
+            stripeStatus = sub.status;
+          } catch (err) {
+            console.warn(`Webhook: could not retrieve subscription ${subscriptionId}:`, err.message);
+            break;
+          }
+          if (stripeStatus !== 'active' && stripeStatus !== 'trialing') {
+            console.warn(`Webhook: invoice.paid but subscription ${subscriptionId} status is ${stripeStatus}; skipping renewal`);
+            break;
+          }
+
           const duration = user.planDuration || '1m';
           const now = new Date();
           const currentExpiry = user.planExpiresAt ? new Date(user.planExpiresAt) : now;
           const base = currentExpiry > now ? currentExpiry : now;
+          const newExpiresAt = new Date(base.getTime() + DURATION_DAYS[duration] * 86400000).toISOString();
 
           await updateOne('users.json', u => u.id === user.id, {
-            planExpiresAt: new Date(base.getTime() + DURATION_DAYS[duration] * 86400000).toISOString(),
+            planExpiresAt: newExpiresAt,
             planPaymentFailed: false,
             planPaymentAttempts: 0,
             planSource: 'stripe',
@@ -351,7 +580,7 @@ async function stripeWebhookHandler(req, res) {
             subscriptionId
           }, user.id);
 
-          try { require('../telegram').notifyStripeRenewal(user, { duration, expiresAt: new Date(base.getTime() + DURATION_DAYS[duration] * 86400000).toISOString() }); } catch {}
+          try { require('../telegram').notifyStripeRenewal(user, { duration, expiresAt: newExpiresAt }); } catch {}
         }
 
         break;
@@ -367,6 +596,34 @@ async function stripeWebhookHandler(req, res) {
           });
           logAction('stripe_trial_will_end', { subscriptionId: subscription.id }, user.id);
           try { require('../telegram').notifyStripeTrialEnding && require('../telegram').notifyStripeTrialEnding(user); } catch {}
+        }
+        break;
+      }
+
+      // Sync cancel-at-period-end flag whenever the subscription is updated.
+      // Fires when a user clicks "Cancel" in the Stripe billing portal — sub
+      // stays active until period end but won't renew. Also fires when they
+      // re-subscribe (cancel_at_period_end goes back to false).
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object;
+        const previous = event.data.previous_attributes || {};
+        const user = await findOne('users.json', u => u.stripeSubscriptionId === subscription.id);
+        if (!user) break;
+
+        const willCancel = !!subscription.cancel_at_period_end;
+        const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null;
+
+        await updateOne('users.json', u => u.id === user.id, {
+          cancelAtPeriodEnd: willCancel,
+          cancelAt
+        });
+
+        // Only notify on the transition (not every status update)
+        if (previous.cancel_at_period_end === false && willCancel) {
+          logAction('stripe_subscription_will_cancel', { subscriptionId: subscription.id, cancelAt }, user.id);
+          try { require('../telegram').notifyStripeWillCancel && require('../telegram').notifyStripeWillCancel(user, { cancelAt }); } catch {}
+        } else if (previous.cancel_at_period_end === true && !willCancel) {
+          logAction('stripe_subscription_uncancelled', { subscriptionId: subscription.id }, user.id);
         }
         break;
       }
@@ -443,4 +700,128 @@ async function stripeWebhookHandler(req, res) {
   res.json({ received: true });
 }
 
-module.exports = { router, stripeWebhookHandler };
+// One-time reconciliation: find users marked free that Stripe still considers
+// active/trialing (silent downgrade victims of webhook misses + the new sweep)
+// and restore them with the correct planExpiresAt from Stripe.
+async function reconcileStripeSubscriptions() {
+  const stripe = getStripe();
+  if (!stripe) {
+    console.log('[stripe-reconcile] Stripe not configured, skipping');
+    return;
+  }
+  try {
+    const candidates = await findMany('users.json', u =>
+      u.plan !== 'premium' && u.stripeCustomerId
+    );
+    if (candidates.length === 0) {
+      console.log('[stripe-reconcile] no candidates');
+      return;
+    }
+    const restored = [];
+    for (const user of candidates) {
+      try {
+        const subs = await stripe.subscriptions.list({
+          customer: user.stripeCustomerId,
+          status: 'all',
+          limit: 10
+        });
+        const activeSub = subs.data.find(s => s.status === 'active' || s.status === 'trialing');
+        if (!activeSub) continue;
+        const item = activeSub.items?.data?.[0];
+        const periodEnd = item?.current_period_end || activeSub.current_period_end;
+        if (!periodEnd) continue;
+        const newExpiry = new Date(periodEnd * 1000).toISOString();
+        const isTrial = activeSub.status === 'trialing';
+        const updates = {
+          plan: 'premium',
+          planSource: isTrial ? 'trial' : 'stripe',
+          stripeSubscriptionId: activeSub.id,
+          planExpiresAt: newExpiry,
+          planExpired: false,
+          planExpiredAt: null,
+          planPaymentFailed: false,
+          planPaymentAttempts: 0,
+          cancelAtPeriodEnd: !!activeSub.cancel_at_period_end,
+          cancelAt: activeSub.cancel_at ? new Date(activeSub.cancel_at * 1000).toISOString() : null
+        };
+        if (isTrial) updates.trialUsed = true;
+        await updateOne('users.json', u => u.id === user.id, updates);
+        logAction('stripe_reconciled', {
+          subscriptionId: activeSub.id,
+          status: activeSub.status,
+          newExpiry
+        }, user.id);
+        restored.push({ email: user.email, status: activeSub.status, expiry: newExpiry });
+
+        // Catch-up Telegram notification — admin would have gotten this when
+        // the original renewal webhook fired, if it had been received correctly.
+        try {
+          const tg = require('../telegram');
+          const refreshedUser = { ...user, ...updates };
+          if (isTrial) {
+            tg.notifyStripeSubscription(refreshedUser, {
+              duration: refreshedUser.planDuration || '1m',
+              isTrial: true,
+              expiresAt: newExpiry
+            });
+          } else {
+            tg.notifyStripeRenewal(refreshedUser, {
+              duration: refreshedUser.planDuration || '1m',
+              expiresAt: newExpiry
+            });
+          }
+        } catch {}
+      } catch (err) {
+        console.warn(`[stripe-reconcile] failed for user ${user.id}:`, err.message);
+      }
+    }
+    if (restored.length > 0) {
+      console.log(`[stripe-reconcile] restored ${restored.length} user(s):`, restored.map(r => r.email).join(', '));
+      // Per-user "Subscription Renewed" pings already fired inside the loop —
+      // the batch summary was redundant noise, removed.
+    } else {
+      console.log('[stripe-reconcile] scanned ' + candidates.length + ' candidates, none needed restoration');
+    }
+
+    // Second pass: sync cancel_at_period_end for currently-premium users.
+    // Catches users who cancelled via the Stripe billing portal *before* the
+    // customer.subscription.updated webhook handler was deployed — so their
+    // cancelAtPeriodEnd flag never got written.
+    const premiums = await findMany('users.json', u =>
+      u.plan === 'premium' && u.stripeSubscriptionId
+    );
+    let cancelStateUpdates = 0;
+    for (const user of premiums) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        const willCancel = !!sub.cancel_at_period_end;
+        const cancelAt = sub.cancel_at ? new Date(sub.cancel_at * 1000).toISOString() : null;
+        // Only write if state has actually changed
+        if (!!user.cancelAtPeriodEnd !== willCancel || (user.cancelAt || null) !== cancelAt) {
+          await updateOne('users.json', u => u.id === user.id, { cancelAtPeriodEnd: willCancel, cancelAt });
+          cancelStateUpdates++;
+          // If newly discovered cancellation, log it so it appears in history
+          // AND send the catch-up Telegram (the webhook would have fired this
+          // when the user clicked Cancel; reconcile now covers webhook misses).
+          if (willCancel && !user.cancelAtPeriodEnd) {
+            logAction('stripe_subscription_will_cancel', {
+              subscriptionId: sub.id,
+              cancelAt,
+              source: 'reconcile'
+            }, user.id);
+            try { require('../telegram').notifyStripeWillCancel(user, { cancelAt }); } catch {}
+          }
+        }
+      } catch (err) {
+        console.warn(`[stripe-reconcile] cancel-state sync failed for user ${user.id}:`, err.message);
+      }
+    }
+    if (cancelStateUpdates > 0) {
+      console.log(`[stripe-reconcile] synced cancel-state on ${cancelStateUpdates} premium user(s)`);
+    }
+  } catch (err) {
+    console.error('[stripe-reconcile] failed:', err.message || err);
+  }
+}
+
+module.exports = { router, stripeWebhookHandler, reconcileStripeSubscriptions, buildSubscriptionHistory };

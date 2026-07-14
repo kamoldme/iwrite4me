@@ -11,81 +11,226 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>iWrite4.me — Privacy Policy</title>
-  <link rel="icon" type="image/png" href="/iWrite logo.png">
+  <title>iWrite4.me - Privacy Policy</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=57">
   <style>
-    .legal-page { max-width: 760px; margin: 0 auto; padding: 120px 24px 80px; }
-    .legal-page h1 { font-family: var(--font-display); font-size: 2.4rem; font-weight: 800; margin-bottom: 8px; }
-    .legal-page .legal-date { color: var(--text-muted); font-size: 13px; margin-bottom: 40px; }
-    .legal-page h2 { font-size: 1.2rem; font-weight: 700; margin-top: 36px; margin-bottom: 12px; color: var(--accent); }
-    .legal-page p, .legal-page li { font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 12px; }
-    .legal-page ul { padding-left: 24px; }
-    .legal-page a { color: var(--accent); }
+    body.legal-public {
+      min-height: 100vh;
+      background: #f7f4ec;
+      color: #22342e;
+      font-family: "Instrument Sans", system-ui, sans-serif;
+    }
+    body.legal-public::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        linear-gradient(180deg, rgba(247,244,236,0.7), rgba(247,244,236,0.96) 54%, #f7f4ec),
+        url("/media/features-classical-background.jpg") center bottom / min(1600px, 140vw) auto no-repeat;
+      opacity: 0.58;
+    }
+    body.legal-public::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.82), transparent 48%);
+      pointer-events: none;
+    }
+    .legal-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(250, 247, 239, 0.82);
+      border-bottom: 1px solid rgba(42, 55, 48, 0.08);
+      backdrop-filter: blur(18px);
+    }
+    .legal-nav-inner {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .legal-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #17231f;
+      text-decoration: none;
+      font-weight: 650;
+    }
+    .legal-brand img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+    .legal-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .legal-nav-links a {
+      color: rgba(33,45,64,0.74);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 450;
+    }
+    .legal-nav-links .legal-cta {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #16634f;
+      color: #fff;
+      font-weight: 700;
+    }
+    .legal-shell {
+      width: min(960px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 92px 0 96px;
+    }
+    .legal-hero {
+      text-align: center;
+      margin-bottom: 42px;
+    }
+    .legal-kicker {
+      margin: 0 0 14px;
+      color: #16634f;
+      font-size: 13px;
+      font-weight: 750;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .legal-hero h1 {
+      margin: 0;
+      font-family: "Fraunces", Georgia, serif;
+      font-size: clamp(42px, 7vw, 78px);
+      font-weight: 560;
+      line-height: 0.98;
+      letter-spacing: 0;
+      color: #17231f;
+    }
+    .legal-date {
+      margin: 20px auto 0;
+      color: rgba(34,52,46,0.58);
+      font-size: 15px;
+    }
+    .legal-document {
+      padding: clamp(28px, 5vw, 58px);
+      border: 1px solid rgba(42, 55, 48, 0.10);
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.86);
+      box-shadow: 0 24px 80px rgba(87, 75, 54, 0.10);
+    }
+    .legal-document h2 {
+      margin: 34px 0 12px;
+      color: #16634f;
+      font-size: 20px;
+      font-weight: 720;
+    }
+    .legal-document h2:first-child {
+      margin-top: 0;
+    }
+    .legal-document p,
+    .legal-document li {
+      color: rgba(34,52,46,0.76);
+      font-size: 16px;
+      line-height: 1.75;
+    }
+    .legal-document ul {
+      padding-left: 22px;
+    }
+    .legal-document a {
+      color: #16634f;
+      font-weight: 650;
+    }
+    .legal-footer {
+      padding: 36px 20px;
+      text-align: center;
+      color: rgba(34,52,46,0.58);
+    }
+    @media (max-width: 720px) {
+      .legal-nav-inner { width: min(100% - 28px, 1120px); }
+      .legal-nav-links { gap: 12px; }
+      .legal-nav-links a:not(.legal-cta) { display: none; }
+      .legal-shell { padding-top: 64px; }
+      .legal-document { border-radius: 14px; }
+    }
   </style>
 </head>
-<body class="landing">
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="logo">iWrite4.me</a>
-      <div class="nav-links">
-        <a href="/app" class="btn btn-small">Launch App</a>
+<body class="legal-public">
+  <nav class="legal-nav">
+    <div class="legal-nav-inner">
+      <a href="/" class="legal-brand">
+        <img src="/media/iwrite-logo.png" alt="">
+        <span>iWrite4.me</span>
+      </a>
+      <div class="legal-nav-links">
+        <a href="/terms">Terms</a>
+        <a href="/login">Log in</a>
+        <a class="legal-cta" href="/register">Write for free</a>
       </div>
     </div>
   </nav>
 
-  <div class="legal-page">
-    <h1>Privacy Policy</h1>
-    <p class="legal-date">Last updated: March 17, 2026</p>
+  <main class="legal-shell">
+    <header class="legal-hero">
+      <p class="legal-kicker">Privacy</p>
+      <h1>Your words are yours.</h1>
+      <p class="legal-date">Last updated: July 6, 2026</p>
+    </header>
 
-    <h2>1. Information We Collect</h2>
-    <p>When you use iWrite4.me, we collect:</p>
-    <ul>
-      <li><strong>Account information:</strong> Your name and email address (provided via Google Sign-In).</li>
-      <li><strong>Writing data:</strong> Documents you create, word counts, session durations, and XP earned.</li>
-      <li><strong>Usage data:</strong> Pages visited, features used, and general interaction patterns.</li>
-    </ul>
+    <section class="legal-document">
+      <h2>1. Information We Collect</h2>
+      <p>When you use iWrite4.me, we collect:</p>
+      <ul>
+        <li><strong>Account information:</strong> your name, email address, login method, and verification status.</li>
+        <li><strong>Writing data:</strong> documents you create, word counts, writing sessions, streaks, XP, goals, and progress.</li>
+        <li><strong>Usage data:</strong> pages visited, features used, and general interaction patterns used to improve the product.</li>
+        <li><strong>Support and safety data:</strong> messages you send to support, abuse reports, moderation actions, and security logs.</li>
+      </ul>
 
-    <h2>2. How We Use Your Information</h2>
-    <p>We use your information to:</p>
-    <ul>
-      <li>Provide and maintain the iWrite4.me service.</li>
-      <li>Track your writing progress, streaks, levels, and achievements.</li>
-      <li>Enable social features (friends, duels, leaderboards).</li>
-      <li>Improve the service and fix bugs.</li>
-    </ul>
+      <h2>2. How We Use Your Information</h2>
+      <p>We use your information to provide the writing workspace, keep accounts secure, track writing progress, enable friends, duels, leaderboards, shared drafts, and improve the reliability of iWrite4.me.</p>
 
-    <h2>3. Data Sharing</h2>
-    <p>We do not sell your personal data. Your writing content is private by default. When you share a document, only people with the share link can access it. Leaderboard data (name, word count, level) is visible to other users.</p>
+      <h2>3. Email Verification</h2>
+      <p>When you register with email and password, we send a verification code to confirm that the email address belongs to you. We use Brevo to send transactional emails such as verification codes and important account messages.</p>
 
-    <h2>4. Data Storage</h2>
-    <p>Your data is stored securely on servers hosted by Railway. We use industry-standard security measures including encrypted connections (HTTPS) and hashed passwords.</p>
+      <h2>4. Data Sharing</h2>
+      <p>We do not sell your personal data. Your writing content is private by default. If you share a document or publish a story, the selected content becomes visible according to the sharing or publishing settings you choose.</p>
 
-    <h2>5. Google Sign-In</h2>
-    <p>We use Google OAuth 2.0 for authentication. We only access your basic profile information (name and email). We do not access your Google Drive, Gmail, or other Google services.</p>
+      <h2>5. Data Storage and Security</h2>
+      <p>Your data is stored on infrastructure used by iWrite4.me, including Railway-hosted services. Passwords are hashed, connections use HTTPS, and access to admin tooling is restricted.</p>
 
-    <h2>6. Cookies</h2>
-    <p>We use localStorage to store your authentication token. We do not use third-party tracking cookies.</p>
+      <h2>6. Google Sign-In</h2>
+      <p>Google Sign-In gives iWrite4.me access only to basic profile details needed for login, such as your name and email. We do not access Google Drive, Gmail, or other Google services.</p>
 
-    <h2>7. Data Deletion</h2>
-    <p>You can delete individual documents from within the app. To request full account deletion, contact us through the in-app support system.</p>
+      <h2>7. Cookies and Local Storage</h2>
+      <p>We use local storage and similar browser storage to keep you signed in and remember product state. We also use analytics to understand product usage and improve the site.</p>
 
-    <h2>8. Children's Privacy</h2>
-    <p>iWrite4.me is not intended for children under 13. We do not knowingly collect data from children under 13.</p>
+      <h2>8. Data Deletion</h2>
+      <p>You can delete documents inside the app. To request full account deletion, use in-app support or contact us by email.</p>
 
-    <h2>9. Changes to This Policy</h2>
-    <p>We may update this policy from time to time. We will notify users of significant changes through the app.</p>
+      <h2>9. Children's Privacy</h2>
+      <p>iWrite4.me is not intended for children under 13. We do not knowingly collect data from children under 13.</p>
 
-    <h2>10. Contact</h2>
-    <p>For privacy questions, use the in-app support system or email us at support@iwrite4.me.</p>
-  </div>
+      <h2>10. Changes to This Policy</h2>
+      <p>We may update this policy as the product changes. Material updates will be reflected on this page and, when appropriate, communicated in the app.</p>
 
-  <footer class="footer">
-    <div class="footer-bottom">
-      <p>&copy; 2026 iWrite4.me. All rights reserved.</p>
-    </div>
+      <h2>11. Contact</h2>
+      <p>For privacy questions, contact <a href="mailto:hello@iwrite4.me">hello@iwrite4.me</a>.</p>
+    </section>
+  </main>
+
+  <footer class="legal-footer">
+    <p>&copy; 2026 iWrite4.me. Think for yourself. Write for yourself.</p>
   </footer>
 </body>
 </html>

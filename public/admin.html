@@ -11,12 +11,15 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=1280, initial-scale=0.25, user-scalable=yes">
+  <meta name="robots" content="noindex, nofollow">
   <title>iWrite4.me — Admin</title>
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="/iWrite logo.png">
-  <link rel="stylesheet" href="/css/style.css?v=35">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
+  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
+  <link rel="stylesheet" href="/css/style.css?v=36">
   <style>
     .admin-layout { display: flex; min-height: 100vh; }
     .admin-sidebar {
@@ -275,25 +278,6 @@
   </style>
 </head>
 <body class="admin-keep-scrollbar">
-  <!-- AUTH SCREEN (centered) -->
-  <div id="admin-auth" class="admin-login-screen">
-    <div class="admin-login-card">
-      <a href="/" class="logo">iWrite4.me</a>
-      <h2>Login</h2>
-      <p class="auth-sub">Enter your admin credentials</p>
-      <div class="auth-error" id="admin-error"></div>
-      <div class="auth-field">
-        <label>Email</label>
-        <input type="email" id="admin-email">
-      </div>
-      <div class="auth-field">
-        <label>Password</label>
-        <input type="password" id="admin-password">
-      </div>
-      <button class="btn btn-primary btn-full" id="admin-login-btn" style="margin-top:8px">Sign In</button>
-    </div>
-  </div>
-
   <!-- ADMIN PANEL -->
   <div id="admin-panel" style="display:none">
     <div class="admin-layout">
@@ -355,6 +339,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v12H5.17L4 17.17V4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="12" x2="13" y2="12"/></svg>
             Prompts
           </button>
+          <button class="admin-nav-item" data-tab="announcements">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 11-5.8-1.6"/></svg>
+            Announcements
+          </button>
         </nav>
         <div class="admin-sidebar-footer">
           <button class="admin-nav-item" id="admin-theme-toggle">
@@ -373,7 +361,12 @@
       <main class="admin-main">
         <!-- OVERVIEW -->
         <div id="tab-overview">
-          <div class="admin-page-title">Dashboard</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px">
+            <div class="admin-page-title" style="margin-bottom:0">Dashboard</div>
+            <button class="admin-btn admin-btn-ghost" id="overview-refresh-btn" onclick="refreshOverview()" title="Refresh all stats" style="font-size:12px;padding:6px 14px;display:inline-flex;align-items:center;gap:6px">
+              <span id="overview-refresh-icon">↻</span> Refresh
+            </button>
+          </div>
           <div class="admin-stats-grid" id="admin-stats"></div>
           <div class="admin-charts-row">
             <div class="admin-chart-card">
@@ -410,14 +403,21 @@
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
                 <option value="premium">Pro Only</option>
+                <option value="followers-desc">Most Followers</option>
+                <option value="followers-asc">Fewest Followers</option>
                 <option value="streak">By Streak</option>
                 <option value="words">By Words</option>
                 <option value="docs">By Docs</option>
               </select>
+              <select id="users-followers-filter" class="admin-search" style="width:auto;max-width:180px;padding:6px 10px">
+                <option value="all">All followers</option>
+                <option value="has-followers">Has followers</option>
+                <option value="no-followers">No followers</option>
+              </select>
             </div>
           </div>
           <table class="admin-table" id="users-table">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Plan</th><th>Level</th><th>XP</th><th>Streak</th><th>Words</th><th>Sessions</th><th>Docs</th><th style="font-size:11px">Joined</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Plan</th><th>Level</th><th>XP</th><th>Followers</th><th>Streak</th><th>Words</th><th>Sessions</th><th>Docs</th><th style="font-size:11px">Joined</th><th>Actions</th></tr></thead>
             <tbody></tbody>
           </table>
           <div id="users-pager" class="admin-pager"></div>
@@ -652,13 +652,17 @@
 
           <!-- Subscribers sub-page -->
           <div id="sub-page-subscribers">
-            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
               <button class="admin-btn admin-btn-primary sub-filter-btn" data-filter="all" onclick="filterSubscribers('all')">All</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="stripe" onclick="filterSubscribers('stripe')">Stripe</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="admin" onclick="filterSubscribers('admin')">Admin</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="trial" onclick="filterSubscribers('trial')">Trial</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="referral" onclick="filterSubscribers('referral')">Referral</button>
               <button class="admin-btn admin-btn-ghost sub-filter-btn" data-filter="failed" onclick="filterSubscribers('failed')">Payment Failed</button>
+              <label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer">
+                <input type="checkbox" id="include-test-toggle" onchange="loadSubscribers()" style="cursor:pointer">
+                Show test users
+              </label>
             </div>
             <div id="subscribers-count" style="font-size:12px;color:var(--text-muted);margin-bottom:8px"></div>
             <table class="admin-table">
@@ -670,10 +674,24 @@
                   <th>Duration</th>
                   <th>Expires</th>
                   <th>Payment</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="subscribers-tbody"></tbody>
             </table>
+          </div>
+
+          <!-- Subscription history slide-in panel -->
+          <div class="user-detail-overlay" id="sub-history-admin-overlay" onclick="closeSubHistoryAdmin()"></div>
+          <div class="user-detail-panel" id="sub-history-admin-panel">
+            <div class="user-detail-header">
+              <div>
+                <div style="font-size:16px;font-weight:700" id="sub-history-admin-title">Subscription History</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="sub-history-admin-subtitle"></div>
+              </div>
+              <button class="admin-btn admin-btn-ghost" onclick="closeSubHistoryAdmin()" style="padding:6px 12px">×</button>
+            </div>
+            <div class="user-detail-body" id="sub-history-admin-body"></div>
           </div>
 
           <!-- Promo Codes sub-page -->
@@ -748,6 +766,157 @@
         </div>
 
         <!-- PROMPTS -->
+        <!-- ANNOUNCEMENTS -->
+        <div id="tab-announcements" style="display:none">
+          <div class="admin-page-title">Announcements</div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-bottom:24px">
+            <!-- LEFT: form -->
+            <div class="admin-card" style="padding:20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap">
+                <h3 style="font-size:14px;font-weight:600">Create / Edit</h3>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span id="ann-ai-quota" style="font-size:11px;color:var(--text-muted)" title="Shared weekly Gemini quota — research and announcement drafting consume the same bucket"></span>
+                  <button class="admin-btn admin-btn-ghost" id="ann-ai-toggle" onclick="toggleAnnAi()" style="padding:6px 10px;font-size:12px">✨ Draft with AI</button>
+                </div>
+              </div>
+
+              <div id="ann-ai-panel" style="display:none;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:6px">What is this announcement about?</label>
+                <textarea id="ann-ai-intent" rows="3" placeholder="e.g. Tell pro users about the new subscription history view in the upgrade tab" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px;resize:vertical"></textarea>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button class="admin-btn admin-btn-primary" onclick="generateAnnouncement('draft')" style="padding:6px 12px;font-size:12px">Generate</button>
+                  <button class="admin-btn admin-btn-ghost" onclick="generateAnnouncement('improve')" style="padding:6px 12px;font-size:12px">Improve current draft</button>
+                  <span id="ann-ai-status" style="margin-left:auto;font-size:11px;color:var(--text-muted);align-self:center"></span>
+                </div>
+                <div style="font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.4">
+                  Output: short, plain language, no em-dashes or AI clichés. Knows iWrite product terms (streak, tree, dangerous mode, Pro, leaderboard, duel).
+                </div>
+              </div>
+
+              <div style="margin-bottom:12px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">
+                  Title
+                  <button type="button" class="ann-ai-icon-btn" onclick="openAnnFieldAI(event, 'title')" title="Draft / improve with AI">✨</button>
+                  <span id="ann-title-count" style="float:right">0/80</span>
+                </label>
+                <input id="ann-title" maxlength="80" oninput="updateAnnPreview()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:13px">
+              </div>
+
+              <div style="margin-bottom:12px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">
+                  Subtitle
+                  <button type="button" class="ann-ai-icon-btn" onclick="openAnnFieldAI(event, 'subtitle')" title="Draft / improve with AI">✨</button>
+                  <span id="ann-subtitle-count" style="float:right">0/120</span>
+                  <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:8px">(short tease shown on the dashboard panel)</span>
+                </label>
+                <input id="ann-subtitle" maxlength="120" oninput="updateAnnPreview()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:13px">
+              </div>
+
+              <div style="margin-bottom:12px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">
+                  Body
+                  <button type="button" class="ann-ai-icon-btn" onclick="openAnnFieldAI(event, 'body')" title="Draft / improve with AI">✨</button>
+                  <span id="ann-body-count" style="float:right">0/500</span>
+                  <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:8px">(brief info shown in the expanded modal)</span>
+                </label>
+                <textarea id="ann-body" rows="4" maxlength="500" oninput="updateAnnPreview()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:13px;resize:vertical"></textarea>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div>
+                  <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Category</label>
+                  <select id="ann-category" onchange="updateAnnPreview()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                    <option value="update">Update</option>
+                    <option value="news">News</option>
+                    <option value="feature">Feature</option>
+                    <option value="tip">Tip</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Audience</label>
+                  <select id="ann-audience" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                    <option value="everyone">Everyone</option>
+                    <option value="pro">Pro only</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="margin-bottom:12px">
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Image (optional, any aspect ratio, ≤2 MB) — landscape, portrait, or square all work</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="file" id="ann-image-file" accept="image/*" onchange="uploadAnnImage()" style="flex:1;font-size:12px">
+                  <button class="admin-btn admin-btn-ghost" onclick="clearAnnImage()" style="padding:6px 10px;font-size:11px">Clear</button>
+                </div>
+                <input type="hidden" id="ann-image-url">
+                <div id="ann-image-status" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <div>
+                  <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">
+                    Link URL (optional)
+                  </label>
+                  <input id="ann-link-url" placeholder="https://…" oninput="updateAnnPreview()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">
+                    Link label
+                    <button type="button" class="ann-ai-icon-btn" onclick="openAnnFieldAI(event, 'linkLabel')" title="Suggest a label">✨</button>
+                  </label>
+                  <input id="ann-link-label" placeholder="Read more" oninput="updateAnnPreview()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                </div>
+              </div>
+
+              <label style="display:inline-flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;margin-bottom:14px">
+                <input type="checkbox" id="ann-pinned" style="cursor:pointer"> Pin to top
+              </label>
+
+              <div style="display:flex;gap:8px">
+                <button class="admin-btn admin-btn-primary" onclick="saveAnnouncement()" id="ann-save-btn">Publish</button>
+                <button class="admin-btn admin-btn-ghost" onclick="resetAnnouncementForm()">Reset</button>
+                <input type="hidden" id="ann-edit-id">
+              </div>
+            </div>
+
+            <!-- RIGHT: live preview -->
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Live preview (what users see)</div>
+              <div id="ann-preview" style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;overflow:hidden;min-height:200px"></div>
+            </div>
+          </div>
+
+          <div style="font-size:14px;font-weight:600;margin-bottom:12px">All announcements</div>
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Audience</th>
+                <th>Status</th>
+                <th>Views</th>
+                <th>Likes</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="announcements-tbody"></tbody>
+          </table>
+
+          <!-- Per-announcement stats panel (viewers + likers) -->
+          <div class="user-detail-overlay" id="ann-stats-overlay" onclick="closeAnnStats()"></div>
+          <div class="user-detail-panel" id="ann-stats-panel">
+            <div class="user-detail-header">
+              <div>
+                <div style="font-size:16px;font-weight:700" id="ann-stats-title">Announcement Stats</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="ann-stats-subtitle"></div>
+              </div>
+              <button class="admin-btn admin-btn-ghost" onclick="closeAnnStats()" style="padding:6px 12px">×</button>
+            </div>
+            <div class="user-detail-body" id="ann-stats-body"></div>
+          </div>
+        </div>
+
         <div id="tab-prompts" style="display:none">
           <div class="admin-page-title">Writing Prompts</div>
           <div class="admin-card" style="padding:20px;margin-bottom:20px">
@@ -883,7 +1052,10 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    let adminToken = localStorage.getItem('iwrite_admin_token');
+    let adminToken = localStorage.getItem('iwrite_admin_token') || localStorage.getItem('iwrite_token');
+    if (!adminToken) {
+      window.location.replace('/login');
+    }
     let allUsers = [];
     let allDocs = [];
     let allStories = [];
@@ -1003,38 +1175,6 @@
       return res.json();
     }
 
-    // ===== AUTH =====
-    document.getElementById('admin-login-btn').addEventListener('click', async () => {
-      const email = document.getElementById('admin-email').value;
-      const password = document.getElementById('admin-password').value;
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        if (data.user.role !== 'admin') {
-          // Non-admin: store token for /app and redirect
-          localStorage.setItem('iwrite_token', data.token);
-          window.location.href = '/app';
-          return;
-        }
-        adminToken = data.token;
-        localStorage.setItem('iwrite_admin_token', adminToken);
-        showPanel();
-      } catch (err) {
-        const el = document.getElementById('admin-error');
-        el.textContent = err.message;
-        el.classList.add('visible');
-      }
-    });
-
-    document.getElementById('admin-password').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('admin-login-btn').click();
-    });
-
     // ===== TAB SWITCHING =====
     function switchAdminTab(tabName) {
       document.querySelectorAll('.admin-nav-item[data-tab]').forEach(b => b.classList.remove('active'));
@@ -1044,8 +1184,10 @@
       const tabEl = document.getElementById(`tab-${tabName}`);
       if (tabEl) tabEl.style.display = 'block';
       localStorage.setItem('iwrite_admin_tab', tabName);
+      if (history.replaceState) history.replaceState(null, '', '#' + tabName);
       if (tabName === 'stories') loadStoriesAdmin();
       if (tabName === 'prompts') loadPrompts();
+      if (tabName === 'announcements') { loadAnnouncementsAdmin(); resetAnnouncementForm(); loadAnnAiQuota(); }
     }
 
     document.querySelectorAll('[data-tab]').forEach(btn => {
@@ -1054,7 +1196,9 @@
 
     document.getElementById('admin-logout').addEventListener('click', () => {
       localStorage.removeItem('iwrite_admin_token');
-      location.reload();
+      localStorage.removeItem('iwrite_token');
+      localStorage.removeItem('iwrite_user_cache');
+      window.location.href = '/login';
     });
 
     // ===== THEME TOGGLE =====
@@ -1194,19 +1338,24 @@
     // ===== SEARCH =====
     document.getElementById('users-search').addEventListener('input', (e) => {
       _usersPage = 1;
-      const q = e.target.value.toLowerCase();
-      renderUsersTable(allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q)));
+      renderUsersTable(getVisibleUsers());
     });
     // Restore saved sort preference
     const savedSort = localStorage.getItem('admin_users_sort');
     if (savedSort) document.getElementById('users-sort').value = savedSort;
+    const savedFollowersFilter = localStorage.getItem('admin_users_followers_filter');
+    if (savedFollowersFilter) document.getElementById('users-followers-filter').value = savedFollowersFilter;
 
     document.getElementById('users-sort').addEventListener('change', () => {
       _usersPage = 1;
       localStorage.setItem('admin_users_sort', document.getElementById('users-sort').value);
-      const q = document.getElementById('users-search').value.toLowerCase();
-      const filtered = q ? allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q)) : allUsers;
-      renderUsersTable(filtered);
+      renderUsersTable(getVisibleUsers());
+    });
+
+    document.getElementById('users-followers-filter').addEventListener('change', () => {
+      _usersPage = 1;
+      localStorage.setItem('admin_users_followers_filter', document.getElementById('users-followers-filter').value);
+      renderUsersTable(getVisibleUsers());
     });
     let _docsSearchTimer = null;
     document.getElementById('docs-search').addEventListener('input', () => {
@@ -1273,9 +1422,9 @@
 
     // ===== SHOW PANEL =====
     async function showPanel() {
-      document.getElementById('admin-auth').style.display = 'none';
       document.getElementById('admin-panel').style.display = 'block';
-      const savedTab = localStorage.getItem('iwrite_admin_tab') || 'overview';
+      const hashTab = location.hash ? location.hash.slice(1) : '';
+      const savedTab = hashTab || localStorage.getItem('iwrite_admin_tab') || 'overview';
       switchAdminTab(savedTab);
       await Promise.all([loadOverview(), loadUsers(), loadDocs(), loadLogs(), loadSupport(), loadDuels(), loadStoriesAdmin()]);
       renderAdminCharts();
@@ -1290,8 +1439,7 @@
             <div class="label">Online</div>
             <div class="value" style="color:#22c55e" id="active-now-count">${stats.activeNow || 0}</div>
             <div class="admin-online-dot"></div>
-            <div style="position:absolute;bottom:16px;right:16px;display:flex;gap:6px">
-              <button class="admin-btn admin-btn-ghost" style="font-size:11px;padding:4px 12px" onclick="refreshActiveCount()" id="refresh-active-btn" title="Refresh">↻</button>
+            <div style="position:absolute;bottom:16px;right:16px">
               <button class="admin-btn admin-btn-ghost" style="font-size:11px;padding:4px 12px" onclick="toggleActiveUsersList()">View</button>
             </div>
             <div id="active-users-list" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;max-height:200px;overflow-y:auto"></div>
@@ -1299,7 +1447,10 @@
           <div class="admin-stat-card" style="position:relative">
             <div class="label">Writing Now</div>
             <div class="value" style="color:#f59e0b" id="writing-now-count">${stats.writingNow || 0}</div>
-            <button class="admin-btn admin-btn-ghost" style="font-size:11px;padding:4px 12px;position:absolute;bottom:12px;right:12px" onclick="refreshWritingNow()" id="refresh-writing-btn" title="Check who is writing right now">↻</button>
+          </div>
+          <div class="admin-stat-card" style="position:relative" title="Users with the tab actively focused — distinct from Online (which counts any open tab including background ones)">
+            <div class="label">On Tab</div>
+            <div class="value" style="color:#3b82f6" id="on-tab-count">${stats.onTabNow || 0}</div>
           </div>
           <div class="admin-stat-card"><div class="label">Users</div><div class="value">${stats.totalUsers}</div></div>
           <div class="admin-stat-card"><div class="label">Documents</div><div class="value">${stats.totalDocuments}</div></div>
@@ -1349,43 +1500,40 @@
       } catch { toast('Failed to load stats', 'error'); }
     }
 
-    async function refreshActiveCount() {
-      const btn = document.getElementById('refresh-active-btn');
-      const el = document.getElementById('active-now-count');
+    // Single refresh button at the top of the admin dashboard. Re-runs
+    // loadOverview() which already drives every stat card on the page,
+    // so Online and Writing Now counts update along with the rest.
+    async function refreshOverview() {
+      const btn = document.getElementById('overview-refresh-btn');
+      const icon = document.getElementById('overview-refresh-icon');
+      if (!btn) return;
       btn.disabled = true;
-      btn.style.opacity = '0.5';
-      btn.textContent = '⟳';
+      btn.style.opacity = '0.6';
+      const orig = icon.textContent;
+      icon.textContent = '⟳';
+      icon.style.animation = 'spin 0.8s linear infinite';
       try {
-        const stats = await adminRequest('/admin/stats');
-        el.textContent = stats.activeNow || 0;
-        // Brief green flash to confirm update
-        el.style.transition = 'color 0.2s';
-        el.style.color = '#4ade80';
-        setTimeout(() => { el.style.color = '#22c55e'; }, 400);
+        await loadOverview();
+        // Quick green flash on the Online + Writing Now cards as a confirm
+        const onlineEl = document.getElementById('active-now-count');
+        const writingEl = document.getElementById('writing-now-count');
+        if (onlineEl) {
+          const orig = onlineEl.style.color;
+          onlineEl.style.transition = 'color 0.2s';
+          onlineEl.style.color = '#4ade80';
+          setTimeout(() => { onlineEl.style.color = orig || '#22c55e'; }, 400);
+        }
+        if (writingEl) {
+          const orig = writingEl.style.color;
+          writingEl.style.transition = 'color 0.2s';
+          writingEl.style.color = '#fbbf24';
+          setTimeout(() => { writingEl.style.color = orig || '#f59e0b'; }, 400);
+        }
       } catch { toast('Failed to refresh', 'error'); }
       btn.disabled = false;
       btn.style.opacity = '1';
-      btn.textContent = '↻';
-    }
-
-    async function refreshWritingNow() {
-      const btn = document.getElementById('refresh-writing-btn');
-      const el = document.getElementById('writing-now-count');
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
-      btn.textContent = '⟳';
-      try {
-        const data = await adminRequest('/active-users');
-        const writingCount = (data.users || []).filter(u => u.writing).length;
-        el.textContent = writingCount;
-        // Brief amber flash to confirm update
-        el.style.transition = 'color 0.2s';
-        el.style.color = '#fbbf24';
-        setTimeout(() => { el.style.color = '#f59e0b'; }, 400);
-      } catch { toast('Failed to refresh', 'error'); }
-      btn.disabled = false;
-      btn.style.opacity = '1';
-      btn.textContent = '↻';
+      icon.textContent = orig;
+      icon.style.animation = '';
     }
 
     async function toggleActiveUsersList() {
@@ -1432,8 +1580,25 @@
       try {
         allUsers = await adminRequest('/admin/users');
         document.getElementById('users-count').textContent = allUsers.filter(u => u.role !== 'admin').length;
-        renderUsersTable(allUsers);
+        renderUsersTable(getVisibleUsers());
       } catch { toast('Failed to load users', 'error'); }
+    }
+
+    function getUserFollowerCount(user) {
+      return Array.isArray(user.followers) ? user.followers.length : Number(user.followerCount || 0);
+    }
+
+    function getVisibleUsers() {
+      const q = (document.getElementById('users-search')?.value || '').toLowerCase();
+      const followerFilter = document.getElementById('users-followers-filter')?.value || 'all';
+      return allUsers.filter(u => {
+        const matchesSearch = !q || (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q);
+        const followerCount = getUserFollowerCount(u);
+        const matchesFollowers = followerFilter === 'all'
+          || (followerFilter === 'has-followers' && followerCount > 0)
+          || (followerFilter === 'no-followers' && followerCount === 0);
+        return matchesSearch && matchesFollowers;
+      });
     }
 
     function sortAndFilterUsers(users) {
@@ -1445,6 +1610,8 @@
         if (sort === 'name-desc') return (b.name || '').localeCompare(a.name || '');
         if (sort === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
         if (sort === 'oldest') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+        if (sort === 'followers-desc') return getUserFollowerCount(b) - getUserFollowerCount(a);
+        if (sort === 'followers-asc') return getUserFollowerCount(a) - getUserFollowerCount(b);
         if (sort === 'streak') return (b.streak || 0) - (a.streak || 0);
         if (sort === 'words') return (b.totalWords || 0) - (a.totalWords || 0);
         if (sort === 'docs') return (b.docCount || 0) - (a.docCount || 0);
@@ -1453,7 +1620,7 @@
       return filtered;
     }
 
-    function goUsersPage(p) { _usersPage = p; renderUsersTable(allUsers); }
+    function goUsersPage(p) { _usersPage = p; renderUsersTable(getVisibleUsers()); }
     function renderUsersTable(users) {
       const sorted = sortAndFilterUsers(users);
       const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
@@ -1472,6 +1639,7 @@
           <td><span class="badge badge-${u.plan}">${u.plan === 'premium' ? 'Pro' : 'Free'}</span></td>
           <td>${calcLevel(u.xp || 0)}</td>
           <td>${(u.xp || 0).toLocaleString()}</td>
+          <td>${getUserFollowerCount(u).toLocaleString()}</td>
           <td>${u.streak || 0}</td>
           <td>${(u.totalWords || 0).toLocaleString()}</td>
           <td>${u.totalSessions || 0}</td>
@@ -1515,6 +1683,7 @@
               <div class="user-detail-stat"><div class="label">Longest Streak</div><div class="value">${u.longestStreak || 0}</div></div>
               <div class="user-detail-stat"><div class="label">Total Words</div><div class="value">${(u.totalWords || 0).toLocaleString()}</div></div>
               <div class="user-detail-stat"><div class="label">Sessions</div><div class="value">${u.totalSessions || 0}</div></div>
+              <div class="user-detail-stat"><div class="label">Followers</div><div class="value">${getUserFollowerCount(u).toLocaleString()}</div></div>
               <div class="user-detail-stat"><div class="label">Tree Stage</div><div class="value">${u.treeStage || 0}</div></div>
               <div class="user-detail-stat"><div class="label">Documents</div><div class="value">${u.totalDocuments}</div></div>
             </div>
@@ -2822,7 +2991,8 @@
 
     async function loadSubscribers() {
       try {
-        allSubscribers = await adminRequest('/admin/subscribers');
+        const includeTest = document.getElementById('include-test-toggle')?.checked ? '?includeTest=1' : '';
+        allSubscribers = await adminRequest('/admin/subscribers' + includeTest);
         filterSubscribers(currentSubFilter);
       } catch (e) { toast('Failed to load subscribers: ' + e.message, 'error'); }
     }
@@ -2838,7 +3008,7 @@
       else if (filter === 'admin') filtered = allSubscribers.filter(s => !s.planSource || s.planSource === 'admin');
       else if (filter === 'trial') filtered = allSubscribers.filter(s => s.planSource === 'trial');
       else if (filter === 'referral') filtered = allSubscribers.filter(s => s.planSource === 'referral');
-      else if (filter === 'failed') filtered = allSubscribers.filter(s => s.planPaymentFailed);
+      else if (filter === 'failed') filtered = allSubscribers.filter(s => s.planPaymentFailed && s.planSource === 'stripe');
 
       document.getElementById('subscribers-count').textContent = `${filtered.length} subscriber${filtered.length !== 1 ? 's' : ''}`;
 
@@ -2854,19 +3024,514 @@
         const sourceColor = sourceColors[source] || '#6b7280';
         const expires = s.planExpiresAt === 'infinite' ? '∞ Never'
           : s.planExpiresAt ? new Date(s.planExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-        const paymentStatus = s.planPaymentFailed
+        // "Failed" applies only to real Stripe payment failures. Admin/referral grants
+        // are not billed, so they never show as failed — active ones show "Active".
+        const paymentStatus = (s.planPaymentFailed && s.planSource === 'stripe')
           ? '<span style="color:var(--danger);font-weight:600">Failed</span>'
-          : (s.planSource === 'stripe' ? '<span style="color:var(--success)">Active</span>' : '—');
+          : s.cancelAtPeriodEnd
+          ? '<span style="color:var(--danger);font-weight:600">Cancelling</span>'
+          : '<span style="color:var(--success)">Active</span>';
+        const testTag = s.stripeMode === 'test'
+          ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(245,158,11,0.15);color:#f59e0b">TEST</span>'
+          : '';
 
         return `<tr>
-          <td>${esc(s.name)}</td>
+          <td>${esc(s.name)}${testTag}</td>
           <td style="font-size:12px">${esc(s.email)}</td>
           <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${sourceColor}22;color:${sourceColor}">${source}</span></td>
           <td>${s.planDuration || '—'}</td>
           <td style="font-size:12px">${expires}</td>
           <td>${paymentStatus}</td>
+          <td><button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="openSubHistoryAdmin('${s.id}', ${JSON.stringify(s.name).replace(/"/g, '&quot;')}, ${JSON.stringify(s.email).replace(/"/g, '&quot;')})">View</button></td>
         </tr>`;
       }).join('');
+    }
+
+    // ===== ADMIN: SUBSCRIPTION HISTORY PANEL =====
+    async function openSubHistoryAdmin(userId, userName, userEmail) {
+      document.getElementById('sub-history-admin-title').textContent = userName + "'s Subscription History";
+      document.getElementById('sub-history-admin-subtitle').textContent = userEmail;
+      const body = document.getElementById('sub-history-admin-body');
+      body.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px 0">Loading…</div>';
+      document.getElementById('sub-history-admin-overlay').style.display = 'block';
+      document.getElementById('sub-history-admin-panel').style.display = 'block';
+
+      try {
+        const data = await adminRequest('/admin/users/' + userId + '/subscription-history');
+        body.innerHTML = renderSubHistoryAdmin(data);
+      } catch (e) {
+        body.innerHTML = '<div style="color:var(--danger);padding:20px 0">Failed to load: ' + esc(e.message) + '</div>';
+      }
+    }
+
+    function closeSubHistoryAdmin() {
+      document.getElementById('sub-history-admin-overlay').style.display = 'none';
+      document.getElementById('sub-history-admin-panel').style.display = 'none';
+    }
+
+    function renderSubHistoryAdmin(data) {
+      const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+      const fmtAmount = (cents, currency) => {
+        if (cents == null) return null;
+        const sym = (currency || 'usd').toLowerCase() === 'usd' ? '$' : '';
+        return `${sym}${(cents / 100).toFixed(2)}`;
+      };
+      const durLabel = (d) => d === '6m' ? '6-month' : d === '3m' ? '3-month' : d === '1m' ? 'Monthly' : '';
+
+      const cur = data.currentPlan || {};
+      const isPro = cur.plan === 'premium';
+      const currentBlock = `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:18px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+            <span style="color:var(--text-muted)">Status</span>
+            <span style="font-weight:600">${isPro ? 'Premium · Active' : 'Free'}</span>
+          </div>
+          ${isPro && cur.planSource ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">Source</span><span>${esc(cur.planSource)}</span></div>` : ''}
+          ${isPro && cur.planDuration ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">Plan</span><span>${durLabel(cur.planDuration) || cur.planDuration}</span></div>` : ''}
+          ${isPro && cur.planStartedAt ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">Started</span><span>${fmtDate(cur.planStartedAt)}</span></div>` : ''}
+          ${isPro && cur.planExpiresAt && cur.planExpiresAt !== 'infinite'
+            ? (cur.cancelAtPeriodEnd
+              ? `<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--danger);font-weight:700">Cancelled</span><span style="color:var(--danger);font-weight:700">Ends ${fmtDate(cur.planExpiresAt)}</span></div>`
+              : `<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--text-muted)">Renews</span><span>${fmtDate(cur.planExpiresAt)}</span></div>`)
+            : ''}
+        </div>`;
+
+      const events = data.events || [];
+      if (events.length === 0) {
+        return currentBlock + '<div style="text-align:center;color:var(--text-muted);padding:30px 0">No history yet</div>';
+      }
+
+      const rows = events.map(e => {
+        let title = e.type;
+        let amount = '';
+        let subtitle = '';
+        if (e.type === 'stripe_invoice') {
+          const isTrial = !!e.details?.isTrial;
+          const isPromo = !!e.details?.isFullyDiscounted;
+          const reason = e.details?.billingReason;
+          title = reason === 'subscription_create'
+            ? (isTrial ? 'Free trial started' : (isPromo ? 'Subscription started (promo)' : 'Subscription started'))
+            : reason === 'subscription_cycle'
+            ? 'Subscription renewed'
+            : 'Invoice';
+          amount = isTrial ? 'Free' : (isPromo ? 'Free (promo)' : (fmtAmount(e.details.amountPaid, e.details.currency) || ''));
+          if (e.details?.couponName) subtitle = esc(e.details.couponName);
+          if (e.details?.periodStart && e.details?.periodEnd) {
+            const ps = fmtDate(e.details.periodStart), pe = fmtDate(e.details.periodEnd);
+            if (ps !== pe) subtitle = (subtitle ? subtitle + ' · ' : '') + 'covers ' + ps + ' - ' + pe;
+          }
+        } else if (e.type === 'stripe_subscription_will_cancel') {
+          title = 'Cancellation scheduled';
+          if (e.details?.cancelAt) subtitle = 'Ends ' + fmtDate(e.details.cancelAt);
+        } else if (e.type === 'stripe_subscription_uncancelled') {
+          title = 'Cancellation reversed';
+        } else if (e.type === 'stripe_subscription_cancelled') {
+          title = 'Subscription cancelled';
+        } else if (e.type === 'stripe_subscription_auto_cancelled') {
+          title = 'Auto-cancelled (payment failed)';
+        } else if (e.type === 'stripe_payment_failed') {
+          title = 'Payment failed';
+        } else if (e.type === 'subscription_expired') {
+          title = 'Subscription expired';
+        } else if (e.type === 'promocode_redeemed') {
+          title = 'Promo code redeemed';
+        } else if (e.type === 'admin_grant_pro') {
+          title = 'Pro granted by admin';
+        } else if (e.type === 'referral_pro_granted') {
+          title = 'Pro from referrals';
+        } else if (e.type === 'stripe_subscription_created') {
+          title = e.source === 'trial' ? 'Free trial started' : 'Subscription started';
+        } else if (e.type === 'stripe_subscription_renewed') {
+          title = 'Subscription renewed';
+        } else if (e.type === 'stripe_payment_verified') {
+          title = e.source === 'trial' ? 'Trial activated' : 'Payment verified';
+        }
+        return `<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px">${title}</div>
+            <div style="color:var(--text-muted);font-size:11px;margin-top:3px">${fmtDate(e.timestamp)}</div>
+            ${subtitle ? `<div style="color:var(--text-muted);font-size:11px;margin-top:2px;opacity:0.8">${subtitle}</div>` : ''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            ${amount ? `<div style="font-weight:600;font-size:13px">${esc(amount)}</div>` : ''}
+            ${e.details?.hostedInvoiceUrl ? `<a href="${e.details.hostedInvoiceUrl}" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent);text-decoration:none">View invoice</a>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+      return currentBlock + rows;
+    }
+
+    // ===== ANNOUNCEMENTS TAB =====
+    let _allAnnouncements = [];
+    let _annPlatformAI = null; // { total, today, thisWeek, bySource }
+
+    function _renderAnnAiQuota() {
+      const el = document.getElementById('ann-ai-quota');
+      if (!el || !_annPlatformAI) return;
+      const { total, today, thisWeek } = _annPlatformAI;
+      el.textContent = `Platform AI calls — today: ${today.toLocaleString()} · this week: ${thisWeek.toLocaleString()} · all-time: ${total.toLocaleString()}`;
+      el.style.color = 'var(--text-muted)';
+    }
+
+    async function loadAnnAiQuota() {
+      try {
+        const data = await adminRequest('/announcements/admin/platform-ai-usage');
+        _annPlatformAI = data;
+        _renderAnnAiQuota();
+      } catch (e) { /* non-critical */ }
+    }
+
+    function toggleAnnAi() {
+      const p = document.getElementById('ann-ai-panel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function generateAnnouncement(mode) {
+      const intent = mode === 'improve'
+        ? `Title: ${document.getElementById('ann-title').value}\n\nBody: ${document.getElementById('ann-body').value}`
+        : document.getElementById('ann-ai-intent').value.trim();
+      if (!intent) { toast('Type the intent or current draft first', 'error'); return; }
+      const status = document.getElementById('ann-ai-status');
+      status.textContent = 'Drafting…';
+      try {
+        const data = await adminRequest('/announcements/admin/draft', {
+          method: 'POST',
+          body: JSON.stringify({ intent, mode })
+        });
+        document.getElementById('ann-title').value = data.title || '';
+        document.getElementById('ann-body').value = data.body || '';
+        updateAnnPreview();
+        status.textContent = 'Done';
+        setTimeout(() => { status.textContent = ''; }, 2000);
+        if (data.platform) { _annPlatformAI = { ..._annPlatformAI, ...data.platform }; _renderAnnAiQuota(); }
+      } catch (e) {
+        status.textContent = '';
+        toast('AI failed: ' + e.message, 'error');
+        loadAnnAiQuota();
+      }
+    }
+
+    async function uploadAnnImage() {
+      const fileInput = document.getElementById('ann-image-file');
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      const status = document.getElementById('ann-image-status');
+      status.textContent = 'Uploading…';
+      try {
+        const fd = new FormData();
+        fd.append('image', file);
+        const res = await fetch('/api/announcements/admin/upload-image', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + adminToken },
+          body: fd
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Upload failed');
+        }
+        const data = await res.json();
+        document.getElementById('ann-image-url').value = data.imageUrl;
+        status.textContent = 'Uploaded';
+        updateAnnPreview();
+      } catch (e) {
+        status.textContent = '';
+        toast('Upload failed: ' + e.message, 'error');
+      }
+    }
+
+    function clearAnnImage() {
+      document.getElementById('ann-image-file').value = '';
+      document.getElementById('ann-image-url').value = '';
+      document.getElementById('ann-image-status').textContent = '';
+      updateAnnPreview();
+    }
+
+    function updateAnnPreview() {
+      const title = document.getElementById('ann-title').value;
+      const subtitle = document.getElementById('ann-subtitle').value;
+      const body = document.getElementById('ann-body').value;
+      const cat = document.getElementById('ann-category').value;
+      const imageUrl = document.getElementById('ann-image-url').value;
+      const linkUrl = document.getElementById('ann-link-url').value;
+      const linkLabel = document.getElementById('ann-link-label').value || 'Read more';
+      const pinned = document.getElementById('ann-pinned').checked;
+
+      document.getElementById('ann-title-count').textContent = `${title.length}/80`;
+      document.getElementById('ann-subtitle-count').textContent = `${subtitle.length}/120`;
+      document.getElementById('ann-body-count').textContent = `${body.length}/500`;
+
+      const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+      const catColors = { update: '#6366f1', news: '#3b82f6', feature: '#22c55e', tip: '#f59e0b' };
+      const cc = catColors[cat] || '#6366f1';
+
+      // Show BOTH the compact card (what users see on dashboard) AND the expanded modal
+      const fallbackSub = subtitle || (body || '').slice(0, 80) + ((body || '').length > 80 ? '…' : '');
+      document.getElementById('ann-preview').innerHTML = `
+        <!-- Compact card preview (dashboard) -->
+        <div style="padding:14px 16px;border-bottom:1px dashed var(--border);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Compact (dashboard panel — 33% width)</div>
+        <div style="background:var(--bg-card);border-radius:14px;margin:14px;border:1px solid var(--border)">
+          <div style="padding:18px 20px 14px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;background:${cc}26;color:${cc}">${catLabel}</span>
+              ${pinned ? '<span style="font-size:12px">📌</span>' : ''}
+            </div>
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.5px;line-height:1.15;color:var(--text-primary);margin-bottom:8px">${esc(title || '(title)')}</div>
+            <div style="font-size:13px;color:var(--text-secondary);line-height:1.4">${esc(fallbackSub || '(subtitle)')}</div>
+            <div style="font-size:11px;color:var(--accent);margin-top:10px;font-weight:600">Tap to read more →</div>
+          </div>
+        </div>
+        <!-- Expanded modal preview -->
+        <div style="padding:6px 16px;border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:14px">Expanded (modal — what they see after tapping)</div>
+        ${imageUrl ? `<img src="${esc(imageUrl)}" alt="" style="display:block;width:100%;max-height:min(380px,40vh);object-fit:contain;background:var(--bg-tertiary)">` : ''}
+        <div style="padding:20px 24px 22px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;background:${cc}26;color:${cc}">${catLabel}</span>
+            ${pinned ? '<span style="font-size:12px">📌</span>' : ''}
+          </div>
+          <div style="font-size:32px;font-weight:700;letter-spacing:-0.5px;line-height:1.15;color:var(--text-primary);margin-bottom:10px">${esc(title || '(title)')}</div>
+          ${subtitle ? `<div style="font-size:15px;color:var(--text-muted);margin-bottom:14px;line-height:1.45">${esc(subtitle)}</div>` : ''}
+          <div style="font-size:14px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.65">${esc(body || '(body)')}</div>
+          ${linkUrl ? `<div style="margin-top:16px"><span style="display:inline-block;padding:8px 14px;background:var(--accent);color:#0a0a0a;border-radius:10px;font-size:12px;font-weight:600">${esc(linkLabel)} →</span></div>` : ''}
+        </div>`;
+    }
+
+    // Per-field AI: small popover next to each field
+    let _annAiOpenPopover = null;
+    function closeAnnFieldAI() {
+      if (_annAiOpenPopover) { _annAiOpenPopover.remove(); _annAiOpenPopover = null; }
+      document.removeEventListener('click', _annAiOutsideClick, true);
+    }
+    function _annAiOutsideClick(e) {
+      if (_annAiOpenPopover && !_annAiOpenPopover.contains(e.target) && !e.target.closest('.ann-ai-icon-btn')) {
+        closeAnnFieldAI();
+      }
+    }
+    function openAnnFieldAI(ev, field) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (_annAiOpenPopover) { closeAnnFieldAI(); return; }
+      const fieldLabels = { title: 'title', subtitle: 'subtitle', body: 'body', linkLabel: 'button label' };
+      const fieldEl = field === 'linkLabel' ? document.getElementById('ann-link-label') : document.getElementById('ann-' + field);
+      const currentValue = fieldEl ? fieldEl.value : '';
+
+      const pop = document.createElement('div');
+      pop.className = 'ann-ai-popover';
+      pop.innerHTML = `
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">AI for ${fieldLabels[field] || field}${currentValue ? ' (improve current)' : ''}</div>
+        <textarea rows="2" placeholder="${currentValue ? 'Optional: how should it change?' : 'Describe what this should say'}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px;resize:vertical"></textarea>
+        <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+          <button class="admin-btn admin-btn-primary" data-go style="padding:4px 10px;font-size:11px">${currentValue ? 'Rewrite' : 'Generate'}</button>
+          <button class="admin-btn admin-btn-ghost" data-cancel style="padding:4px 10px;font-size:11px">Cancel</button>
+          <span data-status style="font-size:10px;color:var(--text-muted);margin-left:auto"></span>
+        </div>`;
+
+      // Position the popover next to the clicked button
+      const rect = ev.currentTarget.getBoundingClientRect();
+      pop.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+      pop.style.left = (window.scrollX + Math.max(8, rect.left - 200)) + 'px';
+      document.body.appendChild(pop);
+      _annAiOpenPopover = pop;
+      pop.querySelector('textarea').focus();
+      setTimeout(() => document.addEventListener('click', _annAiOutsideClick, true), 0);
+
+      pop.querySelector('[data-cancel]').onclick = () => closeAnnFieldAI();
+      pop.querySelector('[data-go]').onclick = async () => {
+        const intent = pop.querySelector('textarea').value.trim();
+        const status = pop.querySelector('[data-status]');
+        if (!intent && !currentValue) { status.textContent = 'Type an intent first'; return; }
+        status.textContent = 'Drafting…';
+        try {
+          // Pass other field values as context so AI can riff off them
+          const context = {
+            title: document.getElementById('ann-title').value,
+            subtitle: document.getElementById('ann-subtitle').value,
+            body: document.getElementById('ann-body').value
+          };
+          const data = await adminRequest('/announcements/admin/draft', {
+            method: 'POST',
+            body: JSON.stringify({ intent, currentValue, field, context })
+          });
+          if (fieldEl && data.value) {
+            fieldEl.value = data.value;
+            updateAnnPreview();
+            closeAnnFieldAI();
+            if (data.platform) { _annPlatformAI = { ..._annPlatformAI, ...data.platform }; _renderAnnAiQuota(); }
+          } else {
+            status.textContent = 'AI returned nothing';
+          }
+        } catch (e) {
+          status.textContent = '';
+          toast('AI failed: ' + e.message, 'error');
+          loadAnnAiQuota();
+        }
+      };
+    }
+
+    async function saveAnnouncement() {
+      const editId = document.getElementById('ann-edit-id').value;
+      const title = document.getElementById('ann-title').value.trim();
+      const subtitle = document.getElementById('ann-subtitle').value.trim();
+      const body = document.getElementById('ann-body').value.trim();
+      if (!title || !body) { toast('Title and body required', 'error'); return; }
+
+      const payload = {
+        title, subtitle: subtitle || null, body,
+        category: document.getElementById('ann-category').value,
+        audience: document.getElementById('ann-audience').value,
+        imageUrl: document.getElementById('ann-image-url').value || null,
+        linkUrl: document.getElementById('ann-link-url').value.trim() || null,
+        linkLabel: document.getElementById('ann-link-label').value.trim() || null,
+        pinned: document.getElementById('ann-pinned').checked
+      };
+
+      const btn = document.getElementById('ann-save-btn');
+      btn.disabled = true;
+      try {
+        if (editId) {
+          await adminRequest('/announcements/admin/' + editId, { method: 'PATCH', body: JSON.stringify(payload) });
+          toast('Updated', 'success');
+        } else {
+          await adminRequest('/announcements/admin', { method: 'POST', body: JSON.stringify(payload) });
+          toast('Published', 'success');
+        }
+        resetAnnouncementForm();
+        loadAnnouncementsAdmin();
+      } catch (e) {
+        toast('Failed: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function resetAnnouncementForm() {
+      document.getElementById('ann-edit-id').value = '';
+      document.getElementById('ann-title').value = '';
+      document.getElementById('ann-subtitle').value = '';
+      document.getElementById('ann-body').value = '';
+      document.getElementById('ann-category').value = 'update';
+      document.getElementById('ann-audience').value = 'everyone';
+      document.getElementById('ann-image-url').value = '';
+      document.getElementById('ann-image-file').value = '';
+      document.getElementById('ann-link-url').value = '';
+      document.getElementById('ann-link-label').value = '';
+      document.getElementById('ann-pinned').checked = false;
+      document.getElementById('ann-image-status').textContent = '';
+      document.getElementById('ann-save-btn').textContent = 'Publish';
+      const ai = document.getElementById('ann-ai-intent'); if (ai) ai.value = '';
+      updateAnnPreview();
+    }
+
+    function editAnnouncement(id) {
+      const a = _allAnnouncements.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('ann-edit-id').value = a.id;
+      document.getElementById('ann-title').value = a.title || '';
+      document.getElementById('ann-subtitle').value = a.subtitle || '';
+      document.getElementById('ann-body').value = a.body || '';
+      document.getElementById('ann-category').value = a.category || 'update';
+      document.getElementById('ann-audience').value = a.audience || 'everyone';
+      document.getElementById('ann-image-url').value = a.imageUrl || '';
+      document.getElementById('ann-link-url').value = a.linkUrl || '';
+      document.getElementById('ann-link-label').value = a.linkLabel || '';
+      document.getElementById('ann-pinned').checked = !!a.pinned;
+      document.getElementById('ann-save-btn').textContent = 'Save changes';
+      updateAnnPreview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function toggleAnnouncementActive(id, currentActive) {
+      try {
+        await adminRequest('/announcements/admin/' + id, { method: 'PATCH', body: JSON.stringify({ active: !currentActive }) });
+        loadAnnouncementsAdmin();
+      } catch (e) { toast('Failed: ' + e.message, 'error'); }
+    }
+
+    const HEART_SVG_FILLED = '<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none" style="vertical-align:-2px;margin-right:4px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    const HEART_SVG_FILLED_LG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" stroke="none" style="vertical-align:-3px;margin-right:6px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+
+    async function loadAnnouncementsAdmin() {
+      try {
+        _allAnnouncements = await adminRequest('/announcements/admin/list-with-stats');
+        const tbody = document.getElementById('announcements-tbody');
+        if (!_allAnnouncements.length) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px">No announcements yet</td></tr>';
+          return;
+        }
+        const fmt = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+        const catColors = { update: '#6366f1', news: '#3b82f6', feature: '#22c55e', tip: '#f59e0b' };
+        tbody.innerHTML = _allAnnouncements.map(a => {
+          const cc = catColors[a.category] || '#6b7280';
+          const views = a.viewCount || 0;
+          const likes = a.likeCount || 0;
+          return `<tr>
+            <td>${esc(a.title)}${a.pinned ? ' <span title="Pinned">📌</span>' : ''}</td>
+            <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${cc}22;color:${cc}">${esc(a.category)}</span></td>
+            <td>${a.audience === 'pro' ? 'Pro only' : 'Everyone'}</td>
+            <td>${a.active === false ? '<span style="color:var(--text-muted)">Inactive</span>' : '<span style="color:var(--success)">Active</span>'}</td>
+            <td style="font-weight:600">${views.toLocaleString()}</td>
+            <td style="font-weight:600;color:${likes > 0 ? '#ef4444' : 'inherit'}">${likes > 0 ? HEART_SVG_FILLED : ''}${likes.toLocaleString()}</td>
+            <td style="font-size:12px">${fmt(a.createdAt)}</td>
+            <td style="white-space:nowrap">
+              <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="openAnnStats('${a.id}')">Stats</button>
+              <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editAnnouncement('${a.id}')">Edit</button>
+              <button class="admin-btn admin-btn-ghost" style="padding:4px 10px;font-size:12px" onclick="toggleAnnouncementActive('${a.id}', ${a.active !== false})">${a.active === false ? 'Activate' : 'Deactivate'}</button>
+            </td>
+          </tr>`;
+        }).join('');
+      } catch (e) { toast('Failed to load announcements: ' + e.message, 'error'); }
+    }
+
+    async function openAnnStats(id) {
+      const a = _allAnnouncements.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('ann-stats-title').textContent = a.title;
+      document.getElementById('ann-stats-subtitle').textContent = a.subtitle || '';
+      const body = document.getElementById('ann-stats-body');
+      body.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px 0">Loading…</div>';
+      document.getElementById('ann-stats-overlay').style.display = 'block';
+      document.getElementById('ann-stats-panel').style.display = 'block';
+      try {
+        const data = await adminRequest('/announcements/admin/' + encodeURIComponent(id) + '/stats');
+        body.innerHTML = renderAnnStats(data);
+      } catch (e) {
+        body.innerHTML = '<div style="color:var(--danger);padding:20px 0">Failed to load: ' + esc(e.message) + '</div>';
+      }
+    }
+
+    function closeAnnStats() {
+      document.getElementById('ann-stats-overlay').style.display = 'none';
+      document.getElementById('ann-stats-panel').style.display = 'none';
+    }
+
+    function renderAnnStats(data) {
+      const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+      const viewers = data.views?.viewers || [];
+      const likers = data.likes?.likers || [];
+      const personRow = (p, ts) => `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:12px;align-items:center">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;color:var(--text-primary)">${esc(p.name || 'Unknown')}${p.plan === 'premium' ? ' <span style="color:#22c55e;font-size:10px;font-weight:700;letter-spacing:0.5px">PRO</span>' : ''}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${esc(p.email || '')}${p.username ? ' · @' + esc(p.username) : ''}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);flex-shrink:0">${esc(fmtDate(ts))}</div>
+      </div>`;
+      const stats = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Views</div>
+          <div style="font-size:24px;font-weight:700;margin-top:4px">${(data.views?.count || 0).toLocaleString()}</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">Likes</div>
+          <div style="font-size:24px;font-weight:700;margin-top:4px;color:${(data.likes?.count || 0) > 0 ? '#ef4444' : 'inherit'}">${(data.likes?.count || 0) > 0 ? HEART_SVG_FILLED_LG : ''}${(data.likes?.count || 0).toLocaleString()}</div>
+        </div>
+      </div>`;
+      const viewersBlock = viewers.length
+        ? `<div style="font-size:13px;font-weight:600;margin-bottom:8px">Viewers (${viewers.length})</div>${viewers.map(v => personRow(v, v.viewedAt)).join('')}`
+        : '<div style="font-size:13px;font-weight:600;margin-bottom:8px">Viewers</div><div style="color:var(--text-muted);padding:14px 0;text-align:center;font-size:12px">No views yet</div>';
+      const likersBlock = likers.length
+        ? `<div style="font-size:13px;font-weight:600;margin:24px 0 8px">Likers (${likers.length})</div>${likers.map(l => personRow(l, l.likedAt)).join('')}`
+        : '<div style="font-size:13px;font-weight:600;margin:24px 0 8px">Likers</div><div style="color:var(--text-muted);padding:14px 0;text-align:center;font-size:12px">No likes yet</div>';
+      return stats + viewersBlock + likersBlock;
     }
 
     // ===== PROMPTS TAB =====
@@ -3104,7 +3769,7 @@
     };
 
     // ===== SWIPE BETWEEN TABS =====
-    const ADMIN_TAB_ORDER = ['overview','users','documents','stories','lostfiles','logs','support','duels','maintenance','subscriptions'];
+    const ADMIN_TAB_ORDER = ['overview','users','documents','stories','lostfiles','logs','support','duels','maintenance','subscriptions','prompts','announcements'];
     let _swipeStartX = 0;
     let _swipeStartY = 0;
     const adminMain = document.querySelector('.admin-main');
@@ -3143,6 +3808,8 @@
         startMaintenancePolling();
       }).catch(() => {
         localStorage.removeItem('iwrite_admin_token');
+        localStorage.removeItem('iwrite_token');
+        window.location.replace('/login');
       });
     }
   </script>

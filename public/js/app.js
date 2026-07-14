@@ -114,6 +114,7 @@ const App = {
     }
 
     const token = API.getToken();
+    const authPath = location.pathname === '/login' || location.pathname === '/register';
 
     // Resolve current URL to a view using the route table
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -140,8 +141,12 @@ const App = {
       this.user = await API.getMe();
       if (this.user.role === 'admin') {
         localStorage.setItem('iwrite_admin_token', token);
-        window.location.href = '/manual-login';
+        localStorage.removeItem('iwrite_token');
+        window.location.href = '/admin';
         return;
+      }
+      if (authPath) {
+        window.history.replaceState({}, document.title, '/app');
       }
       this.showApp();
       if (this.user.needsProfile) {
@@ -180,12 +185,70 @@ const App = {
     document.getElementById('auth-view').style.display = 'flex';
     document.getElementById('app-view').style.display = 'none';
     this.bindAuthEvents();
+    this.initAuthCarousel();
     this.initGoogleSignIn();
     Monsters.init();
   },
 
+  initAuthCarousel() {
+    const panel = document.querySelector('.auth-visual-panel');
+    const slides = Array.from(document.querySelectorAll('.auth-visual-slide'));
+    const dots = Array.from(document.querySelectorAll('.auth-visual-dots [data-auth-slide]'));
+    const bgLayers = Array.from(document.querySelectorAll('.auth-visual-bg-layer'));
+    if (!panel || !slides.length) return;
+
+    const setSlide = (index) => {
+      const next = ((index % slides.length) + slides.length) % slides.length;
+      const current = Number(panel.dataset.authSlide || 0);
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === next));
+      dots.forEach((dot, i) => dot.classList.toggle('active', i === next));
+      bgLayers.forEach((layer, i) => {
+        layer.classList.toggle('active', i === next);
+        if (i === current && i !== next) {
+          layer.classList.add('leaving');
+          window.setTimeout(() => layer.classList.remove('leaving'), 560);
+        } else if (i !== next) {
+          layer.classList.remove('leaving');
+        }
+      });
+      panel.dataset.authSlide = String(next);
+    };
+
+    if (!this._authCarouselBound) {
+      this._authCarouselBound = true;
+      dots.forEach(dot => {
+        dot.addEventListener('click', () => {
+          const index = Number(dot.dataset.authSlide || 0);
+          setSlide(index);
+          if (this._authCarouselTimer) clearInterval(this._authCarouselTimer);
+          this._authCarouselTimer = setInterval(() => {
+            const current = Number(panel.dataset.authSlide || 0);
+            setSlide(current + 1);
+          }, 4800);
+        });
+      });
+    }
+
+    setSlide(Number(panel.dataset.authSlide || 0));
+    if (!this._authCarouselTimer) {
+      this._authCarouselTimer = setInterval(() => {
+        const current = Number(panel.dataset.authSlide || 0);
+        setSlide(current + 1);
+      }, 4800);
+    }
+  },
+
   async initGoogleSignIn() {
     try {
+      if (!window.google?.accounts?.id) {
+        this._googleInitAttempts = (this._googleInitAttempts || 0) + 1;
+        if (this._googleInitAttempts <= 20) {
+          setTimeout(() => this.initGoogleSignIn(), 250);
+        }
+        return;
+      }
+
+      if (this._googleClientReady) return;
       const res = await fetch('/api/auth/google-client-id');
       const { clientId } = await res.json();
       if (!clientId) return;
@@ -196,34 +259,64 @@ const App = {
         callback: this.handleGoogleCredential.bind(this),
         auto_select: true
       });
+      this._googleClientReady = true;
 
       // Try One Tap auto-sign-in first (silent for returning users)
       window.google.accounts.id.prompt();
 
-      // Render button as fallback
-      const loginBtn = document.getElementById('google-login-btn');
-      if (loginBtn) {
-        const cardWidth = loginBtn.closest('.auth-card')?.offsetWidth || 380;
-        window.google.accounts.id.renderButton(loginBtn, {
+      document.querySelectorAll('.google-signin-btn').forEach(button => {
+        button.innerHTML = '';
+        window.google.accounts.id.renderButton(button, {
           type: 'standard',
           theme: 'outline',
           size: 'large',
           shape: 'rectangular',
           width: 320
         });
-      }
+      });
     } catch (err) {
       console.error('Failed to initialize Google Sign-In:', err);
     }
   },
 
-  async handleGoogleCredential(response) {
-    const errorEl = document.getElementById('login-error');
+  triggerGoogleSignIn() {
+    const visibleForm = document.querySelector('.auth-form-stack:not([hidden])');
+    const errorEl = visibleForm?.querySelector('.auth-error') || document.getElementById('login-error');
+    const showError = (message) => {
+      if (!errorEl) return;
+      errorEl.textContent = message;
+      errorEl.classList.add('visible');
+    };
+
+    if (!window.google?.accounts?.id) {
+      showError('Google sign-in is still loading. Try again in a moment.');
+      return;
+    }
+
     try {
+      window.google.accounts.id.prompt((notification) => {
+        if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) {
+          showError('Google sign-in could not open. Use email for now, or try again.');
+        }
+      });
+    } catch (err) {
+      console.error('Google prompt error:', err);
+      showError('Google sign-in failed to start.');
+    }
+  },
+
+  async handleGoogleCredential(response) {
+    const registerForm = document.getElementById('register-form');
+    const errorEl = registerForm && !registerForm.hidden
+      ? document.getElementById('register-error')
+      : document.getElementById('login-error');
+    try {
+      const privacyConsent = document.getElementById('register-privacy-consent');
+      const acceptedTerms = Boolean(registerForm && !registerForm.hidden && privacyConsent?.checked);
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: response.credential, ref: localStorage.getItem('iwrite_ref') || undefined })
+        body: JSON.stringify({ credential: response.credential, ref: localStorage.getItem('iwrite_ref') || undefined, acceptedTerms })
       });
 
       if (!res.ok) {
@@ -239,8 +332,12 @@ const App = {
       this.user = data.user;
       if (this.user.role === 'admin') {
         localStorage.setItem('iwrite_admin_token', data.token);
-        window.location.href = '/manual-login';
+        localStorage.removeItem('iwrite_token');
+        window.location.href = '/admin';
         return;
+      }
+      if (location.pathname === '/login' || location.pathname === '/register') {
+        history.replaceState(null, '', '/app');
       }
       this.showApp();
       // Show profile completion modal for new Google users
@@ -255,6 +352,10 @@ const App = {
   },
 
   showApp() {
+    if (this._authCarouselTimer) {
+      clearInterval(this._authCarouselTimer);
+      this._authCarouselTimer = null;
+    }
     Monsters.destroy();
     document.getElementById('auth-view').style.display = 'none';
     document.getElementById('app-view').style.display = 'block';
@@ -262,6 +363,8 @@ const App = {
     // Check for pending admin-awarded PRO congrats (show confetti + message)
     setTimeout(() => this.checkPendingProCongrats(), 800);
     setTimeout(() => this._checkTrialEnding(), 1200);
+    // Start reporting tab focus state to admin (Online vs On Tab distinction)
+    this._setupTabFocusTracking();
 
     // Initialize level tracking if not set (prevents false level-up on first visit)
     if (!localStorage.getItem('iwrite_last_level')) {
@@ -269,8 +372,10 @@ const App = {
       localStorage.setItem('iwrite_last_level', level.toString());
     }
 
-    const savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
-    if (savedTheme === 'light') document.documentElement.classList.add('light');
+    let savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
+    if (savedTheme === 'test') savedTheme = 'light';
+    document.documentElement.classList.add('test'); // Writer's Desk structure — always on
+    if (savedTheme === 'light' || savedTheme === 'sepia') document.documentElement.classList.add(savedTheme);
 
     // Resolve current URL to determine which view to show
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -302,6 +407,39 @@ const App = {
     this.bindAppEvents();
     this.startNotifPolling();
     this._applyProLocks();
+  },
+
+  // Tab focus reporting — server tracks "On Tab" separately from "Online".
+  // Online = lastSeen within window (any auth'd request). On Tab = the
+  // tab is currently visible/focused (document.visibilityState === 'visible').
+  _setupTabFocusTracking() {
+    if (this._tabFocusBound) return;
+    this._tabFocusBound = true;
+    const ping = (focused) => {
+      if (!API.getToken || !API.getToken()) return;
+      try {
+        fetch('/api/tab-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.getToken()}` },
+          body: JSON.stringify({ focused }),
+          keepalive: true
+        }).catch(() => {});
+      } catch {}
+    };
+    // Initial state
+    ping(document.visibilityState === 'visible');
+    // Each visibility change
+    document.addEventListener('visibilitychange', () => {
+      ping(document.visibilityState === 'visible');
+    });
+    // Heartbeat: while focused, refresh server state every 45s so it doesn't
+    // expire mid-session (server window is 60s) AND so a server restart
+    // re-establishes the focused state quickly.
+    this._tabFocusInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') ping(true);
+    }, 45000);
+    // On unload, best-effort tell the server we're gone
+    window.addEventListener('pagehide', () => ping(false));
     this._startMaintenancePolling();
     this._initHoverCards();
     this._initFollowListModal();
@@ -415,7 +553,461 @@ const App = {
   },
 
   bindAuthEvents() {
-    // Google Sign-In only — no email/password bindings needed
+    if (this._authEventsBound) return;
+    this._authEventsBound = true;
+
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    const modeButtons = document.querySelectorAll('[data-auth-mode]');
+    const loginError = document.getElementById('login-error');
+    const registerError = document.getElementById('register-error');
+    const forgotPasswordError = document.getElementById('forgot-password-error');
+    const registerAccountFields = registerForm?.querySelector('.register-account-fields');
+    const registerVerification = registerForm?.querySelector('.register-verification');
+    const registerVerificationEmail = document.getElementById('register-verification-email');
+    const verificationCodeInput = document.getElementById('register-verification-code');
+    const verificationDigitInputs = Array.from(document.querySelectorAll('[data-verification-digit]'));
+    const privacyConsent = document.getElementById('register-privacy-consent');
+    const resendVerificationBtn = document.getElementById('resend-verification-code');
+    const forgotRequestStep = forgotPasswordForm?.querySelector('.forgot-request-step');
+    const forgotResetStep = forgotPasswordForm?.querySelector('.forgot-reset-step');
+    const forgotResetEmail = document.getElementById('forgot-password-reset-email');
+    const passwordResetCodeInput = document.getElementById('password-reset-code');
+    const passwordResetDigitInputs = Array.from(document.querySelectorAll('[data-password-reset-digit]'));
+    const resendPasswordResetBtn = document.getElementById('resend-password-reset-code');
+    let pendingVerificationEmail = '';
+    let pendingPasswordResetEmail = '';
+
+    const setError = (el, message) => {
+      if (!el) return;
+      el.textContent = message || '';
+      el.classList.toggle('visible', Boolean(message));
+    };
+
+    const syncVerificationCode = () => {
+      if (!verificationCodeInput) return '';
+      const code = verificationDigitInputs.map(input => input.value).join('');
+      verificationCodeInput.value = code;
+      return code;
+    };
+
+    const setVerificationDigits = (value = '', startIndex = 0) => {
+      const digits = String(value).replace(/\D/g, '').slice(0, 6).split('');
+      const offset = digits.length === 6 ? 0 : startIndex;
+      if (digits.length === 6) {
+        verificationDigitInputs.forEach(input => { input.value = ''; });
+      }
+      digits.forEach((digit, index) => {
+        const target = verificationDigitInputs[offset + index];
+        if (target) target.value = digit;
+      });
+      const nextIndex = Math.min(offset + digits.length, verificationDigitInputs.length - 1);
+      syncVerificationCode();
+      verificationDigitInputs[nextIndex]?.focus();
+      verificationDigitInputs[nextIndex]?.select();
+    };
+
+    const clearVerificationDigits = () => {
+      verificationDigitInputs.forEach(input => { input.value = ''; });
+      syncVerificationCode();
+    };
+
+    const syncPasswordResetCode = () => {
+      if (!passwordResetCodeInput) return '';
+      const code = passwordResetDigitInputs.map(input => input.value).join('');
+      passwordResetCodeInput.value = code;
+      return code;
+    };
+
+    const setPasswordResetDigits = (value = '', startIndex = 0) => {
+      const digits = String(value).replace(/\D/g, '').slice(0, 6).split('');
+      const offset = digits.length === 6 ? 0 : startIndex;
+      if (digits.length === 6) {
+        passwordResetDigitInputs.forEach(input => { input.value = ''; });
+      }
+      digits.forEach((digit, index) => {
+        const target = passwordResetDigitInputs[offset + index];
+        if (target) target.value = digit;
+      });
+      const nextIndex = Math.min(offset + digits.length, passwordResetDigitInputs.length - 1);
+      syncPasswordResetCode();
+      passwordResetDigitInputs[nextIndex]?.focus();
+      passwordResetDigitInputs[nextIndex]?.select();
+    };
+
+    const clearPasswordResetDigits = () => {
+      passwordResetDigitInputs.forEach(input => { input.value = ''; });
+      syncPasswordResetCode();
+    };
+
+    verificationDigitInputs.forEach((input, index) => {
+      input.addEventListener('input', () => {
+        const digits = input.value.replace(/\D/g, '');
+        if (digits.length > 1) {
+          setVerificationDigits(digits, index);
+          return;
+        }
+        input.value = digits;
+        syncVerificationCode();
+        if (digits && index < verificationDigitInputs.length - 1) {
+          verificationDigitInputs[index + 1].focus();
+          verificationDigitInputs[index + 1].select();
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && index > 0) {
+          e.preventDefault();
+          verificationDigitInputs[index - 1].value = '';
+          verificationDigitInputs[index - 1].focus();
+          syncVerificationCode();
+        } else if (e.key === 'ArrowLeft' && index > 0) {
+          e.preventDefault();
+          verificationDigitInputs[index - 1].focus();
+        } else if (e.key === 'ArrowRight' && index < verificationDigitInputs.length - 1) {
+          e.preventDefault();
+          verificationDigitInputs[index + 1].focus();
+        }
+      });
+
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        setVerificationDigits(e.clipboardData?.getData('text') || '', index);
+      });
+
+      input.addEventListener('focus', () => input.select());
+    });
+
+    passwordResetDigitInputs.forEach((input, index) => {
+      input.addEventListener('input', () => {
+        const digits = input.value.replace(/\D/g, '');
+        if (digits.length > 1) {
+          setPasswordResetDigits(digits, index);
+          return;
+        }
+        input.value = digits;
+        syncPasswordResetCode();
+        if (digits && index < passwordResetDigitInputs.length - 1) {
+          passwordResetDigitInputs[index + 1].focus();
+          passwordResetDigitInputs[index + 1].select();
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && index > 0) {
+          e.preventDefault();
+          passwordResetDigitInputs[index - 1].value = '';
+          passwordResetDigitInputs[index - 1].focus();
+          syncPasswordResetCode();
+        } else if (e.key === 'ArrowLeft' && index > 0) {
+          e.preventDefault();
+          passwordResetDigitInputs[index - 1].focus();
+        } else if (e.key === 'ArrowRight' && index < passwordResetDigitInputs.length - 1) {
+          e.preventDefault();
+          passwordResetDigitInputs[index + 1].focus();
+        }
+      });
+
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        setPasswordResetDigits(e.clipboardData?.getData('text') || '', index);
+      });
+
+      input.addEventListener('focus', () => input.select());
+    });
+
+    const setMode = (mode, updateUrl = true) => {
+      const isRegister = mode === 'register';
+      const isForgot = mode === 'forgot';
+      if (loginForm) loginForm.hidden = isRegister || isForgot;
+      if (registerForm) registerForm.hidden = !isRegister;
+      if (forgotPasswordForm) forgotPasswordForm.hidden = !isForgot;
+      modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.authMode === mode));
+      setError(loginError, '');
+      setError(registerError, '');
+      setError(forgotPasswordError, '');
+      if (isRegister && !pendingVerificationEmail) {
+        registerForm?.classList.remove('awaiting-verification');
+        if (registerAccountFields) registerAccountFields.hidden = false;
+        if (registerVerification) registerVerification.hidden = true;
+      }
+      if (isForgot && !pendingPasswordResetEmail) {
+        if (forgotRequestStep) forgotRequestStep.hidden = false;
+        if (forgotResetStep) forgotResetStep.hidden = true;
+      }
+      const targetPath = isForgot ? '/forgot-password' : (isRegister ? '/register' : '/login');
+      if (updateUrl && location.pathname !== targetPath) {
+        history.pushState(null, '', targetPath);
+      }
+    };
+
+    const showVerificationStep = (email) => {
+      pendingVerificationEmail = email;
+      registerForm?.classList.add('awaiting-verification');
+      if (registerAccountFields) registerAccountFields.hidden = true;
+      if (registerVerification) registerVerification.hidden = false;
+      if (registerVerificationEmail) registerVerificationEmail.textContent = email;
+      if (verificationCodeInput) {
+        clearVerificationDigits();
+        verificationDigitInputs[0]?.focus();
+      }
+    };
+
+    const showPasswordResetStep = (email) => {
+      pendingPasswordResetEmail = email;
+      if (forgotRequestStep) forgotRequestStep.hidden = true;
+      if (forgotResetStep) forgotResetStep.hidden = false;
+      if (forgotResetEmail) forgotResetEmail.textContent = email;
+      clearPasswordResetDigits();
+      passwordResetDigitInputs[0]?.focus();
+    };
+
+    const finishAuth = (data) => {
+      this.user = data.user;
+      if (this.user.role === 'admin') {
+        localStorage.setItem('iwrite_admin_token', data.token || API.getToken());
+        localStorage.removeItem('iwrite_token');
+        window.location.href = '/admin';
+        return;
+      }
+      if (location.pathname === '/login' || location.pathname === '/register') {
+        history.replaceState(null, '', '/app');
+      }
+      this.showApp();
+      if (data.isNewUser || this.user.needsProfile) {
+        this.showProfileCompleteModal();
+      }
+    };
+
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (btn.hasAttribute('data-reset-register')) {
+          pendingVerificationEmail = '';
+          registerForm?.classList.remove('awaiting-verification');
+          if (registerAccountFields) registerAccountFields.hidden = false;
+          if (registerVerification) registerVerification.hidden = true;
+        }
+        if (btn.hasAttribute('data-reset-password-request')) {
+          pendingPasswordResetEmail = '';
+          if (forgotRequestStep) forgotRequestStep.hidden = false;
+          if (forgotResetStep) forgotResetStep.hidden = true;
+        }
+        setMode(btn.dataset.authMode);
+      });
+    });
+
+    document.querySelectorAll('.auth-password-row a').forEach(link => {
+      link.addEventListener('click', (e) => e.preventDefault());
+    });
+
+    document.querySelectorAll('[data-google-signin]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.triggerGoogleSignIn();
+      });
+    });
+
+    resendVerificationBtn?.addEventListener('click', async () => {
+      if (!pendingVerificationEmail) return;
+      setError(registerError, '');
+      resendVerificationBtn.disabled = true;
+      const originalText = resendVerificationBtn.textContent;
+      resendVerificationBtn.textContent = 'Sending...';
+      try {
+        await API.resendVerification(pendingVerificationEmail);
+        setError(registerError, 'A new code was sent. Check your email.');
+      } catch (err) {
+        setError(registerError, err.message || 'Could not resend the code.');
+      } finally {
+        resendVerificationBtn.disabled = false;
+        resendVerificationBtn.textContent = originalText;
+      }
+    });
+
+    resendPasswordResetBtn?.addEventListener('click', async () => {
+      if (!pendingPasswordResetEmail) return;
+      setError(forgotPasswordError, '');
+      resendPasswordResetBtn.disabled = true;
+      const originalText = resendPasswordResetBtn.textContent;
+      resendPasswordResetBtn.textContent = 'Sending...';
+      try {
+        await API.requestPasswordReset(pendingPasswordResetEmail);
+        setError(forgotPasswordError, 'A new reset code was sent. Check your email.');
+      } catch (err) {
+        setError(forgotPasswordError, err.message || 'Could not resend the code.');
+      } finally {
+        resendPasswordResetBtn.disabled = false;
+        resendPasswordResetBtn.textContent = originalText;
+      }
+    });
+
+    forgotPasswordForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setError(forgotPasswordError, '');
+      const button = pendingPasswordResetEmail
+        ? forgotResetStep?.querySelector('button[type="submit"]')
+        : forgotRequestStep?.querySelector('button[type="submit"]');
+
+      if (pendingPasswordResetEmail) {
+        const code = syncPasswordResetCode();
+        const newPassword = document.getElementById('forgot-new-password')?.value;
+        const confirmPassword = document.getElementById('forgot-confirm-password')?.value;
+        if (!code || code.replace(/\D/g, '').length !== 6) {
+          setError(forgotPasswordError, 'Enter the 6-digit reset code.');
+          return;
+        }
+        if (!newPassword || !confirmPassword) {
+          setError(forgotPasswordError, 'Enter and confirm your new password.');
+          return;
+        }
+        if (newPassword.length < 8) {
+          setError(forgotPasswordError, 'New password must be at least 8 characters.');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          setError(forgotPasswordError, 'New passwords do not match.');
+          return;
+        }
+        if (button) {
+          button.disabled = true;
+          button.textContent = 'Resetting...';
+        }
+        try {
+          const data = await API.resetPassword(pendingPasswordResetEmail, code, newPassword, confirmPassword);
+          pendingPasswordResetEmail = '';
+          finishAuth(data);
+        } catch (err) {
+          setError(forgotPasswordError, err.message || 'Password reset failed.');
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'Reset password';
+          }
+        }
+        return;
+      }
+
+      const email = document.getElementById('forgot-password-email')?.value.trim();
+      if (!email) {
+        setError(forgotPasswordError, 'Enter your email.');
+        return;
+      }
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Sending...';
+      }
+      try {
+        await API.requestPasswordReset(email);
+        showPasswordResetStep(email);
+      } catch (err) {
+        setError(forgotPasswordError, err.message || 'Could not send password reset code.');
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Send reset code';
+        }
+      }
+    });
+
+    loginForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setError(loginError, '');
+      const button = loginForm.querySelector('button[type="submit"]');
+      const email = document.getElementById('login-email')?.value.trim();
+      const password = document.getElementById('login-password')?.value;
+      if (!email || !password) {
+        setError(loginError, 'Enter your email and password.');
+        return;
+      }
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Logging in...';
+      }
+      try {
+        const data = await API.login(email, password);
+        finishAuth(data);
+      } catch (err) {
+        setError(loginError, err.message || 'Login failed.');
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Login';
+        }
+      }
+    });
+
+    registerForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setError(registerError, '');
+      const button = pendingVerificationEmail
+        ? registerVerification?.querySelector('button[type="submit"]')
+        : registerAccountFields?.querySelector('button[type="submit"]');
+      if (pendingVerificationEmail) {
+        const code = syncVerificationCode();
+        if (!code || code.replace(/\D/g, '').length !== 6) {
+          setError(registerError, 'Enter the 6-digit verification code.');
+          return;
+        }
+        if (button) {
+          button.disabled = true;
+          button.textContent = 'Verifying...';
+        }
+        try {
+          const data = await API.verifyEmail(pendingVerificationEmail, code);
+          localStorage.removeItem('iwrite_ref');
+          finishAuth({ ...data, isNewUser: true });
+        } catch (err) {
+          setError(registerError, err.message || 'Verification failed.');
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = 'Verify and enter';
+          }
+        }
+        return;
+      }
+      const name = document.getElementById('register-name')?.value.trim();
+      const email = document.getElementById('register-email')?.value.trim();
+      const password = document.getElementById('register-password')?.value;
+      if (!name || !email || !password) {
+        setError(registerError, 'Enter your name, email, and password.');
+        return;
+      }
+      if (password.length < 8) {
+        setError(registerError, 'Password must be at least 8 characters.');
+        return;
+      }
+      if (!privacyConsent?.checked) {
+        setError(registerError, 'Agree to the Privacy Policy and Terms of Service to create an account.');
+        return;
+      }
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Creating...';
+      }
+      try {
+        const data = await API.register(name, email, password, true);
+        if (data.requiresVerification) {
+          showVerificationStep(data.email || email);
+          if (data.emailSent === false) {
+            setError(registerError, 'Account created, but the first code could not be sent. Use resend code in a moment.');
+          }
+        } else {
+          localStorage.removeItem('iwrite_ref');
+          finishAuth({ ...data, isNewUser: true });
+        }
+      } catch (err) {
+        setError(registerError, err.message || 'Registration failed.');
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = 'Create account';
+        }
+      }
+    });
+
+    setMode(location.pathname === '/forgot-password' ? 'forgot' : (location.pathname === '/register' ? 'register' : 'login'), false);
   },
 
   bindAppEvents() {
@@ -454,10 +1046,11 @@ const App = {
       if (e.target === e.currentTarget) this.closePricing();
     });
 
-    // Mobile sidebar toggle
+    // Sidebar toggle — mobile off-canvas + desktop collapse
     const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
     const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
     const sidebar = document.getElementById('sidebar');
+    const isDesktop = () => window.innerWidth > 768;
 
     const openMobileSidebar = () => {
       sidebar.classList.add('open');
@@ -469,15 +1062,26 @@ const App = {
       mobileSidebarToggle.classList.remove('open');
       mobileSidebarOverlay.style.display = 'none';
     };
+    const collapseSidebar = () => { document.body.classList.add('sidebar-collapsed'); localStorage.setItem('iwrite_sidebar_collapsed', '1'); };
+    const expandSidebar = () => { document.body.classList.remove('sidebar-collapsed'); localStorage.setItem('iwrite_sidebar_collapsed', '0'); };
+
+    // Restore desktop collapsed state
+    if (localStorage.getItem('iwrite_sidebar_collapsed') === '1') document.body.classList.add('sidebar-collapsed');
 
     mobileSidebarToggle.addEventListener('click', () => {
       // When in story-back-mode, the stories.js handler takes over via onclick
       if (mobileSidebarToggle.classList.contains('story-back-mode')) return;
+      if (isDesktop()) {
+        document.body.classList.contains('sidebar-collapsed') ? expandSidebar() : collapseSidebar();
+        return;
+      }
       sidebar.classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
     });
     mobileSidebarOverlay.addEventListener('click', closeMobileSidebar);
     const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
-    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeMobileSidebar);
+    if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', () => {
+      isDesktop() ? collapseSidebar() : closeMobileSidebar();
+    });
 
     // Close sidebar on mobile when a nav item is clicked
     sidebar.querySelectorAll('.sidebar-nav-item[data-view]').forEach(btn => {
@@ -486,9 +1090,8 @@ const App = {
       });
     });
 
-    // Theme toggle — sync button state with current theme
-    const isLightNow = document.documentElement.classList.contains('light');
-    this._applyTheme(isLightNow ? 'light' : 'dark');
+    // Theme toggle — restore the saved theme (dark / light / sepia / test)
+    this._applyTheme(localStorage.getItem('iwrite_theme') || 'dark');
     document.getElementById('theme-toggle-btn').addEventListener('click', () => {
       this._cycleTheme();
     });
@@ -789,6 +1392,41 @@ const App = {
     // Editor toolbar: fullscreen toggle
     document.getElementById('editor-fullscreen-btn').addEventListener('click', () => Editor.toggleFullscreen());
 
+    // Editor toolbar: focus mode — button opens a dropdown with a big toggle
+    const focusBtn = document.getElementById('editor-focus-btn');
+    const focusDropdown = document.getElementById('editor-focus-dropdown');
+    if (focusBtn && focusDropdown) {
+      // Escape .editor-container stacking context same as audio dropdown
+      if (focusDropdown.parentElement !== document.body) document.body.appendChild(focusDropdown);
+      focusBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Pro gate
+        if (!App.user || App.user.plan !== 'premium') { App.openPricing(); return; }
+        const open = focusDropdown.style.display === 'none';
+        const audioDD = document.getElementById('editor-audio-dropdown');
+        if (audioDD) audioDD.style.display = 'none';
+        if (open) {
+          const rect = focusBtn.getBoundingClientRect();
+          const W = 224;
+          // Right-align dropdown to button, but clamp so it stays inside viewport
+          let left = rect.right - W;
+          if (left < 8) left = 8;
+          focusDropdown.style.top = (rect.bottom + 4) + 'px';
+          focusDropdown.style.left = left + 'px';
+          focusDropdown.style.right = 'auto';
+        }
+        focusDropdown.style.display = open ? 'block' : 'none';
+      });
+      focusDropdown.addEventListener('click', (e) => e.stopPropagation());
+      document.getElementById('focus-big-toggle-btn').addEventListener('click', () => {
+        Editor.toggleFocusMode();
+      });
+    }
+
+    // Writing-feel preferences (typewriter sounds), in the audio dropdown
+    const prefTypewriter = document.getElementById('pref-typewriter');
+    if (prefTypewriter) prefTypewriter.addEventListener('change', () => Editor.setTypewriterSound(prefTypewriter.checked));
+
     // Timer toggle + add time
     document.getElementById('editor-timer-toggle').addEventListener('click', () => Editor.toggleTimerVisibility());
     document.getElementById('add-time-1').addEventListener('click', () => {
@@ -856,17 +1494,31 @@ const App = {
     // Editor toolbar: audio dropdown — stop propagation inside so it stays open
     const audioBtn = document.getElementById('editor-audio-btn');
     const audioDrop = document.getElementById('editor-audio-dropdown');
+    // Move dropdown to <body> so it escapes .editor-container's stacking context
+    // (.editor-container is position:fixed z-index:2000, which caps everything inside
+    // regardless of inner z-index — drawer at 2500 would cover the dropdown otherwise)
+    if (audioDrop.parentElement !== document.body) {
+      document.body.appendChild(audioDrop);
+    }
     audioBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      audioDrop.style.display = audioDrop.style.display === 'none' ? 'block' : 'none';
+      const willOpen = audioDrop.style.display === 'none';
+      if (willOpen) {
+        const r = audioBtn.getBoundingClientRect();
+        audioDrop.style.top = (r.bottom + 6) + 'px';
+        audioDrop.style.right = (window.innerWidth - r.right) + 'px';
+      }
+      audioDrop.style.display = willOpen ? 'block' : 'none';
     });
     audioDrop.addEventListener('click', (e) => {
       e.stopPropagation(); // Don't close when clicking inside the dropdown
     });
 
-    // Close audio dropdown when clicking elsewhere
+    // Close audio + focus dropdowns when clicking elsewhere
     document.addEventListener('click', () => {
       audioDrop.style.display = 'none';
+      const fd = document.getElementById('editor-focus-dropdown');
+      if (fd) fd.style.display = 'none';
     });
 
     // Restore saved font preference
@@ -880,10 +1532,15 @@ const App = {
     document.getElementById('editor-copy-btn').addEventListener('click', async () => {
       const textarea = document.getElementById('editor-textarea');
 
-      // During active sessions: no copying unless maintenance is active
+      // The navbar button copies the WHOLE document — disabled mid-session for everyone
+      // (except maintenance). Pro users instead select the bit they want and copy that
+      // (selection copy is allowed for Pro in the editor), so the button stays off.
       if (Editor.active) {
         if (!this._maintActive) {
-          this.toast('Copying is disabled during sessions', 'error');
+          const isPro = this.user && this.user.plan === 'premium';
+          this.toast(isPro
+            ? 'Select the text you want, then copy it — the full-document copy is off during sessions'
+            : 'Copying is disabled during sessions', 'error');
           return;
         }
         await this._doCopy(textarea);
@@ -940,6 +1597,53 @@ const App = {
     document.getElementById('duel-cancel').addEventListener('click', () => this.closeDuelModal());
     document.getElementById('duel-start').addEventListener('click', () => this.createDuel());
 
+    // Matchmaking — duration pills
+    document.querySelectorAll('.duel-mm-dur-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const isCustom = btn.dataset.duration === 'custom';
+        if (isCustom) {
+          // PRO gate — free users sent straight to Upgrade
+          if (!this.user || this.user.plan !== 'premium') {
+            this.toast('Custom durations require PRO.', 'info', 2000);
+            this.switchView('upgrade');
+            return;
+          }
+        }
+        document.querySelectorAll('.duel-mm-dur-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const customInput = document.getElementById('duel-mm-custom-input');
+        if (isCustom) {
+          customInput.style.display = 'inline-block';
+          customInput.focus();
+          // Use whatever's currently in the input (default 15)
+          const v = parseInt(customInput.value) || 15;
+          customInput.value = v;
+          this._mmDuration = v;
+        } else {
+          customInput.style.display = 'none';
+          this._mmDuration = parseInt(btn.dataset.duration);
+        }
+      });
+    });
+    // Hide PRO badge on the "+" pill for PRO users
+    if (this.user?.plan === 'premium') {
+      document.querySelectorAll('.duel-mm-pro-badge').forEach(b => b.style.display = 'none');
+    }
+    document.getElementById('duel-mm-custom-input')?.addEventListener('input', (e) => {
+      const v = Math.min(Math.max(parseInt(e.target.value) || 0, 5), 180);
+      this._mmDuration = v;
+    });
+
+    document.getElementById('duel-mm-find-btn')?.addEventListener('click', () => this.matchmakingFind());
+    document.getElementById('duel-mm-cancel-btn')?.addEventListener('click', () => this.matchmakingCancel());
+
+    // Lobby popover (▾ chip click)
+    document.getElementById('duel-mm-pulse')?.addEventListener('click', () => this.toggleLobbyPopover());
+
+    // Start lobby polling globally — every 30s while logged in
+    this.refreshDuelLobbyPulse();
+    this._duelsLobbyInterval = setInterval(() => this.refreshDuelLobbyPulse(), 30000);
+
     document.querySelectorAll('#duel-time-presets .time-preset[data-minutes]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('#duel-time-presets .time-preset').forEach(b => b.classList.remove('active'));
@@ -961,6 +1665,13 @@ const App = {
     document.getElementById('save-profile-btn').addEventListener('click', () => this.saveProfile());
     document.getElementById('change-password-btn').addEventListener('click', () => this.changePassword());
 
+    document.getElementById('delete-account-btn').addEventListener('click', () => this._openDeleteModal());
+    document.getElementById('delete-account-cancel-btn').addEventListener('click', () => this._closeDeleteModal());
+    document.getElementById('delete-account-submit-btn').addEventListener('click', () => this._submitDeleteAccount());
+    document.getElementById('delete-account-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) this._closeDeleteModal();
+    });
+
     document.getElementById('create-folder-btn').addEventListener('click', () => {
       if (this.user && this.user.plan !== 'premium') {
         this.toast('Folders are a Pro feature. Upgrade to Pro!', 'info');
@@ -980,6 +1691,21 @@ const App = {
     document.getElementById('comment-history-close').addEventListener('click', () => this.closeCommentHistorySidebar());
     document.getElementById('comment-history-sidebar-overlay').addEventListener('click', () => this.closeCommentHistorySidebar());
     document.getElementById('editor-comment-history-btn').addEventListener('click', () => this.openCommentHistory());
+
+    // Back-to-top button on community tab — visible after 320px scroll, hidden by parent display when off-tab
+    const backToTopBtn = document.getElementById('stories-back-to-top');
+    if (backToTopBtn) {
+      backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          backToTopBtn.classList.toggle('visible', window.scrollY > 320);
+          ticking = false;
+        });
+      }, { passive: true });
+    }
   },
 
   switchView(view, opts = {}) {
@@ -1035,9 +1761,12 @@ const App = {
     if (view === 'leaderboard') this.loadLeaderboard();
     if (view === 'settings') this.loadProfile();
     if (view === 'my-profile') this.loadMyProfile();
-    if (view === 'friends') this.loadFriends();
+    // Friends / Analytics: load once, then only re-fetch when there's something new
+    // (a new friend request, or the user's stats changed). See updateNotifBadge + loadDashboard.
+    if (view === 'friends' && (!this._friendsLoaded || this._friendsDirty)) this.loadFriends();
     if (view === 'support') { this.loadSupport(); this.initSupportImageUpload(); }
-    if (view === 'analytics') this.loadAnalytics();
+    if (view === 'analytics' && (!this._analyticsLoaded || this._analyticsDirty)) this.loadAnalytics();
+    if (view === 'friends' && !this._analyticsLoaded) this.loadAnalytics();
     if (view === 'upgrade') this.loadUpgrade();
     if (view === 'user-profile' && username) this.loadUserProfile(username);
     if (view === 'duels') {
@@ -1146,72 +1875,264 @@ const App = {
   },
 
   async loadDashboard() {
+    // 1) Instant paint from the last-known cached user — avoids the "everything
+    //    is 0 / blank visuals" flash while the network requests are in flight.
+    try {
+      if (!this.user) {
+        const cached = JSON.parse(localStorage.getItem('iwrite_user_cache') || 'null');
+        if (cached) this.user = cached;
+      }
+    } catch {}
+    if (this.user) { this.updateUserUI(); this._paintDashboard(); }
+
+    // 2) Fetch the user and documents IN PARALLEL (was sequential = two round-trips).
+    const docsPromise = API.getDocuments().catch(() => null);
+
     try {
       this.user = await API.getMe();
+      try { localStorage.setItem('iwrite_user_cache', JSON.stringify(this.user)); } catch {}
       this.updateUserUI();
-      // Show toast if subscription just expired
+      // If the user's writing stats changed since Analytics was last loaded, mark it stale
+      if (this._analyticsSig !== undefined && this._statsSig() !== this._analyticsSig) this._analyticsDirty = true;
       if (this.user.subscriptionJustExpired) {
         this.toast('Your Pro subscription has expired. You\'ve been moved to the Free plan.', 'warning');
       }
     } catch {}
 
-    // Username reminder
-    const usernameReminder = document.getElementById('username-reminder');
-    if (usernameReminder) {
-      if (!this.user.username) {
-        usernameReminder.style.display = 'flex';
-      } else {
-        usernameReminder.style.display = 'none';
-      }
-    }
-
-    document.getElementById('total-words').textContent = (this.user.totalWords || 0).toLocaleString();
-    document.getElementById('total-sessions').textContent = this.user.totalSessions || 0;
-    document.getElementById('current-streak').textContent = this.user.streak || 0;
-    document.getElementById('longest-streak-text').textContent = `Best: ${this.user.longestStreak || 0}`;
-    document.getElementById('total-xp').textContent = (this.user.xp || 0).toLocaleString();
-
-    // Fetch and display active users count
+    // One-time side effects
+    if (this._onlineInterval) clearInterval(this._onlineInterval);
     this.loadOnlineCount();
     this._onlineInterval = setInterval(() => this.loadOnlineCount(), 60000);
+    this.loadAnnouncements();
 
-    const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(this.user.xp || 0);
-    document.getElementById('xp-level-text').innerHTML = `Level ${level}`;
-    document.getElementById('xp-progress-text').textContent = `${xpInLevel.toLocaleString()} / ${xpForNextLevel.toLocaleString()} XP`;
-    document.getElementById('xp-bar-fill').style.width = `${Math.min(100, (xpInLevel / xpForNextLevel) * 100)}%`;
-
-    // Queue level-up celebrations (layer by layer)
+    // Queue level-up celebrations (once, against the fresh level)
+    const { level } = this.calcXPLevel((this.user && this.user.xp) || 0);
     const prevLevel = parseInt(localStorage.getItem('iwrite_last_level') || '0');
     if (level > prevLevel && prevLevel > 0) {
       const pendingLevels = [];
-      for (let l = prevLevel + 1; l <= level; l++) {
-        pendingLevels.push(l);
-      }
+      for (let l = prevLevel + 1; l <= level; l++) pendingLevels.push(l);
       localStorage.setItem('iwrite_last_level', level.toString());
       this._showLevelUpQueue(pendingLevels);
     } else {
       localStorage.setItem('iwrite_last_level', level.toString());
     }
 
-    const canvas = document.getElementById('tree-canvas');
-    const stage = this.user.treeStage || 0;
-    TreeRenderer.draw(canvas, stage, this.user.streak || 0);
-    document.getElementById('tree-stage-text').textContent = TreeRenderer.stages[stage] || 'Seed';
+    // 3) Paint everything driven by user data right away (stats, level bar, tree, achievements)
+    this._paintDashboard();
 
+    // 4) Documents arrive (in parallel) → refresh heatmap, recent list, today's-progress ring
     try {
-      this.documents = await API.getDocuments();
+      const docs = await docsPromise;
+      if (!docs) throw new Error('no docs');
+      this.documents = docs;
       this._docsCacheDirty = false;
       this._docsCacheLoaded = true;
     } catch {
-      this.documents = [];
+      if (!this.documents) this.documents = [];
+    }
+    this._paintDashboard();
+  },
+
+  // Render all data-driven dashboard visuals from this.user / this.documents.
+  // Null-safe + idempotent so it can run from cache and again after each fetch.
+  _paintDashboard() {
+    const u = this.user || {};
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    const ur = document.getElementById('username-reminder');
+    if (ur) ur.style.display = (this.user && !u.username) ? 'flex' : 'none';
+
+    setText('total-words', (u.totalWords || 0).toLocaleString());
+    setText('total-sessions', u.totalSessions || 0);
+    setText('current-streak', u.streak || 0);
+    setText('longest-streak-text', `Best: ${u.longestStreak || 0}`);
+    setText('total-xp', (u.xp || 0).toLocaleString());
+
+    const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(u.xp || 0);
+    const xlt = document.getElementById('xp-level-text'); if (xlt) xlt.innerHTML = `Level ${level}`;
+    setText('xp-progress-text', `${xpInLevel.toLocaleString()} / ${xpForNextLevel.toLocaleString()} XP`);
+    const xbf = document.getElementById('xp-bar-fill'); if (xbf) xbf.style.width = `${Math.min(100, (xpInLevel / xpForNextLevel) * 100)}%`;
+
+    const canvas = document.getElementById('tree-canvas');
+    if (canvas && typeof TreeRenderer !== 'undefined') {
+      const stage = u.treeStage || 0;
+      TreeRenderer.draw(canvas, stage, u.streak || 0);
+      setText('tree-stage-text', TreeRenderer.stages[stage] || 'Seed');
     }
 
-    // --- Render activity heatmap ---
     this._renderHeatmap();
-
-    // Only show non-failed, non-admin-deactivated docs in main lists
-    const visibleDocs = this.documents.filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
+    const visibleDocs = (this.documents || []).filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
     this.renderDocumentList('recent-docs', visibleDocs.slice(0, 3));
+    this._renderTestDashboard();
+  },
+
+  // Test Mode ("Writer's Desk") dashboard extras: inline level bar, Today's
+  // Progress ring, achievements panel, reflection prompt. All driven by real
+  // user data; the elements are display:none unless the .test theme is active.
+  _renderTestDashboard() {
+    const u = this.user || {};
+    const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    // Inline level segment (mirrors the standard XP bar)
+    const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(u.xp || 0);
+    setT('td-level', level);
+    setT('td-level-xp', `${xpInLevel.toLocaleString()} / ${xpForNextLevel.toLocaleString()} XP`);
+    const lf = document.getElementById('td-level-fill');
+    if (lf) lf.style.width = `${Math.min(100, (xpInLevel / xpForNextLevel) * 100)}%`;
+
+    // Today's Progress ring — words written today vs daily goal
+    const todayKey = new Date().toISOString().slice(0, 10);
+    let wordsToday = 0;
+    (this.documents || []).forEach(d => {
+      if (!d.updatedAt || !d.wordCount || d.deletedBySystem) return;
+      if (new Date(d.updatedAt).toISOString().slice(0, 10) === todayKey) wordsToday += d.wordCount;
+    });
+    const goal = parseInt(localStorage.getItem('iwrite_daily_goal') || '1000', 10) || 1000;
+    setT('td-words-today', wordsToday.toLocaleString());
+    setT('td-words-goal', goal.toLocaleString());
+    const pct = Math.min(1, wordsToday / goal);
+    const ring = document.getElementById('td-ring-fill');
+    if (ring) {
+      const C = 2 * Math.PI * 52;
+      ring.style.strokeDasharray = C;
+      ring.style.strokeDashoffset = C * (1 - pct);
+    }
+    setT('td-progress-head', wordsToday >= goal ? 'Goal reached!' : wordsToday > 0 ? 'Keep going!' : 'Start your day');
+
+    // Polaroid photo emoji — rotates once per day
+    const polaroidEmojis = ['&#x2615;', '&#x1F4D6;', '&#x1F58B;&#xFE0F;', '&#x1F56F;&#xFE0F;', '&#x1F33F;', '&#x1F4D3;', '&#x1F375;', '&#x1F319;', '&#x270D;&#xFE0F;', '&#x1FAB4;'];
+    const dayIndex = Math.floor(Date.now() / 86400000) % polaroidEmojis.length;
+    const photoEl = document.getElementById('td-polaroid-photo');
+    if (photoEl) photoEl.innerHTML = polaroidEmojis[dayIndex];
+
+    // Achievements — derived from real stats; in-progress first, done last
+    const totalWords = u.totalWords || 0;
+    const totalSessions = u.totalSessions || 0;
+    const bestStreak = Math.max(u.streak || 0, u.longestStreak || 0);
+    const defs = [
+      { icon: '&#x1F3AF;', name: 'Consistent', desc: 'Write a 7-day streak', cur: bestStreak, max: 7 },
+      { icon: '&#x26A1;', name: 'Speed Writer', desc: 'Write 500 total words', cur: totalWords, max: 500 },
+      { icon: '&#x1F4D6;', name: 'Storyteller', desc: 'Write 2,500 total words', cur: totalWords, max: 2500 },
+      { icon: '&#x1F4DA;', name: 'Novelist', desc: 'Write 10,000 total words', cur: totalWords, max: 10000 },
+      { icon: '&#x1F525;', name: 'On Fire', desc: 'Reach a 30-day streak', cur: bestStreak, max: 30 },
+      { icon: '&#x1F3C3;', name: 'Marathoner', desc: 'Complete 50 sessions', cur: totalSessions, max: 50 },
+      { icon: '&#x2B50;', name: 'Rising Star', desc: 'Reach Level 5', cur: level, max: 5 },
+    ];
+    // group: 0 = in progress, 1 = not started, 2 = done; then by progress ratio
+    const groupOf = (a) => (a.cur >= a.max ? 2 : a.cur > 0 ? 0 : 1);
+    const sorted = defs.slice().sort((a, b) =>
+      groupOf(a) - groupOf(b) || (b.cur / b.max) - (a.cur / a.max));
+    this._achList = sorted;
+
+    // Group into pages (two columns × two rows per page)
+    const PER_PAGE = 4;
+    const pages = [];
+    for (let i = 0; i < sorted.length; i += PER_PAGE) pages.push(sorted.slice(i, i + PER_PAGE));
+    this._achPages = pages.length;
+
+    // Small circular progress indicator (check when done, clock while pending)
+    const ringHTML = (a) => {
+      const r = 18, C = 2 * Math.PI * r;
+      const off = C * (1 - Math.min(1, a.cur / a.max));
+      const done = a.cur >= a.max;
+      const inner = done
+        ? '<span class="td-ach-ring-icon done">&#x2713;</span>'
+        : '<span class="td-ach-ring-icon pending">&#x1F551;</span>';
+      return `<div class="td-ach-ring"><svg viewBox="0 0 44 44" width="44" height="44">
+        <circle class="td-ach-ring-track" cx="22" cy="22" r="${r}"></circle>
+        <circle class="td-ach-ring-fill" cx="22" cy="22" r="${r}" style="stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${off.toFixed(1)}"></circle>
+      </svg>${inner}</div>`;
+    };
+
+    const track = document.getElementById('td-ach-track');
+    if (track) {
+      track.innerHTML = pages.map(page => `<div class="td-ach-slide">${
+        page.map(a => {
+          const cur = Math.min(a.cur, a.max);
+          return `<div class="td-ach-item">
+            <div class="td-ach-icon">${a.icon}</div>
+            <div class="td-ach-meta">
+              <div class="td-ach-name">${a.name}</div>
+              <div class="td-ach-desc">${a.desc}</div>
+              <div class="td-ach-count">${cur.toLocaleString()} / ${a.max.toLocaleString()}</div>
+            </div>
+            ${ringHTML(a)}
+          </div>`;
+        }).join('')
+      }</div>`).join('');
+    }
+    const dotsEl = document.getElementById('td-ach-dots');
+    if (dotsEl) dotsEl.innerHTML = pages.map((_, i) => `<button class="td-ach-dot" data-idx="${i}" aria-label="Page ${i + 1}"></button>`).join('');
+    this._updateAchSwiper();
+
+    // Bind interactive controls once
+    if (!this._tdBound) {
+      this._tdBound = true;
+      const prompts = [
+        "What's one small truth you discovered while writing recently?",
+        "Which sentence today surprised you the most?",
+        "What were you avoiding saying — and what if you said it?",
+        "Describe today in a single, honest image.",
+        "What would you write if no one would ever read it?",
+        "What's a feeling you can't quite name yet?",
+      ];
+      const promptEl = document.getElementById('td-prompt-text');
+      const newPromptBtn = document.getElementById('td-new-prompt-btn');
+      if (newPromptBtn && promptEl) {
+        newPromptBtn.onclick = () => {
+          this._tdPromptIdx = ((this._tdPromptIdx ?? 0) + 1) % prompts.length;
+          promptEl.textContent = `“${prompts[this._tdPromptIdx]}”`;
+        };
+      }
+
+      // Achievements swiper navigation
+      const achPrev = document.getElementById('td-ach-prev');
+      const achNext = document.getElementById('td-ach-next');
+      if (achPrev) achPrev.onclick = () => { this._achIdx = (this._achIdx || 0) - 1; this._updateAchSwiper(); };
+      if (achNext) achNext.onclick = () => { this._achIdx = (this._achIdx || 0) + 1; this._updateAchSwiper(); };
+      if (dotsEl) dotsEl.onclick = (e) => {
+        const b = e.target.closest('[data-idx]');
+        if (b) { this._achIdx = parseInt(b.dataset.idx, 10); this._updateAchSwiper(); }
+      };
+
+      // Edit-goal opens the in-app modal
+      const editGoalBtn = document.getElementById('td-edit-goal-btn');
+      const goalModal = document.getElementById('goal-modal');
+      const goalInput = document.getElementById('goal-input');
+      const goalSave = document.getElementById('goal-save-btn');
+      const goalCancel = document.getElementById('goal-cancel-btn');
+      const closeGoal = () => goalModal && goalModal.classList.remove('active');
+      if (editGoalBtn && goalModal) {
+        editGoalBtn.onclick = () => {
+          if (goalInput) goalInput.value = parseInt(localStorage.getItem('iwrite_daily_goal') || '1000', 10) || 1000;
+          goalModal.classList.add('active');
+          if (goalInput) setTimeout(() => goalInput.focus(), 60);
+        };
+      }
+      if (goalSave) goalSave.onclick = () => {
+        const n = parseInt(goalInput && goalInput.value, 10);
+        if (!isNaN(n) && n > 0) { localStorage.setItem('iwrite_daily_goal', String(n)); this._renderTestDashboard(); }
+        closeGoal();
+      };
+      if (goalCancel) goalCancel.onclick = closeGoal;
+      if (goalModal) goalModal.addEventListener('click', (e) => { if (e.target === goalModal) closeGoal(); });
+      if (goalInput) goalInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && goalSave) goalSave.click(); });
+    }
+  },
+
+  // Position the achievements swiper (track transform + dots + arrow state)
+  _updateAchSwiper() {
+    const n = this._achPages || 0;
+    const track = document.getElementById('td-ach-track');
+    if (!track || !n) return;
+    const idx = this._achIdx = Math.max(0, Math.min(this._achIdx || 0, n - 1));
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    const dots = document.getElementById('td-ach-dots');
+    if (dots) [...dots.children].forEach((d, i) => d.classList.toggle('active', i === idx));
+    const prev = document.getElementById('td-ach-prev');
+    const next = document.getElementById('td-ach-next');
+    if (prev) prev.disabled = idx === 0;
+    if (next) next.disabled = idx === n - 1;
   },
 
   _renderHeatmap() {
@@ -2295,6 +3216,37 @@ const App = {
         deathCustomBtn.appendChild(badge);
       }
     }
+    // Tab Timer presets: 10s free, everything else Pro
+    document.querySelectorAll('#tab-timer-presets .time-preset[data-seconds]').forEach(btn => {
+      const secs = parseInt(btn.dataset.seconds);
+      const oldBadge = btn.querySelector('.timer-pro-badge');
+      if (oldBadge) oldBadge.remove();
+      btn.style.opacity = '';
+      if (!isPro && secs !== 10) {
+        btn.style.position = 'relative';
+        btn.style.opacity = '0.7';
+        const badge = document.createElement('span');
+        badge.className = 'timer-pro-badge';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.textContent = 'PRO';
+        btn.appendChild(badge);
+      }
+    });
+    const tabCustomBtn = document.getElementById('tab-timer-custom-btn');
+    if (tabCustomBtn) {
+      const oldBadge = tabCustomBtn.querySelector('.timer-pro-badge');
+      if (oldBadge) oldBadge.remove();
+      tabCustomBtn.style.opacity = '';
+      if (!isPro) {
+        tabCustomBtn.style.position = 'relative';
+        tabCustomBtn.style.opacity = '0.7';
+        const badge = document.createElement('span');
+        badge.className = 'timer-pro-badge';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.textContent = 'PRO';
+        tabCustomBtn.appendChild(badge);
+      }
+    }
     // +1m / +5m add-time buttons: Pro only
     document.querySelectorAll('.editor-add-time-btn').forEach(btn => {
       if (btn.id === 'duel-add-time-btn') return;
@@ -2390,6 +3342,292 @@ const App = {
         el.style.display = 'none';
       }
     } catch {}
+  },
+
+  // ───────── Dashboard announcements (admin-published) ─────────
+  async loadAnnouncements() {
+    const container = document.getElementById('dashboard-announcements');
+    const row = container?.parentElement;
+    if (!container) return;
+    try {
+      const res = await fetch('/api/announcements', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) throw new Error('failed');
+      const items = await res.json();
+      if (!items || items.length === 0) {
+        container.style.display = 'none';
+        row?.classList.remove('has-announcements');
+        return;
+      }
+      this._announcements = items;
+      this._announcementIdx = 0;
+      this._renderAnnouncementsCarousel();
+      container.style.display = 'flex';
+      row?.classList.add('has-announcements');
+    } catch {
+      container.style.display = 'none';
+      row?.classList.remove('has-announcements');
+    }
+  },
+
+  _renderAnnouncementsCarousel() {
+    const container = document.getElementById('dashboard-announcements');
+    if (!container || !this._announcements?.length) return;
+
+    const items = this._announcements;
+    // Compact card: title (BIG) + subtitle (short tease) + body preview
+    // (truncated, fills remaining space). No image, no link button.
+    // Whole card is clickable → opens expand modal for full content.
+    const slides = items.map((a, i) => {
+      const cat = a.category || 'update';
+      const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+      // Compact teaser: category + title only. Optional one-line subtitle if explicitly set.
+      // Click anywhere on the card to open the full announcement modal.
+      const subtitle = a.subtitle || '';
+      return `
+        <div class="ann-slide${i === this._announcementIdx ? ' active' : ''}" data-idx="${i}" role="button" tabindex="0" aria-label="Open announcement: ${this.escapeHtml(a.title)}">
+          <div class="ann-content">
+            <div class="ann-cat-row">
+              <span class="ann-cat-tag ann-cat-${cat}">${catLabel}</span>
+              ${a.pinned ? '<span class="ann-pinned" title="Pinned">📌</span>' : ''}
+              <span class="ann-expand-hint">Tap to read →</span>
+            </div>
+            <div class="ann-title"><span>${this.escapeHtml(a.title)}</span></div>
+            ${subtitle ? `<div class="ann-subtitle">${this.escapeHtml(subtitle)}</div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    const dots = items.length > 1
+      ? items.map((_, i) => `<button class="ann-dot${i === this._announcementIdx ? ' active' : ''}" data-dot-idx="${i}" aria-label="Go to slide ${i+1}"></button>`).join('')
+      : '';
+
+    const showControls = items.length > 1;
+    container.innerHTML = `
+      ${slides}
+      ${showControls ? `
+        <div class="ann-controls">
+          <button class="ann-arrow ann-prev" ${this._announcementIdx === 0 ? 'disabled' : ''} aria-label="Previous">‹</button>
+          <div class="ann-dots">${dots}</div>
+          <button class="ann-arrow ann-next" ${this._announcementIdx === items.length - 1 ? 'disabled' : ''} aria-label="Next">›</button>
+        </div>` : ''}
+    `;
+
+    // Whole-card click → open modal. Stop propagation on control buttons so they don't trigger the card click.
+    container.querySelectorAll('.ann-slide').forEach(slide => {
+      slide.addEventListener('click', () => {
+        const idx = parseInt(slide.dataset.idx, 10);
+        this.openAnnouncementModal(items[idx]);
+      });
+      slide.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const idx = parseInt(slide.dataset.idx, 10);
+          this.openAnnouncementModal(items[idx]);
+        }
+      });
+    });
+    container.querySelector('.ann-prev')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this._announcementIdx > 0) { this._announcementIdx--; this._renderAnnouncementsCarousel(); }
+    });
+    container.querySelector('.ann-next')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this._announcementIdx < items.length - 1) { this._announcementIdx++; this._renderAnnouncementsCarousel(); }
+    });
+    container.querySelectorAll('.ann-dot').forEach(d => {
+      d.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._announcementIdx = parseInt(d.dataset.dotIdx, 10);
+        this._renderAnnouncementsCarousel();
+      });
+    });
+  },
+
+  openAnnouncementModal(a) {
+    if (!a) return;
+    const overlay = document.getElementById('ann-modal-overlay');
+    const modal = document.getElementById('ann-modal');
+    const imageWrap = document.getElementById('ann-modal-image-wrap');
+    const content = document.getElementById('ann-modal-content');
+    if (!overlay || !modal) return;
+
+    this._currentAnnouncement = a;
+    const cat = a.category || 'update';
+    const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+
+    imageWrap.innerHTML = a.imageUrl
+      ? `<img class="ann-modal-image" src="${this.escapeHtml(a.imageUrl)}" alt="">`
+      : '';
+    content.innerHTML = `
+      <div class="ann-cat-row" style="margin-bottom:6px">
+        <span class="ann-cat-tag ann-cat-${cat}">${catLabel}</span>
+        ${a.pinned ? '<span class="ann-pinned" title="Pinned">📌</span>' : ''}
+      </div>
+      <div class="ann-modal-title">${this.escapeHtml(a.title)}</div>
+      ${a.subtitle ? `<div class="ann-modal-subtitle">${this.escapeHtml(a.subtitle)}</div>` : ''}
+      <div class="ann-modal-text">${this.escapeHtml(a.body || '')}</div>
+      <div class="ann-modal-actions">
+        <button class="ann-like-btn" id="ann-like-btn" type="button" aria-pressed="false">
+          <svg class="ann-like-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          <span id="ann-like-count">—</span>
+        </button>
+        ${a.linkUrl ? `<a class="ann-modal-link" href="${this.escapeHtml(a.linkUrl)}" target="_blank" rel="noopener" style="margin-top:0">${this.escapeHtml(a.linkLabel || 'Read more')} →</a>` : ''}
+      </div>
+    `;
+
+    // Wire like button
+    const likeBtn = document.getElementById('ann-like-btn');
+    if (likeBtn) {
+      likeBtn.addEventListener('click', () => this._toggleAnnouncementLike(a.id));
+    }
+    this._loadAnnouncementLikeState(a.id);
+    this._recordAnnouncementView(a.id);
+
+    // Animate in: display first, then add active class on next frame
+    overlay.classList.add('visible');
+    modal.classList.add('visible');
+    requestAnimationFrame(() => {
+      overlay.classList.add('active');
+      modal.classList.add('active');
+    });
+    document.body.style.overflow = 'hidden';
+
+    // Esc closes (one global listener)
+    if (!this._annModalEscBound) {
+      this._annModalEscBound = true;
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('ann-modal')?.classList.contains('active')) {
+          this.closeAnnouncementModal();
+        }
+      });
+    }
+  },
+
+  closeAnnouncementModal() {
+    const overlay = document.getElementById('ann-modal-overlay');
+    const modal = document.getElementById('ann-modal');
+    overlay?.classList.remove('active');
+    modal?.classList.remove('active');
+    document.body.style.overflow = '';
+    // After transition completes, hide entirely so it doesn't catch clicks
+    clearTimeout(this._annModalCloseTimer);
+    this._annModalCloseTimer = setTimeout(() => {
+      overlay?.classList.remove('visible');
+      modal?.classList.remove('visible');
+    }, 260);
+  },
+
+  async _recordAnnouncementView(id) {
+    try {
+      await fetch('/api/announcements/' + encodeURIComponent(id) + '/view', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+    } catch {}
+  },
+
+  async _loadAnnouncementLikeState(id) {
+    try {
+      const res = await fetch('/api/announcements/' + encodeURIComponent(id) + '/like', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      this._renderAnnouncementLike(data.liked, data.count);
+    } catch {}
+  },
+
+  async _toggleAnnouncementLike(id) {
+    const btn = document.getElementById('ann-like-btn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/announcements/' + encodeURIComponent(id) + '/like', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) throw new Error('failed');
+      const data = await res.json();
+      this._renderAnnouncementLike(data.liked, data.count);
+    } catch {} finally {
+      btn.disabled = false;
+    }
+  },
+
+  _renderAnnouncementLike(liked, count) {
+    const btn = document.getElementById('ann-like-btn');
+    const heart = btn?.querySelector('.ann-like-heart');
+    const countEl = document.getElementById('ann-like-count');
+    if (!btn || !heart || !countEl) return;
+    btn.classList.toggle('liked', !!liked);
+    btn.setAttribute('aria-pressed', String(!!liked));
+    // Toggle SVG fill: outlined when not liked, filled (currentColor) when liked.
+    heart.setAttribute('fill', liked ? 'currentColor' : 'none');
+    countEl.textContent = count.toLocaleString();
+  },
+
+  async openNotificationHistory() {
+    // Reuse the existing help-popup overlay for consistency
+    const popup = document.getElementById('help-popup');
+    const overlay = document.getElementById('help-popup-overlay');
+    const body = document.getElementById('help-popup-body');
+    if (!popup || !body) return;
+
+    body.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px 0">Loading…</p>';
+    overlay.classList.add('active');
+    popup.classList.add('active');
+
+    try {
+      const res = await fetch('/api/announcements?archive=1', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) throw new Error('failed');
+      const items = await res.json();
+      body.innerHTML = this._renderNotificationHistory(items);
+
+      // Wire each entry to open the announcement modal
+      body.querySelectorAll('.notif-history-entry').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = el.dataset.id;
+          const item = items.find(x => x.id === id);
+          if (item) this.openAnnouncementModal(item);
+        });
+      });
+    } catch {
+      body.innerHTML = '<p style="text-align:center;color:var(--danger);padding:30px 0">Failed to load history</p>';
+    }
+  },
+
+  _renderNotificationHistory(items) {
+    if (!items || items.length === 0) {
+      return '<h2 style="font-size:18px;margin-bottom:16px">📢 Notification History</h2><p style="color:var(--text-muted);padding:30px 0;text-align:center">No notifications yet.</p>';
+    }
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const rows = items.map(a => {
+      const cat = a.category || 'update';
+      const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
+      const subtitle = a.subtitle || (a.body || '').slice(0, 100) + ((a.body || '').length > 100 ? '…' : '');
+      const inactive = a.active === false ? ' style="opacity:0.55"' : '';
+      return `<div class="notif-history-entry" data-id="${this.escapeHtml(a.id)}"${inactive} role="button" tabindex="0" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span class="ann-cat-tag ann-cat-${cat}">${catLabel}</span>
+            ${a.pinned ? '<span class="ann-pinned" title="Pinned">📌</span>' : ''}
+            ${a.active === false ? '<span style="font-size:10px;color:var(--text-muted)">archived</span>' : ''}
+          </div>
+          <div style="font-weight:600;font-size:14px;color:var(--text-primary);margin-bottom:3px">${this.escapeHtml(a.title)}</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.4">${this.escapeHtml(subtitle)}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);flex-shrink:0;text-align:right">${fmtDate(a.createdAt)}</div>
+      </div>`;
+    }).join('');
+    return `<h2 style="font-size:18px;margin-bottom:6px">📢 Notification History</h2>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Every announcement we've published. Tap one to see the full content.</p>
+      ${rows}`;
   },
 
   _lbData: null,
@@ -2592,16 +3830,76 @@ const App = {
     }
   },
 
+  _openDeleteModal() {
+    const modal = document.getElementById('delete-account-modal');
+    const isGoogleUser = this.user && this.user.googleId;
+    document.getElementById('delete-account-password-field').style.display = isGoogleUser ? 'none' : '';
+    document.getElementById('delete-account-confirm-field').style.display = isGoogleUser ? '' : 'none';
+    document.getElementById('delete-account-password').value = '';
+    document.getElementById('delete-account-confirm-text').value = '';
+    document.getElementById('delete-account-error').textContent = '';
+    document.getElementById('delete-account-error').className = 'auth-error';
+    modal.style.display = 'flex';
+  },
+
+  _closeDeleteModal() {
+    document.getElementById('delete-account-modal').style.display = 'none';
+  },
+
+  async _submitDeleteAccount() {
+    const errorEl = document.getElementById('delete-account-error');
+    const submitBtn = document.getElementById('delete-account-submit-btn');
+    const isGoogleUser = this.user && this.user.googleId;
+
+    let body = {};
+    if (isGoogleUser) {
+      const text = document.getElementById('delete-account-confirm-text').value.trim();
+      if (text.toUpperCase() !== 'DELETE') {
+        errorEl.textContent = 'Please type DELETE to confirm.';
+        errorEl.classList.add('visible');
+        return;
+      }
+      body = { confirmation: text };
+    } else {
+      const pw = document.getElementById('delete-account-password').value;
+      if (!pw) {
+        errorEl.textContent = 'Password is required.';
+        errorEl.classList.add('visible');
+        return;
+      }
+      body = { password: pw };
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Deleting...';
+    errorEl.className = 'auth-error';
+
+    try {
+      await API.deleteAccount(body);
+      // Wipe local state and redirect to landing
+      localStorage.clear();
+      window.location.href = '/';
+    } catch (err) {
+      errorEl.textContent = err.message || 'Failed to delete account.';
+      errorEl.classList.add('visible');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Delete Forever';
+    }
+  },
+
   async openDuelModal(preselectedId) {
     document.getElementById('duel-modal').classList.add('active');
     const select = document.getElementById('duel-friend-select');
     select.innerHTML = '<option value="">Loading friends...</option>';
-    // Always fetch fresh friends list
+    // Always fetch fresh friends list. The endpoint returns
+    // { friends: [...], total, page, limit } — extract the array.
     try {
-      const friends = await API.getFriends();
-      this.friends = friends;
+      const resp = await API.getFriends(1, 'added', 100);
+      this.friends = Array.isArray(resp) ? resp : (resp?.friends || []);
     } catch {}
-    select.innerHTML = '<option value="">Choose a friend...</option>';
+    select.innerHTML = (this.friends || []).length === 0
+      ? '<option value="">No friends yet — add some first</option>'
+      : '<option value="">Choose a friend...</option>';
     (this.friends || []).forEach(f => {
       select.innerHTML += `<option value="${f.id}">${this.escapeHtml(f.name)}</option>`;
     });
@@ -2618,14 +3916,311 @@ const App = {
     document.getElementById('duel-friend-select').disabled = false;
   },
 
+  // ───── Matchmaking ─────
+  _mmDuration: 10,
+  _mmInQueue: false,
+  _mmHeartbeatInterval: null,
+  _mmJoinedAt: null,
+  _mmLobbyBuckets: [],
+
+  async refreshDuelLobbyPulse() {
+    if (!API.getToken || !API.getToken()) return;
+    try {
+      const res = await fetch('/api/duels/queue/lobby', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      this._mmLobbyBuckets = data.buckets || [];
+      // Subtract 1 if I'm in queue myself — only show count for OTHERS waiting
+      const others = Math.max(0, (data.waitingCount || 0) - (this._mmInQueue ? 1 : 0));
+      // Sidebar Duels nav indicator: green chip with count
+      const pulse = document.getElementById('duels-lobby-pulse');
+      if (pulse) {
+        if (others > 0) {
+          pulse.style.display = 'inline-flex';
+          pulse.textContent = String(others);
+        } else {
+          pulse.style.display = 'none';
+        }
+      }
+      // In-page lobby chip (header of matchmaking section)
+      const chip = document.getElementById('duel-mm-pulse');
+      const chipCount = document.getElementById('duel-mm-pulse-count');
+      const lobbyText = document.getElementById('duel-mm-lobby-text');
+      if (chip && chipCount) {
+        chip.style.display = others > 0 ? 'inline-flex' : 'none';
+        chipCount.textContent = others;
+      }
+      if (lobbyText) {
+        lobbyText.textContent = others > 0
+          ? `${others} ${others === 1 ? 'person is' : 'people are'} waiting. Click "${others === 1 ? '1 waiting' : others + ' waiting'} ▾" to see lobbies.`
+          : 'Get matched with someone looking for a duel right now.';
+      }
+      // If popover is open, refresh its contents too
+      const pop = document.getElementById('duel-mm-lobby-popover');
+      if (pop && pop.style.display !== 'none') this._renderLobbyPopover();
+    } catch {}
+  },
+
+  async toggleLobbyPopover(forceOpen) {
+    const pop = document.getElementById('duel-mm-lobby-popover');
+    if (!pop) return;
+    const isOpen = pop.style.display && pop.style.display !== 'none';
+    if (forceOpen === false || (isOpen && forceOpen !== true)) {
+      pop.style.display = 'none';
+      return;
+    }
+    await this._fetchLobbyDetail();
+    this._renderLobbyPopover();
+    pop.style.display = 'block';
+  },
+
+  async _fetchLobbyDetail() {
+    try {
+      const res = await fetch('/api/duels/queue/lobby-detail', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) { this._mmLobbyEntries = []; return; }
+      const data = await res.json();
+      this._mmLobbyEntries = data.entries || [];
+    } catch { this._mmLobbyEntries = []; }
+  },
+
+  _renderLobbyPopover() {
+    const list = document.getElementById('duel-mm-lobby-list');
+    if (!list) return;
+    const fmtWait = (ms) => {
+      const s = Math.floor(ms / 1000);
+      if (s < 60) return `${s}s`;
+      const m = Math.floor(s / 60);
+      const rs = s % 60;
+      return `${m}m ${rs}s`;
+    };
+    const entries = this._mmLobbyEntries || [];
+    if (!entries.length) {
+      list.innerHTML = '<div class="duel-mm-lobby-empty">No one waiting yet. Be the first to start a lobby.</div>';
+      return;
+    }
+    list.innerHTML = entries.map(e => `
+      <div class="duel-mm-lobby-row">
+        <div class="duel-mm-lobby-user">
+          <div class="duel-mm-lobby-name">${this.escapeHtml(e.name)}${e.plan === 'premium' ? ' <span class="duel-mm-lobby-pro">PRO</span>' : ''}</div>
+          ${e.username ? `<div class="duel-mm-lobby-username">@${this.escapeHtml(e.username)}</div>` : ''}
+        </div>
+        <div class="duel-mm-lobby-stats">
+          <div><span class="duel-mm-lobby-stat-label">Duel</span> <span class="duel-mm-lobby-dur">${e.duration} min</span></div>
+          <div><span class="duel-mm-lobby-stat-label">Waiting</span> <span class="duel-mm-lobby-wait">${fmtWait(e.waitMs)}</span></div>
+        </div>
+        <button class="duel-mm-lobby-join-btn" onclick="App.matchmakingJoinDuration(${e.duration})">Join duel</button>
+      </div>
+    `).join('');
+  },
+
+  // Live-refresh lobby rows every 5s while the popover is open
+  _startLobbyDetailPoll() {
+    clearInterval(this._lobbyDetailInterval);
+    this._lobbyDetailInterval = setInterval(async () => {
+      const pop = document.getElementById('duel-mm-lobby-popover');
+      if (!pop || pop.style.display === 'none') return;
+      await this._fetchLobbyDetail();
+      this._renderLobbyPopover();
+    }, 5000);
+  },
+
+  matchmakingJoinDuration(duration) {
+    const d = parseInt(duration);
+    if (!Number.isFinite(d)) return;
+    // Set duration UI to match
+    const std = [10, 30, 45];
+    document.querySelectorAll('.duel-mm-dur-btn').forEach(b => b.classList.remove('active'));
+    if (std.includes(d)) {
+      const btn = document.querySelector(`.duel-mm-dur-btn[data-duration="${d}"]`);
+      if (btn) btn.classList.add('active');
+      document.getElementById('duel-mm-custom-input').style.display = 'none';
+    } else {
+      // Custom (PRO) — show custom input with the value
+      const customBtn = document.getElementById('duel-mm-dur-custom');
+      if (customBtn) customBtn.classList.add('active');
+      const customInput = document.getElementById('duel-mm-custom-input');
+      if (customInput) { customInput.value = d; customInput.style.display = 'inline-block'; }
+    }
+    this._mmDuration = d;
+    document.getElementById('duel-mm-lobby-popover').style.display = 'none';
+    this.matchmakingFind();
+  },
+
+  async matchmakingFind() {
+    const dur = parseInt(this._mmDuration);
+    if (!Number.isFinite(dur) || dur < 5) {
+      this.toast('Pick a valid duration first', 'error');
+      return;
+    }
+    const findBtn = document.getElementById('duel-mm-find-btn');
+    if (findBtn) { findBtn.disabled = true; findBtn.textContent = 'Joining…'; }
+    try {
+      const res = await fetch('/api/duels/queue/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.getToken()}` },
+        body: JSON.stringify({ duration: dur })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        this.toast(data.error || 'Failed to join queue', 'error');
+        if (findBtn) { findBtn.disabled = false; findBtn.textContent = 'Find opponent'; }
+        return;
+      }
+      if (data.matched && data.duelId) {
+        this._mmEnterDuel(data.duelId);
+        return;
+      }
+      // Waiting state
+      this._mmInQueue = true;
+      this._mmJoinedAt = Date.now();
+      this._mmShowWaiting(dur);
+      this._mmHeartbeatInterval = setInterval(() => this._mmHeartbeat(), 3000);
+      this.refreshDuelLobbyPulse();
+    } catch (e) {
+      this.toast('Failed to join queue', 'error');
+      if (findBtn) { findBtn.disabled = false; findBtn.textContent = 'Find opponent'; }
+    }
+  },
+
+  async matchmakingCancel() {
+    clearInterval(this._mmHeartbeatInterval);
+    this._mmHeartbeatInterval = null;
+    this._mmInQueue = false;
+    try {
+      await fetch('/api/duels/queue/leave', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+    } catch {}
+    this._mmShowIdle();
+    this.refreshDuelLobbyPulse();
+  },
+
+  async _mmHeartbeat() {
+    // Hard cap: stop searching after 5 minutes
+    const MAX_QUEUE_MS = 5 * 60 * 1000;
+    if (this._mmJoinedAt && (Date.now() - this._mmJoinedAt) >= MAX_QUEUE_MS) {
+      this.matchmakingCancel();
+      this.toast("No opponent found in 5 minutes. Try again or pick a different duration.", 'info', 5000);
+      return;
+    }
+    try {
+      const res = await fetch('/api/duels/queue/heartbeat', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.status === 'matched' && data.duelId) {
+        clearInterval(this._mmHeartbeatInterval);
+        this._mmHeartbeatInterval = null;
+        this._mmInQueue = false;
+        this._mmEnterDuel(data.duelId);
+        return;
+      }
+      if (data.status === 'idle') {
+        // We were evicted (stale)
+        clearInterval(this._mmHeartbeatInterval);
+        this._mmHeartbeatInterval = null;
+        this._mmInQueue = false;
+        this._mmShowIdle();
+        return;
+      }
+      // status === 'waiting'
+      const elapsed = Math.floor((Date.now() - this._mmJoinedAt) / 1000);
+      const remaining = Math.max(0, Math.ceil((MAX_QUEUE_MS - (Date.now() - this._mmJoinedAt)) / 1000));
+      const elapsedEl = document.getElementById('duel-mm-elapsed');
+      const countEl = document.getElementById('duel-mm-waiting-count');
+      const remainingEl = document.getElementById('duel-mm-time-left');
+      if (elapsedEl) elapsedEl.textContent = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed/60)}m ${elapsed%60}s`;
+      if (countEl) countEl.textContent = data.waitingCount || 0;
+      if (remainingEl) remainingEl.textContent = remaining < 60 ? `${remaining}s` : `${Math.floor(remaining/60)}m ${remaining%60}s`;
+    } catch {}
+  },
+
+  _mmShowWaiting(duration) {
+    document.getElementById('duel-mm-idle').style.display = 'none';
+    document.getElementById('duel-mm-waiting').style.display = 'flex';
+    const label = document.getElementById('duel-mm-duration-label');
+    if (label) label.textContent = `${duration} min`;
+    const elapsedEl = document.getElementById('duel-mm-elapsed');
+    if (elapsedEl) elapsedEl.textContent = '0s';
+  },
+
+  _mmShowIdle() {
+    document.getElementById('duel-mm-idle').style.display = '';
+    document.getElementById('duel-mm-waiting').style.display = 'none';
+    const findBtn = document.getElementById('duel-mm-find-btn');
+    if (findBtn) { findBtn.disabled = false; findBtn.textContent = 'Find opponent'; }
+  },
+
+  _mmEnterDuel(duelId) {
+    this._mmShowIdle();
+    this.toast('Match found! Entering duel…', 'success', 2000);
+    // Drop straight into the countdown — duel was created with status='countdown'
+    setTimeout(() => {
+      if (typeof this.enterDuelCountdown === 'function') {
+        this.enterDuelCountdown(duelId);
+      } else {
+        window.location.hash = 'duels';
+        this.loadDuelsView();
+      }
+    }, 300);
+  },
+
+  // Cancel a matchmaking duel during the countdown phase. Uses the existing
+  // /:id/cancel endpoint which only allows pending or countdown cancellation.
+  async cancelDuelCountdown() {
+    const duelId = this._cancelDuelId;
+    if (!duelId) return;
+    const overlay = document.getElementById('duel-countdown-overlay');
+    try {
+      await fetch('/api/duels/' + encodeURIComponent(duelId) + '/cancel', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+    } catch {}
+    if (overlay) overlay.classList.remove('active');
+    this._cancelDuelId = null;
+    this.toast('Duel cancelled.', 'info');
+    this.loadDuelsView();
+  },
+
   async loadDuelsView() {
+    // Auto-open the Active Lobbies popover and start the live refresh poll
+    // whenever the user enters the Duels view (only if not already in queue —
+    // when waiting, the matchmaking section switches to its own UI anyway).
+    if (!this._mmInQueue) {
+      this.toggleLobbyPopover(true);
+      this._startLobbyDetailPoll();
+    }
+    // Hide the PRO badge on the "+" pill for premium users (in case the user
+    // upgraded after page load and we're re-entering the view).
+    if (this.user?.plan === 'premium') {
+      document.querySelectorAll('.duel-mm-pro-badge').forEach(b => b.style.display = 'none');
+    } else {
+      document.querySelectorAll('.duel-mm-pro-badge').forEach(b => b.style.display = '');
+    }
     try {
       const duelHistoryPage = this._duelHistoryPage || 1;
-      const [requests, sentDuels, historyData] = await Promise.all([
+      // Use allSettled so a single endpoint failure doesn't kill the whole
+      // view. Fall back to empty arrays per call so the rest of the page
+      // still renders sensibly.
+      const results = await Promise.allSettled([
         API.getDuelRequests(),
         API.getSentDuels(),
         API.getDuelHistory(duelHistoryPage, 10)
       ]);
+      const requests = results[0].status === 'fulfilled' ? results[0].value : [];
+      const sentDuels = results[1].status === 'fulfilled' ? results[1].value : [];
+      const historyData = results[2].status === 'fulfilled' ? results[2].value : { items: [], totalPages: 1, page: 1 };
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') console.warn('[loadDuelsView] call ' + i + ' failed:', r.reason);
+      });
       const history = historyData.items || [];
       const totalPages = historyData.totalPages || 1;
       const currentPage = historyData.page || 1;
@@ -2746,9 +4341,15 @@ const App = {
 
         historyContainer.innerHTML = html;
       }
-    } catch {
-      this.toast('Failed to load duels', 'error');
+    } catch (err) {
+      console.warn('[loadDuelsView] render error:', err);
+      // Only surface the toast on the user's first explicit load — auto-refresh
+      // failures (every 10s) shouldn't spam the user.
+      if (!this._duelsViewLoadedOnce) {
+        this.toast('Failed to load duels', 'error');
+      }
     }
+    this._duelsViewLoadedOnce = true;
   },
 
   async acceptDuel(duelId) {
@@ -2897,6 +4498,7 @@ const App = {
       const timerEl = document.getElementById('duel-countdown-timer');
       const titleEl = document.getElementById('duel-countdown-title');
       const leaveBtn = document.getElementById('duel-leave-btn');
+      const cancelBtn = document.getElementById('duel-countdown-cancel-btn');
       const isChallenger = duel.challengerId === this.user.id;
       const oppName = isChallenger ? duel.opponentName : duel.challengerName;
 
@@ -2904,6 +4506,12 @@ const App = {
       titleEl.textContent = 'DUEL STARTS IN';
       timerEl.style.fontSize = '';
       leaveBtn.style.display = 'none';
+      // Show Cancel button for matchmaking duels — both opted in voluntarily,
+      // so either side can back out before the duel actually starts.
+      if (cancelBtn) {
+        cancelBtn.style.display = duel.fromMatchmaking ? '' : 'none';
+        this._cancelDuelId = duel.fromMatchmaking ? duelId : null;
+      }
 
       document.getElementById('duel-countdown-vs').textContent = `You vs ${oppName}`;
       document.getElementById('duel-countdown-duration').textContent = `${duel.duration} minute duel`;
@@ -2942,13 +4550,23 @@ const App = {
       skipBtn.onclick = this._duelSkipHandler;
 
       const countdownInterval = setInterval(async () => {
-        // Poll duel status to check if opponent is ready
+        // Poll duel status to check if opponent is ready, cancelled, or active
         try {
           const latest = await API.getDuelStatus(duelId);
           if (latest.status === 'active') {
             clearInterval(countdownInterval);
             overlay.classList.remove('active');
             this.enterDuelMode(duelId);
+            return;
+          }
+          // Opponent cancelled — bail out, notify the surviving player
+          if (latest.status === 'cancelled' || latest.status === 'expired') {
+            clearInterval(countdownInterval);
+            overlay.classList.remove('active');
+            this._cancelDuelId = null;
+            const opponentName = isChallenger ? (latest.opponentName || 'Your opponent') : (latest.challengerName || 'Your opponent');
+            this.toast(`${opponentName} cancelled the duel.`, 'info', 5000);
+            this.loadDuelsView();
             return;
           }
           // Update opponent ready status
@@ -3094,6 +4712,81 @@ const App = {
     } catch {
       this.toast('Failed to export document', 'error');
     }
+  },
+
+  // --- Free export: Markdown & plain text ---
+  async exportDocMarkdown(id) {
+    try {
+      const data = await API.exportDocument(id);
+      const title = data.title || 'Untitled';
+      const body = this._htmlToMarkdown(data.content || '');
+      this._downloadBlob(this._safeFilename(title) + '.md', `# ${title}\n\n${body}\n`, 'text/markdown');
+      this.toast('Exported as Markdown', 'success');
+    } catch { this.toast('Failed to export document', 'error'); }
+  },
+
+  async exportDocText(id) {
+    try {
+      const data = await API.exportDocument(id);
+      const title = data.title || 'Untitled';
+      const body = this._htmlToPlainText(data.content || '');
+      this._downloadBlob(this._safeFilename(title) + '.txt', `${title}\n\n${body}\n`, 'text/plain');
+      this.toast('Exported as text', 'success');
+    } catch { this.toast('Failed to export document', 'error'); }
+  },
+
+  _safeFilename(name) {
+    return (name || 'document').replace(/[^\w\s.-]/g, '').replace(/\s+/g, '-').slice(0, 60) || 'document';
+  },
+
+  _downloadBlob(filename, text, mime) {
+    const blob = new Blob([text], { type: mime + ';charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+
+  _htmlToPlainText(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    div.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
+    div.querySelectorAll('div,p,h1,h2,h3,h4,h5,h6,li,blockquote').forEach(el => el.appendChild(document.createTextNode('\n')));
+    return (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+  },
+
+  // Lightweight HTML → Markdown for the contenteditable editor / story content.
+  _htmlToMarkdown(html) {
+    const container = document.createElement('div');
+    container.innerHTML = html || '';
+    const walk = (node) => {
+      let out = '';
+      node.childNodes.forEach(child => {
+        if (child.nodeType === Node.TEXT_NODE) { out += child.textContent; return; }
+        if (child.nodeType !== Node.ELEMENT_NODE) return;
+        const tag = child.nodeName.toLowerCase();
+        const inner = walk(child);
+        switch (tag) {
+          case 'h1': out += `\n# ${inner}\n\n`; break;
+          case 'h2': out += `\n## ${inner}\n\n`; break;
+          case 'h3': case 'h4': case 'h5': case 'h6': out += `\n### ${inner}\n\n`; break;
+          case 'b': case 'strong': out += `**${inner}**`; break;
+          case 'i': case 'em': out += `*${inner}*`; break;
+          case 'a': out += `[${inner}](${child.getAttribute('href') || ''})`; break;
+          case 'br': out += '\n'; break;
+          case 'blockquote': out += inner.split('\n').map(l => l.trim() ? `> ${l}` : '>').join('\n') + '\n\n'; break;
+          case 'ul': out += '\n' + Array.from(child.children).map(li => `- ${walk(li).trim()}`).join('\n') + '\n\n'; break;
+          case 'ol': out += '\n' + Array.from(child.children).map((li, i) => `${i + 1}. ${walk(li).trim()}`).join('\n') + '\n\n'; break;
+          case 'li': out += inner; break;
+          case 'div': case 'p': out += inner + '\n'; break;
+          default: out += inner;
+        }
+      });
+      return out;
+    };
+    return walk(container).replace(/\n{3,}/g, '\n\n').trim();
   },
 
   async deleteDoc(id) {
@@ -3548,6 +5241,7 @@ const App = {
         <div class="up-story-meta">
           <span>${new Date(s.publishedAt || s.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           <span>${s.readTimeMinutes || 1} min read</span>
+          <span>👁 ${(s.viewCount || 0).toLocaleString()}</span>
           <span>❤ ${s.likeCount || 0}</span>
           <span>💬 ${s.commentCount || 0}</span>
         </div>
@@ -3839,7 +5533,10 @@ const App = {
     });
     card.addEventListener('mouseleave', () => this._scheduleHideHoverCard());
 
-    // Delegate hover events on username links
+    // Delegate hover events on username links.
+    // Track the latest cursor position relative to the hovered link so we
+    // can position the card a CONSTANT visual distance from the cursor —
+    // independent of font metrics / line-leading / device DPI.
     document.addEventListener('mouseenter', (e) => {
       const link = e.target.closest && e.target.closest('.username-link');
       if (!link) return;
@@ -3848,6 +5545,7 @@ const App = {
       clearTimeout(this._hoverCardHideTimeout);
       clearTimeout(this._hoverCardShowTimeout);
       this._hoverCardLink = link;
+      this._hoverCardCursor = { x: e.clientX, y: e.clientY };
       this._hoverCardShowTimeout = setTimeout(async () => {
         // Only show if user is still hovering this exact link
         if (this._hoverCardLink !== link || !link.matches(':hover')) return;
@@ -3861,6 +5559,15 @@ const App = {
           this._showHoverCard(data, link);
         } catch {}
       }, 600);
+    }, true);
+    // Refresh cursor position while hovering — the show timer fires after
+    // 600ms and the cursor may have moved within the link.
+    document.addEventListener('mousemove', (e) => {
+      if (!this._hoverCardLink) return;
+      const link = e.target.closest && e.target.closest('.username-link');
+      if (link === this._hoverCardLink) {
+        this._hoverCardCursor = { x: e.clientX, y: e.clientY };
+      }
     }, true);
 
     document.addEventListener('mouseleave', (e) => {
@@ -3903,16 +5610,29 @@ const App = {
       </div>
     `;
 
-    // Position relative to the last visible line of the link (handles wrapped usernames)
-    const rects = anchor.getClientRects();
-    const rect = rects.length ? rects[rects.length - 1] : anchor.getBoundingClientRect();
+    // Position relative to the CURSOR — gives a constant visual gap on
+    // every device, font, and zoom level. Falls back to the link's
+    // bounding rect if cursor wasn't captured (e.g., focus via keyboard).
     card.style.left = '-9999px';
     card.style.top = '0px';
     card.style.display = 'block';
     const cardRect = card.getBoundingClientRect();
-    let top = rect.bottom + 6;
-    let left = rect.left;
-    if (top + cardRect.height > window.innerHeight - 8) top = rect.top - cardRect.height - 6;
+    const GAP = 14; // constant visual offset below cursor in CSS pixels
+    let top, left;
+    if (this._hoverCardCursor) {
+      top = this._hoverCardCursor.y + GAP;
+      left = this._hoverCardCursor.x - 20; // small left-bias so cursor sits over the card
+    } else {
+      const rects = anchor.getClientRects();
+      const rect = rects.length ? rects[rects.length - 1] : anchor.getBoundingClientRect();
+      top = rect.bottom + GAP;
+      left = rect.left;
+    }
+    // Flip above the cursor if there's no room below
+    if (top + cardRect.height > window.innerHeight - 8) {
+      top = (this._hoverCardCursor ? this._hoverCardCursor.y : top) - cardRect.height - GAP;
+    }
+    // Clamp horizontally to viewport
     if (left + cardRect.width > window.innerWidth - 8) left = window.innerWidth - cardRect.width - 8;
     card.style.top = `${Math.max(8, top)}px`;
     card.style.left = `${Math.max(8, left)}px`;
@@ -3920,11 +5640,73 @@ const App = {
 
   // Stripe pricing data
   _stripePricing: {
-    '1m': { price: '1.99', period: '/mo', uzs: '~25,000 UZS', savings: null },
-    '3m': { price: '4.99', period: '/3 months', uzs: '~62,000 UZS', savings: 'Save 17% vs monthly' },
-    '6m': { price: '8.99', period: '/6 months', uzs: '~112,000 UZS', savings: 'Save 25% vs monthly' }
+    '1m': { price: '1.99', period: '/month', label: '1 month', shortLabel: '1 Mo', stripeUzs: 25000, savings: null },
+    '3m': { price: '4.99', period: '/3 months', label: '3 months', shortLabel: '3 Mo', stripeUzs: 62000, savings: 'Popular' },
+    '6m': { price: '8.99', period: '/6 months', label: '6 months', shortLabel: '6 Mo', stripeUzs: 112000, savings: 'Best value' }
   },
   _selectedDuration: '1m',
+  _defaultPaymePrices: { '1m': 24990, '3m': 59990, '6m': 99990 },
+  _paymeLogoUrl: 'https://cdn.payme.uz/logo/pb_color_logo_horizontal.svg',
+
+  _formatSom(amount) {
+    const n = Number(amount || 0);
+    return n ? `${n.toLocaleString('en-US')} so'm` : 'Not available';
+  },
+
+  _paymePrice(duration) {
+    return Number((this._payCfg && this._payCfg.uzs && this._payCfg.uzs[duration]) || this._defaultPaymePrices[duration] || 0);
+  },
+
+  _paymeValueLabel(duration) {
+    const d = this._stripePricing[duration] || {};
+    const payme = this._paymePrice(duration);
+    const delta = payme && d.stripeUzs ? Math.max(0, d.stripeUzs - payme) : 0;
+    if (!delta || delta < 100) return 'same value';
+    return `${this._formatSom(delta)} cheaper`;
+  },
+
+  _paymentLogo(provider, extraClass = '') {
+    if (provider === 'stripe') return `<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe ${extraClass}">`;
+    if (provider === 'payme') return `<img src="${this._paymeLogoUrl}" alt="Payme" class="pay-logo pay-logo-payme ${extraClass}" data-chip="payme">`;
+    return `<span class="pay-chip pay-chip-${provider} ${extraClass}">${provider}</span>`;
+  },
+
+  _bindPayLogoFallbacks(root = document) {
+    root.querySelectorAll('.pay-logo[data-chip]').forEach(img => {
+      if (img._fallbackBound) return;
+      img._fallbackBound = true;
+      img.addEventListener('error', () => {
+        const k = img.dataset.chip;
+        const span = document.createElement('span');
+        span.className = `pay-chip pay-chip-${k}`;
+        span.textContent = k === 'payme' ? 'Payme' : 'Click';
+        img.replaceWith(span);
+      });
+    });
+  },
+
+  _renderUpgradePriceRows() {
+    return Object.entries(this._stripePricing).map(([duration, d]) => {
+      const payme = this._paymePrice(duration);
+      return `<button type="button" class="upgrade-price-option${duration === this._selectedDuration ? ' active' : ''}" data-upgrade-duration="${duration}">
+        <div class="upgrade-price-option-main">
+          <strong>$${d.price}</strong>
+          <span>${d.period}</span>
+        </div>
+        <div class="upgrade-price-option-payments">
+          <div class="upgrade-provider-price">
+            ${this._paymentLogo('stripe')}
+            <span>${this._formatSom(d.stripeUzs)}</span>
+          </div>
+          <div class="upgrade-provider-price upgrade-provider-price-payme">
+            ${this._paymentLogo('payme')}
+            <span>${this._formatSom(payme)}</span>
+            <em>${this._paymeValueLabel(duration)}</em>
+          </div>
+        </div>
+      </button>`;
+    }).join('');
+  },
 
   loadUpgrade() {
     const el = document.getElementById('upgrade-plan-cards');
@@ -3996,20 +5778,15 @@ const App = {
             <div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Plan</span><span class="upgrade-pro-value">${durLabel ? durLabel + ' Pro' : 'Pro'}</span></div>
             <div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Source</span><span class="upgrade-pro-value">${src}</span></div>
             ${startedAt ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Started</span><span class="upgrade-pro-value">${startedAt}</span></div>` : ''}
-            ${renewsAt ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Renews</span><span class="upgrade-pro-value">${renewsAt}</span></div>` : ''}
+            ${u.cancelAtPeriodEnd && renewsAt
+              ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label" style="color:var(--danger);font-weight:700">Cancelled</span><span class="upgrade-pro-value" style="color:var(--danger);font-weight:700">Ends ${renewsAt}</span></div>`
+              : (renewsAt ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Renews</span><span class="upgrade-pro-value">${renewsAt}</span></div>` : '')}
             ${u.planExpiresAt === 'infinite' ? `<div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Duration</span><span class="upgrade-pro-value">Lifetime</span></div>` : ''}
           </div>`;
           })() : `
-          <div class="upgrade-duration-tabs">
-            <button class="upgrade-duration-pill${this._selectedDuration === '1m' ? ' active' : ''}" data-duration="1m">1 Mo</button>
-            <button class="upgrade-duration-pill${this._selectedDuration === '3m' ? ' active' : ''}" data-duration="3m">3 Mo<span class="upgrade-popular-label">Popular</span></button>
-            <button class="upgrade-duration-pill${this._selectedDuration === '6m' ? ' active' : ''}" data-duration="6m">6 Mo</button>
+          <div class="upgrade-payment-comparison">
+            ${this._renderUpgradePriceRows()}
           </div>
-          <div class="upgrade-card-price" id="upgrade-price-display">
-            <span class="upgrade-price-dollar">$</span><span class="upgrade-price-amount">${dur.price}</span><span class="upgrade-price-period">${dur.period}</span>
-          </div>
-          ${dur.savings ? `<div class="upgrade-price-savings">${dur.savings}</div>` : ''}
-          <div class="upgrade-price-uzs">${dur.uzs}</div>
           `}
         </div>
         <div class="upgrade-card-btn-wrap">
@@ -4028,41 +5805,20 @@ const App = {
       </div>
     `;
 
-    // Bind duration tab clicks — update price inline, don't re-render everything
-    el.querySelectorAll('.upgrade-duration-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        this._selectedDuration = pill.dataset.duration;
-        const d = this._stripePricing[this._selectedDuration];
-        // Update active pill
-        el.querySelectorAll('.upgrade-duration-pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-        // Update price display
-        const priceDisplay = document.getElementById('upgrade-price-display');
-        if (priceDisplay) {
-          priceDisplay.innerHTML = `<span class="upgrade-price-dollar">$</span><span class="upgrade-price-amount">${d.price}</span><span class="upgrade-price-period">${d.period}</span>`;
-        }
-        // Update savings line
-        const savingsEl = priceDisplay && priceDisplay.nextElementSibling;
-        if (savingsEl && savingsEl.classList.contains('upgrade-price-savings')) {
-          if (d.savings) { savingsEl.textContent = d.savings; savingsEl.style.display = ''; }
-          else { savingsEl.style.display = 'none'; }
-        } else if (d.savings && priceDisplay) {
-          const s = document.createElement('div');
-          s.className = 'upgrade-price-savings';
-          s.textContent = d.savings;
-          priceDisplay.insertAdjacentElement('afterend', s);
-        }
-        // Update UZS line
-        const uzsEl = el.querySelector('.upgrade-price-uzs');
-        if (uzsEl) uzsEl.textContent = d.uzs;
-      });
-    });
+    this._bindPayLogoFallbacks(el);
 
     // Bind purchase button
     const purchaseBtn = document.getElementById('purchase-plan-btn');
     if (purchaseBtn) {
-      purchaseBtn.addEventListener('click', () => this._startCheckout(false));
+      purchaseBtn.addEventListener('click', () => this.openPaymentChoiceModal());
     }
+
+    el.querySelectorAll('[data-upgrade-duration]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._selectedDuration = btn.dataset.upgradeDuration;
+        this.loadUpgrade();
+      });
+    });
 
     // Bind trial link
     const trialLink = document.getElementById('start-trial-link');
@@ -4075,11 +5831,365 @@ const App = {
     if (billingBtn) {
       billingBtn.addEventListener('click', () => this._openBillingPortal());
     }
+
+    // Bind subscription history button (idempotent — replace handler)
+    const subHistBtn = document.getElementById('sub-history-btn');
+    if (subHistBtn && !subHistBtn._bound) {
+      subHistBtn._bound = true;
+      subHistBtn.addEventListener('click', () => this.openSubscriptionHistory());
+    }
+    const subHistClose = document.getElementById('sub-history-close');
+    if (subHistClose && !subHistClose._bound) {
+      subHistClose._bound = true;
+      subHistClose.addEventListener('click', () => this.closeSubscriptionHistory());
+    }
+    const subHistOverlay = document.getElementById('sub-history-sidebar-overlay');
+    if (subHistOverlay && !subHistOverlay._bound) {
+      subHistOverlay._bound = true;
+      subHistOverlay.addEventListener('click', () => this.closeSubscriptionHistory());
+    }
+
+    // Local (UZS) payment options + "secure payment via" logos, gated by server config
+    this._loadPaymentsConfig().then(() => this._renderUpgradePayments(isPro));
   },
 
-  async _startCheckout(isTrial) {
+  async _loadPaymentsConfig() {
+    if (this._payCfg) return this._payCfg;
     try {
-      const purchaseBtn = document.getElementById('purchase-plan-btn');
+      const res = await fetch('/api/payments/config');
+      this._payCfg = await res.json();
+    } catch {
+      this._payCfg = { providers: { stripe: true }, localEnabled: false, uzs: {} };
+    }
+    return this._payCfg;
+  },
+
+  _renderUpgradePayments(isPro) {
+    const cfg = this._payCfg || { providers: {}, localEnabled: false };
+    const p = cfg.providers || {};
+
+    // The old separate UZS panel is intentionally empty now. The purchase flow
+    // chooses duration + provider inside the in-app payment modal.
+    const el = document.getElementById('upgrade-payments');
+    if (el) {
+      el.innerHTML = '';
+    }
+
+    // "Secure payment via" logos — centered, just below the hero subtitle.
+    const logosEl = document.getElementById('upgrade-pay-logos');
+    if (logosEl) {
+      const logos = [];
+      if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
+      if (p.payme) logos.push(this._paymentLogo('payme'));
+      if (p.click) logos.push('<img src="/img/click.svg?v=1" alt="Click" class="pay-logo pay-logo-click" data-chip="click">');
+      logosEl.innerHTML = `<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
+      this._bindPayLogoFallbacks(logosEl);
+    }
+  },
+
+  async openPaymentChoiceModal() {
+    await this._loadPaymentsConfig();
+    let modal = document.getElementById('payment-choice-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'payment-choice-modal';
+      modal.className = 'payment-choice-modal';
+      document.body.appendChild(modal);
+    }
+
+    const cfg = this._payCfg || { providers: {}, uzs: {} };
+    const providers = cfg.providers || {};
+    const hasStripe = providers.stripe !== false;
+    const hasPayme = !!providers.payme && !!cfg.localEnabled;
+    const selectedProvider = hasPayme ? 'payme' : 'stripe';
+    const selectedDuration = this._selectedDuration || '1m';
+
+    modal.innerHTML = `<div class="payment-choice-backdrop" data-close-payment-modal></div>
+      <div class="payment-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="payment-choice-title">
+        <button class="payment-choice-close" type="button" data-close-payment-modal aria-label="Close">&times;</button>
+        <div class="payment-choice-head">
+          <span class="payment-choice-kicker">Choose your Pro plan</span>
+          <h3 id="payment-choice-title">Select duration and payment method</h3>
+          <p>Choose Stripe for international cards or Payme for local UZS payment.</p>
+        </div>
+        <div class="payment-choice-section">
+          <label>Duration</label>
+          <div class="payment-choice-durations">
+            ${Object.entries(this._stripePricing).map(([duration, d]) => `<button type="button" class="payment-choice-duration${duration === selectedDuration ? ' active' : ''}" data-duration="${duration}">
+              <strong>${d.shortLabel}</strong>
+              <span>$${d.price} ${d.period}</span>
+              ${d.savings ? `<em>${d.savings}</em>` : ''}
+            </button>`).join('')}
+          </div>
+        </div>
+        <div class="payment-choice-section">
+          <label>Payment method</label>
+          <div class="payment-choice-methods">
+            ${hasStripe ? `<button type="button" class="payment-choice-method${selectedProvider === 'stripe' ? ' active' : ''}" data-provider="stripe">
+              ${this._paymentLogo('stripe')}
+              <span class="payment-choice-method-copy"><strong>Stripe</strong><small data-stripe-price></small></span>
+            </button>` : ''}
+            ${hasPayme ? `<button type="button" class="payment-choice-method${selectedProvider === 'payme' ? ' active' : ''}" data-provider="payme">
+              ${this._paymentLogo('payme')}
+              <span class="payment-choice-method-copy"><strong>Payme</strong><small data-payme-price></small></span>
+              <em data-payme-value></em>
+            </button>` : ''}
+          </div>
+        </div>
+        <button type="button" class="payment-choice-continue" data-payment-continue>Continue</button>
+      </div>`;
+
+    const state = { duration: selectedDuration, provider: selectedProvider };
+    const updatePrices = () => {
+      const stripe = this._stripePricing[state.duration];
+      const payme = this._paymePrice(state.duration);
+      const stripeLabel = modal.querySelector('[data-stripe-price]');
+      const paymeLabel = modal.querySelector('[data-payme-price]');
+      const paymeValue = modal.querySelector('[data-payme-value]');
+      if (stripeLabel) stripeLabel.textContent = `${this._formatSom(stripe.stripeUzs)} equivalent`;
+      if (paymeLabel) paymeLabel.textContent = `${this._formatSom(payme)} in UZS`;
+      if (paymeValue) paymeValue.textContent = this._paymeValueLabel(state.duration);
+    };
+    updatePrices();
+    this._bindPayLogoFallbacks(modal);
+
+    modal.querySelectorAll('[data-close-payment-modal]').forEach(node => {
+      node.addEventListener('click', () => modal.classList.remove('active'));
+    });
+    modal.querySelectorAll('.payment-choice-duration').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.duration = btn.dataset.duration;
+        this._selectedDuration = state.duration;
+        modal.querySelectorAll('.payment-choice-duration').forEach(b => b.classList.toggle('active', b === btn));
+        updatePrices();
+      });
+    });
+    modal.querySelectorAll('.payment-choice-method').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.provider = btn.dataset.provider;
+        modal.querySelectorAll('.payment-choice-method').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+    modal.querySelector('[data-payment-continue]')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      if (state.provider === 'payme') await this._payWithProvider('payme', btn, state.duration);
+      else await this._startCheckout(false, state.duration, btn);
+    });
+
+    modal.classList.add('active');
+  },
+
+  async _payWithProvider(provider, btn, duration = this._selectedDuration) {
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Redirecting…'; }
+    try {
+      const res = await fetch(`/api/${provider}/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API.getToken()}` },
+        body: JSON.stringify({ duration })
+      });
+      const data = await res.json();
+      if (data.url) { window.location.href = data.url; return; }
+      this.toast(data.error || 'Could not start payment.', 'error');
+    } catch {
+      this.toast('Could not start payment.', 'error');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+  },
+
+  async openSubscriptionHistory() {
+    const modal = document.getElementById('sub-history-modal');
+    const overlay = document.getElementById('sub-history-sidebar-overlay');
+    const body = document.getElementById('sub-history-body');
+    if (!modal || !body) return;
+
+    body.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:30px 0">Loading...</p>';
+    modal.classList.add('active');
+    overlay.classList.add('active');
+
+    try {
+      const res = await fetch('/api/stripe/history', {
+        headers: { 'Authorization': `Bearer ${API.getToken()}` }
+      });
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      body.innerHTML = this._renderSubscriptionHistory(data);
+    } catch {
+      body.innerHTML = '<p style="text-align:center;color:var(--danger);padding:30px 0">Failed to load history</p>';
+    }
+  },
+
+  closeSubscriptionHistory() {
+    document.getElementById('sub-history-modal')?.classList.remove('active');
+    document.getElementById('sub-history-sidebar-overlay')?.classList.remove('active');
+  },
+
+  _renderSubscriptionHistory(data) {
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    const fmtAmount = (cents, currency) => {
+      if (cents == null) return null;
+      const sym = (currency || 'usd').toLowerCase() === 'usd' ? '$' : '';
+      return `${sym}${(cents / 100).toFixed(2)}`;
+    };
+    const durLabel = (d) => d === '6m' ? '6-month' : d === '3m' ? '3-month' : d === '1m' ? 'Monthly' : '';
+
+    const cur = data.currentPlan || {};
+    const isPro = cur.plan === 'premium';
+    const currentBlock = `
+      <div class="sub-history-current">
+        <div class="sub-history-current-row">
+          <span class="sub-history-current-label">Status</span>
+          <span class="sub-history-current-value">${isPro ? 'Premium · Active' : 'Free'}</span>
+        </div>
+        ${isPro && cur.planSource ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Source</span><span class="sub-history-current-value">${this.escapeHtml(cur.planSource)}</span></div>` : ''}
+        ${isPro && cur.planDuration ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Plan</span><span class="sub-history-current-value">${durLabel(cur.planDuration) || cur.planDuration}</span></div>` : ''}
+        ${isPro && cur.planStartedAt ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Started</span><span class="sub-history-current-value">${fmtDate(cur.planStartedAt)}</span></div>` : ''}
+        ${isPro && cur.planExpiresAt && cur.planExpiresAt !== 'infinite'
+          ? (cur.cancelAtPeriodEnd
+            ? `<div class="sub-history-current-row"><span class="sub-history-current-label" style="color:var(--danger);font-weight:700">Cancelled</span><span class="sub-history-current-value" style="color:var(--danger);font-weight:700">Ends ${fmtDate(cur.planExpiresAt)}</span></div>`
+            : `<div class="sub-history-current-row"><span class="sub-history-current-label">Renews</span><span class="sub-history-current-value">${fmtDate(cur.planExpiresAt)}</span></div>`)
+          : ''}
+        ${cur.planExpiresAt === 'infinite' ? `<div class="sub-history-current-row"><span class="sub-history-current-label">Duration</span><span class="sub-history-current-value">Lifetime</span></div>` : ''}
+        <div class="sub-history-current-row"><span class="sub-history-current-label">Trial used</span><span class="sub-history-current-value">${cur.trialUsed ? 'Yes' : 'No'}</span></div>
+      </div>`;
+
+    const events = data.events || [];
+    if (events.length === 0) {
+      return currentBlock + '<p style="text-align:center;color:var(--text-muted);padding:30px 0">No history yet</p>';
+    }
+
+    const sameDay = (a, b) => a && b && a.slice(0, 10) === b.slice(0, 10);
+    const invoiceLink = (url) => url
+      ? `<a href="${url}" target="_blank" rel="noopener" class="sub-history-entry-amount-muted" style="color:var(--accent);text-decoration:none">View invoice</a>`
+      : '';
+
+    const rows = events.map(e => {
+      let title = '';
+      let amountHtml = '';
+      let metaParts = [fmtDate(e.timestamp)];
+      let subtitleParts = [];
+
+      switch (e.type) {
+        case 'stripe_invoice': {
+          const isCreate = e.details.billingReason === 'subscription_create';
+          const isRenewal = e.details.billingReason === 'subscription_cycle';
+          const isTrial = !!e.details.isTrial;
+          const isPromo = !!e.details.isFullyDiscounted;
+          const isPaid = !isTrial && !isPromo && e.details.amountPaid > 0;
+
+          let label, tag;
+          if (isCreate && isTrial) {
+            label = 'Free trial started';
+            tag = '<span class="sub-history-tag sub-history-tag-trial">Trial</span>';
+          } else if (isCreate && isPromo) {
+            label = 'Subscription started';
+            const pctTag = e.details.couponPercent ? `${e.details.couponPercent}% off` : 'Promo';
+            tag = `<span class="sub-history-tag sub-history-tag-promo">${pctTag}</span>`;
+          } else if (isCreate) {
+            label = 'Subscription started';
+            tag = '<span class="sub-history-tag sub-history-tag-paid">Paid</span>';
+          } else if (isRenewal && isPromo) {
+            label = 'Subscription renewed';
+            tag = `<span class="sub-history-tag sub-history-tag-promo">${e.details.couponPercent ? e.details.couponPercent + '% off' : 'Promo'}</span>`;
+          } else if (isRenewal) {
+            label = 'Subscription renewed';
+            tag = '<span class="sub-history-tag sub-history-tag-renewed">Renewed</span>';
+          } else {
+            label = 'Invoice';
+            tag = '<span class="sub-history-tag sub-history-tag-paid">Paid</span>';
+          }
+          title = `${label} ${tag}`;
+
+          // Coupon name as a subtitle line if a discount was applied
+          if (e.details.couponName) {
+            subtitleParts.push(this.escapeHtml(e.details.couponName));
+          }
+
+          if (isTrial) {
+            amountHtml = `<div class="sub-history-entry-amount" style="color:var(--text-muted)">Free</div>${invoiceLink(e.details.hostedInvoiceUrl)}`;
+          } else if (isPromo) {
+            const origAmt = fmtAmount(e.details.subtotal, e.details.currency);
+            amountHtml = `<div class="sub-history-entry-amount" style="color:var(--text-muted)">Free</div>${origAmt ? `<div class="sub-history-entry-amount-muted" style="text-decoration:line-through">${origAmt}</div>` : ''}${invoiceLink(e.details.hostedInvoiceUrl)}`;
+          } else {
+            const amt = fmtAmount(e.details.amountPaid, e.details.currency);
+            amountHtml = `<div class="sub-history-entry-amount">${amt || '—'}</div>${invoiceLink(e.details.hostedInvoiceUrl)}`;
+          }
+          break;
+        }
+        case 'stripe_subscription_created': {
+          const isTrial = e.source === 'trial';
+          title = `${isTrial ? 'Free trial started' : 'Subscription started'} ${isTrial ? '<span class="sub-history-tag sub-history-tag-trial">Trial</span>' : '<span class="sub-history-tag sub-history-tag-paid">Paid</span>'}`;
+          if (e.duration) metaParts.push(durLabel(e.duration) || e.duration);
+          break;
+        }
+        case 'stripe_payment_verified': {
+          const isTrial = e.source === 'trial';
+          title = `${isTrial ? 'Trial activated' : 'Payment verified'} ${isTrial ? '<span class="sub-history-tag sub-history-tag-trial">Trial</span>' : '<span class="sub-history-tag sub-history-tag-paid">Paid</span>'}`;
+          if (e.duration) metaParts.push(durLabel(e.duration) || e.duration);
+          break;
+        }
+        case 'stripe_subscription_renewed':
+          title = `Subscription renewed <span class="sub-history-tag sub-history-tag-renewed">Renewed</span>`;
+          if (e.duration) metaParts.push(durLabel(e.duration) || e.duration);
+          break;
+        case 'stripe_subscription_cancelled':
+          title = `Subscription cancelled <span class="sub-history-tag sub-history-tag-cancelled">Cancelled</span>`;
+          break;
+        case 'stripe_subscription_auto_cancelled':
+          title = `Auto-cancelled (payment failed) <span class="sub-history-tag sub-history-tag-cancelled">Cancelled</span>`;
+          break;
+        case 'stripe_subscription_will_cancel': {
+          const endsAt = e.details?.cancelAt ? fmtDate(e.details.cancelAt) : null;
+          title = `Cancellation scheduled <span class="sub-history-tag sub-history-tag-cancelled">Cancelling</span>`;
+          if (endsAt) subtitleParts.push(`Ends ${endsAt}`);
+          break;
+        }
+        case 'stripe_subscription_uncancelled':
+          title = `Cancellation reversed <span class="sub-history-tag sub-history-tag-renewed">Reactivated</span>`;
+          break;
+        case 'stripe_payment_failed':
+          title = `Payment failed <span class="sub-history-tag sub-history-tag-failed">Failed</span>`;
+          break;
+        case 'subscription_expired':
+          title = `Subscription expired <span class="sub-history-tag sub-history-tag-expired">Expired</span>`;
+          if (e.duration) metaParts.push(durLabel(e.duration) || e.duration);
+          break;
+        case 'promocode_redeemed':
+          title = `Promo code redeemed <span class="sub-history-tag sub-history-tag-promo">Promo</span>`;
+          break;
+        case 'admin_grant_pro':
+          title = `Pro granted by admin <span class="sub-history-tag sub-history-tag-admin">Admin</span>`;
+          break;
+        case 'referral_pro_granted':
+          title = `Pro from referrals <span class="sub-history-tag sub-history-tag-referral">Referral</span>`;
+          break;
+        default:
+          title = this.escapeHtml(e.type);
+      }
+
+      // Universal "covers" line: every event with a real period range gets one
+      if (e.details?.periodStart && e.details?.periodEnd && !sameDay(e.details.periodStart, e.details.periodEnd)) {
+        subtitleParts.push(`covers ${fmtDate(e.details.periodStart)} - ${fmtDate(e.details.periodEnd)}`);
+      }
+      const subtitleHtml = subtitleParts.length
+        ? `<div class="sub-history-entry-subtitle">${subtitleParts.join(' · ')}</div>`
+        : '';
+      return `<div class="sub-history-entry">
+        <div class="sub-history-entry-left">
+          <div class="sub-history-entry-title">${title}</div>
+          <div class="sub-history-entry-meta">${metaParts.join(' · ')}</div>
+          ${subtitleHtml}
+        </div>
+        <div class="sub-history-entry-right">${amountHtml}</div>
+      </div>`;
+    }).join('');
+
+    return currentBlock + rows;
+  },
+
+  async _startCheckout(isTrial, duration = this._selectedDuration, triggerBtn = null) {
+    try {
+      const purchaseBtn = triggerBtn || document.getElementById('purchase-plan-btn');
       const trialLink = document.getElementById('start-trial-link');
       if (purchaseBtn) { purchaseBtn.disabled = true; purchaseBtn.textContent = 'Opening checkout...'; }
       if (trialLink) { trialLink.style.pointerEvents = 'none'; trialLink.style.opacity = '0.5'; }
@@ -4090,7 +6200,7 @@ const App = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API.getToken()}`
         },
-        body: JSON.stringify({ duration: this._selectedDuration, trial: isTrial })
+        body: JSON.stringify({ duration, trial: isTrial })
       });
 
       const data = await res.json();
@@ -4103,6 +6213,7 @@ const App = {
 
       // Open Stripe checkout in new tab
       window.open(data.url, '_blank');
+      document.getElementById('payment-choice-modal')?.classList.remove('active');
 
       // Update button to show waiting state
       if (purchaseBtn) { purchaseBtn.textContent = 'Waiting for payment...'; }
@@ -4311,6 +6422,8 @@ const App = {
   _friendsTotalPages: 1,
 
   async loadFriends() {
+    this._friendsLoaded = true;
+    this._friendsDirty = false;
     // Copy Invite Link button
     const copyInvBtn = document.getElementById('copy-invite-link-btn');
     if (copyInvBtn) {
@@ -4367,7 +6480,7 @@ const App = {
           <div class="doc-card" style="margin-bottom:8px">
             <div class="doc-card-info">
               <h4>${this.escapeHtml(s.name)}</h4>
-              <div class="doc-card-meta"><span>${s.mutualCount} mutual friend${s.mutualCount !== 1 ? 's' : ''}</span><span>Level ${this.calcXPLevel(s.xp || 0).level}</span></div>
+              <div class="doc-card-meta"><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;opacity:.7"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> ${s.mutualCount} mutual</span><span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;opacity:.7"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Lv.${this.calcXPLevel(s.xp || 0).level}</span></div>
             </div>
             <div class="doc-card-actions">
               <button class="btn btn-small btn-primary" onclick="App.addFriendById('${s.email}')" title="Send friend request">
@@ -4572,6 +6685,7 @@ const App = {
 
 
   _lastDuelRequestCount: -1, // -1 = not yet polled (skip first toast)
+  _lastFriendReqCount: -1,   // -1 = not yet polled
 
   async startNotifPolling() {
     const poll = async () => {
@@ -4598,6 +6712,12 @@ const App = {
           friendBadge.style.display = 'none';
         }
       }
+      // A new friend request arrived → Friends view needs a refresh next time it's opened
+      if (this._lastFriendReqCount >= 0 && friendRequests.length > this._lastFriendReqCount) {
+        this._friendsDirty = true;
+        if (this.currentView === 'friends') this.loadFriends();
+      }
+      this._lastFriendReqCount = friendRequests.length;
 
       // Duels badge
       const duelBadge = document.getElementById('duels-badge');
@@ -4651,6 +6771,9 @@ const App = {
             dot.style.display = 'none';
           }
         }
+        // New community posts exist → refresh the Community feed next time it's opened
+        // (mark dirty only; don't auto-reload while the user is reading it).
+        if (latest.newCount > 0 && this.currentView !== 'stories') this._storiesDirty = true;
       } catch {}
     } catch {}
   },
@@ -4729,6 +6852,8 @@ const App = {
       ${isFailed ? '' : `<button data-action="publish"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M5 19h14"/></svg> Publish to Stories</button>`}
       ${isFailed ? '' : `<button data-action="pin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"/><path d="M4.93 10.93l2.83 2.83"/><path d="M19.07 10.93l-2.83 2.83"/><path d="M8 16h8"/><path d="M12 16v6"/><circle cx="12" cy="10" r="2"/></svg> ${doc.pinned ? 'Unpin' : 'Pin to top'}${!isPro ? ' <span style="color:#f59e0b;font-size:10px">PRO</span>' : ''}</button>`}
       ${isFailed ? '' : `<button data-action="export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Export PDF${!isPro ? ' <span style="color:#f59e0b;font-size:10px">PRO</span>' : ''}</button>`}
+      ${isFailed ? '' : `<button data-action="export-md"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Markdown</button>`}
+      ${isFailed ? '' : `<button data-action="export-txt"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Text</button>`}
       ${isFailed ? '' : `<button data-action="share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16,6 12,2 8,6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Share</button>`}
       <button data-action="delete" style="color:var(--danger)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete</button>
     `;
@@ -4767,9 +6892,11 @@ const App = {
       };
       menu.querySelector('[data-action="export"]').onclick = async (e) => {
         e.stopPropagation(); close();
-        if (!isPro) { this.toast('Export is a Pro feature. Upgrade to Pro!', 'warning'); this.openPricing(); return; }
+        if (!isPro) { this.toast('PDF export is a Pro feature. Markdown & text export are free.', 'warning'); this.openPricing(); return; }
         this.exportDocPDF(doc.id);
       };
+      menu.querySelector('[data-action="export-md"]').onclick = (e) => { e.stopPropagation(); close(); this.exportDocMarkdown(doc.id); };
+      menu.querySelector('[data-action="export-txt"]').onclick = (e) => { e.stopPropagation(); close(); this.exportDocText(doc.id); };
     }
     menu.querySelector('[data-action="delete"]').onclick = (e) => { e.stopPropagation(); close(); this.deleteDoc(doc.id); };
   },
@@ -5525,8 +7652,10 @@ const App = {
 
   _applyTheme(theme) {
     const root = document.documentElement;
-    // Remove all theme classes
+    if (theme === 'test') theme = 'light'; // legacy: Test folded into Light
+    // 'test' = Writer's Desk structure layer — always on; color theme adds light/sepia (dark = none)
     root.classList.remove('light', 'sepia');
+    root.classList.add('test');
     if (theme === 'light') root.classList.add('light');
     else if (theme === 'sepia') root.classList.add('sepia');
     localStorage.setItem('iwrite_theme', theme);
@@ -5539,8 +7668,9 @@ const App = {
   },
 
   _cycleTheme() {
-    const current = localStorage.getItem('iwrite_theme') || 'dark';
-    // All users: dark → light → sepia → dark
+    let current = localStorage.getItem('iwrite_theme') || 'dark';
+    if (current === 'test') current = 'light';
+    // dark → light → sepia → dark (all share the Writer's Desk structure)
     const next = current === 'dark' ? 'light' : current === 'light' ? 'sepia' : 'dark';
     this._applyTheme(next);
   },
@@ -5648,7 +7778,17 @@ const App = {
   _analyticsData: null,
   _analyticsRange: 30,
 
+  // Signature of the writing stats that Analytics depends on — lets us detect
+  // when Analytics needs a refresh (i.e. the user actually wrote/changed something).
+  _statsSig() {
+    const u = this.user || {};
+    return `${u.totalWords || 0}|${u.totalSessions || 0}|${u.xp || 0}|${u.treeStage || 0}`;
+  },
+
   async loadAnalytics() {
+    this._analyticsLoaded = true;
+    this._analyticsDirty = false;
+    this._analyticsSig = this._statsSig(); // snapshot stats so we only reload when they change
     const container = document.getElementById('analytics-content');
     container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)">Loading analytics...</div>';
 

@@ -1,5 +1,140 @@
 # Changelog
 
+## [3.3.0] - 2026-06-20
+
+### Added
+- **Focus mode** — a dedicated toggle in the editor's top-right toolbar dims every paragraph except the line you're writing (Calmly-style). Remembered across sessions (`iwrite_focus_mode`).
+- **Typewriter sounds** — optional keystroke clicks, synthesized via WebAudio (no asset). Toggle in the editor's audio dropdown under "Writing feel".
+- **Smart punctuation** — straight quotes become curly, `...` becomes an ellipsis (em dash already existed). On by default; toggle in "Writing feel".
+- **OpenDyslexic font** — a dyslexia-friendly, self-hosted accessibility font, added as an option in the editor's font picker.
+- **Markdown & plain-text export** — export any document as `.md` or `.txt` (free) from the document menu, alongside the existing Pro PDF export.
+
+### Notes
+- Considered but intentionally skipped: the "Markdown WYSIWYG" rebuild (would fight the anti-paste / word-count model and pull iWrite toward being a document editor); desktop apps, local-file storage, and pay-once pricing (off-strategy vs. iWrite's gamified, server-backed, subscription model).
+
+## [3.2.0] - 2026-06-20
+
+### Added
+- **Popular writers** sidebar on the Community feed: the right side now lists the most-followed writers (avatar, name, @handle, follower count), sorted by follower count. Each row links to that writer's profile. New `GET /api/follow/popular` endpoint backs it; the list is cached per visit and the sidebar is hidden below 1000px (and inside the story reader/composer).
+
+## [3.1.9] - 2026-06-15
+
+### Changed
+- Telegram bot posts the periodic stats card once a day (was every 5 hours).
+- Admin-granted subscriptions never show as "Payment Failed" (they aren't Stripe-billed): the grant clears any leftover payment-failure flag, the admin subscribers list only marks genuine Stripe failures, and an admin grant simply drops off the list when it ends. The per-user subscription history view remains.
+- Pro users can copy **selected** text during a session (the navbar "copy whole document" button stays off mid-session for everyone except maintenance).
+- Removed the `+1m` / `+5m` timer buttons in Zen mode (no XP / no timer pressure, so extending is pointless).
+
+### Added
+- The writing app (dashboard) now shows a "best on a laptop or PC" gate on phones; the admin page and landing are unaffected.
+
+## [3.1.8] - 2026-06-15
+
+### Fixed
+- **XP awarded on page refresh:** resuming an expired session on load could re-enter `completeSession` (the 100ms timer kept calling it while it awaited the title prompt), awarding XP multiple times, and a refresh mid-prompt could re-resume it. Added a re-entrancy guard and clear the saved session immediately on a timer-expired completion.
+- **Background music didn't play:** the helmet CSP had no `media-src`, so it fell back to `'self'` and the browser blocked all archive.org audio. Added `media-src` for archive.org (+ its `ia*.us.archive.org` redirect host). Also dropped the unneeded `crossOrigin` on the audio element and now surface a toast if playback fails instead of failing silently.
+
+### Changed
+- **Pro users can now copy during sessions.** Copy was blocked for everyone during active sessions; it's now allowed for Pro (and during maintenance) across the copy button, the document-level copy/cut/right-click block, and text selection. Free users are still blocked (anti-paste).
+
+## [3.1.7] - 2026-06-15
+
+### Fixed
+- Mobile dashboard: the panels (Writing Activity, Today's Progress + Reflection, Writing Tree, Achievements) now stack to a single full-width column on phones/tablets. They previously kept their desktop 12-column placements (the per-panel `grid-column` rules outranked the responsive `> *` reset), so they overflowed and got clipped. The reset now uses matching-specificity selectors.
+- On phones (≤480px) the Today's Progress ring stacks above its text so it never squeezes.
+
+## [3.1.6] - 2026-06-15
+
+### Changed
+- Dashboard greeting font changed to **Story Script** (handwritten script).
+- Achievements rows now stretch to fill the panel height, removing the empty gap between the swipe dots and the bottom of the card.
+
+## [3.1.5] - 2026-06-15
+
+### Changed
+- Dashboard greeting ("Good evening, …") now uses Instrument Serif — a more elegant, high-contrast editorial serif that pairs with the Instrument Sans body font (section titles still use Fraunces).
+
+## [3.1.4] - 2026-06-15
+
+### Changed
+- Dashboard Achievements panel now shows two columns (4 per swiper page, 2×2) instead of a single column; collapses to one column on narrow viewports.
+
+## [3.1.3] - 2026-06-15
+
+### Fixed
+- Writing Tree was invisible: the dashboard repaint guarded the tree draw on `window.TreeRenderer`, but `TreeRenderer` is a top-level `const` (not on `window`), so the guard was always false. Reference it directly now.
+
+## [3.1.2] - 2026-06-15
+
+### Changed
+- Community, Friends, and Analytics no longer re-fetch on every visit. They load once and the rendered view is reused on subsequent visits; they only re-fetch when there's actually something new:
+  - **Community** refreshes when the 10s poller detects newly published posts (the same signal as the green "new" dot), plus your own story actions and the manual refresh still update it immediately.
+  - **Friends** refreshes when a new friend request arrives (and friend actions still refresh it directly).
+  - **Analytics** refreshes only when your writing stats change (after completing/affecting a session), detected on the next dashboard load.
+
+## [3.1.1] - 2026-06-15
+
+### Fixed
+- Faster dashboard load / less "everything is 0 and blank" flash: the user and documents are now fetched in parallel (was sequential), user-driven visuals (stats, level bar, achievements, tree, empty heatmap grid) paint as soon as the user loads instead of waiting for documents, and the dashboard paints instantly from a cached copy of the user on repeat loads.
+
+## [3.1.0] - 2026-06-15
+
+### Changed
+- The "Writer's Desk" dashboard structure is now shared by **all** themes — polaroid hero, horizontal stat+level bar, the 2×2 grid (Writing Activity, Today's Progress + Reflection, Writing Tree, Achievements swiper), footer quote + stamp, and no Recent Sessions card.
+- **Light** mode now uses the warm parchment palette (the former Test look) and keeps the name "Light". **Dark** and **Sepia** get the same structure with their own colours.
+- The separate "Test" mode is folded into Light; the theme cycle is now Dark → Light → Sepia. The structure is variable-driven (`--accent-rgb` / `--ink-rgb`) so each theme colours it.
+
+## [3.0.46] - 2026-06-15
+
+### Changed
+- Test Mode polaroid now shows today's daily emoji as a large photo (the "today's pages" caption was removed).
+- Test Mode row 2 rebalanced: the Achievements panel is wider and the Writing Tree is smaller.
+
+## [3.0.45] - 2026-06-15
+
+### Changed
+- Test Mode dashboard relaid out as a 2×2 grid: Writing Activity beside the combined Today's Progress + Reflection panel (equal height), and the Writing Tree beside Achievements (equal height, one row). Recent Sessions removed from the Test Mode dashboard.
+- Today's Progress and Reflection Prompt are now a single panel.
+- Achievements shows three at a time per page, each with a circular progress indicator (check when complete, clock while in progress); pages are swipeable with dots.
+- When an announcement is showing, the greeting card is now the wider of the two (announcement panel narrower).
+
+## [3.0.44] - 2026-06-15
+
+### Added
+- Sidebar is now collapsible on desktop (all themes): the **×** in the sidebar header hides it and a floating menu button brings it back; state is remembered.
+- Edit Goal now opens an in-app modal to set the daily word goal (replaces the browser prompt).
+
+### Changed
+- Test Mode dashboard refinements: single **Start Writing** button in the hero; announcements moved below the greeting; **Today's Progress** lost its title and is vertically centered; the writing-tree canvas now scales to its column (no more clipping/off-centre); the polaroid is larger and its photo emoji rotates daily; the handwritten hero quote was removed.
+- Test Mode **Reflection Prompt** moved directly beneath Today's Progress, with a larger prompt and no helper caption.
+- Test Mode **Achievements** is now a swiper/pager covering more milestones — in-progress ones shown first, a clock icon for unfinished/in-progress and a check for completed.
+
+## [3.0.43] - 2026-06-14
+
+### Changed
+- **Test Mode** now restructures the dashboard layout (not just colors) to match the "Writer's Desk" reference: hero gains a polaroid + handwritten quote and a New Session button; the four stat cards collapse into a single horizontal bar with the level progress inline; a "Today's Progress" word-goal ring joins the activity/tree row; and a new row adds a Reflection sticky-note and an Achievements panel, with a closing quote and a "Write · Reflect · Grow" maker's stamp. All scoped to Test Mode only — other themes keep the original layout.
+- Today's Progress ring and Achievements are driven by real data (today's words vs an editable daily goal; streak/word milestones). Reflection prompts cycle through a set via the "New Prompt" button.
+
+## [3.0.42] - 2026-06-14
+
+### Added
+- New **Test Mode** theme — a warm cream-parchment "Writer's Desk" look with forest-green accents, an elegant Fraunces serif for headings, paper-grain texture, and softly rounded cards. Toggle through themes in the sidebar: Dark → Light → Sepia → Test → Dark.
+
+### Fixed
+- Theme persistence: `sepia` (and the new `test`) themes now restore correctly on reload — previously any non-light theme silently reverted to dark on refresh.
+
+## [3.0.41] - 2026-05-08
+
+### Security
+- Login rate-limiting tightened from 20 attempts / 15 min to **5 / 15 min** (with skipSuccessfulRequests so legitimate users aren't punished)
+- Registration rate-limiting added: **5 accounts / hour** per IP
+- Email format validation on registration via `validator.isEmail()`; emails normalized (lowercase + trim) so case variants can no longer create duplicate accounts
+- Password minimum bumped from 6 → 8 characters; added a small common-password deny-list (`password`, `12345678`, `iwrite4me`, etc.)
+- `helmet` middleware enabled with a CSP that allows the third-party services the app actually uses (Google Tag Manager, Google OAuth, Stripe, Google Fonts); also enables HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- `x-powered-by: Express` header removed
+- JWT lifetime reduced from 7 days → 2 days
+- One-shot cleanup script added (`server/scripts/cleanup-pentest-accounts.js`) to remove test accounts created during the security audit; run with `railway run node server/scripts/cleanup-pentest-accounts.js`
+
 ## [2.3.9] - 2026-03-23
 
 ### Changed

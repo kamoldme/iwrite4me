@@ -7,6 +7,7 @@ const TelegramBot = require('node-telegram-bot-api');
 let bot = null;
 let chatId = null;
 let _activeUsers = null; // passed from index.js to avoid circular require
+const APP_URL = (process.env.APP_URL || 'https://iwrite4.me').replace(/\/$/, '');
 
 function init(activeUsersMap) {
   _activeUsers = activeUsersMap || null;
@@ -79,6 +80,12 @@ function init(activeUsersMap) {
       if (!entityId || action === 'noop') return;
 
       try {
+        if (action === 'stats' && entityId === 'refresh') {
+          await bot.answerCallbackQuery(query.id, { text: 'Refreshing stats...' });
+          await sendStatsCard();
+          return;
+        }
+
         const { findOne, updateOne } = require('./utils/storage');
 
         // VIEW full story content
@@ -213,10 +220,10 @@ function init(activeUsersMap) {
       });
     });
 
-    // Periodic stats card every 5 hours
-    const FIVE_HOURS = 5 * 60 * 60 * 1000;
+    // Periodic stats card once a day
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
     setTimeout(() => sendStatsCard(), 10000); // first one 10s after boot
-    setInterval(() => sendStatsCard(), FIVE_HOURS);
+    setInterval(() => sendStatsCard(), TWENTY_FOUR_HOURS);
 
     // /stats command — manual stats card
     bot.onText(/\/stats/, (msg) => {
@@ -236,6 +243,7 @@ async function sendStatsCard() {
     const { findMany } = require('./utils/storage');
     const users = await findMany('users.json');
     const docs = await findMany('documents.json');
+    const logs = await findMany('logs.json');
 
     const totalUsers = users.filter(u => u.role !== 'admin').length;
     const totalDocs = docs.length;
@@ -257,63 +265,72 @@ async function sendStatsCard() {
     let onlineNow = _activeUsers ? _activeUsers.size : 0;
     // Writing Now: users with writingAt within last 60s
     let writingNow = 0;
+    let onTabNow = 0;
     if (_activeUsers) {
       const writingCutoff = Date.now() - 60000;
       for (const [, data] of _activeUsers) {
         if (data.writingAt && data.writingAt > writingCutoff) writingNow++;
+        if (data.focusedAt && data.focusedAt > writingCutoff) onTabNow++;
       }
     }
 
-    // Leaderboard — top 3 by streak, top 3 by time
-    // Must match liveStreak() in index.js exactly
-    const liveStreak = (u) => {
-      if (!u.lastWritingDate || !u.streak) return 0;
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-      if (u.lastWritingDate === today || u.lastWritingDate === yesterday) return u.streak;
-      return 0;
-    };
+    const dailyRows = [];
+    const nowMs = Date.now();
+    for (let i = 2; i >= 0; i--) {
+      const dayMs = nowMs - (i * 86400000);
+      const dayKey = uzDayKey(dayMs);
+      const d = new Date(dayMs);
+      const label = d.toLocaleDateString('en-US', { timeZone: 'Asia/Tashkent', weekday: 'short', month: 'short', day: 'numeric' });
 
-    const byStreak = users
-      .filter(u => u.role !== 'admin')
-      .map(u => ({ name: u.name, username: u.username, streak: liveStreak(u), words: u.totalWords || 0 }))
-      .sort((a, b) => b.streak - a.streak || b.words - a.words)
-      .slice(0, 3);
+      const dayDocs = docs.filter(doc => {
+        const t = new Date(doc.updatedAt || doc.createdAt || 0).getTime();
+        return Number.isFinite(t) && uzDayKey(t) === dayKey;
+      });
+      const dayWords = dayDocs.reduce((sum, doc) => sum + (Number(doc.wordCount) || 0), 0);
+      const dayMinutes = Math.round(dayDocs.reduce((sum, doc) => sum + effectiveMinutes(doc), 0));
+      const dayUsers = new Set();
 
-    const byTime = users
-      .filter(u => u.role !== 'admin')
-      .map(u => {
-        const userDocs = docs.filter(d => d.userId === u.id && !d.deleted && d.duration > 0);
-        const mins = Math.round(userDocs.reduce((sum, d) => sum + effectiveMinutes(d), 0));
-        return { name: u.name, username: u.username, minutes: mins, words: u.totalWords || 0 };
-      })
-      .sort((a, b) => b.minutes - a.minutes || b.words - a.words)
-      .slice(0, 3);
+      dayDocs.forEach(doc => { if (doc.userId) dayUsers.add(doc.userId); });
+      logs.forEach(log => {
+        if (!log.userId) return;
+        const t = new Date(log.timestamp).getTime();
+        if (Number.isFinite(t) && uzDayKey(t) === dayKey) dayUsers.add(log.userId);
+      });
 
-    const medals = ['🥇', '🥈', '🥉'];
-
-    const streakBoard = byStreak.map((u, i) =>
-      `${medals[i]} ${esc(u.name)} (@${esc(u.username || '?')}) — ${u.streak} day streak`
-    ).join('\n');
-
-    const timeBoard = byTime.map((u, i) =>
-      `${medals[i]} ${esc(u.name)} (@${esc(u.username || '?')}) — ${u.minutes} min`
-    ).join('\n');
+      dailyRows.push(`${esc(label)}  •  <b>${compact(dayWords)}</b> words  •  <b>${formatMinutes(dayMinutes)}</b>  •  <b>${dayUsers.size}</b> users`);
+    }
 
     const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tashkent', dateStyle: 'medium', timeStyle: 'short' });
 
     send(
-      `📊 <b>iWrite Stats Card</b>\n` +
-      `${now}\n\n` +
-      `🟢 Online: <b>${onlineNow}</b>\n` +
-      `✏️ Writing Now: <b>${writingNow}</b>\n` +
-      `👤 Users: <b>${totalUsers.toLocaleString()}</b>\n` +
-      `📄 Documents: <b>${totalDocs.toLocaleString()}</b>\n` +
-      `📝 Active Docs: <b>${activeDocs.toLocaleString()}</b>\n` +
-      `⏱ Total Time: <b>${totalHours}h ${remainingMins}m</b>\n` +
-      `✍️ Total Words: <b>${totalWords.toLocaleString()}</b>\n\n` +
-      `🔥 <b>Top 3 — Streaks</b>\n${streakBoard}\n\n` +
-      `⏰ <b>Top 3 — Time Written</b>\n${timeBoard}`
+      `<b>iWrite4.me Command Center</b>\n` +
+      `<i>${esc(now)} · Asia/Tashkent</i>\n\n` +
+      `<blockquote>` +
+      `Online: <b>${onlineNow}</b>\n` +
+      `On Tab: <b>${onTabNow}</b>\n` +
+      `Writing now: <b>${writingNow}</b>\n` +
+      `Users: <b>${totalUsers.toLocaleString()}</b>\n` +
+      `Documents: <b>${totalDocs.toLocaleString()}</b> · active <b>${activeDocs.toLocaleString()}</b>\n` +
+      `Total words: <b>${totalWords.toLocaleString()}</b>\n` +
+      `Active hours: <b>${totalHours}h ${remainingMins}m</b>` +
+      `</blockquote>\n\n` +
+      `<b>Last 3 days</b>\n` +
+      `<i>words · active time · authenticated users</i>\n` +
+      dailyRows.join('\n'),
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: 'Users', url: `${APP_URL}/admin#users` },
+              { text: 'Documents', url: `${APP_URL}/admin#documents` }
+            ],
+            [
+              { text: 'Activity Logs', url: `${APP_URL}/admin#logs` },
+              { text: 'Refresh', callback_data: 'stats:refresh' }
+            ]
+          ]
+        }
+      }
     );
   } catch (err) {
     console.error('[Telegram] Stats card error:', err.message);
@@ -331,6 +348,29 @@ function send(text, opts = {}) {
 
 function esc(text) {
   return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function compact(value) {
+  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value) || 0);
+}
+
+function formatMinutes(minutes) {
+  const mins = Math.max(0, Math.round(Number(minutes) || 0));
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.floor(mins / 60);
+  const rest = mins % 60;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+}
+
+function uzDayKey(value) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Tashkent',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date(value));
+  const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${map.year}-${map.month}-${map.day}`;
 }
 
 // ===== PUBLIC NOTIFICATION FUNCTIONS =====
@@ -355,6 +395,38 @@ function notifySessionCompleted(user, doc, stats) {
     `Writer: ${esc(user.name)} (@${esc(user.username)})\n` +
     `Title: ${esc(doc.title || 'Untitled')}\n` +
     `Mode: ${mode}\n` +
+    `Duration: ${mins} min\n` +
+    `Words: ${stats.wordCount || 0}\n` +
+    `XP: +${stats.xpEarned || 0}`
+  );
+}
+
+// Same shape as notifySessionCompleted but framed as a duel — used when
+// the completed document is linked to a duel record. Adds opponent name +
+// result (won/lost/forfeit/draw) so the admin can read the outcome at a
+// glance instead of confusing it with a regular solo session.
+function notifyDuelSessionCompleted(user, doc, stats, duel) {
+  const isChallenger = duel.challengerId === user.id;
+  const opponentName = isChallenger ? duel.opponentName : duel.challengerName;
+  const fromMatchmaking = !!duel.fromMatchmaking;
+  let result;
+  if (duel.status !== 'completed') {
+    result = '⏳ In progress';
+  } else if (duel.forfeitedBy === user.id) {
+    result = '😢 Forfeit (lost)';
+  } else if (duel.winnerId === user.id) {
+    result = '🏆 Won';
+  } else if (duel.winnerId) {
+    result = '😢 Lost';
+  } else {
+    result = '🤝 Draw';
+  }
+  const mins = Math.round((stats.duration || 0) / 60);
+  send(
+    `⚔️ <b>Duel Completed</b>\n\n` +
+    `Writer: ${esc(user.name)} (@${esc(user.username)})\n` +
+    `Vs: ${esc(opponentName || 'Opponent')}${fromMatchmaking ? ' (matchmaking)' : ''}\n` +
+    `Result: ${result}\n` +
     `Duration: ${mins} min\n` +
     `Words: ${stats.wordCount || 0}\n` +
     `XP: +${stats.xpEarned || 0}`
@@ -441,6 +513,29 @@ function notifyStripeCancelled(user) {
   );
 }
 
+function notifyStripeWillCancel(user, details = {}) {
+  const ends = details.cancelAt ? new Date(details.cancelAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'period end';
+  send(
+    `⚠️ <b>Subscription Cancellation Scheduled</b>\n\n` +
+    `User: ${esc(user.name)} (@${esc(user.username)})\n` +
+    `Email: ${esc(user.email)}\n` +
+    `Will end: ${esc(ends)}`
+  );
+}
+
+function notifyAnnouncementPublished(a) {
+  if (!a) return;
+  const audience = a.audience === 'pro' ? 'Pro users' : 'Everyone';
+  send(
+    `📢 <b>Announcement Published</b>\n\n` +
+    `Title: ${esc(a.title)}\n` +
+    `Audience: ${esc(audience)}\n` +
+    `Category: ${esc(a.category || 'update')}` +
+    (a.pinned ? '\n📌 Pinned' : '') +
+    `\n\n${esc((a.body || '').slice(0, 200))}${(a.body || '').length > 200 ? '…' : ''}`
+  );
+}
+
 function notifyReferral(newUser, referrer, referralCount) {
   const bonus = referralCount % 5 === 0 ? `\n🎉 <b>${esc(referrer.name)} earned FREE PRO</b> (${referralCount} referrals!)` : '';
   send(
@@ -479,6 +574,7 @@ module.exports = {
   init,
   notifyUserRegistered,
   notifySessionCompleted,
+  notifyDuelSessionCompleted,
   notifySessionFailed,
   notifySupportTicket,
   notifyStripeSubscription,
@@ -486,6 +582,8 @@ module.exports = {
   notifyStripeFailed,
   notifyStripeTrialEnding,
   notifyStripeCancelled,
+  notifyStripeWillCancel,
+  notifyAnnouncementPublished,
   notifyReferral,
   notifyStorySubmitted
 };

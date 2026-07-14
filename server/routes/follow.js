@@ -135,4 +135,30 @@ router.get('/:id/following', async (req, res) => {
   }
 });
 
+// GET /api/follow/popular — most-followed writers (for the Community sidebar)
+router.get('/popular', authenticate, async (req, res) => {
+  try {
+    const users = await findMany('users.json');
+    const me = users.find(u => u.id === req.user.id);
+    const myFollowing = new Set(me?.following || []);
+    const popular = users
+      .filter(u => u.role !== 'admin' && u.username && u.id !== req.user.id)
+      .map(u => ({
+        id: u.id,
+        name: u.name || u.username,
+        username: u.username,
+        avatar: u.avatar || null,
+        avatarUpdatedAt: u.avatarUpdatedAt || 0,
+        followerCount: (u.followers || []).length,
+        isFollowing: myFollowing.has(u.id)
+      }))
+      .sort((a, b) => b.followerCount - a.followerCount || (a.name || '').localeCompare(b.name || ''))
+      .slice(0, 8);
+    res.json(popular);
+  } catch (err) {
+    console.error('Popular writers error:', err);
+    res.status(500).json({ error: 'Failed to load popular writers' });
+  }
+});
+
 module.exports = router;

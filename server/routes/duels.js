@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuid } = require('uuid');
-const { findOne, findMany, insertOne, updateOne } = require('../utils/storage');
+const { findOne, findMany, insertOne, updateOne, deleteOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -32,18 +32,17 @@ async function completeDuelWithForfeit(duelId, forfeiterId) {
   } catch {}
 }
 
-// Helper: complete a duel by word count (time expired)
-// If forfeitedBy is set, forfeiter loses regardless of word count
+// Helper: complete a duel when its time runs out.
+// Endurance scoring: forfeiter loses; if no one forfeited (both stayed full
+// duration), it's a DRAW (winnerId=null). Word counts are no longer compared
+// because they were game-able via copy-paste. Word counts still recorded as a
+// stat, just not used for win determination.
 async function completeDuelByTime(duelId) {
   const duel = await findOne('duels.json', d => d.id === duelId);
   if (!duel || duel.status !== 'active') return;
-  let winnerId;
+  let winnerId = null;
   if (duel.forfeitedBy) {
-    // Forfeiter always loses
     winnerId = duel.forfeitedBy === duel.challengerId ? duel.opponentId : duel.challengerId;
-  } else {
-    winnerId = duel.challengerWords > duel.opponentWords ? duel.challengerId :
-               duel.opponentWords > duel.challengerWords ? duel.opponentId : null;
   }
   await updateOne('duels.json', d => d.id === duelId, {
     status: 'completed',
@@ -75,9 +74,12 @@ const STALE_POLL_MS = 15000; // 15 seconds (polls happen every 3s)
 async function cleanupStaleDuels() {
   const now = Date.now();
 
-  // 1. Active duels past endAt → complete by word count
+  // 1. Active duels past endAt → auto-complete (only when no forfeit).
+  // If forfeitedBy is set, the remaining writer is in a "victory lap" —
+  // they continue writing on their own clock until they manually finish or
+  // disappear (cleanup case 2 below catches that).
   const expiredDuels = await findMany('duels.json', d =>
-    d.status === 'active' && d.endAt && new Date(d.endAt).getTime() <= now
+    d.status === 'active' && d.endAt && new Date(d.endAt).getTime() <= now && !d.forfeitedBy
   );
   for (const duel of expiredDuels) {
     await completeDuelByTime(duel.id);
@@ -138,7 +140,252 @@ async function cleanupStaleDuels() {
   for (const duel of stalePending) {
     await updateOne('duels.json', d => d.id === duel.id, { status: 'expired' });
   }
+
+  // 5. Evict stale matchmaking queue entries (haven't heartbeat-ed in 30s)
+  const QUEUE_STALE_MS = 30000;
+  const staleQueue = await findMany('duel-queue.json', q =>
+    q.lastSeen && (now - new Date(q.lastSeen).getTime()) > QUEUE_STALE_MS
+  );
+  for (const entry of staleQueue) {
+    await deleteOne('duel-queue.json', q => q.id === entry.id);
+  }
 }
+
+// ───────── MATCHMAKING ─────────
+// Duration is stored as a NUMBER of minutes (matches the existing challenge
+// flow which uses duration * 60 * 1000 elsewhere). Standard buckets are
+// 10/30/45 min for everyone; PRO users can also pick custom 5–180 min.
+const STANDARD_DURATIONS_MIN = [10, 30, 45];
+const PRO_CUSTOM_MIN = 5;
+const PRO_CUSTOM_MAX = 180;
+
+// Validates a requested duration against the user's plan + the live queue.
+// Free users can pick STANDARD durations OR join an existing custom lobby
+// that a PRO user already created. Returns the integer duration or null.
+async function validateDuration(durationRaw, isPro, currentUserId) {
+  const d = parseInt(durationRaw, 10);
+  if (!Number.isFinite(d) || d <= 0) return null;
+  if (STANDARD_DURATIONS_MIN.includes(d)) return d;
+  if (isPro && d >= PRO_CUSTOM_MIN && d <= PRO_CUSTOM_MAX) return d;
+  // Free user picking a custom duration: only allow if a PRO user is already
+  // waiting at that exact duration. Joining an existing PRO-created lobby
+  // doesn't require the joiner to be PRO.
+  if (!isPro && d >= PRO_CUSTOM_MIN && d <= PRO_CUSTOM_MAX) {
+    const existing = await findOne('duel-queue.json', q =>
+      Number(q.duration) === d && q.userId !== currentUserId
+    );
+    if (existing) return d;
+  }
+  return null;
+}
+
+// Tries to match the given user against the oldest waiting opponent in their
+// duration bucket. If a match is found: creates a duel and removes both queue
+// entries. Returns { matched: true, duelId } or { matched: false }.
+async function tryMatch(userId, duration) {
+  const opponents = await findMany('duel-queue.json', q =>
+    Number(q.duration) === Number(duration) && q.userId !== userId
+  );
+  if (!opponents.length) return { matched: false };
+  opponents.sort((a, b) => new Date(a.joinedAt) - new Date(b.joinedAt));
+  const opp = opponents[0];
+
+  // Create duel — start countdown immediately. Both already opted in.
+  // 30-second countdown then transitions to active. Match the existing
+  // duel schema: numeric duration (minutes), startAt (when countdown ends),
+  // endAt set later when active starts.
+  // Hydrate challenger/opponent names so the countdown UI never shows
+  // "undefined" — the status endpoint returns the record as-is.
+  const challenger = await findOne('users.json', u => u.id === opp.userId);
+  const opponent = await findOne('users.json', u => u.id === userId);
+  const duelId = uuid();
+  const now = new Date();
+  const startAt = new Date(now.getTime() + 60000); // 60s countdown
+  await insertOne('duels.json', {
+    id: duelId,
+    challengerId: opp.userId, // earlier in queue gets challenger slot
+    challengerName: challenger?.name || 'Opponent',
+    opponentId: userId,
+    opponentName: opponent?.name || 'Opponent',
+    duration: Number(duration),
+    status: 'countdown',
+    fromMatchmaking: true,
+    challengerWords: 0,
+    opponentWords: 0,
+    challengerLastSeen: now.toISOString(),
+    opponentLastSeen: now.toISOString(),
+    createdAt: now.toISOString(),
+    countdownStartAt: now.toISOString(),
+    startAt: startAt.toISOString(),
+    endAt: null
+  });
+
+  // Remove both from queue
+  await deleteOne('duel-queue.json', q => q.id === opp.id);
+  const myEntry = await findOne('duel-queue.json', q => q.userId === userId);
+  if (myEntry) await deleteOne('duel-queue.json', q => q.id === myEntry.id);
+
+  return { matched: true, duelId };
+}
+
+// POST /queue/join — join the matchmaking queue, attempt immediate match
+router.post('/queue/join', async (req, res) => {
+  try {
+    await cleanupStaleDuels();
+    const me = await findOne('users.json', u => u.id === req.user.id);
+    const isPro = me?.plan === 'premium';
+    const duration = await validateDuration(req.body?.duration, isPro, req.user.id);
+    if (!duration) {
+      return res.status(400).json({
+        error: isPro
+          ? `Invalid duration. Use ${STANDARD_DURATIONS_MIN.join('/')} min, or a custom ${PRO_CUSTOM_MIN}–${PRO_CUSTOM_MAX} min.`
+          : `Invalid duration. Use ${STANDARD_DURATIONS_MIN.join('/')} min, or join an existing custom lobby. (Creating a custom duration requires PRO.)`
+      });
+    }
+
+    // Already in queue? Update duration if different
+    const existing = await findOne('duel-queue.json', q => q.userId === req.user.id);
+    if (existing) {
+      if (Number(existing.duration) !== duration) {
+        await updateOne('duel-queue.json', q => q.id === existing.id, {
+          duration, lastSeen: new Date().toISOString()
+        });
+      }
+    }
+
+    // Try to match against an opponent already waiting
+    const match = await tryMatch(req.user.id, duration);
+    if (match.matched) {
+      return res.json({ matched: true, duelId: match.duelId });
+    }
+
+    // No match yet — insert (or it's already there from above)
+    if (!existing) {
+      await insertOne('duel-queue.json', {
+        id: uuid(),
+        userId: req.user.id,
+        duration,
+        joinedAt: new Date().toISOString(),
+        lastSeen: new Date().toISOString()
+      });
+    }
+
+    const all = await findMany('duel-queue.json');
+    res.json({ matched: false, waitingCount: all.length, duration });
+  } catch (err) {
+    console.error('Queue join error:', err);
+    res.status(500).json({ error: 'Failed to join queue' });
+  }
+});
+
+// POST /queue/leave — remove user from queue
+router.post('/queue/leave', async (req, res) => {
+  try {
+    await deleteOne('duel-queue.json', q => q.userId === req.user.id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Queue leave error:', err);
+    res.status(500).json({ error: 'Failed to leave queue' });
+  }
+});
+
+// POST /queue/heartbeat — keep queue entry alive, return matched duel if any
+router.post('/queue/heartbeat', async (req, res) => {
+  try {
+    await cleanupStaleDuels();
+    const userId = req.user.id;
+    const entry = await findOne('duel-queue.json', q => q.userId === userId);
+
+    if (entry) {
+      await updateOne('duel-queue.json', q => q.id === entry.id, {
+        lastSeen: new Date().toISOString()
+      });
+      // Try matching again on every heartbeat in case someone else joined
+      const match = await tryMatch(userId, entry.duration);
+      if (match.matched) {
+        return res.json({ status: 'matched', duelId: match.duelId });
+      }
+      const all = await findMany('duel-queue.json');
+      const elapsedMs = Date.now() - new Date(entry.joinedAt).getTime();
+      return res.json({
+        status: 'waiting',
+        waitingCount: all.length,
+        elapsedMs,
+        duration: entry.duration
+      });
+    }
+
+    // Not in queue — maybe they were just matched
+    const recent = await findMany('duels.json', d =>
+      (d.challengerId === userId || d.opponentId === userId) &&
+      d.fromMatchmaking === true &&
+      (Date.now() - new Date(d.createdAt).getTime()) < 60000 &&
+      (d.status === 'countdown' || d.status === 'active')
+    );
+    if (recent.length) {
+      recent.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      return res.json({ status: 'matched', duelId: recent[0].id });
+    }
+
+    return res.json({ status: 'idle' });
+  } catch (err) {
+    console.error('Queue heartbeat error:', err);
+    res.status(500).json({ error: 'Heartbeat failed' });
+  }
+});
+
+// GET /queue/lobby-detail — per-user list of who's waiting, with name,
+// username, duration, and wait time. Used by the in-page Active Lobbies
+// section. Excludes the current user from the list.
+router.get('/queue/lobby-detail', async (req, res) => {
+  try {
+    await cleanupStaleDuels();
+    const all = await findMany('duel-queue.json');
+    const others = all.filter(q => q.userId !== req.user.id);
+    if (!others.length) return res.json({ entries: [], waitingCount: 0 });
+    const userIds = [...new Set(others.map(q => q.userId))];
+    const users = await findMany('users.json', u => userIds.includes(u.id));
+    const userById = Object.fromEntries(users.map(u => [u.id, u]));
+    const now = Date.now();
+    const entries = others.map(q => {
+      const u = userById[q.userId] || {};
+      return {
+        userId: q.userId,
+        name: u.name || 'Unknown',
+        username: u.username || null,
+        plan: u.plan || 'free',
+        duration: Number(q.duration),
+        waitMs: now - new Date(q.joinedAt).getTime()
+      };
+    }).sort((a, b) => b.waitMs - a.waitMs);
+    res.json({ entries, waitingCount: entries.length });
+  } catch (err) {
+    console.error('Lobby detail error:', err);
+    res.json({ entries: [], waitingCount: 0 });
+  }
+});
+
+// GET /queue/lobby — counts of users waiting, broken down by duration
+// bucket. Used by the sidebar pulse and the lobby popover.
+router.get('/queue/lobby', async (req, res) => {
+  try {
+    await cleanupStaleDuels();
+    const all = await findMany('duel-queue.json');
+    const now = Date.now();
+    const byDuration = {};
+    for (const q of all) {
+      const d = Number(q.duration);
+      if (!byDuration[d]) byDuration[d] = { duration: d, count: 0, oldestWaitMs: 0 };
+      byDuration[d].count += 1;
+      const waitMs = now - new Date(q.joinedAt).getTime();
+      if (waitMs > byDuration[d].oldestWaitMs) byDuration[d].oldestWaitMs = waitMs;
+    }
+    const buckets = Object.values(byDuration).sort((a, b) => a.duration - b.duration);
+    res.json({ waitingCount: all.length, buckets });
+  } catch (err) {
+    res.json({ waitingCount: 0, buckets: [] });
+  }
+});
 
 // POST /challenge — create a new duel challenge
 router.post('/challenge', async (req, res) => {
@@ -250,7 +497,11 @@ router.post('/:id/cancel', async (req, res) => {
   try {
     const duel = await findOne('duels.json', d => d.id === req.params.id);
     if (!duel) return res.status(404).json({ error: 'Duel not found' });
-    if (duel.challengerId !== req.user.id) return res.status(403).json({ error: 'Not your challenge' });
+    // For matchmaking duels, either side can cancel (both opted in voluntarily).
+    // For challenge duels, only the challenger can cancel their own challenge.
+    const isParticipant = duel.challengerId === req.user.id || duel.opponentId === req.user.id;
+    const canCancel = duel.fromMatchmaking ? isParticipant : duel.challengerId === req.user.id;
+    if (!canCancel) return res.status(403).json({ error: 'Not your duel' });
     if (duel.status !== 'pending' && duel.status !== 'countdown') return res.status(400).json({ error: 'Cannot cancel this duel' });
 
     await updateOne('duels.json', d => d.id === req.params.id, { status: 'cancelled' });
@@ -316,8 +567,10 @@ router.get('/:id/status', async (req, res) => {
       return res.json(updated);
     }
 
-    // Auto-complete if time is up (uses shared helper which respects forfeitedBy)
-    if (duel.status === 'active' && duel.endAt && new Date(duel.endAt) <= new Date()) {
+    // Auto-complete if time is up — but only when no one forfeited.
+    // If opponent already left, the remaining writer keeps the session alive
+    // and finishes manually (or extends time as long as they want).
+    if (duel.status === 'active' && duel.endAt && new Date(duel.endAt) <= new Date() && !duel.forfeitedBy) {
       await completeDuelByTime(req.params.id);
       const completed = await findOne('duels.json', d => d.id === req.params.id);
       return res.json(completed);
@@ -325,7 +578,16 @@ router.get('/:id/status', async (req, res) => {
 
     // Re-read in case forfeitedBy was set by cleanup or other player
     const latestDuel = await findOne('duels.json', d => d.id === req.params.id);
-    res.json(latestDuel || duel);
+    const result = latestDuel || duel;
+    // Hydrate names if missing (legacy matchmaking duels created before
+    // names were stored at creation time)
+    if (result && (!result.challengerName || !result.opponentName)) {
+      const ch = !result.challengerName ? await findOne('users.json', u => u.id === result.challengerId) : null;
+      const op = !result.opponentName ? await findOne('users.json', u => u.id === result.opponentId) : null;
+      if (ch) result.challengerName = ch.name || 'Opponent';
+      if (op) result.opponentName = op.name || 'Opponent';
+    }
+    res.json(result);
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
@@ -377,11 +639,15 @@ router.post('/:id/complete', async (req, res) => {
       return res.status(403).json({ error: 'Not your duel' });
     }
 
-    // Re-read to get latest state
+    // Re-read to get latest state.
+    // ENDURANCE SCORING: forfeiter loses; otherwise draw. Word counts are
+    // tracked but no longer determine the winner (consistent with
+    // completeDuelByTime — see commit "switch from word-count to endurance").
     const latest = await updateOne('duels.json', d => d.id === req.params.id, update);
-    const cw = latest.challengerWords || 0;
-    const ow = latest.opponentWords || 0;
-    const winnerId = cw > ow ? latest.challengerId : ow > cw ? latest.opponentId : null;
+    let winnerId = null;
+    if (latest.forfeitedBy) {
+      winnerId = latest.forfeitedBy === latest.challengerId ? latest.opponentId : latest.challengerId;
+    }
 
     const completed = await updateOne('duels.json', d => d.id === req.params.id, {
       status: 'completed',
