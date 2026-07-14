@@ -56,11 +56,11 @@ body::-webkit-scrollbar,
 /* ===== LIGHT THEME ===== */
 .light {
   --bg-primary: #e8dcc8;
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f7f7f2;
-  --bg-elevated: #fafaf7;
-  --bg-glass: rgba(255, 255, 255, 0.92);
+  --bg-secondary: #f2e8d8;
+  --bg-card: #f2e8d8;
+  --bg-card-hover: #f6efe4;
+  --bg-elevated: #f6efe4;
+  --bg-glass: rgba(242, 232, 216, 0.92);
   --text-primary: #1a1a1a;
   --text-secondary: rgba(0, 0, 0, 0.60);
   --text-muted: rgba(0, 0, 0, 0.40);
