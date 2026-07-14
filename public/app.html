@@ -16,6 +16,1423 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/iWrite logo.png">
+  <link rel="stylesheet" href="/css/style.css?v=93">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div id="auth-view" class="auth-container" style="display:none">
+    <div class="auth-monsters-panel">
+      <div class="auth-brand-title">
+        <span class="auth-brand-i">i</span><span class="auth-brand-write">Write</span>
+      </div>
+      <p class="auth-brand-sub">Your distraction-free writing space</p>
+      <div id="auth-monsters"></div>
+    </div>
+    <div class="auth-form-panel">
+    <a href="/" class="auth-back-btn" id="auth-back-global">&#8592; Back</a>
+    <div class="auth-card">
+      <a href="/" class="logo">iWrite4.me</a>
+      <div id="login-form">
+        <h2>Welcome to iWrite4.me</h2>
+        <p class="auth-sub">Sign in with Google to start writing</p>
+        <div class="auth-error" id="login-error"></div>
+        <div id="google-login-btn" class="google-signin-btn"></div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div id="app-view" style="display:none">
+    <!-- Mobile hamburger button -->
+    <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" aria-label="Toggle menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <div class="app-container">
+      <!-- Mobile sidebar backdrop — must be inside app-container so z-index is in the same stacking context as .sidebar -->
+      <div class="mobile-sidebar-overlay" id="mobile-sidebar-overlay"></div>
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div style="display:flex;flex-direction:column">
+            <a href="/" class="logo">iWrite4.me</a>
+            <span class="version-tag" id="version-tag">v...</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="streak-indicator" id="streak-badge" style="display:none;cursor:pointer" onclick="App.openStreakPopup()">
+              <span class="streak-fire">&#x1F525;</span>
+              <span id="streak-count">0</span>
+            </div>
+            <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close sidebar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          <button class="sidebar-nav-item active" data-view="dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
+          </button>
+          <button class="sidebar-nav-item" data-view="documents">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+            Sessions
+          </button>
+          <button class="sidebar-nav-item" data-view="stories">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+            Community
+            <span class="notif-badge" id="notif-badge" style="display:none"></span>
+            <span class="community-new-dot" id="community-new-dot" style="display:none;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:auto;flex-shrink:0"></span>
+          </button>
+          <button class="sidebar-nav-item" data-view="leaderboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 21h8M12 17v4"/><path d="M7 4h10l-1 9H8L7 4z"/><path d="M7 8H4l1 4h2M17 8h3l-1 4h-2"/></svg>
+            Leaderboard
+          </button>
+          <button class="sidebar-nav-item" data-view="duels">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Duels
+            <span class="nav-badge" id="duels-badge" style="display:none">0</span>
+          </button>
+          <button class="sidebar-nav-item" data-view="friends">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Friends
+            <span class="nav-badge" id="friends-badge" style="display:none">0</span>
+          </button>
+          <button class="sidebar-nav-item" data-view="analytics" id="analytics-nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+            Analytics
+            <span class="pro-nav-badge" style="font-size:9px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 5px;border-radius:8px;margin-left:auto">PRO</span>
+          </button>
+          <button class="sidebar-nav-item" data-view="my-profile" id="my-profile-nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span id="my-profile-nav-label">Profile</span>
+          </button>
+          <div class="sidebar-divider" id="pro-profile-divider" style="display:none"></div>
+          <div class="sidebar-divider" id="upgrade-divider-top"></div>
+          <button class="sidebar-nav-item" data-view="upgrade" id="upgrade-nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span class="upgrade-nav-label">Upgrade to Pro</span>
+          </button>
+          <div class="sidebar-divider" id="upgrade-divider-bottom"></div>
+          <button class="sidebar-nav-item" data-view="settings" id="settings-nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Settings
+          </button>
+          <button class="sidebar-nav-item" data-view="support">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Support
+          </button>
+          <button class="sidebar-nav-item" data-view="help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Help
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="user-info" id="user-info-btn" style="cursor:pointer" title="Settings">
+            <div class="user-avatar" id="user-avatar">?</div>
+            <div class="user-details">
+              <div class="user-name-row">
+                <span id="user-name">Loading...</span>
+                <span class="plan-badge" id="plan-badge">Free</span>
+              </div>
+              <div class="user-level" id="user-level">Level 1</div>
+            </div>
+          </div>
+          <button class="sidebar-nav-item theme-toggle-btn" id="theme-toggle-btn" style="margin-top:8px;color:var(--text-muted)" title="Toggle theme">
+            <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="theme-icon-light" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            <span class="theme-toggle-label">Light Mode</span>
+          </button>
+          <button class="sidebar-nav-item" id="logout-btn" style="margin-top:8px;color:var(--text-muted)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log Out
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="view">
+          <div class="dashboard-hero">
+            <div class="dashboard-hero-text">
+              <h1 id="greeting-text">Ready to write?</h1>
+              <p class="dashboard-hero-sub">Your writing journey continues. Pick up where you left off.</p>
+              <div class="online-indicator" id="online-indicator" style="display:none">
+                <span class="online-dot"></span>
+                <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
+              </div>
+            </div>
+            <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">
+              <span style="padding-right:10px;font-size:1.3em;line-height:1">&#x270F;&#xFE0F;</span> Start Writing
+            </button>
+          </div>
+
+          <!-- Username reminder -->
+          <div id="username-reminder" style="display:none;align-items:center;gap:12px;padding:12px 16px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);margin-bottom:16px">
+            <span style="font-size:13px;color:var(--text-primary);flex:1">You haven't set a username yet. Pick one so others can find you!</span>
+            <button class="btn btn-primary btn-small" onclick="App.switchView('profile')">Set Username</button>
+          </div>
+
+          <div class="dashboard-stats-row">
+            <div class="dash-stat-card dash-stat-words">
+              <div class="dash-stat-emoji">&#x1F4DD;</div>
+              <div class="dash-stat-value" id="total-words">0</div>
+              <div class="dash-stat-label">Session Words</div>
+            </div>
+            <div class="dash-stat-card dash-stat-sessions" style="cursor:pointer" onclick="App.switchView('documents')" title="View all sessions">
+              <div class="dash-stat-emoji">&#x1F3AF;</div>
+              <div class="dash-stat-value" id="total-sessions">0</div>
+              <div class="dash-stat-label">Sessions Done</div>
+            </div>
+            <div class="dash-stat-card dash-stat-streak" style="cursor:pointer" onclick="App.openStreakPopup()">
+              <div class="dash-stat-emoji">&#x1F525;</div>
+              <div class="dash-stat-value" id="current-streak">0</div>
+              <div class="dash-stat-label">Day Streak</div>
+              <div class="dash-stat-sub" id="longest-streak-text">Best: 0</div>
+            </div>
+            <div class="dash-stat-card dash-stat-xp">
+              <div class="dash-stat-emoji">&#x2B50;</div>
+              <div class="dash-stat-value" id="total-xp">0</div>
+              <div class="dash-stat-label">Total XP</div>
+            </div>
+          </div>
+
+          <div class="xp-bar-container">
+            <div class="xp-bar-header">
+              <span class="xp-bar-level" id="xp-level-text">&#x1F396;&#xFE0F; Level 1</span>
+              <span class="xp-bar-progress-text" id="xp-progress-text">0 / 100 XP</span>
+            </div>
+            <div class="xp-bar">
+              <div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="dashboard-row-top">
+            <div class="heatmap-section">
+              <div class="heatmap-header">
+                <h3 class="heatmap-title">Writing Activity</h3>
+                <span class="heatmap-total" id="heatmap-total"></span>
+              </div>
+              <div class="heatmap-scroll">
+                <div class="heatmap-grid" id="heatmap-grid"></div>
+              </div>
+              <div class="heatmap-footer">
+                <div class="heatmap-legend">
+                  <span class="heatmap-legend-label">Less</span>
+                  <div class="heatmap-legend-cell" data-level="0"></div>
+                  <div class="heatmap-legend-cell" data-level="1"></div>
+                  <div class="heatmap-legend-cell" data-level="2"></div>
+                  <div class="heatmap-legend-cell" data-level="3"></div>
+                  <div class="heatmap-legend-cell" data-level="4"></div>
+                  <span class="heatmap-legend-label">More</span>
+                </div>
+              </div>
+            </div>
+            <div class="tree-container">
+              <h3>&#x1F333; Your Writing Tree</h3>
+              <canvas id="tree-canvas" width="280" height="300"></canvas>
+              <p class="tree-info">Stage: <span class="tree-stage-label" id="tree-stage-text">Seed</span></p>
+            </div>
+          </div>
+
+          <div class="dashboard-recent">
+            <div class="docs-header">
+              <h2>&#x1F4C4; Recent Sessions</h2>
+              <button class="btn btn-primary btn-small" id="new-doc-btn-2">New Session</button>
+            </div>
+            <div id="recent-docs"></div>
+          </div>
+        </div>
+
+        <!-- SESSIONS VIEW -->
+        <div id="view-documents" class="view" style="display:none">
+          <div class="docs-header">
+            <h1 style="font-size: 40px;">📚 All Sessions</h1>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="doc-action-btn" id="create-folder-btn" title="Create Folder" style="width:40px;height:40px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+              </button>
+              <button class="doc-action-btn" id="history-btn" title="Session History" style="width:40px;height:40px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+              </button>
+              <button class="btn btn-primary" id="new-doc-btn-3" style="padding:10px 20px;font-size:14px">New Session</button>
+            </div>
+          </div>
+          <div class="session-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="session-search" id="session-search" placeholder="Search sessions by title...">
+          </div>
+          <!-- Folder back button -->
+          <div id="folder-back-btn" style="display:none"></div>
+          <!-- Folder breadcrumb -->
+          <div id="folder-breadcrumb" class="folder-breadcrumb" style="display:none"></div>
+          <!-- Folder cards -->
+          <div id="folder-list" class="folder-list"></div>
+          <div id="all-docs"></div>
+          <div id="shared-docs-section" style="display:none;margin-top:32px">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">&#x1F517; Shared With Me</h3>
+            <div id="shared-docs"></div>
+          </div>
+        </div>
+
+        <!-- STORIES VIEW -->
+        <div id="view-stories" class="view stories-view stories-mode-feed" style="display:none">
+          <div class="stories-header-row">
+            <div class="stories-navbar">
+              <div class="stories-filter-row stories-primary-tabs">
+                <button class="stories-filter-btn active" data-story-tab="feed">Feed</button>
+                <button class="stories-filter-btn" data-story-tab="mine">My Stories</button>
+              </div>
+              <div class="stories-notif-wrapper" style="position:relative;margin-left:8px">
+                <button class="stories-icon-btn" id="stories-notif-btn" title="Notifications" aria-label="Notifications" style="position:relative">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                  <span class="notif-badge" id="stories-notif-count" style="display:none;position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;padding:0 4px;font-size:9px"></span>
+                </button>
+                <div id="stories-notif-dropdown" class="stories-notif-dropdown" style="display:none">
+                  <div class="stories-notif-header">
+                    <span style="font-weight:700;font-size:13px">Notifications</span>
+                    <button id="stories-notif-mark-all" style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;padding:0">Mark all read</button>
+                  </div>
+                  <div id="stories-notif-list" class="stories-notif-list"></div>
+                </div>
+              </div>
+            </div>
+            <div class="stories-topbar">
+              <div class="stories-topbar-filters">
+                <div class="stories-filter-row" id="stories-feed-sort-row">
+                  <button class="stories-filter-btn active" data-story-sort="newest">Newest</button>
+                  <button class="stories-filter-btn" data-story-sort="oldest">Oldest</button>
+                  <button class="stories-filter-btn" data-story-sort="popular">Popular</button>
+                </div>
+                <div class="stories-filter-row" id="stories-mine-filter-row" style="display:none">
+                  <button class="stories-filter-btn active" data-story-mine-filter="drafts">Drafts</button>
+                  <button class="stories-filter-btn" data-story-mine-filter="review">Under Review</button>
+                  <button class="stories-filter-btn" data-story-mine-filter="published">Published</button>
+                </div>
+              </div>
+              <div class="stories-topbar-quick-actions">
+                <button class="stories-icon-btn" id="story-refresh-btn" title="Refresh stories" aria-label="Refresh stories">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.13-3.36L23 10"/><path d="M20.49 15a9 9 0 01-14.13 3.36L1 14"/></svg>
+                </button>
+                <button class="btn btn-primary stories-primary-btn" id="new-story-btn" aria-label="Create new story">
+                  <span class="stories-primary-icon">+</span>
+                  <span class="stories-primary-label">New Story</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="stories-layout">
+            <section class="stories-feed-panel">
+              <div id="stories-feed"></div>
+            </section>
+            <section class="stories-detail-panel">
+              <div id="story-detail"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- LEADERBOARD VIEW -->
+        <div id="view-leaderboard" class="view" style="display:none">
+          <div class="dashboard-header">
+            <h1>&#x1F3C6; Leaderboard</h1>
+            <p>See who's writing the most. Climb the ranks!</p>
+          </div>
+          <div class="lb-tabs" id="lb-tabs">
+            <button class="lb-tab active" data-lb-tab="streaks">Streaks</button>
+            <button class="lb-tab" data-lb-tab="time">Writing Time</button>
+            <button class="lb-tab" data-lb-tab="referrals">Referrals</button>
+          </div>
+          <div class="leaderboard-container" id="leaderboard-container">
+            <div class="leaderboard-podium" id="leaderboard-podium"></div>
+            <div class="leaderboard-table-wrap">
+              <table class="leaderboard-table" id="leaderboard-table">
+                <thead id="leaderboard-thead">
+                  <tr>
+                    <th>Rank</th>
+                    <th class="lb-pro-col"></th>
+                    <th>Writer</th>
+                    <th>Streak</th>
+                    <th class="lb-col-words">Words</th>
+                    <th class="lb-col-sessions">Sessions</th>
+                    <th class="lb-col-time">Time</th>
+                    <th class="lb-col-level">Level</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- DUELS VIEW -->
+        <div id="view-duels" class="view" style="display:none">
+          <div class="dashboard-header">
+            <h1>⚡ Writing Duels</h1>
+            <p>Challenge friends to a writing battle. Most words in the time limit wins.</p>
+          </div>
+          <div class="duel-challenge-cta">
+            <button class="btn btn-primary btn-large duel-big-btn" id="new-duel-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/><path d="M14.5 6.5L18 3h3v3l-3.5 3.5"/><path d="M5 14l4 4"/><path d="M7 17l-4 4"/><path d="M3 19l2 2"/></svg>Challenge a Friend</button>
+          </div>
+          <div id="duel-requests-section" style="display:none;margin-bottom:32px">
+            <h3 class="duel-section-title">📩 Challenge Requests <span id="duel-request-count" class="duel-count-badge"></span></h3>
+            <div id="duel-requests-list"></div>
+          </div>
+          <div id="duel-sent-section" style="display:none;margin-bottom:32px">
+            <h3 class="duel-section-title">📤 Sent Challenges</h3>
+            <div id="duel-sent-list"></div>
+          </div>
+          <div id="duel-active-section" style="display:none;margin-bottom:32px">
+            <h3 class="duel-section-title">🔥 Active Duels</h3>
+            <div id="active-duels"></div>
+          </div>
+          <div style="margin-top:24px">
+            <h3 class="duel-section-title">📜 Duel History</h3>
+            <div id="duel-history">
+              <div class="empty-state"><p>Your completed duels will appear here.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FRIENDS VIEW -->
+        <div id="view-friends" class="view" style="display:none">
+          <div class="dashboard-header" style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <h1>&#x1F46B; Friends</h1>
+              <p>Add friends by their email to challenge them to writing duels.</p>
+            </div>
+            <button class="btn btn-small" id="copy-invite-link-btn" style="white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              Copy Invite Link
+            </button>
+          </div>
+          <div class="friends-split-layout">
+            <!-- Left: Friends list -->
+            <div class="friends-left">
+              <div style="display:flex;gap:12px;margin-bottom:24px">
+                <input type="text" id="friend-email-input" placeholder="Enter friend's username or email" style="flex:1;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:14px;outline:none;background:var(--bg-card);color:var(--text-primary)">
+                <button class="btn btn-primary btn-small" id="add-friend-btn" title="Send friend request">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+              <div id="friend-requests-section" style="display:none;margin-bottom:24px">
+                <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">&#x1F514; Friend Requests</h3>
+                <div id="friend-requests-list"></div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+                  <h3 style="font-size:15px;font-weight:700;color:var(--text-secondary)">🤝 Your Friends</h3>
+                  <div class="friends-sort-row">
+                    <button class="friends-sort-btn active" data-sort="added">Recent</button>
+                    <button class="friends-sort-btn" data-sort="added_oldest">Oldest</button>
+                    <button class="friends-sort-btn" data-sort="streak">Streak</button>
+                    <button class="friends-sort-btn" data-sort="xp">XP</button>
+                  </div>
+                </div>
+                <div id="friends-list">
+                  <div class="empty-state">
+                    <p>Add friends by their email above to start challenging them to duels.</p>
+                  </div>
+                </div>
+              </div>
+              <div id="friend-suggestions-section" style="display:none;margin-top:24px">
+                <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-muted)">&#x1F4A1; People You May Know</h3>
+                <div id="friend-suggestions-list"></div>
+              </div>
+            </div>
+            <!-- Right: Activity feed -->
+            <div class="friends-right">
+              <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text-secondary)">📢 Friends Activity</h3>
+              <div id="activity-feed">
+                <div class="empty-state"><p>No activity yet. Your friends' milestones will appear here!</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PROFILE VIEW (now last) -->
+        <!-- MY PROFILE (own public profile) -->
+        <div id="view-my-profile" class="view" style="display:none">
+          <div class="up-banner" id="mp-banner"></div>
+          <div class="up-header">
+            <div class="up-avatar-wrap" id="mp-avatar"></div>
+            <div class="up-header-info">
+              <div class="up-name-row">
+                <h1 class="up-name" id="mp-name"></h1>
+                <span class="pro-nav-badge up-pro-badge" id="mp-pro-badge" style="display:none;padding:0px 5px">PRO</span>
+              </div>
+              <div class="up-username" id="mp-username"></div>
+              <div class="up-bio" id="mp-bio"></div>
+            </div>
+            <div class="up-actions">
+              <button class="btn btn-ghost btn-small" onclick="App.switchView('settings')" id="mp-edit-btn" style="display:inline-flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="flex-shrink:0"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Edit Profile
+              </button>
+            </div>
+          </div>
+          <div class="up-stats" id="mp-stats"></div>
+          <div class="up-tabs" role="tablist">
+            <button class="up-tab active" data-mptab="about" role="tab" aria-selected="true">About</button>
+            <button class="up-tab" data-mptab="posts" role="tab" aria-selected="false">Posts</button>
+          </div>
+          <div class="up-tab-content">
+            <div id="mp-about" role="tabpanel"></div>
+            <div id="mp-posts" role="tabpanel" style="display:none"></div>
+          </div>
+        </div>
+        <!-- SETTINGS (old Profile tab content) -->
+        <div id="view-settings" class="view" style="display:none">
+          <div class="dashboard-header">
+            <h1>&#x2699;&#xFE0F; Settings</h1>
+          </div>
+          <div class="profile-layout settings-layout">
+            <!-- Column 1: Avatar, Banner, Referral -->
+            <div class="settings-col">
+              <div class="profile-section profile-avatar-section">
+                <div class="profile-avatar-wrap">
+                  <div class="profile-avatar-circle" id="profile-avatar-circle">
+                    <span id="profile-avatar-letter"></span>
+                    <img id="profile-avatar-img" src="" alt="" style="display:none">
+                    <label class="profile-avatar-overlay" for="avatar-file-input" title="Upload photo">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </label>
+                    <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
+                  </div>
+                  <div class="profile-avatar-info">
+                    <div class="profile-avatar-name" id="profile-avatar-name"></div>
+                    <div class="profile-avatar-username" id="profile-avatar-username"></div>
+                    <div class="profile-avatar-actions">
+                      <button class="btn btn-ghost btn-small" id="remove-avatar-btn" style="display:none">Remove photo</button>
+                    </div>
+                  </div>
+                  <div class="profile-plan-info" id="profile-plan-info"></div>
+                </div>
+              </div>
+
+              <div class="profile-section">
+                <h3 class="profile-section-title">Profile Banner</h3>
+                <div class="profile-banner-preview" id="profile-banner-preview" style="width:100%;height:80px;border-radius:var(--radius-sm);background:linear-gradient(135deg,#1a1a2e,#16213e);margin-bottom:8px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center">
+                  <span class="profile-banner-placeholder" id="profile-banner-placeholder" style="font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;font-weight:600">No banner yet</span>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <label class="btn btn-ghost btn-small" for="banner-file-input" style="cursor:pointer">Upload Banner</label>
+                  <input type="file" id="banner-file-input" accept="image/*" style="display:none">
+                  <button class="btn btn-ghost btn-small" id="remove-banner-btn" style="display:none">Remove</button>
+                </div>
+              </div>
+
+              <div class="profile-section" id="referral-section"></div>
+            </div>
+
+            <!-- Column 2: Account Details, Change Password -->
+            <div class="settings-col">
+              <div class="profile-section">
+                <h3 class="profile-section-title">Account Details</h3>
+                <div class="auth-field">
+                  <label>Name</label>
+                  <input type="text" id="profile-name">
+                </div>
+                <div class="auth-field">
+                  <label>Username <span style="font-weight:400;color:var(--text-muted)">(can change once/month)</span></label>
+                  <input type="text" id="profile-username" maxlength="30" minlength="3" placeholder="your_username">
+                  <div id="profile-username-info" style="display:none;font-size:11px;color:var(--text-muted);margin-top:4px"></div>
+                </div>
+                <div class="auth-field">
+                  <label>Email</label>
+                  <input type="email" id="profile-email" disabled>
+                </div>
+                <div class="auth-field">
+                  <label>Bio <span style="font-weight:400;color:var(--text-muted)">(max 160 characters)</span></label>
+                  <textarea id="profile-bio" maxlength="160" rows="2" placeholder="A short bio about yourself" style="resize:vertical;min-height:48px"></textarea>
+                  <div id="profile-bio-count" style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px">0/160</div>
+                </div>
+                <div class="auth-field">
+                  <label>Member Since</label>
+                  <input type="text" id="profile-since" disabled>
+                </div>
+                <button class="btn btn-primary btn-small" id="save-profile-btn" style="margin-top:8px">Save Changes</button>
+              </div>
+
+              <div class="profile-section" id="change-password-section">
+                <h3 class="profile-section-title">&#x1F512; Change Password</h3>
+                <div class="auth-error" id="password-error"></div>
+                <div class="auth-field">
+                  <label>Current Password</label>
+                  <input type="password" id="current-password" placeholder="Enter current password">
+                </div>
+                <div class="auth-field">
+                  <label>New Password</label>
+                  <input type="password" id="new-password" placeholder="Min 6 characters">
+                </div>
+                <div class="auth-field">
+                  <label>Confirm New Password</label>
+                  <input type="password" id="confirm-password" placeholder="Re-enter new password">
+                </div>
+                <div class="auth-error" id="password-success" style="color:var(--success)"></div>
+                <button class="btn btn-primary btn-small" id="change-password-btn" style="margin-top:8px">Update Password</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- USER PROFILE VIEW (public, reached via clicking @username) -->
+        <div id="view-user-profile" class="view" style="display:none">
+          <button class="up-back-btn" id="up-back-btn" title="Go back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+          </button>
+          <div class="up-banner" id="up-banner"></div>
+          <div class="up-header">
+            <div class="up-avatar-wrap" id="up-avatar"></div>
+            <div class="up-header-info">
+              <div class="up-name-row">
+                <h1 class="up-name" id="up-name"></h1>
+                <span class="pro-nav-badge up-pro-badge" id="up-pro-badge" style="display:none">PRO</span>
+              </div>
+              <div class="up-username" id="up-username"></div>
+              <div class="up-bio" id="up-bio"></div>
+            </div>
+            <div class="up-actions" id="up-actions"></div>
+          </div>
+          <div class="up-stats" id="up-stats"></div>
+          <div class="up-tabs" role="tablist">
+            <button class="up-tab active" data-uptab="about" role="tab" aria-selected="true">About</button>
+            <button class="up-tab" data-uptab="posts" role="tab" aria-selected="false">Posts</button>
+          </div>
+          <div class="up-tab-content">
+            <div id="up-about" role="tabpanel"></div>
+            <div id="up-posts" role="tabpanel" style="display:none"></div>
+          </div>
+        </div>
+        <!-- ANALYTICS VIEW -->
+        <div id="view-analytics" class="view" style="display:none">
+          <div class="dashboard-header" style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <h1>&#x1F4CA; Analytics <span class="pro-badge-inline">PRO</span></h1>
+              <p>Personal insights into your writing habits.</p>
+            </div>
+            <div class="share-dropdown-wrap" style="position:relative;flex-shrink:0">
+              <button class="btn-share-analytics" id="btn-share-analytics-top">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                Share My Progress
+              </button>
+              <div class="share-dropdown" id="share-dropdown" style="display:none">
+                <button class="share-dropdown-item" id="share-download-card">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download stat card
+                </button>
+                <div class="share-dropdown-divider"></div>
+                <button class="share-dropdown-item" id="share-to-x">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  Share on X
+                </button>
+                <button class="share-dropdown-item" id="share-to-telegram">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0h-.056zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                  Share on Telegram
+                </button>
+                <button class="share-dropdown-item" id="share-to-instagram">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                  Share on Instagram
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="analytics-content"></div>
+        </div>
+        <!-- UPGRADE VIEW -->
+        <div id="view-upgrade" class="view" style="display:none">
+          <div class="upgrade-hero">
+            <h1 class="upgrade-title">Unlock Your Full <span class="upgrade-pro-badge">Pro</span> Potential</h1>
+            <p class="upgrade-subtitle">Select the plan that matches your goals. Upgrade anytime and cancel whenever you want.</p>
+          </div>
+          <div class="upgrade-cards" id="upgrade-plan-cards"></div>
+        </div>
+        <!-- SUPPORT VIEW -->
+        <div id="view-support" class="view" style="display:none">
+          <div class="dashboard-header">
+            <h1>&#x1F4AC; Support</h1>
+            <p>Send us feedback, report bugs, or suggest features.</p>
+          </div>
+          <div class="support-form" style="max-width:800px;margin-bottom:32px">
+            <div class="auth-field">
+              <label>Type</label>
+              <select id="support-type" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-sans);font-size:14px">
+                <option value="feedback">Feedback</option>
+                <option value="bug">Bug Report</option>
+                <option value="suggestion">Suggestion</option>
+              </select>
+            </div>
+            <div class="auth-field">
+              <label>Subject</label>
+              <input type="text" id="support-subject" placeholder="Brief description">
+            </div>
+            <div class="auth-field">
+              <label>Message</label>
+              <textarea id="support-message" placeholder="Describe in detail... (tip: paste a screenshot with Cmd+V)" style="width:100%;min-height:120px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-sans);font-size:14px;resize:vertical"></textarea>
+            </div>
+            <div class="auth-field">
+              <label>Attach Image (optional, max 2MB)</label>
+              <div id="support-image-drop" class="support-image-drop">
+                <input type="file" id="support-image-input" accept="image/png,image/jpeg,image/webp" style="display:none">
+                <div class="support-image-empty" id="support-image-empty">
+                  <span>Click, drag an image, or paste a screenshot</span>
+                </div>
+                <div class="support-image-preview" id="support-image-preview" style="display:none">
+                  <img id="support-image-thumb" alt="Preview">
+                  <button type="button" class="support-image-remove" id="support-image-remove" aria-label="Remove image">&times;</button>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-small" id="support-submit-btn">Submit Ticket</button>
+          </div>
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">Your Tickets</h3>
+          <div id="support-tickets-list">
+            <div class="empty-state"><p>No tickets yet.</p></div>
+          </div>
+        </div>
+
+        <!-- HELP VIEW -->
+        <div id="view-help" class="view" style="display:none">
+          <div class="dashboard-header">
+            <h1>&#x2753; Help &amp; Documentation</h1>
+            <p>Everything you need to know about iWrite4.me.</p>
+          </div>
+
+          <div class="help-buttons-grid">
+            <button class="help-topic-btn" onclick="App.openHelpTopic('how-it-works')">
+              <span class="help-topic-icon">&#x270F;&#xFE0F;</span>
+              <span class="help-topic-title">How It Works</span>
+            </button>
+            <button class="help-topic-btn" onclick="App.openHelpTopic('writing-modes')">
+              <span class="help-topic-icon">&#x26A1;</span>
+              <span class="help-topic-title">Writing Modes</span>
+            </button>
+            <button class="help-topic-btn" onclick="App.openHelpTopic('xp-levels')">
+              <span class="help-topic-icon">&#x2B50;</span>
+              <span class="help-topic-title">XP &amp; Levels</span>
+            </button>
+            <button class="help-topic-btn" onclick="App.openHelpTopic('streaks')">
+              <span class="help-topic-icon">&#x1F525;</span>
+              <span class="help-topic-title">Streaks</span>
+            </button>
+            <button class="help-topic-btn" onclick="App.openHelpTopic('tree')">
+              <span class="help-topic-icon">&#x1F333;</span>
+              <span class="help-topic-title">Your Writing Tree</span>
+            </button>
+            <button class="help-topic-btn" onclick="App.openHelpTopic('leaderboard')">
+              <span class="help-topic-icon">&#x1F3C6;</span>
+              <span class="help-topic-title">Leaderboard</span>
+            </button>
+            <button class="help-topic-btn" onclick="App.openHelpTopic('friends-duels')">
+              <span class="help-topic-icon">&#x1F46B;</span>
+              <span class="help-topic-title">Friends &amp; Duels</span>
+            </button>
+            <button class="help-topic-btn" onclick="App.openHelpTopic('sharing')">
+              <span class="help-topic-icon">&#x1F4E4;</span>
+              <span class="help-topic-title">Sharing Documents</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- HELP TOPIC POPUP -->
+        <div class="help-popup-overlay" id="help-popup-overlay"></div>
+        <div class="help-popup" id="help-popup">
+          <button class="help-popup-close" id="help-popup-close">&times;</button>
+          <div class="help-popup-body" id="help-popup-body"></div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- EDITOR -->
+    <div class="editor-container" id="editor-container">
+      <!-- Row 1: Back / Title / Timer / Buttons -->
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <button class="editor-back-btn" id="editor-back">&larr;</button>
+          <input type="text" class="editor-title-input" id="editor-title" placeholder="Give your writing a title..." value="">
+        </div>
+        <div class="editor-toolbar-center">
+          <span class="editor-mode-badge normal" id="editor-mode-badge">Time</span>
+          <div class="editor-timer" id="editor-timer">--:--</div>
+          <button class="editor-timer-toggle" id="editor-timer-toggle" title="Hide timer">
+            <svg id="timer-eye-open" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="timer-eye-closed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+          <div class="editor-add-time">
+            <button class="editor-add-time-btn" id="add-time-1" title="Add 1 minute">+1m</button>
+            <button class="editor-add-time-btn" id="add-time-5" title="Add 5 minutes">+5m</button>
+          </div>
+          <button class="editor-add-time-btn duel-add-time-btn" id="duel-add-time-btn" onclick="Editor.addExtraTime()" title="Add 5 minutes" style="display:none">+5m</button>
+          <div class="editor-hearts" id="editor-hearts" style="display:none">
+            <span class="heart" data-idx="0">❤</span>
+            <span class="heart" data-idx="1">❤</span>
+            <span class="heart" data-idx="2">❤</span>
+          </div>
+        </div>
+        <div class="editor-toolbar-right">
+          <div class="editor-font-size-controls" style="display:inline-flex;align-items:center;gap:2px;margin-right:6px">
+            <button class="doc-action-btn" id="editor-font-dec" title="Zoom out" style="width:28px;height:30px;flex-shrink:0;font-size:18px;font-weight:700;line-height:1">−</button>
+            <button class="doc-action-btn" id="editor-font-inc" title="Zoom in" style="width:28px;height:30px;flex-shrink:0;font-size:18px;font-weight:700;line-height:1">+</button>
+          </div>
+          <button class="doc-action-btn" id="editor-theme-btn" title="Toggle dark/light mode" style="width:30px;height:30px;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+          <button class="doc-action-btn" id="editor-fullscreen-btn" title="Toggle fullscreen" style="width:30px;height:30px;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          </button>
+          <button class="doc-action-btn" id="editor-research-btn" title="Research — Wikipedia + AI" style="width:30px;height:30px;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </button>
+          <button class="doc-action-btn" id="editor-audio-btn" title="Background audio" style="width:30px;height:30px;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </button>
+          <div class="editor-audio-dropdown" id="editor-audio-dropdown" style="display:none">
+            <div class="audio-section">
+              <div class="audio-section-label">Ambient Sounds</div>
+              <div class="audio-track" data-audio="lofi1">
+                <button class="audio-play-btn" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
+                <span class="audio-track-name">Lofi Chill</span>
+                <input type="range" class="audio-track-vol" min="0" max="100" value="50" title="Volume">
+              </div>
+              <div class="audio-track" data-audio="lofi2">
+                <button class="audio-play-btn" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
+                <span class="audio-track-name">Lofi Study</span>
+                <input type="range" class="audio-track-vol" min="0" max="100" value="50" title="Volume">
+              </div>
+              <div class="audio-track" data-audio="brown">
+                <button class="audio-play-btn" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
+                <span class="audio-track-name">Brown Noise</span>
+                <input type="range" class="audio-track-vol" min="0" max="100" value="50" title="Volume">
+              </div>
+              <div class="audio-track" data-audio="hz40">
+                <button class="audio-play-btn" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
+                <span class="audio-track-name">40Hz Gamma</span>
+                <input type="range" class="audio-track-vol" min="0" max="100" value="50" title="Volume">
+              </div>
+              <div class="audio-track" data-audio="rain">
+                <button class="audio-play-btn" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
+                <span class="audio-track-name">Rain</span>
+                <input type="range" class="audio-track-vol" min="0" max="100" value="50" title="Volume">
+              </div>
+              <div class="audio-track" data-audio="wind">
+                <button class="audio-play-btn" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
+                <span class="audio-track-name">Wind</span>
+                <input type="range" class="audio-track-vol" min="0" max="100" value="50" title="Volume">
+              </div>
+            </div>
+            <div class="audio-separator"></div>
+            <div class="audio-section" id="audio-yt-section">
+              <div class="audio-section-label">YouTube Link <span class="pro-feature-badge" id="yt-pro-badge" style="display:none;font-size:9px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:0.5px">PRO</span></div>
+              <div class="audio-yt-row">
+                <input type="text" id="audio-yt-input" class="audio-yt-input" placeholder="Paste YouTube URL...">
+                <button class="audio-play-btn" id="audio-yt-play" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
+              </div>
+              <div class="audio-yt-controls" id="audio-yt-controls" style="display:none">
+                <button class="audio-play-btn" id="audio-yt-pause" title="Pause/Resume"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></button>
+                <input type="range" class="audio-yt-seek" id="audio-yt-seek" min="0" max="100" value="0" title="Seek">
+                <input type="range" class="audio-track-vol" id="audio-yt-vol" min="0" max="100" value="50" title="Volume">
+              </div>
+            </div>
+          </div>
+          <button class="doc-action-btn" id="editor-copy-btn" title="Copy to clipboard" style="width:30px;height:30px;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+          <button class="doc-action-btn" id="editor-comment-history-btn" title="Comment History" style="display:none;width:30px;height:30px;flex-shrink:0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
+          </button>
+          <button class="btn btn-primary btn-small" id="editor-save-btn">Complete</button>
+          <button class="btn btn-primary btn-small" id="editor-edit-btn" style="display:none">Edit</button>
+          <button class="btn btn-primary btn-small" id="editor-save-edit-btn" style="display:none">Save</button>
+        </div>
+      </div>
+      <!-- Duel bar (shown during active duel) -->
+      <div class="duel-bar" id="duel-bar">
+        <div class="duel-bar-scores">
+          <span class="duel-bar-left"><strong id="duel-bar-left-words">0</strong> <span class="duel-bar-dash">—</span> <span class="duel-bar-name" id="duel-bar-left-name">Player 1</span></span>
+          <span class="duel-bar-vs">VS</span>
+          <span class="duel-bar-right"><span class="duel-bar-name" id="duel-bar-right-name">Player 2</span> <span class="duel-bar-dash">—</span> <strong id="duel-bar-right-words">0</strong></span>
+        </div>
+        <span class="duel-bar-forfeit" id="duel-bar-forfeit" style="display:none">Opponent left!</span>
+      </div>
+      <!-- Extra time request toast (accept/reject) -->
+      <div class="duel-extra-time-request" id="duel-extra-time-req" style="display:none">
+        <span id="duel-extra-time-text">+5 min?</span>
+        <button class="duel-extra-time-accept" onclick="Editor.acceptExtraTime()">✓</button>
+        <button class="duel-extra-time-decline" onclick="Editor.declineExtraTime()">✗</button>
+      </div>
+      <!-- Row 2: Formatting toolbar (hidden in danger mode) -->
+      <div class="editor-format-bar" id="formatting-toolbar" style="display:none">
+        <!-- Font selector -->
+        <div class="fmt-font-wrap">
+          <select class="fmt-font-select" id="fmt-font-select">
+            <option value="sans">Sans Serif</option>
+            <option value="serif">Serif</option>
+            <option value="mono">Monospace</option>
+            <option value="georgia">Georgia</option>
+            <option value="garamond">Garamond</option>
+            <option value="courier">Courier</option>
+          </select>
+        </div>
+        <div class="fmt-separator"></div>
+        <button class="fmt-btn" data-command="bold" title="Bold (Ctrl+B)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
+        </button>
+        <button class="fmt-btn" data-command="italic" title="Italic (Ctrl+I)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
+        </button>
+        <button class="fmt-btn" data-command="underline" title="Underline (Ctrl+U)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
+        </button>
+        <div class="fmt-separator"></div>
+        <button class="fmt-btn fmt-size-btn" id="fmt-size-down" title="Decrease size">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11h14v2H5z"/></svg>
+        </button>
+        <span class="fmt-size-label" id="fmt-size-label">3</span>
+        <button class="fmt-btn fmt-size-btn" id="fmt-size-up" title="Increase size">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </button>
+        <div class="fmt-separator"></div>
+        <button class="fmt-btn fmt-color-btn" data-color="#111111" title="Black" style="color:#111111; -webkit-text-stroke: 0.5px #555">A</button>
+        <button class="fmt-btn fmt-color-btn" data-color="#ffffff" title="White" style="color:#ffffff; -webkit-text-stroke: 0.5px #aaa">A</button>
+        <button class="fmt-btn fmt-color-btn" data-color="#ef4444" title="Red" style="color:#ef4444">A</button>
+        <button class="fmt-btn fmt-color-btn" data-color="#22c55e" title="Green" style="color:#22c55e">A</button>
+        <button class="fmt-btn fmt-color-btn" data-color="#6c5ce7" title="Purple" style="color:#6c5ce7">A</button>
+        <button class="fmt-btn fmt-color-btn" data-color="#f59e0b" title="Yellow" style="color:#f59e0b">A</button>
+      </div>
+      <div class="danger-progress" id="danger-progress" style="display:none">
+        <div class="danger-progress-bar" id="danger-progress-bar"></div>
+      </div>
+      <div class="screen-vignette" id="screen-vignette"></div>
+      <!-- Topic bar (shown when topic is set) -->
+      <div class="editor-topic-bar" id="editor-topic-bar" style="display:none">
+        <input type="text" class="editor-topic-input" id="editor-topic-text" placeholder="Enter your topic or question...">
+      </div>
+      <div class="editor-area">
+        <div class="editor-textarea" id="editor-textarea" contenteditable="true" data-placeholder="Start writing your thoughts..."></div>
+      </div>
+    </div>
+
+    <!-- Floating selection popup -->
+    <div class="selection-popup" id="selection-popup" style="display:none">
+      <button class="sel-btn" data-cmd="bold" title="Bold"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg></button>
+      <button class="sel-btn" data-cmd="italic" title="Italic"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg></button>
+      <button class="sel-btn" data-cmd="underline" title="Underline"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg></button>
+      <button class="sel-btn" data-cmd="formatBlock" data-value="BLOCKQUOTE" title="Quote"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg></button>
+      <span class="sel-divider"></span>
+      <button class="sel-btn" data-cmd="fontSize" data-value="-1" title="Decrease size"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11h14v2H5z"/></svg></button>
+      <span class="sel-size-label" id="sel-size-label">3</span>
+      <button class="sel-btn" data-cmd="fontSize" data-value="+1" title="Increase size"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
+    </div>
+
+    <!-- GLOBAL STATUS BAR (bottom-left, like Google Docs) -->
+    <div class="status-bar" id="status-bar" style="display:none">
+      <span id="editor-word-count">0 words</span>
+      <span class="status-separator">|</span>
+      <span id="editor-words-remaining" style="display:none"></span>
+    </div>
+    <!-- Word limit indicator (bottom-left, above status bar) -->
+    <div class="word-limit-indicator" id="word-limit-indicator" style="display:none"></div>
+
+    <!-- YouTube iframe container (hidden) -->
+    <div id="yt-player-container" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden"></div>
+
+    <!-- RESEARCH DRAWER -->
+    <div class="research-drawer" id="research-drawer">
+      <div class="research-drawer-header">
+        <span class="research-drawer-title">Research</span>
+        <button class="research-drawer-close" id="research-drawer-close" title="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="research-tabs">
+        <button class="research-tab active" data-rtab="wiki">Search</button>
+        <button class="research-tab" data-rtab="ai">Ask AI</button>
+      </div>
+      <div class="research-quota" id="research-quota"></div>
+
+      <!-- Ask AI composer — lives at the top right after the tabs so it's always visible -->
+      <div id="gem-box">
+        <textarea id="gem-input" placeholder="Message Gemini..." rows="1"></textarea>
+        <button id="gem-send" type="button" aria-label="Send">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+
+      <!-- WIKI TAB -->
+      <div class="research-pane" data-rpane="wiki">
+        <div class="research-input-row">
+          <input type="text" class="research-input" id="research-wiki-input" placeholder="Search Wikipedia + DuckDuckGo..." maxlength="120">
+          <button class="research-submit-btn" id="research-wiki-btn">Search</button>
+        </div>
+        <div class="research-hint">Free and unlimited. Click any Wikipedia result for the full article.</div>
+        <div class="research-results" id="research-wiki-results"></div>
+        <div class="research-detail" id="research-wiki-detail" style="display:none">
+          <button class="research-back-btn" id="research-wiki-back" title="Back to results">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Back to results</span>
+          </button>
+          <div class="research-detail-body" id="research-wiki-detail-body"></div>
+        </div>
+      </div>
+
+      <!-- AI TAB -->
+      <div class="research-pane research-pane-ai" data-rpane="ai" style="display:none">
+        <div class="research-chat" id="research-ai-chat"></div>
+      </div>
+    </div>
+
+    <!-- TAB WARNING -->
+    <div class="tab-warning" id="tab-warning">
+      <h2>Come back!</h2>
+      <p>Your writing is being deleted...</p>
+      <div class="tab-warning-timer" id="tab-warning-timer">10</div>
+    </div>
+
+    <!-- SESSION START MODAL -->
+    <div class="modal-overlay" id="session-modal">
+      <div class="session-modal-wrapper" id="session-modal-wrapper">
+        <!-- LEFT PANEL: mode chooser + shared fields -->
+        <div class="modal session-main-panel">
+          <h2>New Session</h2>
+          <p>Pick a mode and start writing.</p>
+          <div class="modal-field">
+            <label>What are you writing about?</label>
+            <div class="topic-input-wrap">
+              <textarea id="session-topic-input" class="session-topic-input" rows="2" placeholder="Paste your essay question, topic, or just a few words about what you want to focus on..."></textarea>
+              <button type="button" class="prompt-generate-btn" id="prompt-generate-btn" title="Generate a writing prompt" aria-label="Generate a prompt">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.88 4.62L18.5 8.5l-4.62 1.88L12 15l-1.88-4.62L5.5 8.5l4.62-1.88L12 2z"/><path d="M19 15l.94 2.31L22 18l-2.06.69L19 21l-.94-2.31L16 18l2.06-.69L19 15z"/></svg>
+              </button>
+              <div class="prompt-popover" id="prompt-popover" style="display:none">
+                <div class="prompt-popover-header">Pick a category</div>
+                <div class="prompt-popover-chips">
+                  <button type="button" class="prompt-chip" data-category="ielts">IELTS Writing</button>
+                  <button type="button" class="prompt-chip" data-category="college">College Admissions</button>
+                  <button type="button" class="prompt-chip" data-category="self">Explore Myself / Life</button>
+                  <button type="button" class="prompt-chip" data-category="creative">Creative</button>
+                  <button type="button" class="prompt-chip" data-category="random">🎲 Random</button>
+                </div>
+                <div class="prompt-popover-quota" id="prompt-popover-quota"></div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-field">
+            <label>Target Word Count <span class="label-hint">(optional)</span></label>
+            <input type="number" id="session-target-words" class="session-target-input" min="50" max="50000" placeholder="e.g. 500">
+          </div>
+          <div class="modal-field">
+            <label>Writing Mode</label>
+            <div class="mode-selector">
+              <div class="mode-option" data-mode="zen">
+                <h4>Zen</h4>
+                <p>No timer, no XP, no streak. Just write.</p>
+              </div>
+              <div class="mode-option active" data-mode="normal">
+                <h4>Time</h4>
+                <p>Tab-lock only. Leave and lose it.</p>
+              </div>
+              <div class="mode-option dangerous-opt" data-mode="dangerous">
+                <h4>Dangerous</h4>
+                <p>Stop typing and the session fails.</p>
+              </div>
+              <div class="mode-option research-opt" data-mode="research">
+                <h4>Research</h4>
+                <p>Wikipedia + AI sidebar, side-by-side with your writing.</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-ghost btn-full" id="modal-cancel">Cancel</button>
+            <button class="btn btn-primary btn-full" id="modal-start">Start Writing</button>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: mode-specific config. Add new modes by tagging sections with data-for-mode. -->
+        <div class="modal session-config-panel" id="session-config-panel">
+          <h3 class="config-panel-title" id="config-panel-title">Time Settings</h3>
+
+          <!-- Danger Variant Tabs (dangerous only) -->
+          <div class="config-section danger-variant-tabs-section" data-for-mode="dangerous">
+            <div class="danger-variant-tabs" id="danger-variant-tabs">
+              <button class="danger-variant-tab active" data-variant="classic">Dangerous</button>
+              <button class="danger-variant-tab" data-variant="chill">Chill Danger</button>
+            </div>
+            <div class="danger-variant-desc" id="danger-variant-desc">Stop typing and everything you wrote is gone.</div>
+          </div>
+
+          <!-- Session Duration (normal + dangerous; each mode shows its own preset row) -->
+          <div class="config-section" data-for-mode="normal dangerous research">
+            <label>Session Duration</label>
+            <div class="time-presets" id="time-presets" data-for-mode="normal research">
+              <button class="time-preset" data-minutes="5">5 min</button>
+              <button class="time-preset" data-minutes="15">15 min</button>
+              <button class="time-preset active" data-minutes="30">30 min</button>
+              <button class="time-preset" data-minutes="45">45 min</button>
+              <button class="time-preset" data-minutes="60">60 min</button>
+              <button class="time-preset" data-minutes="0">Unlimited</button>
+              <button class="time-preset time-preset-add" id="time-preset-add-btn" title="Custom time">+</button>
+            </div>
+            <div class="time-presets" id="danger-time-presets" data-for-mode="dangerous" style="display:none">
+              <button class="time-preset" data-minutes="3">3 min</button>
+              <button class="time-preset active" data-minutes="5">5 min</button>
+              <button class="time-preset" data-minutes="10">10 min</button>
+              <button class="time-preset" data-minutes="20">20 min</button>
+              <button class="time-preset time-preset-add" id="danger-custom-time-btn" title="Custom time">+</button>
+            </div>
+            <div class="time-custom-row" id="time-custom-row" style="display:none">
+              <input type="number" id="custom-time-input" min="1" max="1440" placeholder="e.g. 25">
+              <span class="input-suffix">min</span>
+              <button class="btn btn-primary btn-small" id="custom-time-set">Set</button>
+            </div>
+          </div>
+
+          <!-- Death Timer (dangerous only) -->
+          <div class="config-section" id="death-timer-section" data-for-mode="dangerous">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:13px;font-weight:600;color:var(--text-primary)">Death Timer</span>
+              <span style="font-size:11px;color:var(--text-muted)">— stop typing and it deletes your work</span>
+            </div>
+            <div class="time-presets" id="death-timer-presets">
+              <button class="time-preset active" data-seconds="5">5s</button>
+              <button class="time-preset" data-seconds="7">7s</button>
+              <button class="time-preset" data-seconds="10">10s</button>
+              <button class="time-preset time-preset-add" id="death-timer-custom-btn" title="Custom death timer">+</button>
+            </div>
+            <div class="time-custom-row" id="death-timer-custom-row" style="display:none">
+              <input type="number" id="death-timer-custom-input" min="2" max="60" placeholder="e.g. 8">
+              <span class="input-suffix">sec</span>
+              <button class="btn btn-primary btn-small" id="death-timer-custom-set">Set</button>
+            </div>
+          </div>
+
+          <!-- Tab Timer (normal + dangerous) -->
+          <div class="config-section" id="tab-timer-section" data-for-mode="normal dangerous research">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:13px;font-weight:600;color:var(--text-primary)">Tab Timer</span>
+              <span style="font-size:11px;color:var(--text-muted)">— grace period when you leave the tab</span>
+            </div>
+            <div class="time-presets" id="tab-timer-presets">
+              <button class="time-preset active" data-seconds="10">10s</button>
+              <button class="time-preset" data-seconds="20">20s</button>
+              <button class="time-preset" data-seconds="30">30s</button>
+              <button class="time-preset" data-seconds="60">1m</button>
+              <button class="time-preset time-preset-add" id="tab-timer-custom-btn" title="Custom tab timer">+</button>
+            </div>
+            <div class="time-custom-row" id="tab-timer-custom-row" style="display:none">
+              <input type="number" id="tab-timer-custom-input" min="5" max="300" placeholder="e.g. 45">
+              <span class="input-suffix">sec</span>
+              <button class="btn btn-primary btn-small" id="tab-timer-custom-set">Set</button>
+            </div>
+          </div>
+
+          <!-- Hidden inputs to preserve values for editor -->
+          <input type="hidden" id="tab-grace-input" value="10">
+          <input type="hidden" id="danger-threshold-input" value="5">
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCUMENT NAME MODAL -->
+    <div class="modal-overlay" id="doc-name-modal">
+      <div class="modal" style="max-width:400px">
+        <button class="modal-back-btn" id="doc-name-back" title="Go back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
+        <h2 style="margin-top:32px">Name Your Document</h2>
+        <p>Give your writing a title before you begin.</p>
+        <div class="modal-field">
+          <input type="text" id="doc-name-input" class="session-target-input" placeholder="e.g. My Essay on Climate Change" maxlength="100" style="font-size:14px">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost btn-full" id="doc-name-skip">Skip (Untitled)</button>
+          <button class="btn btn-primary btn-full" id="doc-name-confirm">Start Writing</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPLETION TITLE PROMPT MODAL -->
+    <div class="modal-overlay" id="title-prompt-modal">
+      <div class="modal" style="max-width:400px">
+        <h2>Give it a title?</h2>
+        <p>Your session is complete. Name it now or keep it as Untitled.</p>
+        <div class="modal-field">
+          <input type="text" id="title-prompt-input" class="session-target-input" placeholder="e.g. Morning Reflections" maxlength="100" style="font-size:14px">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost btn-full" id="title-prompt-skip">Keep as Untitled</button>
+          <button class="btn btn-primary btn-full" id="title-prompt-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DUEL CHALLENGE MODAL -->
+    <div class="modal-overlay" id="duel-modal">
+      <div class="modal">
+        <h2>Challenge to a Duel</h2>
+        <p>Choose a friend and a time limit. Both writers get the same time — most words wins.</p>
+        <div class="modal-field">
+          <label>Select Friend</label>
+          <select id="duel-friend-select">
+            <option value="">Choose a friend...</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Duration</label>
+          <div class="time-presets" id="duel-time-presets">
+            <button class="time-preset" data-minutes="5">5 min</button>
+            <button class="time-preset active" data-minutes="10">10 min</button>
+            <button class="time-preset" data-minutes="15">15 min</button>
+            <button class="time-preset" data-minutes="20">20 min</button>
+            <button class="time-preset" data-minutes="30">30 min</button>
+            <button class="time-preset duel-custom-time-btn" id="duel-custom-time-btn">+</button>
+          </div>
+          <input type="number" id="duel-custom-time-input" class="duel-custom-input" min="1" max="60" placeholder="Custom (min)" style="display:none">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost btn-full" id="duel-cancel">Cancel</button>
+          <button class="btn btn-danger btn-full" id="duel-start">Send Challenge</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHARE TYPE MODAL -->
+    <div class="modal-overlay" id="share-type-modal">
+      <div class="modal" style="max-width:380px">
+        <h2>Share Document</h2>
+        <p>Choose what the recipient can do:</p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+          <button class="btn btn-ghost btn-full" id="share-view-btn">View Only</button>
+          <button class="btn btn-ghost btn-full" id="share-comment-btn">Can Comment</button>
+          <button class="btn btn-ghost btn-full" id="share-edit-btn">Can Edit</button>
+        </div>
+        <div class="modal-actions" style="margin-top:16px">
+          <button class="btn btn-ghost btn-full" id="share-cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DUEL COUNTDOWN OVERLAY -->
+    <div class="duel-countdown-overlay" id="duel-countdown-overlay">
+      <div class="duel-countdown-content">
+        <div class="duel-countdown-emoji">⚔️</div>
+        <h2 id="duel-countdown-title">DUEL STARTS IN</h2>
+        <div class="duel-countdown-timer" id="duel-countdown-timer">60</div>
+        <p class="duel-countdown-vs" id="duel-countdown-vs">You vs Opponent</p>
+        <p class="duel-countdown-duration" id="duel-countdown-duration">10 minute duel</p>
+        <div class="duel-skip-row" id="duel-skip-row">
+          <span class="duel-skip-status" id="duel-skip-me">Skip</span>
+          <span style="color:var(--text-muted);font-size:14px">—</span>
+          <span class="duel-skip-status" id="duel-skip-opp">Skip</span>
+        </div>
+        <button class="btn btn-primary" id="duel-skip-btn" style="margin-top:16px">Skip Wait</button>
+        <button class="btn btn-ghost" id="duel-leave-btn" style="margin-top:12px;display:none" onclick="App.leaveDuelWaiting()">Leave</button>
+      </div>
+    </div>
+
+    <!-- DUEL RESULTS MODAL -->
+    <div class="modal-overlay" id="duel-results-modal">
+      <div class="modal" style="max-width:420px;text-align:center">
+        <div id="duel-results-emoji" style="font-size:64px;margin-bottom:16px">🏆</div>
+        <h2 id="duel-results-title">You Won!</h2>
+        <div id="duel-results-scores" style="display:flex;justify-content:center;gap:32px;margin:24px 0">
+          <div><div style="font-size:28px;font-weight:800" id="duel-results-your-words">0</div><div style="font-size:12px;color:var(--text-muted)">Your words</div></div>
+          <div style="font-size:24px;color:var(--text-muted);align-self:center">vs</div>
+          <div><div style="font-size:28px;font-weight:800" id="duel-results-opp-words">0</div><div style="font-size:12px;color:var(--text-muted)">Their words</div></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary btn-full" onclick="document.getElementById('duel-results-modal').classList.remove('active')">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REMOVE FRIEND CONFIRMATION -->
+    <div class="modal-overlay" id="confirm-remove-friend-modal">
+      <div class="modal" style="max-width:380px">
+        <h2>Remove Friend</h2>
+        <p>Are you sure you want to remove <strong id="confirm-remove-friend-name"></strong> from your friends?</p>
+        <div class="modal-actions" style="margin-top:20px">
+          <button class="btn btn-ghost btn-full" style="padding:12px 32px" onclick="document.getElementById('confirm-remove-friend-modal').classList.remove('active')">Cancel</button>
+          <button class="btn btn-danger btn-full" style="padding:12px 32px" onclick="App.removeFriend()">Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE COMPLETION MODAL (for new Google users) -->
+    <div class="modal-overlay" id="profile-complete-overlay" style="display:none">
+      <div class="modal" style="max-width:420px;padding:32px">
+        <h2 style="font-family:var(--font-display);font-size:22px;font-weight:800;margin-bottom:4px">Complete Your Profile</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Choose your display name and a unique username.</p>
+        <div class="auth-error" id="profile-complete-error"></div>
+        <div class="auth-field">
+          <label>Full Name</label>
+          <input type="text" id="profile-complete-name" placeholder="Your name">
+        </div>
+        <div class="auth-field">
+          <label>Username <span style="font-weight:400;color:var(--text-muted)">(3-30 chars, can change once/month)</span></label>
+          <input type="text" id="profile-complete-username" placeholder="your_username" maxlength="30" minlength="3">
+        </div>
+        <button class="btn btn-primary btn-full" id="profile-complete-btn" style="margin-top:12px">Save & Continue</button>
+      </div>
+    </div>
+
+    <!-- FOLLOWERS/FOLLOWING MODAL -->
+    <div class="modal-overlay" id="follow-list-overlay">
+      <div class="modal" style="max-width:400px;padding:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+          <h3 id="follow-list-title" style="font-family:var(--font-display);font-size:16px;font-weight:700;margin:0">Followers</h3>
+          <button id="follow-list-close" style="background:none;border:none;font-size:22px;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:6px;transition:all 0.15s" onmouseover="this.style.color='var(--text-primary)';this.style.background='var(--hover-bg)'" onmouseout="this.style.color='var(--text-muted)';this.style.background='none'">&times;</button>
+        </div>
+        <div id="follow-list-body" style="max-height:400px;overflow-y:auto;padding:8px 0"></div>
+      </div>
+    </div>
+
+    <!-- SESSION FAILED -->
+    <div class="session-failed" id="session-failed">
+      <div class="session-failed-icon">&#x1F480;</div>
+      <h2>Session Failed</h2>
+      <p id="sf-reason">Your writing is gone.</p>
+      <div style="display:flex;gap:12px;margin-top:32px">
+        <button class="btn btn-ghost btn-large" id="sf-dashboard">View Sessions</button>
+        <button class="btn btn-primary btn-large" id="sf-retry">Try Again</button>
+      </div>
+    </div>
+
+    <!-- SESSION COMPLETE -->
+    <div class="session-complete" id="session-complete">
+      <h2>Session Complete &#x1F389;</h2>
+      <div class="session-stats">
+        <div class="session-stat">
+          <div class="session-stat-value" id="sc-words">0</div>
+          <div class="session-stat-label">Words</div>
+        </div>
+        <div class="session-stat">
+          <div class="session-stat-value" id="sc-time">0:00</div>
+          <div class="session-stat-label">Duration</div>
+        </div>
+        <div class="session-stat">
+          <div class="session-stat-value xp-gained" id="sc-xp">+0 XP</div>
+          <div class="session-stat-label">Earned</div>
+        </div>
+      </div>
+      <div class="streak-display" id="sc-streak" style="display:none">
+        <span class="streak-fire">&#x1F525;</span>
+        <span id="sc-streak-count">0 day streak!</span>
+      </div>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-ghost btn-large" id="sc-dashboard">Back to Dashboard</button>
+        <button class="btn btn-primary btn-large" id="sc-new-session">Write Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY SIDEBAR (right panel) -->
+  <div class="right-sidebar-overlay" id="history-sidebar-overlay"></div>
+  <div class="right-sidebar" id="history-modal">
+    <div class="right-sidebar-header">
+      <h3>&#x1F4CA; Session History</h3>
+      <button class="right-sidebar-close" id="history-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="right-sidebar-body">
+      <div id="history-stats" class="history-stats-grid"></div>
+      <div id="history-sessions"></div>
+    </div>
+  </div>
+
+  <!-- COMMENT HISTORY SIDEBAR (right panel) -->
+  <div class="right-sidebar-overlay" id="comment-history-sidebar-overlay"></div>
+  <div class="right-sidebar" id="comment-history-modal">
+    <div class="right-sidebar-header">
+      <h3>&#x1F4AC; Comment History</h3>
+      <button class="right-sidebar-close" id="comment-history-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="right-sidebar-body">
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px">Resolved comments for this document.</p>
+      <div id="comment-history-list"></div>
+    </div>
+  </div>
+
+  <!-- DANGEROUS MODE COUNTDOWN -->
+  <div class="danger-countdown" id="danger-countdown">
+    <div class="danger-countdown-inner">
+      <p class="danger-countdown-label">&#x26A1; Dangerous Mode</p>
+      <div class="danger-countdown-num" id="danger-countdown-num">5</div>
+      <p class="danger-countdown-sub">Stop typing and your work disappears</p>
+    </div>
+  </div>
+
+  <!-- IN-APP SUCCESS BANNER -->
+  <div class="in-app-banner" id="in-app-banner"></div>
+
+  <!-- IN-APP CONFIRM DIALOG -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-dialog">
+      <p class="confirm-message" id="confirm-message"></p>
+      <div class="confirm-actions">
+        <button class="btn btn-ghost btn-small" id="confirm-cancel">Cancel</button>
+        <button class="btn btn-primary btn-small" id="confirm-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- PRICING MODAL -->
+  <div class="pricing-overlay" id="pricing-overlay">
+    <div class="pricing-modal">
+      <button class="pricing-close" id="pricing-close">&times;</button>
+      <h2 class="pricing-title">Choose Your Plan</h2>
+      <p class="pricing-sub">See what you're missing on Free</p>
+      <div class="pricing-cards" id="pricing-cards-inner"></div>
+    </div>
+  </div>
+
+  <!-- STREAK POPUP -->
+  <div class="streak-popup-overlay" id="streak-popup-overlay">
+    <div class="streak-popup">
+      <button class="streak-popup-close" onclick="App.closeStreakPopup()">&times;</button>
+      <div class="streak-popup-fire" id="streak-popup-fire">
+        <div class="streak-flame flame-1">&#x1F525;</div>
+        <div class="streak-flame flame-2">&#x1F525;</div>
+        <div class="streak-flame flame-3">&#x1F525;</div>
+      </div>
+      <div class="streak-popup-count" id="streak-popup-count">0</div>
+      <div class="streak-popup-label">Day Streak!</div>
+      <div class="streak-popup-message" id="streak-popup-message">Keep writing every day!</div>
+      <div class="streak-popup-best" id="streak-popup-best">Best: 0 days</div>
+    </div>
+  </div>
+
+  <script src="/js/api.js?v=19"></script>
+  <script src="/js/tree.js?v=18"></script>
+  <script src="/js/monsters.js?v=18"></script>
+  <script src="/js/editor.js?v=41"></script>
+  <script src="/js/app.js?v=84"></script>
+  <script src="/js/stories.js?v=16"></script>
+  <script>
+    fetch('/api/version').then(r => r.json()).then(d => {
+      const el = document.getElementById('version-tag');
+      if (el && d.version) el.textContent = 'v' + d.version;
+    }).catch(() => {});
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGSXDSW496"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-LGSXDSW496');
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>iWrite4.me — Dashboard</title>
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/iWrite logo.png">
   <link rel="stylesheet" href="/css/style.css?v=92">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
