@@ -441,7 +441,7 @@ router.post('/:id/share', async (req, res) => {
     createdAt: new Date().toISOString()
   };
 
-  const links = [...doc.shareLinks, shareLink];
+  const links = [...(Array.isArray(doc.shareLinks) ? doc.shareLinks : []), shareLink];
   await updateOne('documents.json', d => d.id === req.params.id, { shareLinks: links });
   res.json(shareLink);
 });
