@@ -8596,6 +8596,22 @@ const App = {
       }
       list.innerHTML = tickets.map(t => {
         const statusClass = t.status === 'open' ? 'open' : t.status === 'replied' ? 'replied' : 'closed';
+        const messages = (t.messages && t.messages.length)
+          ? t.messages
+          : [
+              { author: 'user', body: t.message, image: t.image, createdAt: t.createdAt },
+              ...(t.adminReply ? [{ author: 'admin', body: t.adminReply, createdAt: t.repliedAt }] : [])
+            ].filter(m => m.body || m.image);
+        const threadHtml = messages.map(m => {
+          const isAdmin = m.author === 'admin';
+          return `
+            <div class="ticket-reply" style="${isAdmin ? '' : 'background:var(--bg-card);border:1px solid var(--border);'}">
+              <span class="ticket-reply-label">${isAdmin ? 'Support' : 'You'}</span>
+              ${this._esc(m.body || '')}
+              ${m.image && m.image.base64 ? `<div class="ticket-image-wrap" style="margin-top:8px"><img class="ticket-image-user" src="data:${this._esc(m.image.mime || 'image/png')};base64,${m.image.base64}" onclick="App.openSupportLightbox(this.src)" alt="Attachment"></div>` : ''}
+              ${m.createdAt ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${new Date(m.createdAt).toLocaleString()}</div>` : ''}
+            </div>`;
+        }).join('');
         return `
         <div class="ticket">
           <div class="ticket-row">
@@ -8606,9 +8622,12 @@ const App = {
               <span class="ticket-status ticket-status--${statusClass}">${t.status}</span>
             </span>
           </div>
-          <p class="ticket-body">${this._esc(t.message)}</p>
-          ${t.image && t.image.base64 ? `<div class="ticket-image-wrap"><img class="ticket-image-user" src="data:${this._esc(t.image.mime || 'image/png')};base64,${t.image.base64}" onclick="App.openSupportLightbox(this.src)" alt="Attachment"></div>` : ''}
-          ${t.adminReply ? `<div class="ticket-reply"><span class="ticket-reply-label">Reply</span> ${this._esc(t.adminReply)}</div>` : ''}
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">${threadHtml}</div>
+          ${t.status !== 'closed' ? `
+            <div class="ticket-followup" style="margin-top:12px">
+              <textarea id="support-followup-${t.id}" placeholder="Add another message..." style="width:100%;min-height:74px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-card);color:var(--text-primary);font-family:var(--font-sans);font-size:14px;resize:vertical"></textarea>
+              <button class="btn btn-secondary btn-small" style="margin-top:8px" onclick="App.addSupportMessage('${t.id}')">Send Update</button>
+            </div>` : ''}
         </div>`;
       }).join('');
     } catch {
@@ -8719,6 +8738,20 @@ const App = {
       this.toast(err.message || 'Failed to submit', 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Submit Ticket'; }
+    }
+  },
+
+  async addSupportMessage(ticketId) {
+    const textarea = document.getElementById(`support-followup-${ticketId}`);
+    const message = textarea ? textarea.value.trim() : '';
+    if (!message) return this.toast('Write a message first', 'error');
+    try {
+      await API.addSupportTicketMessage(ticketId, message, null);
+      if (textarea) textarea.value = '';
+      this.toast('Update sent', 'success');
+      this.loadSupport();
+    } catch (err) {
+      this.toast(err.message || 'Failed to send update', 'error');
     }
   },
 

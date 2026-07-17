@@ -376,6 +376,18 @@ const API = {
     });
   },
 
+  async addSupportTicketMessage(ticketId, message, image) {
+    const body = { message };
+    if (image && image.base64 && image.mime) {
+      body.imageBase64 = image.base64;
+      body.imageMime = image.mime;
+    }
+    return this.request(`/support/${ticketId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  },
+
   async useCopy() {
     return this.request('/documents/copy', { method: 'POST' });
   },

@@ -228,7 +228,8 @@ router.get('/:id', async (req, res) => {
   if (!doc) return res.status(404).json({ error: 'Document not found' });
 
   const isOwner = doc.userId === req.user.id;
-  const hasAccess = doc.shareLinks.some(
+  const shareLinks = Array.isArray(doc.shareLinks) ? doc.shareLinks : [];
+  const hasAccess = shareLinks.some(
     s => s.userId === req.user.id || s.type === 'public'
   );
   if (!isOwner && !hasAccess) {

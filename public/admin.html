@@ -1283,14 +1283,13 @@
       } else {
         tbody.innerHTML = docs.map(d => {
           const title = (d.title || '').trim() || '(untitled)';
-          const preview = (d.content || '').replace(/<[^>]*>/g, '').slice(0, 120) || '(no content)';
           return `<tr>
-            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default" title="${esc(title)}\n\n${esc(preview)}${(d.content||'').length > 120 ? '...' : ''}\nWords: ${d.wordCount || 0}"><strong>${esc(title)}</strong></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default" title="${esc(title)}\nWords: ${d.wordCount || 0}"><strong>${esc(title)}</strong></td>
             <td>${d.wordCount || 0}</td>
             <td>${d.mode || 'normal'}</td>
             <td>${renderStatusBadge(d)}</td>
             <td style="font-size:11px">${d.updatedAt ? new Date(d.updatedAt).toLocaleDateString() : '—'}</td>
-            <td class="actions"><button class="admin-btn admin-btn-primary" onclick="viewDoc('${d.id}')">View</button></td>
+            <td class="actions"><button class="admin-btn admin-btn-ghost" onclick="viewDoc('${d.id}')">Details</button></td>
           </tr>`;
         }).join('');
       }
@@ -1708,11 +1707,10 @@
                 <thead><tr><th>Title</th><th>Words</th><th>Mode</th><th>Status</th></tr></thead>
                 <tbody>
                   ${u.documents.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 30).map(d => {
-                    const preview = (d.content || '').replace(/<[^>]*>/g, '').slice(0, 120) || '(no content)';
                     const title = (d.title || '').trim() || '(untitled)';
                     return `
                     <tr>
-                      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default" title="${esc(title)}&#10;&#10;${esc(preview)}${(d.content||'').length > 120 ? '...' : ''}&#10;Words: ${d.wordCount || 0}">${esc(title)}</td>
+                      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default" title="${esc(title)}&#10;Words: ${d.wordCount || 0}">${esc(title)}</td>
                       <td>${d.wordCount || 0}</td>
                       <td>${d.mode || 'normal'}</td>
                       <td>${renderStatusBadge(d)}</td>
@@ -2047,7 +2045,7 @@
           <td style="font-size:12px;color:var(--text-muted)">${d.failReason ? esc(d.failReason) : '—'}</td>
           <td style="font-size:12px">${timeCol ? new Date(timeCol).toLocaleString() : '—'}</td>
           <td class="actions">
-            <button class="admin-btn admin-btn-primary" onclick="viewDoc('${d.id}')">View</button>
+            <button class="admin-btn admin-btn-ghost" onclick="viewDoc('${d.id}')">Details</button>
             ${status === 'active' ? `<button class="admin-btn admin-btn-danger" onclick="deactivateDoc('${d.id}')">Deactivate</button>` : ''}
             ${status === 'deleted' || status === 'lost' ? `<button class="admin-btn admin-btn-success" onclick="restoreDoc('${d.id}')">Restore</button>` : ''}
             <button class="admin-btn admin-btn-danger" onclick="permanentDeleteDoc('${d.id}')" style="font-size:10px">X</button>
@@ -2074,7 +2072,7 @@
           <h4 style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Prompt / Topic</h4>
           <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-size:14px;line-height:1.6;margin-bottom:16px;font-style:italic;color:${doc.prompt ? 'var(--text-secondary)' : 'var(--text-muted)'}">${doc.prompt ? esc(doc.prompt) : 'NaN'}</div>
           <h4 style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Content</h4>
-          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;font-size:14px;line-height:1.7;max-height:400px;overflow-y:auto">${doc.content || '<em style="color:var(--text-muted)">Empty document</em>'}</div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;font-size:14px;line-height:1.7;color:var(--text-muted)">Document content is hidden from admin views. Metadata remains available; encryption-at-rest will be handled in a later security pass.</div>
         `;
         openPanel('doc-view-panel', 'doc-view-overlay');
       } catch { toast('Failed to load document', 'error'); }
@@ -2520,7 +2518,7 @@
           <td style="font-size:12px;color:var(--text-muted)">${d.failReason ? esc(d.failReason) : '—'}</td>
           <td style="font-size:12px">${timeCol ? new Date(timeCol).toLocaleString() : '—'}</td>
           <td class="actions">
-            <button class="admin-btn admin-btn-primary" onclick="viewDoc('${d.id}')">View</button>
+            <button class="admin-btn admin-btn-ghost" onclick="viewDoc('${d.id}')">Details</button>
             <button class="admin-btn admin-btn-success" onclick="restoreDoc('${d.id}');setTimeout(()=>{_lostLoaded=false;renderLostFiles();},500)">Restore</button>
             <button class="admin-btn admin-btn-danger" onclick="permanentDeleteDoc('${d.id}');setTimeout(()=>{_lostLoaded=false;renderLostFiles();},500)">Delete</button>
           </td>
@@ -2639,7 +2637,23 @@
           el.innerHTML = '<div class="admin-empty">No support tickets.</div>';
           return;
         }
-        el.innerHTML = tickets.map(t => `
+        el.innerHTML = tickets.map(t => {
+          const messages = (t.messages && t.messages.length)
+            ? t.messages
+            : [
+                { author: 'user', body: t.message, image: t.image, createdAt: t.createdAt },
+                ...(t.adminReply ? [{ author: 'admin', body: t.adminReply, createdAt: t.repliedAt }] : [])
+              ].filter(m => m.body || m.image);
+          const threadHtml = messages.map(m => {
+            const isAdmin = m.author === 'admin';
+            return `
+              <div style="padding:8px 12px;background:${isAdmin ? 'var(--accent-soft)' : 'var(--bg-elevated)'};border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:8px">
+                <strong>${isAdmin ? 'Admin reply' : 'User message'}:</strong> ${esc(m.body || '')}
+                ${m.image && m.image.base64 ? `<div class="ticket-image-wrap" style="margin-top:8px"><img class="ticket-image" src="data:${esc(m.image.mime || 'image/png')};base64,${m.image.base64}" onclick="openTicketLightbox(this.src)" alt="Attachment"></div>` : ''}
+                ${m.createdAt ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${new Date(m.createdAt).toLocaleString()}</div>` : ''}
+              </div>`;
+          }).join('');
+          return `
           <div class="ticket-card">
             <div class="ticket-header">
               <div>
@@ -2652,13 +2666,11 @@
                 <button class="admin-btn admin-btn-danger" onclick="deleteTicket('${t.id}')" style="font-size:10px">X</button>
               </div>
             </div>
-            <div class="ticket-body">${esc(t.message)}</div>
-            ${t.image && t.image.base64 ? `<div class="ticket-image-wrap"><img class="ticket-image" src="data:${esc(t.image.mime || 'image/png')};base64,${t.image.base64}" onclick="openTicketLightbox(this.src)" alt="Attachment"></div>` : ''}
-            ${t.adminReply ? `<div style="padding:8px 12px;background:var(--accent-soft);border-radius:8px;font-size:13px;margin-bottom:8px"><strong>Your reply:</strong> ${esc(t.adminReply)}</div>` : ''}
-            ${!t.adminReply ? `<div class="ticket-reply-area">
+            <div style="margin-bottom:8px">${threadHtml}</div>
+            ${t.status !== 'closed' ? `<div class="ticket-reply-area">
               <textarea id="reply-${t.id}" placeholder="Write a reply..."></textarea>
               <div style="display:flex;gap:6px;margin-top:6px">
-                <button class="admin-btn admin-btn-primary" onclick="replyTicket('${t.id}')">Reply & Mark Replied</button>
+                <button class="admin-btn admin-btn-primary" onclick="replyTicket('${t.id}')">Send Reply</button>
               </div>
             </div>` : ''}
             <div style="display:flex;gap:6px;margin-top:6px">
@@ -2666,7 +2678,7 @@
               ${t.status === 'closed' ? `<button class="admin-btn admin-btn-success" onclick="reopenTicket('${t.id}')">Reopen</button>` : ''}
             </div>
           </div>
-        `).join('');
+        `; }).join('');
       } catch { toast('Failed to load support tickets', 'error'); }
     }
 

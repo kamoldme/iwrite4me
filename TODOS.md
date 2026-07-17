@@ -1,5 +1,13 @@
 # TODOS
 
+## Security
+
+### Encrypt Document Content At Rest
+- **What:** Add real encryption for stored document content, with admin APIs continuing to expose only metadata.
+- **Why:** Admin document-content access is now removed, but stored writing content still needs proper encryption for stronger privacy.
+- **Context:** Requested after removing admin document viewing from the admin dashboard.
+- **Depends on:** Key-management design and migration plan for existing documents.
+
 ## Design Debt
 
 ### Create DESIGN.md — Formal Design System

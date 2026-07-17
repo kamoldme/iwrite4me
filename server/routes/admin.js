@@ -4,6 +4,7 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 const bcrypt = require('bcryptjs');
 const { v4: uuid } = require('uuid');
+const { appendSupportMessage, getSupportMessages, makeSupportMessage } = require('../utils/supportThread');
 
 // Streak → tree stage mapping (30 days = max)
 const TREE_STAGE_THRESHOLDS = [0, 1, 3, 5, 8, 11, 14, 17, 20, 23, 27, 30];
@@ -16,6 +17,16 @@ function streakToTreeStage(streak) {
 
 const router = express.Router();
 router.use(authenticate, requireAdmin);
+
+function redactDocumentContent(doc) {
+  if (!doc) return doc;
+  const { content, ...safeDoc } = doc;
+  return {
+    ...safeDoc,
+    contentRedacted: true,
+    contentAvailableToAdmin: false
+  };
+}
 
 // ===== STATS =====
 router.get('/stats', async (req, res) => {
@@ -149,7 +160,7 @@ router.get('/users/:id', async (req, res) => {
   const { password, ...safeUser } = user;
 
   // Include user's documents and friends info
-  const docs = await findMany('documents.json', d => d.userId === user.id);
+  const docs = (await findMany('documents.json', d => d.userId === user.id)).map(redactDocumentContent);
   const friendsList = [];
   for (const fid of (user.friends || [])) {
     const f = await findOne('users.json', u => u.id === fid);
@@ -371,7 +382,7 @@ router.get('/documents', async (req, res) => {
   users.forEach(u => { userMap[u.id] = u.name; });
 
   let docs = allDocs.map(d => ({
-    ...d,
+    ...redactDocumentContent(d),
     ownerName: userMap[d.userId] || 'Unknown'
   })).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 
@@ -434,7 +445,7 @@ router.get('/documents-lost', async (req, res) => {
   users.forEach(u => { userMap[u.id] = u.name; });
   const docs = allDocs
     .filter(d => d.deletedBySystem || d.deleted)
-    .map(d => ({ ...d, ownerName: userMap[d.userId] || 'Unknown' }))
+    .map(d => ({ ...redactDocumentContent(d), ownerName: userMap[d.userId] || 'Unknown' }))
     .sort((a, b) => new Date(b.failedAt || b.updatedAt || 0) - new Date(a.failedAt || a.updatedAt || 0));
   res.json({ items: docs, total: docs.length });
 });
@@ -443,11 +454,11 @@ router.get('/documents/:id', async (req, res) => {
   const doc = await findOne('documents.json', d => d.id === req.params.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
   const owner = await findOne('users.json', u => u.id === doc.userId);
-  res.json({ ...doc, ownerName: owner ? owner.name : 'Unknown' });
+  res.json({ ...redactDocumentContent(doc), ownerName: owner ? owner.name : 'Unknown' });
 });
 
 router.patch('/documents/:id', async (req, res) => {
-  const allowedFields = ['title', 'content', 'deleted', 'deletedBySystem'];
+  const allowedFields = ['title', 'deleted', 'deletedBySystem'];
   const updates = {};
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -467,7 +478,7 @@ router.patch('/documents/:id', async (req, res) => {
   if (!updated) return res.status(404).json({ error: 'Document not found' });
 
   logAction('document_updated', { docId: req.params.id, changes: Object.keys(updates) }, req.user.id);
-  res.json(updated);
+  res.json(redactDocumentContent(updated));
 });
 
 router.post('/documents/:id/restore', async (req, res) => {
@@ -479,7 +490,7 @@ router.post('/documents/:id/restore', async (req, res) => {
   if (!updated) return res.status(404).json({ error: 'Document not found' });
 
   logAction('document_restored', { docId: req.params.id, title: updated.title }, req.user.id);
-  res.json(updated);
+  res.json(redactDocumentContent(updated));
 });
 
 router.delete('/documents/:id', async (req, res) => {
@@ -499,7 +510,7 @@ router.get('/lost-files', async (req, res) => {
   users.forEach(u => { userMap[u.id] = u.name; });
 
   res.json(docs.map(d => ({
-    ...d,
+    ...redactDocumentContent(d),
     ownerName: userMap[d.userId] || 'Unknown',
     active: !d.deleted
   })).sort((a, b) => new Date(b.failedAt || b.updatedAt) - new Date(a.failedAt || a.updatedAt)));
@@ -591,6 +602,7 @@ router.get('/support', async (req, res) => {
 
   res.json(tickets.map(t => ({
     ...t,
+    messages: getSupportMessages(t),
     userName: userMap[t.userId] ? userMap[t.userId].name : 'Unknown',
     userEmail: userMap[t.userId] ? userMap[t.userId].email : 'Unknown'
   })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
@@ -601,8 +613,13 @@ router.patch('/support/:id', async (req, res) => {
   const updates = {};
   if (status) updates.status = status;
   if (adminReply) {
+    const ticket = await findOne('support.json', t => t.id === req.params.id);
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
+    const replyMessage = makeSupportMessage('admin', adminReply, { via: 'admin' });
+    updates.messages = appendSupportMessage(ticket, replyMessage);
     updates.adminReply = adminReply;
     updates.repliedAt = new Date().toISOString();
+    updates.status = status || 'replied';
   }
   updates.updatedAt = new Date().toISOString();
 

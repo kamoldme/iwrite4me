@@ -3,11 +3,33 @@
 // Requires env vars: TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID
 
 const TelegramBot = require('node-telegram-bot-api');
+const { appendSupportMessage, makeSupportMessage } = require('./utils/supportThread');
 
 let bot = null;
 let chatId = null;
+let adminChatIds = new Set();
+let infoChatIds = new Set();
 let _activeUsers = null; // passed from index.js to avoid circular require
 const APP_URL = (process.env.APP_URL || 'https://iwrite4.me').replace(/\/$/, '');
+
+function parseChatIds(value) {
+  return String(value || '')
+    .split(',')
+    .map(id => id.trim())
+    .filter(Boolean);
+}
+
+function allNotifyChatIds() {
+  return [...new Set([...adminChatIds, ...infoChatIds].filter(Boolean))];
+}
+
+function canReceive(id) {
+  return adminChatIds.has(String(id)) || infoChatIds.has(String(id));
+}
+
+function canAct(id) {
+  return adminChatIds.has(String(id));
+}
 
 function init(activeUsersMap) {
   _activeUsers = activeUsersMap || null;
@@ -20,11 +42,14 @@ function init(activeUsersMap) {
   try {
     bot = new TelegramBot(token, { polling: true });
     chatId = process.env.TELEGRAM_ADMIN_CHAT_ID || null;
+    adminChatIds = new Set(parseChatIds(process.env.TELEGRAM_ADMIN_CHAT_IDS || chatId));
+    infoChatIds = new Set(parseChatIds(process.env.TELEGRAM_INFO_CHAT_IDS));
+    if (chatId) adminChatIds.add(chatId);
 
     // /start command — requires access code to unlock
     const accessCode = process.env.TELEGRAM_ACCESS_CODE || null;
     const authorizedChats = new Set();
-    if (chatId) authorizedChats.add(chatId);
+    for (const id of allNotifyChatIds()) authorizedChats.add(id);
 
     bot.onText(/\/start(.*)/, (msg, match) => {
       const id = msg.chat.id.toString();
@@ -32,7 +57,8 @@ function init(activeUsersMap) {
 
       // Already authorized
       if (authorizedChats.has(id)) {
-        bot.sendMessage(id, `✅ You're authorized.\n\nChat ID: <code>${id}</code>\nCommands: /status, /stats`, { parse_mode: 'HTML' });
+        const commands = canAct(id) ? '/status, /stats, reply to support tickets' : '/status';
+        bot.sendMessage(id, `✅ You're authorized.\n\nChat ID: <code>${id}</code>\nRole: <b>${canAct(id) ? 'admin' : 'info viewer'}</b>\nCommands: ${commands}`, { parse_mode: 'HTML' });
         return;
       }
 
@@ -52,6 +78,7 @@ function init(activeUsersMap) {
         authorizedChats.add(id);
         if (!chatId) {
           chatId = id;
+          adminChatIds.add(id);
           console.log(`[Telegram] Admin chat ID set to ${chatId} via access code`);
         }
         bot.sendMessage(id, `✅ Access granted!\n\nChat ID: <code>${id}</code>\nCommands: /status, /stats`, { parse_mode: 'HTML' });
@@ -64,15 +91,16 @@ function init(activeUsersMap) {
 
     // /status command — quick health check
     bot.onText(/\/status/, (msg) => {
-      if (!authorizedChats.has(msg.chat.id.toString())) return;
-      bot.sendMessage(chatId, `✅ Bot is running\n📡 Chat ID: <code>${chatId}</code>\n⏰ ${new Date().toISOString()}`, { parse_mode: 'HTML' });
+      const id = msg.chat.id.toString();
+      if (!canReceive(id)) return;
+      bot.sendMessage(id, `✅ Bot is running\n📡 Chat ID: <code>${id}</code>\nRole: <b>${canAct(id) ? 'admin' : 'info viewer'}</b>\n⏰ ${new Date().toISOString()}`, { parse_mode: 'HTML' });
     });
 
     // Handle inline button callbacks (moderation approve/reject/view)
     bot.on('callback_query', async (query) => {
       if (!query.data) return;
       // Only authorized users can press buttons
-      if (!authorizedChats.has(query.message.chat.id.toString())) {
+      if (!canAct(query.message.chat.id.toString())) {
         await bot.answerCallbackQuery(query.id, { text: '🔒 Not authorized' });
         return;
       }
@@ -158,7 +186,14 @@ function init(activeUsersMap) {
 
     // Handle replies to support ticket messages — auto-reply on the platform
     bot.on('message', async (msg) => {
-      if (!msg.reply_to_message || !msg.text || !authorizedChats.has(msg.chat.id.toString())) return;
+      const senderChatId = msg.chat.id.toString();
+      if (!msg.reply_to_message || !msg.text || !canReceive(senderChatId)) return;
+      if (!canAct(senderChatId)) {
+        if ((msg.reply_to_message.text || '').includes('ticket:')) {
+          bot.sendMessage(senderChatId, '🔒 Info viewers can see support tickets but cannot reply to users.', { reply_to_message_id: msg.message_id });
+        }
+        return;
+      }
       // Check if the original message is a support ticket
       const origText = msg.reply_to_message.text || '';
       if (!origText.includes('New Support Ticket') && !origText.includes('🎫')) return;
@@ -172,12 +207,12 @@ function init(activeUsersMap) {
         const { findOne, findMany, updateOne } = require('./utils/storage');
         const user = await findOne('users.json', u => u.username === usernameMatch[1]);
         if (!user) {
-          bot.sendMessage(chatId, '⚠️ Could not find user', { reply_to_message_id: msg.message_id });
+          bot.sendMessage(senderChatId, '⚠️ Could not find user', { reply_to_message_id: msg.message_id });
           return;
         }
         const tickets = await findMany('support.json', t => t.userId === user.id && t.status === 'open');
         if (!tickets.length) {
-          bot.sendMessage(chatId, '⚠️ No open tickets from this user', { reply_to_message_id: msg.message_id });
+          bot.sendMessage(senderChatId, '⚠️ No open tickets from this user', { reply_to_message_id: msg.message_id });
           return;
         }
         // Match by subject in original message
@@ -187,13 +222,15 @@ function init(activeUsersMap) {
           const found = tickets.find(t => t.subject === subjectMatch[1].trim());
           if (found) ticket = found;
         }
+        const replyMessage = makeSupportMessage('admin', msg.text, { via: 'telegram', telegramChatId: senderChatId });
         await updateOne('support.json', t => t.id === ticket.id, {
+          messages: appendSupportMessage(ticket, replyMessage),
           adminReply: msg.text,
           repliedAt: new Date().toISOString(),
           status: 'replied',
           updatedAt: new Date().toISOString()
         });
-        bot.sendMessage(chatId, `✅ Reply sent to @${esc(user.username)} on ticket "${esc(ticket.subject)}"`, {
+        bot.sendMessage(senderChatId, `✅ Reply sent to @${esc(user.username)} on ticket "${esc(ticket.subject)}"`, {
           reply_to_message_id: msg.message_id,
           parse_mode: 'HTML'
         });
@@ -204,17 +241,19 @@ function init(activeUsersMap) {
       const { findOne, updateOne } = require('./utils/storage');
       const ticket = await findOne('support.json', t => t.id === ticketIdMatch[1]);
       if (!ticket) {
-        bot.sendMessage(chatId, '⚠️ Ticket not found', { reply_to_message_id: msg.message_id });
+        bot.sendMessage(senderChatId, '⚠️ Ticket not found', { reply_to_message_id: msg.message_id });
         return;
       }
+      const replyMessage = makeSupportMessage('admin', msg.text, { via: 'telegram', telegramChatId: senderChatId });
       await updateOne('support.json', t => t.id === ticket.id, {
+        messages: appendSupportMessage(ticket, replyMessage),
         adminReply: msg.text,
         repliedAt: new Date().toISOString(),
         status: 'replied',
         updatedAt: new Date().toISOString()
       });
       const user = await findOne('users.json', u => u.id === ticket.userId);
-      bot.sendMessage(chatId, `✅ Reply sent to @${esc(user ? user.username : '?')} on ticket "${esc(ticket.subject)}"`, {
+      bot.sendMessage(senderChatId, `✅ Reply sent to @${esc(user ? user.username : '?')} on ticket "${esc(ticket.subject)}"`, {
         reply_to_message_id: msg.message_id,
         parse_mode: 'HTML'
       });
@@ -227,7 +266,7 @@ function init(activeUsersMap) {
 
     // /stats command — manual stats card
     bot.onText(/\/stats/, (msg) => {
-      if (!authorizedChats.has(msg.chat.id.toString())) return;
+      if (!canAct(msg.chat.id.toString())) return;
       sendStatsCard();
     });
 
@@ -238,7 +277,7 @@ function init(activeUsersMap) {
 }
 
 async function sendStatsCard() {
-  if (!bot || !chatId) return;
+  if (!bot || allNotifyChatIds().length === 0) return;
   try {
     const { findMany } = require('./utils/storage');
     const users = await findMany('users.json');
@@ -340,10 +379,21 @@ async function sendStatsCard() {
 // ===== NOTIFICATION HELPERS =====
 
 function send(text, opts = {}) {
-  if (!bot || !chatId) return;
-  bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true, ...opts }).catch(err => {
-    console.error('[Telegram] Send error:', err.message);
-  });
+  if (!bot) return;
+  for (const id of allNotifyChatIds()) {
+    bot.sendMessage(id, text, { parse_mode: 'HTML', disable_web_page_preview: true, ...opts }).catch(err => {
+      console.error(`[Telegram] Send error (${id}):`, err.message);
+    });
+  }
+}
+
+function sendAdminOnly(text, opts = {}) {
+  if (!bot) return;
+  for (const id of adminChatIds) {
+    bot.sendMessage(id, text, { parse_mode: 'HTML', disable_web_page_preview: true, ...opts }).catch(err => {
+      console.error(`[Telegram] Admin send error (${id}):`, err.message);
+    });
+  }
 }
 
 function esc(text) {
@@ -461,9 +511,33 @@ function notifySupportTicket(user, ticket) {
 
   if (ticket.image && ticket.image.base64 && bot && chatId) {
     const buf = Buffer.from(ticket.image.base64, 'base64');
-    bot.sendPhoto(chatId, buf, { caption: `🎫 Ticket: ${esc(ticket.subject)}`, parse_mode: 'HTML' })
+    Promise.all(allNotifyChatIds().map(id =>
+      bot.sendPhoto(id, buf, { caption: `🎫 Ticket: ${esc(ticket.subject)}`, parse_mode: 'HTML' })
+    ))
       .then(() => send(text))
       .catch(err => { console.error('[Telegram] sendPhoto error:', err.message); send(text); });
+    return;
+  }
+  send(text);
+}
+
+function notifySupportTicketMessage(user, ticket, message) {
+  const text =
+    `🎫 <b>Support Ticket Update</b>\n\n` +
+    `From: ${esc(user.name)} (@${esc(user.username)})\n` +
+    `Subject: ${esc(ticket.subject)}\n` +
+    `Message: ${esc((message.body || '').slice(0, 500))}${message.body && message.body.length > 500 ? '...' : ''}` +
+    `${message.image ? '\n📎 Image attached ↑' : ''}\n\n` +
+    `<i>Reply to this message to respond to the user again</i>\n` +
+    `<code>ticket:${ticket.id}</code>`;
+
+  if (message.image && message.image.base64 && bot) {
+    const buf = Buffer.from(message.image.base64, 'base64');
+    Promise.all(allNotifyChatIds().map(id =>
+      bot.sendPhoto(id, buf, { caption: `🎫 Ticket update: ${esc(ticket.subject)}`, parse_mode: 'HTML' })
+    ))
+      .then(() => send(text))
+      .catch(err => { console.error('[Telegram] update sendPhoto error:', err.message); send(text); });
     return;
   }
   send(text);
@@ -577,6 +651,7 @@ module.exports = {
   notifyDuelSessionCompleted,
   notifySessionFailed,
   notifySupportTicket,
+  notifySupportTicketMessage,
   notifyStripeSubscription,
   notifyStripeRenewal,
   notifyStripeFailed,
