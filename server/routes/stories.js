@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { findOne, findMany, insertOne, updateOne, deleteOne } = require('../utils/storage');
+const { withDecryptedContent } = require('../utils/documentCrypto');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -460,14 +461,15 @@ router.post('/from-document/:documentId', async (req, res) => {
     const doc = await findOne('documents.json', d => d.id === req.params.documentId && d.userId === req.user.id);
     if (!doc) return res.status(404).json({ error: 'Document not found' });
 
+    const readableDoc = withDecryptedContent(doc);
     const now = new Date().toISOString();
     const story = {
       id: uuid(),
       userId: req.user.id,
-      sourceDocumentId: doc.id,
-      title: doc.title || '',
-      excerpt: buildExcerpt({ content: doc.content }),
-      content: sanitizeStoryContent(doc.content || ''),
+      sourceDocumentId: readableDoc.id,
+      title: readableDoc.title || '',
+      excerpt: buildExcerpt({ content: readableDoc.content }),
+      content: sanitizeStoryContent(readableDoc.content || ''),
       status: 'draft',
       allowComments: true,
       commentsLocked: false,

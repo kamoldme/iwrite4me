@@ -2,6 +2,7 @@ const express = require('express');
 const { findOne, findMany, insertOne, updateOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { v4: uuid } = require('uuid');
+const { withDecryptedContent } = require('../utils/documentCrypto');
 
 const router = express.Router();
 
@@ -14,19 +15,20 @@ router.get('/:token', async (req, res) => {
     return res.status(404).json({ error: 'Document not found or no longer available' });
   }
 
+  const readableDoc = withDecryptedContent(doc);
   const link = doc.shareLinks.find(s => s.token === req.params.token);
   const owner = await findOne('users.json', u => u.id === doc.userId);
 
   res.json({
-    id: doc.id,
-    title: doc.title,
-    content: doc.content,
-    wordCount: doc.wordCount,
+    id: readableDoc.id,
+    title: readableDoc.title,
+    content: readableDoc.content,
+    wordCount: readableDoc.wordCount,
     ownerName: owner ? owner.name : 'Unknown',
-    ownerId: doc.userId,
+    ownerId: readableDoc.userId,
     permission: link.type,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt
+    createdAt: readableDoc.createdAt,
+    updatedAt: readableDoc.updatedAt
   });
 });
 

@@ -5,6 +5,7 @@ const { logAction } = require('../utils/logger');
 const bcrypt = require('bcryptjs');
 const { v4: uuid } = require('uuid');
 const { appendSupportMessage, getSupportMessages, makeSupportMessage } = require('../utils/supportThread');
+const { encryptionEnabled, redactEncryptedContent, withEncryptedContent } = require('../utils/documentCrypto');
 
 // Streak → tree stage mapping (30 days = max)
 const TREE_STAGE_THRESHOLDS = [0, 1, 3, 5, 8, 11, 14, 17, 20, 23, 27, 30];
@@ -19,13 +20,7 @@ const router = express.Router();
 router.use(authenticate, requireAdmin);
 
 function redactDocumentContent(doc) {
-  if (!doc) return doc;
-  const { content, ...safeDoc } = doc;
-  return {
-    ...safeDoc,
-    contentRedacted: true,
-    contentAvailableToAdmin: false
-  };
+  return redactEncryptedContent(doc);
 }
 
 // ===== STATS =====
@@ -143,6 +138,27 @@ router.get('/stats', async (req, res) => {
     weekActivity,
     visitsByDay
   });
+});
+
+router.post('/security/encrypt-documents', async (req, res) => {
+  if (!encryptionEnabled()) {
+    return res.status(503).json({ error: 'DOCUMENT_ENCRYPTION_KEY is not configured' });
+  }
+
+  const docs = await findMany('documents.json');
+  let encryptedDocuments = 0;
+  const encryptedDocs = docs.map(doc => {
+    if (doc.contentEncrypted || typeof doc.content !== 'string') return doc;
+    encryptedDocuments += 1;
+    return withEncryptedContent(doc, doc.content);
+  });
+
+  if (encryptedDocuments > 0) {
+    await write('documents.json', encryptedDocs);
+    logAction('documents_encrypted', { encryptedDocuments }, req.user.id);
+  }
+
+  res.json({ success: true, encryptedDocuments });
 });
 
 // ===== USERS =====

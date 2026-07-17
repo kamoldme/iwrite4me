@@ -3,6 +3,7 @@ const { v4: uuid } = require('uuid');
 const { findOne, findMany, insertOne, updateOne, deleteOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
+const { withEncryptedContent, withDecryptedContent } = require('../utils/documentCrypto');
 
 // Streak → tree stage mapping (30 days = max)
 const TREE_STAGE_THRESHOLDS = [0, 1, 3, 5, 8, 11, 14, 17, 20, 23, 27, 30];
@@ -90,7 +91,8 @@ router.post('/heartbeat', (req, res) => {
 
 router.get('/', async (req, res) => {
   // Include system-deleted (failed) docs for history, admin-deactivated docs, but not manually deleted
-  const docs = await findMany('documents.json', d => d.userId === req.user.id && (!d.deleted || d.deletedBySystem || d.deactivatedByAdmin));
+  const docs = (await findMany('documents.json', d => d.userId === req.user.id && (!d.deleted || d.deletedBySystem || d.deactivatedByAdmin)))
+    .map(withDecryptedContent);
   res.json(docs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
 });
 
@@ -129,11 +131,10 @@ router.post('/', async (req, res) => {
     finalTitle = `${baseTitle} (${n})`;
   }
 
-  const doc = {
+  const doc = withEncryptedContent({
     id: uuid(),
     userId: req.user.id,
     title: finalTitle,
-    content: content || '',
     mode: mode || 'normal',
     dangerVariant: (mode === 'dangerous') ? (dangerVariant === 'chill' ? 'chill' : 'classic') : null,
     prompt: prompt || '',
@@ -145,9 +146,9 @@ router.post('/', async (req, res) => {
     deletedBySystem: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
-  };
+  }, content || '');
   await insertOne('documents.json', doc);
-  res.status(201).json(doc);
+  res.status(201).json(withDecryptedContent(doc));
 });
 
 router.get('/shared-with-me', async (req, res) => {
@@ -235,7 +236,7 @@ router.get('/:id', async (req, res) => {
   if (!isOwner && !hasAccess) {
     return res.status(403).json({ error: 'Access denied' });
   }
-  res.json(doc);
+  res.json(withDecryptedContent(doc));
 });
 
 router.patch('/:id', async (req, res) => {
@@ -256,7 +257,7 @@ router.patch('/:id', async (req, res) => {
     updates.title = finalTitle;
   }
   if (req.body.content !== undefined) {
-    updates.content = req.body.content;
+    Object.assign(updates, withEncryptedContent({}, req.body.content));
     updates.wordCount = req.body.content.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   }
   if (req.body.folder !== undefined) updates.folder = req.body.folder;
@@ -271,7 +272,7 @@ router.patch('/:id', async (req, res) => {
     if (entry) entry.writingAt = Date.now();
   }
 
-  res.json(updated);
+  res.json(withDecryptedContent(updated));
 });
 
 router.delete('/:id', async (req, res) => {
@@ -322,7 +323,7 @@ router.post('/:id/complete', async (req, res) => {
     completedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-  if (content !== undefined) completeUpdates.content = content;
+  if (content !== undefined) Object.assign(completeUpdates, withEncryptedContent({}, content));
   if (title !== undefined) {
     let baseTitle = (title || '').trim() || 'Untitled';
     const userDocs = await findMany('documents.json', d => d.userId === req.user.id && !d.deleted && d.id !== req.params.id);
@@ -389,7 +390,7 @@ router.post('/:id/complete', async (req, res) => {
   } catch (e) { /* activity generation is non-critical */ }
 
   await logAction('session_completed', { docId: req.params.id, wordCount, duration, xpEarned }, req.user.id);
-  const completedDoc = await findOne('documents.json', d => d.id === req.params.id);
+  const completedDoc = withDecryptedContent(await findOne('documents.json', d => d.id === req.params.id));
   try {
     // If this document is part of a duel, send the duel-flavored notification
     // instead of the generic session-completed one.
@@ -531,7 +532,8 @@ router.get('/:id/export', async (req, res) => {
   }
   const doc = await findOne('documents.json', d => d.id === req.params.id && d.userId === req.user.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
-  res.json({ title: doc.title, content: doc.content, wordCount: doc.wordCount, createdAt: doc.createdAt });
+  const readableDoc = withDecryptedContent(doc);
+  res.json({ title: readableDoc.title, content: readableDoc.content, wordCount: readableDoc.wordCount, createdAt: readableDoc.createdAt });
 });
 
 // Session analytics (available to all users — Pro gets full insights)

@@ -15,11 +15,11 @@
   <title>iWrite4.me — Admin</title>
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@700;800;900&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
-  <link rel="stylesheet" href="/css/style.css?v=36">
+  <link rel="stylesheet" href="/css/style.css?v=39">
   <style>
     .admin-layout { display: flex; min-height: 100vh; }
     .admin-sidebar {
@@ -27,7 +27,8 @@
       display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10;
     }
     .admin-sidebar-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
-    .admin-sidebar-header .logo { font-family: var(--font-display); font-size: 24px; font-weight: 900; }
+    .admin-sidebar-header .logo { font-family: 'Nunito', var(--font-sans); font-size: 22px; font-weight: 800; letter-spacing: -0.035em; }
+    .admin-sidebar-header .brand-mark { width: 36px; height: 36px; border-radius: 10px; }
     .admin-sidebar-header .admin-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); margin-top: 2px; }
     .admin-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
     .admin-nav-item {
@@ -284,7 +285,10 @@
       <!-- Sidebar -->
       <aside class="admin-sidebar">
         <div class="admin-sidebar-header">
-          <a href="/" class="logo">iWrite4.me</a>
+          <a href="/" class="logo admin-brand-lockup">
+            <img src="/media/iwrite-logo.png" alt="" class="brand-mark" aria-hidden="true">
+            <span>iWrite4.me</span>
+          </a>
           <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
             <span class="version-tag" id="version-tag" style="margin-top:0">v...</span>
             <div class="admin-label" style="margin-top:0">Admin Panel</div>
@@ -2058,6 +2062,7 @@
       try {
         const doc = await adminRequest(`/admin/documents/${id}`);
         document.getElementById('doc-view-title').textContent = (doc.title || '').trim() || '(untitled)';
+        const promptTopic = String(doc.prompt || doc.topic || '').trim();
         document.getElementById('doc-view-body').innerHTML = `
           <div class="user-detail-grid" style="margin-bottom:16px">
             <div class="user-detail-stat"><div class="label">Owner</div><div class="value" style="font-size:13px">${esc(doc.ownerName)}</div></div>
@@ -2070,7 +2075,7 @@
             ${doc.failReason ? `<div class="user-detail-stat"><div class="label">Reason</div><div class="value" style="font-size:13px">${esc(doc.failReason)}</div></div>` : ''}
           </div>
           <h4 style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Prompt / Topic</h4>
-          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-size:14px;line-height:1.6;margin-bottom:16px;font-style:italic;color:${doc.prompt ? 'var(--text-secondary)' : 'var(--text-muted)'}">${doc.prompt ? esc(doc.prompt) : 'NaN'}</div>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-size:14px;line-height:1.6;margin-bottom:16px;font-style:italic;color:${promptTopic ? 'var(--text-secondary)' : 'var(--text-muted)'}">${promptTopic ? esc(promptTopic) : 'No prompt or topic recorded'}</div>
           <h4 style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Content</h4>
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;font-size:14px;line-height:1.7;color:var(--text-muted)">Document content is hidden from admin views. Metadata remains available; encryption-at-rest will be handled in a later security pass.</div>
         `;
