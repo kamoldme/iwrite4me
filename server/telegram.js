@@ -287,6 +287,8 @@ async function sendStatsCard() {
     const totalUsers = users.filter(u => u.role !== 'admin').length;
     const totalDocs = docs.length;
     const activeDocs = docs.filter(d => !d.deleted && d.status !== 'abandoned').length;
+    const lostDocs = docs.filter(d => d.deletedBySystem);
+    const lostWords = lostDocs.reduce((sum, d) => sum + (Number(d.wordCount) || 0), 0);
     const totalWords = users.reduce((sum, u) => sum + (u.totalWords || 0), 0);
 
     // Anti-gaming: cap credited time per session by words written (min 3 WPM)
@@ -351,6 +353,7 @@ async function sendStatsCard() {
       `Users: <b>${totalUsers.toLocaleString()}</b>\n` +
       `Documents: <b>${totalDocs.toLocaleString()}</b> · active <b>${activeDocs.toLocaleString()}</b>\n` +
       `Total words: <b>${totalWords.toLocaleString()}</b>\n` +
+      `Lost words: <b>${lostWords.toLocaleString()}</b> (${lostDocs.length.toLocaleString()} docs)\n` +
       `Active hours: <b>${totalHours}h ${remainingMins}m</b>` +
       `</blockquote>\n\n` +
       `<b>Last 3 days</b>\n` +
