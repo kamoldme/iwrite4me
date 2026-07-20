@@ -60,7 +60,7 @@ body::-webkit-scrollbar,
   --accent-rgb: 22, 99, 79;
   --ink-rgb: 37, 54, 80;
   --bg-primary: #f7f9fc;
-  --bg-secondary: #eef5fb;
+  --bg-secondary: #c8e1fa;
   --bg-card: #ffffff;
   --bg-card-hover: #f9fbfd;
   --bg-elevated: #ffffff;
@@ -1420,10 +1420,10 @@ body::-webkit-scrollbar,
 
 .sepia .main-content {
   background-color: var(--bg-primary);
-  background-image: url("https://transparenttextures.com/patterns/notebook-dark.png");
+  background-image: url("https://transparenttextures.com/patterns/lined-paper-2.png");
   background-repeat: repeat;
 }
-/* Notebook texture with pale lines on the dark landing palette. */
+/* Lined-paper texture with pale lines on the dark landing palette. */
 .sepia body::before {
   background-image:
     repeating-linear-gradient(
