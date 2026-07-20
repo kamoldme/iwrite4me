@@ -17,9 +17,9 @@ body::-webkit-scrollbar,
   --ink-rgb: 238, 245, 251;
   --bg-primary: #253650;
   --bg-secondary: #1D304A;
-  --bg-card: #16634F;
+  --bg-card: #294563;
   --bg-card-hover: #4F7FA6;
-  --bg-elevated: #16634F;
+  --bg-elevated: #294563;
   --bg-glass: rgba(37, 54, 80, 0.92);
   --text-primary: #F7F9FC;
   --text-secondary: rgba(238, 245, 251, 0.72);
@@ -50,7 +50,7 @@ body::-webkit-scrollbar,
   --font-sans: 'Instrument Sans', system-ui, sans-serif;
   --font-display: 'Archivo', system-ui, sans-serif;
   --font-mono: 'DM Mono', 'Courier New', monospace;
-  --gradient-card: linear-gradient(135deg, rgba(22, 99, 79, 0.96) 0%, rgba(37, 54, 80, 0.88) 100%);
+  --gradient-card: linear-gradient(135deg, rgba(41, 69, 99, 0.96) 0%, rgba(37, 54, 80, 0.88) 100%);
   --gradient-accent: linear-gradient(135deg, #A9D4FF 0%, #8FCFC7 100%);
   --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(169, 212, 255, 0.12) 0%, transparent 60%);
 }
@@ -1382,9 +1382,9 @@ body::-webkit-scrollbar,
   --ink-rgb: 238, 245, 251;
   --bg-primary: #253650;
   --bg-secondary: #1D304A;
-  --bg-card: #16634F;
+  --bg-card: #294563;
   --bg-card-hover: #4F7FA6;
-  --bg-elevated: #16634F;
+  --bg-elevated: #294563;
   --bg-glass: rgba(37, 54, 80, 0.92);
   --text-primary: #F7F9FC;
   --text-secondary: rgba(238, 245, 251, 0.72);
@@ -1406,7 +1406,7 @@ body::-webkit-scrollbar,
   --shadow-3d: 0 6px 20px rgba(15, 80, 63, 0.28), 0 2px 6px rgba(15, 80, 63, 0.20);
   --shadow-glow: 0 0 30px rgba(169, 212, 255, 0.16);
   --shadow-inset-glow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  --gradient-card: linear-gradient(135deg, rgba(22, 99, 79, 0.96) 0%, rgba(37, 54, 80, 0.88) 100%);
+  --gradient-card: linear-gradient(135deg, rgba(41, 69, 99, 0.96) 0%, rgba(37, 54, 80, 0.88) 100%);
   --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(169, 212, 255, 0.12) 0%, transparent 60%);
   --gradient-accent: linear-gradient(135deg, #A9D4FF 0%, #8FCFC7 100%);
   --xp-color: #A9D4FF;
@@ -8048,7 +8048,7 @@ body.public-profile .main-content { padding-top: 0; }
 }
 
 .sepia .story-comment-switch {
-  background: rgba(22, 99, 79, 0.72);
+  background: rgba(41, 69, 99, 0.72);
   border-color: rgba(169, 212, 255, 0.2);
 }
 
