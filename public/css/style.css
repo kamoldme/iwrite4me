@@ -13,46 +13,46 @@ body::-webkit-scrollbar,
 
 :root {
   --maint-banner-h: 0px;
-  --accent-rgb: 74, 222, 128;      /* bright green — Writer's Desk structure uses this */
-  --ink-rgb: 255, 255, 255;        /* light lines/tracks on dark surfaces */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-card: #161616;
-  --bg-card-hover: #1e1e1e;
-  --bg-elevated: #191919;
-  --bg-glass: rgba(22, 22, 22, 0.82);
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.58);
-  --text-muted: rgba(255, 255, 255, 0.32);
-  --accent: #4ade80;
-  --accent-soft: rgba(74, 222, 128, 0.10);
-  --accent-glow: rgba(74, 222, 128, 0.28);
-  --danger: #ef4444;
-  --danger-soft: rgba(239, 68, 68, 0.12);
-  --success: #4ade80;
-  --success-soft: rgba(74, 222, 128, 0.12);
-  --warning: #f59e0b;
-  --xp-color: #4ade80;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.04);
-  --border-hover: rgba(255, 255, 255, 0.16);
-  --hover-bg: rgba(255, 255, 255, 0.05);
+  --accent-rgb: 169, 212, 255;
+  --ink-rgb: 238, 245, 251;
+  --bg-primary: #253650;
+  --bg-secondary: #0F503F;
+  --bg-card: #16634F;
+  --bg-card-hover: #4F7FA6;
+  --bg-elevated: #16634F;
+  --bg-glass: rgba(37, 54, 80, 0.92);
+  --text-primary: #F7F9FC;
+  --text-secondary: rgba(238, 245, 251, 0.72);
+  --text-muted: rgba(169, 212, 255, 0.64);
+  --accent: #A9D4FF;
+  --accent-soft: rgba(169, 212, 255, 0.14);
+  --accent-glow: rgba(169, 212, 255, 0.24);
+  --danger: #D9787E;
+  --danger-soft: rgba(217, 120, 126, 0.16);
+  --success: #8FCFC7;
+  --success-soft: rgba(143, 207, 199, 0.16);
+  --warning: #E9C46A;
+  --xp-color: #A9D4FF;
+  --border: rgba(238, 245, 251, 0.14);
+  --border-light: rgba(238, 245, 251, 0.07);
+  --border-hover: rgba(169, 212, 255, 0.34);
+  --hover-bg: rgba(169, 212, 255, 0.09);
   --radius: 12px;
   --radius-sm: 8px;
   --radius-lg: 20px;
   --radius-pill: 9999px;
-  --shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04);
-  --shadow-lg: 0 30px 80px rgba(0, 10, 0, 0.7), 0 10px 30px rgba(0, 10, 0, 0.4);
-  --shadow-glow: 0 0 50px rgba(74, 222, 128, 0.14);
-  --shadow-3d: 0 8px 32px rgba(0, 0, 0, 0.7), 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-  --shadow-inset-glow: inset -8px -8px 24px rgba(74, 222, 128, 0.06), inset 8px 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow: 0 2px 8px rgba(15, 80, 63, 0.24), 0 0 0 1px rgba(238, 245, 251, 0.06);
+  --shadow-lg: 0 18px 48px rgba(15, 80, 63, 0.32), 0 0 0 1px rgba(238, 245, 251, 0.07);
+  --shadow-glow: 0 0 30px rgba(169, 212, 255, 0.16);
+  --shadow-3d: 0 6px 20px rgba(15, 80, 63, 0.28), 0 2px 6px rgba(15, 80, 63, 0.20);
+  --shadow-inset-glow: inset 0 1px 0 rgba(238, 245, 251, 0.16);
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --font-sans: 'Instrument Sans', system-ui, sans-serif;
   --font-display: 'Archivo', system-ui, sans-serif;
   --font-mono: 'DM Mono', 'Courier New', monospace;
-  --gradient-card: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
-  --gradient-accent: linear-gradient(135deg, #4ade80 0%, #86efac 100%);
-  --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(74,222,128,0.08) 0%, transparent 60%);
+  --gradient-card: linear-gradient(135deg, rgba(22, 99, 79, 0.96) 0%, rgba(37, 54, 80, 0.88) 100%);
+  --gradient-accent: linear-gradient(135deg, #A9D4FF 0%, #8FCFC7 100%);
+  --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(169, 212, 255, 0.12) 0%, transparent 60%);
 }
 
 /* ===== LIGHT THEME — Writer's Desk parchment palette ===== */
@@ -1371,46 +1371,48 @@ body::-webkit-scrollbar,
   color: var(--text-primary);
 }
 
-/* ===== SEPIA THEME ===== */
+/* ===== DARK THEME (uses the former Sepia Mode class for compatibility) ===== */
 /* ══════════════════════════════════════════════════════════════
-   SEPIA THEME — Deep Parchment / Paper Palette
-   Accent: #C37E3F (copper/leather)
-   Background: #E8DCC8 (aged parchment)
-   ALL hardcoded greens → copper rgba(195, 126, 63, ...)
+   DARK THEME — inverted landing-page palette
+   Light landing surfaces become deep navy/forest surfaces.
+   Dark landing ink and accents become pale blue/white foregrounds.
    ══════════════════════════════════════════════════════════════ */
 .sepia {
-  --accent-rgb: 195, 126, 63;      /* copper — Writer's Desk structure uses this */
-  --ink-rgb: 44, 31, 14;           /* sepia ink for lines/tracks/shadows */
-  --bg-primary: #E8DCC8;
-  --bg-secondary: #DED2BE;
-  --bg-card: #F0E6D4;
-  --bg-card-hover: #E8DECE;
-  --bg-elevated: #EDE3D1;
-  --bg-glass: rgba(232, 220, 200, 0.92);
-  --text-primary: #2c1f0e;
-  --text-secondary: rgba(44, 31, 14, 0.68);
-  --text-muted: rgba(44, 31, 14, 0.44);
-  --accent: #C37E3F;
-  --accent-soft: rgba(195, 126, 63, 0.12);
-  --accent-glow: rgba(195, 126, 63, 0.22);
-  --success: #C37E3F;
-  --success-soft: rgba(195, 126, 63, 0.12);
-  --border: rgba(44, 31, 14, 0.12);
-  --border-light: rgba(44, 31, 14, 0.06);
-  --border-hover: rgba(44, 31, 14, 0.22);
-  --hover-bg: rgba(44, 31, 14, 0.05);
-  --shadow: 0 1px 3px rgba(44, 31, 14, 0.10), 0 0 0 1px rgba(44, 31, 14, 0.06);
-  --shadow-lg: 0 12px 40px rgba(44, 31, 14, 0.14), 0 0 0 1px rgba(44, 31, 14, 0.06);
-  --shadow-3d: 0 2px 8px rgba(44, 31, 14, 0.10), 0 1px 2px rgba(44, 31, 14, 0.06);
-  --shadow-glow: 0 0 30px rgba(195, 126, 63, 0.10);
+  --accent-rgb: 169, 212, 255;
+  --ink-rgb: 238, 245, 251;
+  --bg-primary: #253650;
+  --bg-secondary: #0F503F;
+  --bg-card: #16634F;
+  --bg-card-hover: #4F7FA6;
+  --bg-elevated: #16634F;
+  --bg-glass: rgba(37, 54, 80, 0.92);
+  --text-primary: #F7F9FC;
+  --text-secondary: rgba(238, 245, 251, 0.72);
+  --text-muted: rgba(169, 212, 255, 0.64);
+  --accent: #A9D4FF;
+  --accent-soft: rgba(169, 212, 255, 0.14);
+  --accent-glow: rgba(169, 212, 255, 0.24);
+  --success: #8FCFC7;
+  --success-soft: rgba(143, 207, 199, 0.16);
+  --warning: #E9C46A;
+  --danger: #D9787E;
+  --danger-soft: rgba(217, 120, 126, 0.16);
+  --border: rgba(238, 245, 251, 0.14);
+  --border-light: rgba(238, 245, 251, 0.07);
+  --border-hover: rgba(169, 212, 255, 0.34);
+  --hover-bg: rgba(169, 212, 255, 0.09);
+  --shadow: 0 2px 8px rgba(15, 80, 63, 0.24), 0 0 0 1px rgba(238, 245, 251, 0.06);
+  --shadow-lg: 0 18px 48px rgba(15, 80, 63, 0.32), 0 0 0 1px rgba(238, 245, 251, 0.07);
+  --shadow-3d: 0 6px 20px rgba(15, 80, 63, 0.28), 0 2px 6px rgba(15, 80, 63, 0.20);
+  --shadow-glow: 0 0 30px rgba(169, 212, 255, 0.16);
   --shadow-inset-glow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  --gradient-card: linear-gradient(135deg, rgba(240,230,212,0.6) 0%, rgba(232,220,200,0.3) 100%);
-  --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(195,126,63,0.06) 0%, transparent 60%);
-  --gradient-accent: linear-gradient(135deg, #C37E3F 0%, #D4954F 100%);
-  --xp-color: #C37E3F;
+  --gradient-card: linear-gradient(135deg, rgba(22, 99, 79, 0.96) 0%, rgba(37, 54, 80, 0.88) 100%);
+  --gradient-hero: radial-gradient(ellipse at 50% 0%, rgba(169, 212, 255, 0.12) 0%, transparent 60%);
+  --gradient-accent: linear-gradient(135deg, #A9D4FF 0%, #8FCFC7 100%);
+  --xp-color: #A9D4FF;
 }
 
-/* ── Sepia: base overrides ── */
+/* ── Dark: base overrides ── */
 .sepia body, .sepia {
   background: var(--bg-primary);
   color: var(--text-primary);
@@ -1421,78 +1423,84 @@ body::-webkit-scrollbar,
   background-image: url("https://transparenttextures.com/patterns/notebook-dark.png");
   background-repeat: repeat;
 }
-/* Paper texture — visible fiber grain + noise */
+/* Notebook texture with pale lines on the dark landing palette. */
 .sepia body::before {
   background-image:
     repeating-linear-gradient(
       0deg,
       transparent, transparent 2px,
-      rgba(100, 65, 20, 0.06) 2px,
-      rgba(100, 65, 20, 0.06) 3px,
+      rgba(238, 245, 251, 0.06) 2px,
+      rgba(238, 245, 251, 0.06) 3px,
       transparent 3px, transparent 5px
     ),
     repeating-linear-gradient(
       90deg,
       transparent, transparent 3px,
-      rgba(100, 65, 20, 0.04) 3px,
-      rgba(100, 65, 20, 0.04) 4px,
+      rgba(169, 212, 255, 0.04) 3px,
+      rgba(169, 212, 255, 0.04) 4px,
       transparent 4px, transparent 7px
     ),
     repeating-linear-gradient(
       45deg,
       transparent, transparent 4px,
-      rgba(100, 65, 20, 0.035) 4px,
-      rgba(100, 65, 20, 0.035) 5px,
+      rgba(143, 207, 199, 0.035) 4px,
+      rgba(143, 207, 199, 0.035) 5px,
       transparent 5px, transparent 9px
     );
   background-size: auto;
   opacity: 1;
 }
-/* Vignette — aged paper edge darkening */
+/* Vignette — deep forest edge darkening. */
 .sepia body::after {
-  background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(100, 70, 25, 0.12) 100%);
+  background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(15, 80, 63, 0.24) 100%);
 }
 
 /* ── Sepia: nav ── */
 .sepia .nav {
-  background: rgba(222, 210, 190, 0.94);
+  background: rgba(15, 80, 63, 0.94);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
-.sepia .logo { text-shadow: none; color: #5C3A1E; }
+.sepia .logo { text-shadow: none; color: #F7F9FC; }
 
 /* ── Sepia: sidebar ── */
 .sepia .sidebar {
   background: var(--bg-secondary);
   border-right-color: var(--border);
-  box-shadow: 1px 0 8px rgba(44,31,14,0.06);
+  box-shadow: 1px 0 8px rgba(238, 245, 251,0.06);
 }
 .sepia .sidebar-nav-item.active {
-  background: rgba(195, 126, 63, 0.12);
-  border: 1px solid rgba(195, 126, 63, 0.24);
-  box-shadow: inset 0 0 16px rgba(195, 126, 63, 0.06);
+  background: rgba(169, 212, 255, 0.12);
+  border: 1px solid rgba(169, 212, 255, 0.24);
+  box-shadow: inset 0 0 16px rgba(169, 212, 255, 0.06);
 }
 .sepia .sidebar-nav-item:hover {
-  background: rgba(195, 126, 63, 0.06);
+  background: rgba(169, 212, 255, 0.06);
 }
 .sepia .user-avatar {
-  box-shadow: 0 4px 12px rgba(195, 126, 63, 0.25);
+  box-shadow: 0 4px 12px rgba(169, 212, 255, 0.25);
 }
 
 /* ── Sepia: buttons ── */
 .sepia .btn-small,
 .sepia .btn-primary {
-  background: #C37E3F;
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(195, 126, 63, 0.25);
+  background: #A9D4FF;
+  color: #253650;
+  box-shadow: 0 2px 8px rgba(169, 212, 255, 0.25);
 }
 .sepia .btn-small:hover,
 .sepia .btn-primary:hover {
-  background: #B06E32;
-  box-shadow: 0 4px 16px rgba(195, 126, 63, 0.30);
+  background: #8FCFC7;
+  box-shadow: 0 4px 16px rgba(169, 212, 255, 0.30);
 }
-.sepia .btn-ghost { border-color: rgba(195, 126, 63, 0.25); color: #C37E3F; }
-.sepia .btn-ghost:hover { border-color: rgba(195, 126, 63, 0.4); background: rgba(195, 126, 63, 0.06); }
+.sepia .stories-primary-btn,
+.sepia .stories-submit-btn,
+.sepia .upgrade-card-btn-primary,
+.sepia .upgrade-duration-pill.active {
+  color: #253650 !important;
+}
+.sepia .btn-ghost { border-color: rgba(169, 212, 255, 0.25); color: #A9D4FF; }
+.sepia .btn-ghost:hover { border-color: rgba(169, 212, 255, 0.4); background: rgba(169, 212, 255, 0.06); }
 
 /* ── Sepia: stat cards + dashboard ── */
 .sepia .stat-card,
@@ -1500,62 +1508,62 @@ body::-webkit-scrollbar,
   background: var(--bg-card);
   box-shadow: var(--shadow);
 }
-.sepia .stat-card::before { background: linear-gradient(90deg, transparent, rgba(195,126,63,0.18), transparent); }
-.sepia .dash-stat-card::before { background: linear-gradient(90deg, transparent, rgba(195,126,63,0.18), transparent); }
+.sepia .stat-card::before { background: linear-gradient(90deg, transparent, rgba(169, 212, 255,0.18), transparent); }
+.sepia .dash-stat-card::before { background: linear-gradient(90deg, transparent, rgba(169, 212, 255,0.18), transparent); }
 .sepia .dash-stat-card:hover {
-  box-shadow: 0 12px 36px rgba(44, 31, 14, 0.12);
-  border-color: rgba(195, 126, 63, 0.18);
+  box-shadow: 0 12px 36px rgba(238, 245, 251, 0.12);
+  border-color: rgba(169, 212, 255, 0.18);
 }
 .sepia .dashboard-hero { box-shadow: var(--shadow); background: var(--bg-card); }
 .sepia .dashboard-hero::before {
-  background: radial-gradient(circle, rgba(195,126,63,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(169, 212, 255,0.08) 0%, transparent 70%);
 }
 
 /* ── Sepia: heatmap — copper tones ── */
-.sepia .heatmap-cell[data-level="0"] { background: rgba(44, 31, 14, 0.06); }
-.sepia .heatmap-cell[data-level="1"] { background: rgba(195, 126, 63, 0.25); }
-.sepia .heatmap-cell[data-level="2"] { background: rgba(195, 126, 63, 0.50); }
-.sepia .heatmap-cell[data-level="3"] { background: rgba(195, 126, 63, 0.75); }
-.sepia .heatmap-cell[data-level="4"] { background: #C37E3F; }
-.sepia .heatmap-cell:hover { box-shadow: 0 0 8px rgba(195, 126, 63, 0.3); }
-.sepia .heatmap-legend-cell[data-level="0"] { background: rgba(44,31,14,0.06); }
-.sepia .heatmap-legend-cell[data-level="1"] { background: rgba(195,126,63,0.25); }
-.sepia .heatmap-legend-cell[data-level="2"] { background: rgba(195,126,63,0.50); }
-.sepia .heatmap-legend-cell[data-level="3"] { background: rgba(195,126,63,0.75); }
-.sepia .heatmap-legend-cell[data-level="4"] { background: #C37E3F; }
-.sepia .heatmap-section::before { background: linear-gradient(90deg, transparent, rgba(195,126,63,0.15), transparent); }
+.sepia .heatmap-cell[data-level="0"] { background: rgba(238, 245, 251, 0.06); }
+.sepia .heatmap-cell[data-level="1"] { background: rgba(169, 212, 255, 0.25); }
+.sepia .heatmap-cell[data-level="2"] { background: rgba(169, 212, 255, 0.50); }
+.sepia .heatmap-cell[data-level="3"] { background: rgba(169, 212, 255, 0.75); }
+.sepia .heatmap-cell[data-level="4"] { background: #A9D4FF; }
+.sepia .heatmap-cell:hover { box-shadow: 0 0 8px rgba(169, 212, 255, 0.3); }
+.sepia .heatmap-legend-cell[data-level="0"] { background: rgba(238, 245, 251,0.06); }
+.sepia .heatmap-legend-cell[data-level="1"] { background: rgba(169, 212, 255,0.25); }
+.sepia .heatmap-legend-cell[data-level="2"] { background: rgba(169, 212, 255,0.50); }
+.sepia .heatmap-legend-cell[data-level="3"] { background: rgba(169, 212, 255,0.75); }
+.sepia .heatmap-legend-cell[data-level="4"] { background: #A9D4FF; }
+.sepia .heatmap-section::before { background: linear-gradient(90deg, transparent, rgba(169, 212, 255,0.15), transparent); }
 
 /* ── Sepia: XP bar ── */
-.sepia .xp-bar-fill { background: #C37E3F; box-shadow: 0 0 8px rgba(195, 126, 63, 0.22); }
-.sepia .xp-bar { background: rgba(44, 31, 14, 0.08); }
+.sepia .xp-bar-fill { background: #A9D4FF; box-shadow: 0 0 8px rgba(169, 212, 255, 0.22); }
+.sepia .xp-bar { background: rgba(238, 245, 251, 0.08); }
 
 /* ── Sepia: document cards ── */
 .sepia .doc-card { background: var(--bg-card); }
 .sepia .doc-card:hover {
-  box-shadow: 0 16px 40px rgba(44, 31, 14, 0.12), 0 0 30px rgba(195, 126, 63, 0.06);
-  border-color: rgba(195, 126, 63, 0.20);
+  box-shadow: 0 16px 40px rgba(238, 245, 251, 0.12), 0 0 30px rgba(169, 212, 255, 0.06);
+  border-color: rgba(169, 212, 255, 0.20);
 }
-.sepia .doc-action-btn { background: rgba(44, 31, 14, 0.04); }
-.sepia .doc-icon.doc-icon-completed { background: rgba(195, 126, 63, 0.15); color: var(--accent); }
+.sepia .doc-action-btn { background: rgba(238, 245, 251, 0.04); }
+.sepia .doc-icon.doc-icon-completed { background: rgba(169, 212, 255, 0.15); color: var(--accent); }
 
 /* ── Sepia: tree container ── */
-.sepia .tree-container::before { background: linear-gradient(90deg, transparent, rgba(195,126,63,0.18), transparent); }
+.sepia .tree-container::before { background: linear-gradient(90deg, transparent, rgba(169, 212, 255,0.18), transparent); }
 
 /* ── Sepia: editor — writing on paper ── */
-.sepia .editor-back-btn { background: rgba(44, 31, 14, 0.04); }
-.sepia .danger-progress { background: rgba(44, 31, 14, 0.06); }
-.sepia .danger-progress-fill { background: #C37E3F; }
+.sepia .editor-back-btn { background: rgba(238, 245, 251, 0.04); }
+.sepia .danger-progress { background: rgba(238, 245, 251, 0.06); }
+.sepia .danger-progress-fill { background: var(--danger); }
 .sepia .editor-area,
 .sepia .ql-editor,
 .sepia #editor-container { background: var(--bg-card); }
 
 /* ── Sepia: modals ── */
-.sepia .modal-overlay { background: rgba(44, 31, 14, 0.55); }
+.sepia .modal-overlay { background: rgba(15, 80, 63, 0.72); }
 .sepia .modal { background: var(--bg-card); }
 
 /* ── Sepia: toast ── */
 .sepia .toast { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); }
-.sepia .toast.success { border-color: rgba(195, 126, 63, 0.3); box-shadow: var(--shadow-lg), 0 0 20px rgba(195, 126, 63, 0.1); }
+.sepia .toast.success { border-color: rgba(143, 207, 199, 0.36); box-shadow: var(--shadow-lg), 0 0 20px rgba(143, 207, 199, 0.14); }
 
 /* ── Sepia: selection popup ── */
 .sepia .selection-popup {
@@ -1571,8 +1579,8 @@ body::-webkit-scrollbar,
   color: var(--text-primary);
 }
 .sepia input:focus, .sepia textarea:focus, .sepia select:focus {
-  border-color: rgba(195, 126, 63, 0.4);
-  box-shadow: 0 0 0 3px rgba(195, 126, 63, 0.1);
+  border-color: rgba(169, 212, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(169, 212, 255, 0.1);
 }
 /* Transparent-bg inputs must stay transparent in sepia */
 .sepia .editor-title-input,
@@ -1580,133 +1588,133 @@ body::-webkit-scrollbar,
 .sepia .story-title-input-plain { background: transparent !important; }
 
 /* ── Sepia: duel cards — copper tones ── */
-.sepia .duel-history-card.won { border-left-color: #C37E3F; }
-.sepia .dhc-badge.won { background: rgba(195, 126, 63, 0.12); color: #C37E3F; }
-.sepia .duel-big-btn:hover { box-shadow: 0 8px 30px rgba(195, 126, 63, 0.3), var(--shadow-lg) !important; }
-.sepia .duel-sent-card { background: linear-gradient(135deg, rgba(195, 126, 63, 0.05), var(--bg-card)); }
-.sepia .duel-bar { background: linear-gradient(135deg, rgba(195, 126, 63, 0.15), rgba(195, 126, 63, 0.05)); }
-.sepia .duel-extra-time-accept { background: rgba(195, 126, 63, 0.15); color: #C37E3F; }
-.sepia .duel-extra-time-accept:hover { background: rgba(195, 126, 63, 0.25); }
+.sepia .duel-history-card.won { border-left-color: #A9D4FF; }
+.sepia .dhc-badge.won { background: rgba(169, 212, 255, 0.12); color: #A9D4FF; }
+.sepia .duel-big-btn:hover { box-shadow: 0 8px 30px rgba(169, 212, 255, 0.3), var(--shadow-lg) !important; }
+.sepia .duel-sent-card { background: linear-gradient(135deg, rgba(169, 212, 255, 0.05), var(--bg-card)); }
+.sepia .duel-bar { background: linear-gradient(135deg, rgba(169, 212, 255, 0.15), rgba(169, 212, 255, 0.05)); }
+.sepia .duel-extra-time-accept { background: rgba(169, 212, 255, 0.15); color: #A9D4FF; }
+.sepia .duel-extra-time-accept:hover { background: rgba(169, 212, 255, 0.25); }
 
 /* ── Sepia: friend cards ── */
 .sepia .friend-card { background: var(--bg-card); }
-.sepia .friend-card:hover { box-shadow: 0 8px 28px rgba(44, 31, 14, 0.10); }
+.sepia .friend-card:hover { box-shadow: 0 8px 28px rgba(238, 245, 251, 0.10); }
 
 /* ── Sepia: analytics ── */
-.sepia .analytics-bar { background: #C37E3F !important; }
-.sepia .analytics-milestone.unlocked { background: rgba(195, 126, 63, 0.08); }
+.sepia .analytics-bar { background: #A9D4FF !important; }
+.sepia .analytics-milestone.unlocked { background: rgba(169, 212, 255, 0.08); }
 
 /* ── Sepia: session modal + presets ── */
-.sepia .time-preset.active { box-shadow: 0 4px 16px rgba(195, 126, 63, 0.3); }
-.sepia .mode-option.active { box-shadow: 0 4px 20px rgba(195, 126, 63, 0.3); }
-.sepia .motivate-toast { box-shadow: 0 4px 20px rgba(195, 126, 63, 0.2); }
-.sepia .session-complete::before { background: radial-gradient(circle, rgba(195,126,63,0.12) 0%, transparent 60%); }
+.sepia .time-preset.active { box-shadow: 0 4px 16px rgba(169, 212, 255, 0.3); }
+.sepia .mode-option.active { box-shadow: 0 4px 20px rgba(169, 212, 255, 0.3); }
+.sepia .motivate-toast { box-shadow: 0 4px 20px rgba(169, 212, 255, 0.2); }
+.sepia .session-complete::before { background: radial-gradient(circle, rgba(169, 212, 255,0.12) 0%, transparent 60%); }
 
 /* ── Sepia: achievements ── */
-.sepia .achievement-card.earned { border-color: rgba(195, 126, 63, 0.2); }
-.sepia .achievement-card.earned:hover { border-color: rgba(195, 126, 63, 0.4); }
+.sepia .achievement-card.earned { border-color: rgba(169, 212, 255, 0.2); }
+.sepia .achievement-card.earned:hover { border-color: rgba(169, 212, 255, 0.4); }
 
 /* ── Sepia: leaderboard ── */
-.sepia .podium-avatar { box-shadow: 0 4px 16px rgba(195,126,63,0.3); }
-.sepia .leaderboard-table tr:hover td { background: rgba(195,126,63,0.04); }
-.sepia .leaderboard-me td { background: rgba(195,126,63,0.08) !important; }
+.sepia .podium-avatar { box-shadow: 0 4px 16px rgba(169, 212, 255,0.3); }
+.sepia .leaderboard-table tr:hover td { background: rgba(169, 212, 255,0.04); }
+.sepia .leaderboard-me td { background: rgba(169, 212, 255,0.08) !important; }
 
 /* ── Sepia: support tickets ── */
-.sepia .ticket-type--suggestion { background: rgba(195,126,63,0.12); color: var(--accent); }
-.sepia .ticket-type--feedback { background: rgba(195,126,63,0.12); color: #C37E3F; }
-.sepia .ticket-status--open { background: rgba(195,126,63,0.12); color: #C37E3F; }
-.sepia .ticket-status--replied { background: rgba(195,126,63,0.12); color: var(--accent); }
+.sepia .ticket-type--suggestion { background: rgba(169, 212, 255,0.12); color: var(--accent); }
+.sepia .ticket-type--feedback { background: rgba(233, 196, 106, 0.14); color: var(--warning); }
+.sepia .ticket-status--open { background: var(--danger-soft); color: var(--danger); }
+.sepia .ticket-status--replied { background: var(--success-soft); color: var(--success); }
 
 /* ── Sepia: pricing & upgrade cards ── */
-.sepia .upgrade-card-featured { box-shadow: 0 0 0 1px rgba(195, 126, 63, 0.15), 0 4px 32px rgba(195, 126, 63, 0.08); }
-.sepia .pricing-card.pro { box-shadow: 0 0 0 1px rgba(195, 126, 63, 0.15), 0 4px 32px rgba(195, 126, 63, 0.08); }
-.sepia .plan-card-active { box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(195, 126, 63, 0.08); }
+.sepia .upgrade-card-featured { box-shadow: 0 0 0 1px rgba(169, 212, 255, 0.15), 0 4px 32px rgba(169, 212, 255, 0.08); }
+.sepia .pricing-card.pro { box-shadow: 0 0 0 1px rgba(169, 212, 255, 0.15), 0 4px 32px rgba(169, 212, 255, 0.08); }
+.sepia .plan-card-active { box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(169, 212, 255, 0.08); }
 
 /* ── Sepia: landing page ── */
-.sepia .mock-editor { box-shadow: 0 30px 80px rgba(44, 31, 14, 0.3), 0 0 60px rgba(195, 126, 63, 0.08); }
-.sepia .mock-editor:hover { box-shadow: 0 30px 80px rgba(44, 31, 14, 0.3), 0 0 100px rgba(195, 126, 63, 0.12); }
-.sepia .mock-dots span:nth-child(3) { background: #C37E3F; box-shadow: 0 0 8px rgba(195, 126, 63, 0.3); }
-.sepia .feature-card::before { background: linear-gradient(90deg, transparent, rgba(195,126,63,0.18), transparent); }
-.sepia .feature-card:hover { box-shadow: 0 20px 50px rgba(44, 31, 14, 0.15), 0 0 40px rgba(195, 126, 63, 0.08); border-color: rgba(195, 126, 63, 0.25); }
-.sepia .feature-card:hover .feature-icon { box-shadow: 0 0 20px rgba(195, 126, 63, 0.2); }
-.sepia .how-it-works::before { background: radial-gradient(ellipse, rgba(195,126,63,0.08) 0%, transparent 70%); }
-.sepia .release-card.active { box-shadow: 0 0 0 1px rgba(195, 126, 63, 0.15), 0 8px 40px rgba(44, 31, 14, 0.2); }
-.sepia .releases-arrow:hover { background: rgba(195, 126, 63, 0.08); }
-.sepia .landing-pricing-container { box-shadow: 0 0 60px rgba(195, 126, 63, 0.06), var(--shadow); }
-.sepia .landing-pricing-container::before { background: linear-gradient(135deg, rgba(195, 126, 63, 0.15), rgba(195, 126, 63, 0.02), rgba(195, 126, 63, 0.08)); }
-.sepia .landing-plan-card.featured { box-shadow: 0 0 0 1px rgba(195, 126, 63, 0.12), 0 4px 32px rgba(195, 126, 63, 0.08); }
-.sepia .landing-plan-btn.primary { box-shadow: 0 4px 20px rgba(195, 126, 63, 0.25); }
-.sepia .landing-plan-btn.primary:hover { box-shadow: 0 6px 28px rgba(195, 126, 63, 0.35); }
-.sepia .cta::before { background: radial-gradient(ellipse, rgba(195,126,63,0.10) 0%, transparent 70%); }
+.sepia .mock-editor { box-shadow: 0 30px 80px rgba(238, 245, 251, 0.3), 0 0 60px rgba(169, 212, 255, 0.08); }
+.sepia .mock-editor:hover { box-shadow: 0 30px 80px rgba(238, 245, 251, 0.3), 0 0 100px rgba(169, 212, 255, 0.12); }
+.sepia .mock-dots span:nth-child(3) { background: #A9D4FF; box-shadow: 0 0 8px rgba(169, 212, 255, 0.3); }
+.sepia .feature-card::before { background: linear-gradient(90deg, transparent, rgba(169, 212, 255,0.18), transparent); }
+.sepia .feature-card:hover { box-shadow: 0 20px 50px rgba(238, 245, 251, 0.15), 0 0 40px rgba(169, 212, 255, 0.08); border-color: rgba(169, 212, 255, 0.25); }
+.sepia .feature-card:hover .feature-icon { box-shadow: 0 0 20px rgba(169, 212, 255, 0.2); }
+.sepia .how-it-works::before { background: radial-gradient(ellipse, rgba(169, 212, 255,0.08) 0%, transparent 70%); }
+.sepia .release-card.active { box-shadow: 0 0 0 1px rgba(169, 212, 255, 0.15), 0 8px 40px rgba(238, 245, 251, 0.2); }
+.sepia .releases-arrow:hover { background: rgba(169, 212, 255, 0.08); }
+.sepia .landing-pricing-container { box-shadow: 0 0 60px rgba(169, 212, 255, 0.06), var(--shadow); }
+.sepia .landing-pricing-container::before { background: linear-gradient(135deg, rgba(169, 212, 255, 0.15), rgba(169, 212, 255, 0.02), rgba(169, 212, 255, 0.08)); }
+.sepia .landing-plan-card.featured { box-shadow: 0 0 0 1px rgba(169, 212, 255, 0.12), 0 4px 32px rgba(169, 212, 255, 0.08); }
+.sepia .landing-plan-btn.primary { box-shadow: 0 4px 20px rgba(169, 212, 255, 0.25); }
+.sepia .landing-plan-btn.primary:hover { box-shadow: 0 6px 28px rgba(169, 212, 255, 0.35); }
+.sepia .cta::before { background: radial-gradient(ellipse, rgba(169, 212, 255,0.10) 0%, transparent 70%); }
 
 /* ── Sepia: auth page ── */
-.sepia .auth-monsters-panel { background: linear-gradient(135deg, rgba(195,126,63,0.06) 0%, rgba(195,126,63,0.04) 50%, rgba(167,139,250,0.03) 100%); }
-.sepia .auth-monsters-panel::before { background: radial-gradient(circle, rgba(195,126,63,0.08) 0%, transparent 60%); }
-.sepia .auth-brand-i { text-shadow: 0 0 40px rgba(195,126,63,0.4); }
+.sepia .auth-monsters-panel { background: linear-gradient(135deg, rgba(169, 212, 255,0.06) 0%, rgba(169, 212, 255,0.04) 50%, rgba(143, 207, 199,0.03) 100%); }
+.sepia .auth-monsters-panel::before { background: radial-gradient(circle, rgba(169, 212, 255,0.08) 0%, transparent 60%); }
+.sepia .auth-brand-i { text-shadow: 0 0 40px rgba(169, 212, 255,0.4); }
 
 /* ── Sepia: comments ── */
-.sepia .comment-resolve-btn.accept:hover { background: rgba(195, 126, 63, 0.15); color: #C37E3F; border-color: rgba(195, 126, 63, 0.3); }
+.sepia .comment-resolve-btn.accept:hover { background: rgba(169, 212, 255, 0.15); color: #A9D4FF; border-color: rgba(169, 212, 255, 0.3); }
 
 /* ── Sepia: online dot ── */
-.sepia .online-dot { background: #C37E3F; box-shadow: 0 0 6px rgba(195, 126, 63, 0.5); }
+.sepia .online-dot { background: var(--success); box-shadow: 0 0 6px rgba(143, 207, 199, 0.5); }
 
 /* ── Sepia: session admin tag ── */
-.sepia .session-admin-tag { background: rgba(195,126,63,0.12); }
+.sepia .session-admin-tag { background: rgba(169, 212, 255,0.12); }
 
 /* ── Sepia: level up overlay ── */
-.sepia .levelup-glow { background: radial-gradient(circle, rgba(195, 126, 63, 0.3) 0%, transparent 70%); }
-.sepia .levelup-badge { box-shadow: 0 0 40px rgba(195, 126, 63, 0.4), 0 0 80px rgba(195, 126, 63, 0.15); }
-.sepia .levelup-title { text-shadow: 0 0 30px rgba(195, 126, 63, 0.4); }
+.sepia .levelup-glow { background: radial-gradient(circle, rgba(169, 212, 255, 0.3) 0%, transparent 70%); }
+.sepia .levelup-badge { box-shadow: 0 0 40px rgba(169, 212, 255, 0.4), 0 0 80px rgba(169, 212, 255, 0.15); }
+.sepia .levelup-title { text-shadow: 0 0 30px rgba(169, 212, 255, 0.4); }
 
 /* ── Sepia: notification badge ── */
-.sepia .notification-badge { background: linear-gradient(135deg, rgba(195, 126, 63, 0.15), rgba(195, 126, 63, 0.05)); }
+.sepia .notification-badge { background: linear-gradient(135deg, rgba(169, 212, 255, 0.15), rgba(169, 212, 255, 0.05)); }
 
 /* ── Sepia: mode selector ── */
-.sepia .mode-selector button.active { box-shadow: 0 4px 16px rgba(195, 126, 63, 0.3); }
-.sepia .mode-option.active.dangerous-opt { box-shadow: 0 4px 20px rgba(195, 126, 63, 0.3); }
-.sepia .danger-mode-radial-bg { background: radial-gradient(circle, rgba(195,126,63,0.12) 0%, transparent 60%); }
+.sepia .mode-selector button.active { box-shadow: 0 4px 16px rgba(169, 212, 255, 0.3); }
+.sepia .mode-option.active.dangerous-opt { box-shadow: 0 4px 20px rgba(169, 212, 255, 0.3); }
+.sepia .danger-mode-radial-bg { background: radial-gradient(circle, rgba(217, 120, 126, 0.16) 0%, transparent 60%); }
 
 /* ── Sepia: status/online dot ── */
-.sepia .status-dot { background: #C37E3F; box-shadow: 0 0 6px rgba(195, 126, 63, 0.5); }
+.sepia .status-dot { background: var(--success); box-shadow: 0 0 6px rgba(143, 207, 199, 0.5); }
 
 /* ── Sepia: podium ── */
-.sepia .podium-ranking { box-shadow: 0 4px 16px rgba(195,126,63,0.3); }
+.sepia .podium-ranking { box-shadow: 0 4px 16px rgba(169, 212, 255,0.3); }
 
 /* ── Sepia: auth ── */
-.sepia .auth-beta-badge { background: rgba(195,126,63,0.12); }
+.sepia .auth-beta-badge { background: rgba(169, 212, 255,0.12); }
 
 /* ── Sepia: dashboard hero before (landing) ── */
-.sepia .dashboard-hero::before { background: linear-gradient(90deg, transparent, rgba(195,126,63,0.12), transparent); }
+.sepia .dashboard-hero::before { background: linear-gradient(90deg, transparent, rgba(169, 212, 255,0.12), transparent); }
 
 /* ── Sepia: release card ── */
-.sepia .release-card.active { box-shadow: 0 0 0 1px rgba(195, 126, 63, 0.15), 0 8px 40px rgba(44, 31, 14, 0.15); }
+.sepia .release-card.active { box-shadow: 0 0 0 1px rgba(169, 212, 255, 0.15), 0 8px 40px rgba(238, 245, 251, 0.15); }
 
 /* ── Sepia: keyframe overrides — replace green pulse/glow animations ── */
 @keyframes sepia-duel-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(195, 126, 63, 0.4), var(--shadow); }
-  50% { box-shadow: 0 0 20px 8px rgba(195, 126, 63, 0.2), var(--shadow-lg); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(169, 212, 255, 0.4), var(--shadow); }
+  50% { box-shadow: 0 0 20px 8px rgba(169, 212, 255, 0.2), var(--shadow-lg); }
 }
 @keyframes sepia-online-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(195, 126, 63, 0.4); }
-  50% { box-shadow: 0 0 6px 2px rgba(195, 126, 63, 0.2); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(169, 212, 255, 0.4); }
+  50% { box-shadow: 0 0 6px 2px rgba(169, 212, 255, 0.2); }
 }
-.sepia .duel-big-btn { animation-name: sepia-duel-pulse; background: var(--accent) !important; color: #ffffff !important; }
-.sepia .duel-big-btn:hover { animation-name: sepia-duel-pulse; box-shadow: 0 8px 30px rgba(195, 126, 63, 0.4), var(--shadow-lg) !important; }
+.sepia .duel-big-btn { animation-name: sepia-duel-pulse; background: var(--accent) !important; color: #253650 !important; }
+.sepia .duel-big-btn:hover { animation-name: sepia-duel-pulse; box-shadow: 0 8px 30px rgba(169, 212, 255, 0.4), var(--shadow-lg) !important; }
 .sepia .online-dot, .sepia .status-dot { animation-name: sepia-online-pulse; }
 
 /* ── Sepia: scrollbar ── */
-.sepia ::-webkit-scrollbar-thumb { background: rgba(195, 126, 63, 0.25); }
-.sepia ::-webkit-scrollbar-thumb:hover { background: rgba(195, 126, 63, 0.40); }
-.sepia ::-webkit-scrollbar-track { background: rgba(44, 31, 14, 0.04); }
+.sepia ::-webkit-scrollbar-thumb { background: rgba(169, 212, 255, 0.25); }
+.sepia ::-webkit-scrollbar-thumb:hover { background: rgba(169, 212, 255, 0.40); }
+.sepia ::-webkit-scrollbar-track { background: rgba(238, 245, 251, 0.04); }
 
 /* ── Sepia: share button — solid copper, no gradient ── */
 .sepia .btn-share-analytics {
-  background: #C37E3F;
-  color: #ffffff;
-  box-shadow: 0 4px 16px rgba(195, 126, 63, 0.3);
+  background: #A9D4FF;
+  color: #253650;
+  box-shadow: 0 4px 16px rgba(169, 212, 255, 0.3);
 }
 .sepia .btn-share-analytics:hover {
-  box-shadow: 0 6px 20px rgba(195, 126, 63, 0.4);
+  box-shadow: 0 6px 20px rgba(169, 212, 255, 0.4);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2756,7 +2764,7 @@ a {
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.65) 100%);
 }
 .sepia.landing .nav.scrolled {
-  background: linear-gradient(to bottom, rgba(244, 232, 209, 0.88) 0%, rgba(244, 232, 209, 0.65) 100%);
+  background: linear-gradient(to bottom, rgba(15, 80, 63, 0.88) 0%, rgba(15, 80, 63, 0.65) 100%);
 }
 
 .nav-inner {
@@ -3159,7 +3167,7 @@ html.light .logo-img-light { display: inline; }
   display: none;
   padding: 110px 32px 120px;
   background:
-    radial-gradient(circle at 16% 18%, rgba(239, 68, 68, 0.12), transparent 30%),
+    radial-gradient(circle at 16% 18%, rgba(217, 120, 126, 0.12), transparent 30%),
     radial-gradient(circle at 86% 76%, rgba(74, 222, 128, 0.1), transparent 26%),
     var(--bg-secondary);
   border-top: 1px solid var(--border);
@@ -8004,20 +8012,20 @@ body.public-profile .main-content { padding-top: 0; }
 }
 
 .sepia .story-comment-reply-form textarea {
-  border-color: rgba(44, 31, 14, 0.12);
+  border-color: rgba(238, 245, 251, 0.12);
 }
 
 .sepia .story-comment-reply-form textarea:focus {
-  border-color: rgba(195, 126, 63, 0.45);
-  box-shadow: 0 0 0 3px rgba(195, 126, 63, 0.08);
+  border-color: rgba(169, 212, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(169, 212, 255, 0.08);
 }
 
 .sepia .comment-like-btn.liked {
-  color: #c0392b;
+  color: #D9787E;
 }
 
 .sepia .story-skeleton-line {
-  background: rgba(44, 31, 14, 0.08);
+  background: rgba(238, 245, 251, 0.08);
 }
 
 .sepia .stories-lead {
@@ -8025,38 +8033,38 @@ body.public-profile .main-content { padding-top: 0; }
 }
 
 .sepia .stories-filter-btn {
-  border-color: rgba(195, 126, 63, 0.2);
+  border-color: rgba(169, 212, 255, 0.2);
 }
 
 .sepia .stories-filter-btn:hover,
 .sepia .stories-filter-btn.active {
-  border-color: rgba(195, 126, 63, 0.4);
+  border-color: rgba(169, 212, 255, 0.4);
   color: var(--text-primary);
-  background: rgba(195, 126, 63, 0.08);
+  background: rgba(169, 212, 255, 0.08);
 }
 
 .sepia .story-action-btn.liked {
-  color: #c0392b;
+  color: #D9787E;
 }
 
 .sepia .story-comment-switch {
-  background: rgba(240, 230, 212, 0.72);
-  border-color: rgba(195, 126, 63, 0.2);
+  background: rgba(22, 99, 79, 0.72);
+  border-color: rgba(169, 212, 255, 0.2);
 }
 
 .sepia .story-comment-switch.active {
-  border-color: rgba(195, 126, 63, 0.4);
-  background: rgba(195, 126, 63, 0.08);
+  border-color: rgba(169, 212, 255, 0.4);
+  background: rgba(169, 212, 255, 0.08);
 }
 
 .sepia .story-comment-form textarea {
   background: transparent;
-  border-color: rgba(44, 31, 14, 0.12);
+  border-color: rgba(238, 245, 251, 0.12);
 }
 
 .sepia .story-comment-form textarea:focus {
-  border-color: rgba(195, 126, 63, 0.45);
-  box-shadow: 0 0 0 3px rgba(195, 126, 63, 0.08);
+  border-color: rgba(169, 212, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(169, 212, 255, 0.08);
 }
 
 .sepia .story-composer-formatbar {
@@ -8070,44 +8078,44 @@ body.public-profile .main-content { padding-top: 0; }
 
 .sepia .story-detail-content blockquote,
 .sepia .story-editor blockquote {
-  border-left-color: rgba(195, 126, 63, 0.3);
+  border-left-color: rgba(169, 212, 255, 0.3);
 }
 
 
 .sepia .story-status-badge.success {
-  background: rgba(195, 126, 63, 0.16);
-  color: #8B5E34;
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 .sepia .story-status-badge.warning {
-  background: rgba(195, 126, 63, 0.16);
-  color: #8B5E34;
+  background: rgba(233, 196, 106, 0.16);
+  color: var(--warning);
 }
 
 .sepia .stories-icon-btn {
-  border-color: rgba(195, 126, 63, 0.2);
+  border-color: rgba(169, 212, 255, 0.2);
 }
 
 .sepia .stories-icon-btn:hover {
-  border-color: rgba(195, 126, 63, 0.4);
+  border-color: rgba(169, 212, 255, 0.4);
 }
 
 .sepia .stories-inline-btn {
-  border-color: rgba(195, 126, 63, 0.2);
+  border-color: rgba(169, 212, 255, 0.2);
 }
 
 .sepia .stories-inline-btn:hover {
-  border-color: rgba(195, 126, 63, 0.4);
-  background: rgba(195, 126, 63, 0.08);
+  border-color: rgba(169, 212, 255, 0.4);
+  background: rgba(169, 212, 255, 0.08);
 }
 
 .sepia .story-comment-delete:hover {
-  color: #c0392b;
+  color: #D9787E;
 }
 
 .sepia .pro-nav-badge {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #000;
+  background: var(--warning);
+  color: #253650;
 }
 
 /* ===== DUELS ===== */
@@ -11053,19 +11061,19 @@ body.editor-active .mobile-sidebar-toggle {
 
 /* ── Sepia: duration tabs + banner ── */
 .sepia .upgrade-duration-pill.active {
-  background: linear-gradient(135deg, #C37E3F, #d4944f);
-  color: #fff;
+  background: linear-gradient(135deg, #A9D4FF, #8FCFC7);
+  color: #253650;
 }
 .sepia .upgrade-duration-pill.active .upgrade-popular-label {
-  color: #fff;
+  color: #253650;
 }
 .sepia .upgrade-price-savings {
-  color: #C37E3F;
+  color: #A9D4FF;
 }
 .sepia .payment-failed-banner {
-  background: rgba(195, 126, 63, 0.1);
-  border-bottom-color: rgba(195, 126, 63, 0.2);
-  color: #C37E3F;
+  background: var(--danger-soft);
+  border-bottom-color: rgba(217, 120, 126, 0.28);
+  color: var(--danger);
 }
 
 /* ── Share Dropdown ── */
@@ -13750,7 +13758,7 @@ a.lb-name-link .lb-username {
 .auth-monsters-panel {
   flex: 1;
   position: relative;
-  background: linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(74,222,128,0.07) 50%, rgba(167,139,250,0.04) 100%);
+  background: linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(74,222,128,0.07) 50%, rgba(143, 207, 199,0.04) 100%);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -21231,4 +21239,116 @@ body.landing.dream-landing .footer-bottom p:last-child {
     margin-left: 0;
     text-align: left;
   }
+}
+
+/* ===== DARK THEME: LEGACY ACCENT CLEANUP ===== */
+.sepia .stories-feed-copy {
+  background:
+    radial-gradient(circle at top left, rgba(169, 212, 255, 0.14), transparent 42%),
+    linear-gradient(135deg, rgba(169, 212, 255, 0.06), var(--bg-card));}
+
+.sepia .story-feature-card:hover {
+  border-color: rgba(169, 212, 255, 0.22);}
+
+.sepia .story-feed-card:hover {
+  border-color: rgba(169, 212, 255, 0.24);}
+
+.sepia .ad-showcase {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(217, 120, 126, 0.12), transparent 30%),
+    radial-gradient(circle at 86% 76%, rgba(169, 212, 255, 0.1), transparent 26%),
+    var(--bg-secondary);}
+
+.sepia .story-author-avatar {
+  background: linear-gradient(135deg, rgba(169, 212, 255, 0.16), rgba(143, 207, 199, 0.28));}
+
+.sepia .stories-notif-item.unread { background: rgba(169, 212, 255,0.04);}
+
+.sepia .stories-notif-item.unread:hover { background: rgba(169, 212, 255,0.08);}
+
+.sepia .stories-notif-icon.follower { background: rgba(169, 212, 255,0.12);
+ color: #A9D4FF;}
+
+.sepia .stories-topbar .stories-primary-btn:hover {
+  border-color: rgba(169, 212, 255, 0.28);}
+
+.sepia .story-float-link-input input:focus {
+  border-color: rgba(169, 212, 255, 0.5);}
+
+.sepia .stories-navbar .stories-filter-btn.active,
+.sepia .stories-topbar .stories-filter-btn.active {
+    border-color: rgba(169, 212, 255, 0.3);
+
+    background: rgba(169, 212, 255, 0.06);}
+
+.sepia .duel-opp-left-finish {
+  background: rgba(169, 212, 255, 0.15);
+
+  border: 1px solid rgba(169, 212, 255, 0.4);}
+
+.sepia .duel-opp-left-finish:hover { background: rgba(169, 212, 255, 0.25);}
+
+.sepia .ann-cat-feature { background: rgba(143, 207, 199,0.15);
+ color: #8FCFC7;}
+
+.sepia .duel-mm-pulse {
+  background: rgba(169, 212, 255,0.12);
+
+  color: #A9D4FF;
+
+  border: 1px solid rgba(169, 212, 255,0.3);}
+
+.sepia .duel-mm-pulse:hover { background: rgba(169, 212, 255,0.2);}
+
+.sepia .duel-mm-pulse-dot {
+  background: #A9D4FF;
+
+  box-shadow: 0 0 0 0 rgba(169, 212, 255,0.7);}
+
+.sepia .duel-mm-dur-btn.active {
+  background: rgba(169, 212, 255,0.12);
+
+  box-shadow: 0 0 0 2px rgba(169, 212, 255,0.18);}
+
+.sepia .duel-mm-lobby-row:hover { border-color: rgba(169, 212, 255,0.4);}
+
+.sepia .duel-mm-lobby-wait { color: #A9D4FF;}
+
+.sepia .duel-mm-lobby-join-btn {
+  box-shadow: 0 2px 8px rgba(169, 212, 255,0.25);}
+
+.sepia .duel-mm-lobby-join-btn:hover {
+  box-shadow: 0 6px 18px rgba(169, 212, 255,0.45);}
+
+.sepia .duels-lobby-pulse {
+  background: rgba(169, 212, 255,0.15);
+
+  border: 1px solid rgba(169, 212, 255,0.4);
+
+  color: #A9D4FF;}
+
+.sepia .duels-lobby-pulse::before {
+  background: #A9D4FF;}
+
+.sepia .sub-history-tag-paid { background: rgba(143, 207, 199,0.12);
+ color: #8FCFC7;}
+
+.sepia .streak-heatmap .heatmap-cell.level-1 { background: rgba(169, 212, 255, 0.3);}
+
+.sepia .streak-heatmap .heatmap-cell.level-2 { background: #A9D4FF;}
+
+.sepia .research-chat-user {
+  background: var(--accent, #8FCFC7);}
+
+.sepia .research-chat-md a { color: var(--accent, #8FCFC7);}
+
+.sepia #gem-input:focus { border-color: var(--accent, #8FCFC7);}
+
+.sepia #gem-send {
+  background: var(--accent, #8FCFC7);}
+
+.sepia .duel-mm-lobby-join-btn,
+.sepia .research-chat-user,
+.sepia #gem-send {
+  color: #253650;
 }

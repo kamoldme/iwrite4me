@@ -374,8 +374,9 @@ const App = {
 
     let savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
     if (savedTheme === 'test') savedTheme = 'light';
+    if (savedTheme === 'sepia') savedTheme = 'dark'; // migrate the former third theme
     document.documentElement.classList.add('test'); // Writer's Desk structure — always on
-    if (savedTheme === 'light' || savedTheme === 'sepia') document.documentElement.classList.add(savedTheme);
+    document.documentElement.classList.add(savedTheme === 'light' ? 'light' : 'sepia');
 
     // Resolve current URL to determine which view to show
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -1090,7 +1091,7 @@ const App = {
       });
     });
 
-    // Theme toggle — restore the saved theme (dark / light / sepia / test)
+    // Theme toggle — only Light and Dark are user-facing themes.
     this._applyTheme(localStorage.getItem('iwrite_theme') || 'dark');
     document.getElementById('theme-toggle-btn').addEventListener('click', () => {
       this._cycleTheme();
@@ -7653,15 +7654,17 @@ const App = {
   _applyTheme(theme) {
     const root = document.documentElement;
     if (theme === 'test') theme = 'light'; // legacy: Test folded into Light
-    // 'test' = Writer's Desk structure layer — always on; color theme adds light/sepia (dark = none)
+    if (theme === 'sepia') theme = 'dark'; // legacy: Sepia is now the new Dark Mode
+    if (theme !== 'light' && theme !== 'dark') theme = 'dark';
+    // Writer's Desk structure is always on. The former Sepia palette now powers Dark Mode.
     root.classList.remove('light', 'sepia');
     root.classList.add('test');
     if (theme === 'light') root.classList.add('light');
-    else if (theme === 'sepia') root.classList.add('sepia');
+    else root.classList.add('sepia');
     localStorage.setItem('iwrite_theme', theme);
     const btn = document.getElementById('theme-toggle-btn');
     if (!btn) return;
-    const labels = { dark: 'Light Mode', light: 'Sepia Mode', sepia: 'Dark Mode' };
+    const labels = { dark: 'Light Mode', light: 'Dark Mode' };
     btn.querySelector('.theme-icon-dark').style.display = theme === 'dark' ? '' : 'none';
     btn.querySelector('.theme-icon-light').style.display = theme !== 'dark' ? '' : 'none';
     btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Light Mode';
@@ -7670,8 +7673,8 @@ const App = {
   _cycleTheme() {
     let current = localStorage.getItem('iwrite_theme') || 'dark';
     if (current === 'test') current = 'light';
-    // dark → light → sepia → dark (all share the Writer's Desk structure)
-    const next = current === 'dark' ? 'light' : current === 'light' ? 'sepia' : 'dark';
+    if (current === 'sepia') current = 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
     this._applyTheme(next);
   },
 
@@ -8741,7 +8744,7 @@ const App = {
         <h4 style="margin-top:16px;margin-bottom:8px">Friends Pagination & Sorting</h4>
         <p>Friends list now loads in pages with sort options: newest, oldest, streak, and XP. Scales better for users with many friends.</p>
         <h4 style="margin-top:16px;margin-bottom:8px">UI Improvements</h4>
-        <p>Challenge button visibility fix, PRO badge sepia styling, story title input cleanup, share progress button theming, and dozens of small polish fixes across all three themes.</p>`
+        <p>Challenge button visibility fix, PRO badge dark-mode styling, story title input cleanup, share progress button theming, and dozens of small polish fixes across the interface.</p>`
     },
     'v2.2': {
       title: 'v2.2 — Share & Analytics',
