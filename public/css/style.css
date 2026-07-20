@@ -59,7 +59,7 @@ body::-webkit-scrollbar,
 .light {
   --accent-rgb: 22, 99, 79;
   --ink-rgb: 37, 54, 80;
-  --bg-primary: #f7f9fc;
+  --bg-primary: #e6f0fa;
   --bg-secondary: #daeafa;
   --bg-card: #ffffff;
   --bg-card-hover: #f9fbfd;
