@@ -407,6 +407,10 @@ const API = {
     return this.request(`/stories/latest-published${q}`);
   },
 
+  async getTopWeekStories() {
+    return this.request('/stories/top-week');
+  },
+
   async getStory(id) {
     return this.request(`/stories/${id}`);
   },

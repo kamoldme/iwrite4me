@@ -261,9 +261,11 @@
       const list = this.storyTab === 'feed' ? this.storyList : this.getMineStories();
 
       if (!list.length) {
-        const emptyTitle = this.storyTab === 'feed' ? 'No stories yet' : 'Nothing in this section yet';
+        const emptyTitle = this.storyTab === 'feed'
+          ? (this.storySort === 'following' ? 'Not following anyone yet' : 'No stories yet')
+          : 'Nothing in this section yet';
         const emptyText = this.storyTab === 'feed'
-          ? 'Approved stories appear here.'
+          ? (this.storySort === 'following' ? 'Follow writers from their profile or the Most followed list to see their stories here.' : 'Approved stories appear here.')
           : this.storyMineFilter === 'drafts'
           ? 'Start a new story or publish one of your sessions.'
           : this.storyMineFilter === 'review'
@@ -421,13 +423,32 @@
           <div class="stories-popular-followers">${followers}</div>
         </a>`;
       }).join('');
-      return `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3>${rows}</div>`;
+      return `<div class="stories-popular-card"><h3>Most followed</h3>${rows}</div>`;
+    },
+
+    async loadTopWeek() {
+      const el = document.getElementById('stories-top-week');
+      if (!el) return;
+      try {
+        const items = await API.getTopWeekStories();
+        if (!items || !items.length) { el.innerHTML = ''; return; }
+        const rows = items.map(t => `
+          <div class="stories-topweek-item">
+            <div class="stories-topweek-kind">${esc(t.kind)}</div>
+            <div class="stories-topweek-title">${esc(t.title)}</div>
+            <div class="stories-topweek-by">${esc(t.authorName)} &middot; ${esc(t.metric)}</div>
+          </div>`).join('');
+        el.innerHTML = `<div class="stories-popular-card"><h3>Top this week</h3>${rows}</div>`;
+      } catch {
+        el.innerHTML = '';
+      }
     },
 
     async loadStories() {
       App._storiesLoaded = true;
       App._storiesDirty = false;
-      this.loadPopularWriters(); // populate the right-side "Popular writers" sidebar (cached)
+      this.loadPopularWriters(); // populate the right-side "Most followed" sidebar (cached)
+      this.loadTopWeek();
       const feedEl = document.getElementById('stories-feed');
       if (feedEl) {
         const skeletonCard = `<div class="story-skeleton-card"><div class="story-skeleton-line skeleton-author"></div><div class="story-skeleton-line skeleton-title"></div><div class="story-skeleton-line skeleton-excerpt"></div><div class="story-skeleton-line skeleton-excerpt-short"></div><div class="story-skeleton-line skeleton-meta"></div></div>`;

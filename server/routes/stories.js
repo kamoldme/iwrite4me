@@ -318,6 +318,32 @@ router.get('/latest-published', async (req, res) => {
   }
 });
 
+// Top this week — published in the last 7 days. Returns the single leader for
+// each of the three metrics the design calls for (most viewed / liked / commented).
+router.get('/top-week', async (req, res) => {
+  try {
+    const stories = await findMany('stories.json');
+    const hydrated = await hydrateStories(stories, req.user.id);
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recent = hydrated.filter(s => s.status === 'published' && s.publishedAt && new Date(s.publishedAt).getTime() >= weekAgo);
+    const pick = (metric, label, fmt) => {
+      if (!recent.length) return null;
+      const top = [...recent].sort((a, b) => (b[metric] || 0) - (a[metric] || 0))[0];
+      if (!top || !top[metric]) return null;
+      return { kind: label, title: top.title, authorName: top.authorName, authorUsername: top.authorUsername, metric: fmt(top[metric]) };
+    };
+    const entries = [
+      pick('viewCount', 'Most viewed', n => `${n.toLocaleString()} views`),
+      pick('likeCount', 'Most liked', n => `${n.toLocaleString()} likes`),
+      pick('commentCount', 'Most commented', n => `${n.toLocaleString()} comments`)
+    ].filter(Boolean);
+    res.json(entries);
+  } catch (err) {
+    console.error('Top-week stories error:', err);
+    res.status(500).json({ error: 'Failed to load top stories' });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const filter = (req.query.filter || 'feed').toLowerCase();
@@ -339,6 +365,12 @@ router.get('/', async (req, res) => {
         filtered.sort((a, b) => new Date(a.publishedAt || a.createdAt) - new Date(b.publishedAt || b.createdAt));
       } else if (sort === 'popular') {
         filtered.sort((a, b) => b.popularityScore - a.popularityScore || new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+      } else if (sort === 'following') {
+        const me = await findOne('users.json', u => u.id === req.user.id);
+        const followingIds = new Set(me?.following || []);
+        filtered = filtered
+          .filter(s => followingIds.has(s.userId))
+          .sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
       } else {
         filtered.sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
       }
