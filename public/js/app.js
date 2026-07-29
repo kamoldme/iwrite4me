@@ -1229,7 +1229,9 @@ const App = {
 
 
     document.querySelectorAll('.mode-option').forEach(opt => {
+      console.log('Attaching click listener to mode-option:', opt.dataset.mode);
       opt.addEventListener('click', () => {
+        console.log('Mode option clicked:', opt.dataset.mode);
         document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
         opt.classList.add('active');
         document.getElementById('mode-selector')?.classList.add('has-chosen');
