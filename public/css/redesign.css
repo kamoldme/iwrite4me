@@ -345,8 +345,8 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 .dashboard-hero {
   background: #f5f0e8;
   background-image: url('/media/hero-light.png');
-  background-size: cover;
-  background-position: center -450px;
+  background-size: auto 150%;
+  background-position: center bottom;
   background-repeat: no-repeat;
   border-radius: 24px;
   min-height: 200px;
@@ -367,37 +367,12 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 html.dark .dashboard-hero {
   background: #0a0a0a;
   background-image: url('/media/hero-dark.png');
-  background-position: center -330px;
-  background-size: cover;
+  background-position: center bottom;
+  background-size: auto 150%;
   background-repeat: no-repeat;
 }
 html.dark .dashboard-hero, html.dark .dashboard-hero-text h1 {
   color: var(--text-primary);
-}
-/* Responsive adjustments for hero background images at different viewport widths */
-@media (max-width: 1600px) {
-  .dashboard-hero { background-position: center -400px; }
-  html.dark .dashboard-hero { background-position: center -280px; }
-}
-@media (max-width: 1400px) {
-  .dashboard-hero { background-position: center -350px; }
-  html.dark .dashboard-hero { background-position: center -230px; }
-}
-@media (max-width: 1200px) {
-  .dashboard-hero { background-position: center -300px; }
-  html.dark .dashboard-hero { background-position: center -180px; }
-}
-@media (max-width: 1024px) {
-  .dashboard-hero { background-position: center -250px; }
-  html.dark .dashboard-hero { background-position: center -130px; }
-}
-@media (max-width: 768px) {
-  .dashboard-hero { background-position: center -150px; }
-  html.dark .dashboard-hero { background-position: center -80px; }
-}
-@media (max-width: 480px) {
-  .dashboard-hero { background-position: center -80px; }
-  html.dark .dashboard-hero { background-position: center -40px; }
 }
 .dashboard-hero-kicker {
   display: block;
