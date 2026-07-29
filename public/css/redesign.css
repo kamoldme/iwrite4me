@@ -609,6 +609,9 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .upgrade-card-features li::before { color: var(--accent); }
 .upgrade-trial-link { color: var(--accent); }
 
+/* Hide streak indicator from sidebar */
+.streak-indicator { display: none !important; }
+
 #view-support .dashboard-header h1 { font-size: 32px; letter-spacing: -.8px; }
 .support-form {
   background: var(--bg-card);
