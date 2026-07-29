@@ -67,7 +67,7 @@ app.use(helmet({
       baseUri: ["'self'"],
       formAction: ["'self'"],
       frameAncestors: ["'self'"],
-      upgradeInsecureRequests: []
+      'upgrade-insecure-requests': null
     }
   },
   crossOriginEmbedderPolicy: false,
@@ -104,7 +104,11 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
     // Allow any Railway-assigned domain
-    if (allowedOrigins.includes(origin) || /\.up\.railway\.app$/.test(origin)) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      /\.up\.railway\.app$/.test(origin) ||
+      /^https?:\/\/[a-z0-9-]+\.169\.58\.74\.77\.sslip\.io$/i.test(origin)
+    ) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
