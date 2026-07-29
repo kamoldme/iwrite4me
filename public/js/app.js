@@ -2214,6 +2214,7 @@ const App = {
     const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(u.xp || 0);
     const xlt = document.getElementById('xp-level-text'); if (xlt) xlt.innerHTML = `Level ${level}`;
     setText('xp-progress-text', `${xpInLevel.toLocaleString()} / ${xpForNextLevel.toLocaleString()} XP`);
+    setText('xp-next-level-text', `${Math.max(0, xpForNextLevel - xpInLevel).toLocaleString()} XP to Level ${level + 1}`);
     const xbf = document.getElementById('xp-bar-fill'); if (xbf) xbf.style.width = `${Math.min(100, (xpInLevel / xpForNextLevel) * 100)}%`;
 
     const canvas = document.getElementById('tree-canvas');
@@ -2225,7 +2226,7 @@ const App = {
 
     this._renderHeatmap();
     const visibleDocs = (this.documents || []).filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
-    this.renderDocumentList('recent-docs', visibleDocs.slice(0, 3));
+    this.renderDocumentList('recent-docs', visibleDocs.slice(0, 4));
     this._renderTestDashboard();
   },
 
@@ -2301,8 +2302,7 @@ const App = {
       ring.style.strokeDasharray = C;
       ring.style.strokeDashoffset = C * (1 - pct);
     }
-    const ringCenter = document.querySelector('.td-ring-emoji');
-    if (ringCenter) ringCenter.dataset.percent = `${pctNum}%`;
+    setT('td-goal-percent', `${pctNum}%`);
     setT('td-progress-head', remaining > 0 ? `${remaining.toLocaleString()} words left` : 'Goal reached');
     const progressSub = document.querySelector('.td-progress-sub');
     if (progressSub) progressSub.textContent = `${wordsToday.toLocaleString()} / ${goal.toLocaleString()} today`;
@@ -2380,7 +2380,9 @@ const App = {
       if (newPromptBtn && promptEl) {
         newPromptBtn.onclick = () => {
           this._tdPromptIdx = ((this._tdPromptIdx ?? 0) + 1) % prompts.length;
-          promptEl.textContent = `“${prompts[this._tdPromptIdx]}”`;
+          const prompt = prompts[this._tdPromptIdx];
+          promptEl.textContent = `“${prompt}”`;
+          promptEl.style.fontSize = prompt.length < 55 ? '30px' : prompt.length < 70 ? '26px' : prompt.length < 85 ? '23px' : '21px';
         };
       }
 
@@ -2438,14 +2440,19 @@ const App = {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Build map of last 20 weeks (140 days) — word counts per day
-    const totalDays = 140;
+    // Claude design uses a fixed 26-week activity grid.
+    const totalDays = 182;
     const dayMap = {};
-    for (let i = totalDays - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
+    const endDate = new Date(today);
+    const daysToSunday = (7 - endDate.getDay()) % 7;
+    endDate.setDate(endDate.getDate() + daysToSunday);
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - (totalDays - 1));
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
       const key = d.toISOString().slice(0, 10);
-      dayMap[key] = 0;
+      if (d <= today) dayMap[key] = 0;
     }
 
     // Sum word counts from documents
@@ -2464,22 +2471,13 @@ const App = {
     const values = Object.values(dayMap);
     const maxWords = Math.max(...values, 1);
 
-    // Build weeks grid (columns = weeks, rows = days Mon-Sun)
-    // Start from the first Monday on or before the earliest date
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - (totalDays - 1));
-    // Adjust to previous Monday
-    const startDay = startDate.getDay();
-    const mondayOffset = startDay === 0 ? -6 : 1 - startDay;
-    startDate.setDate(startDate.getDate() + mondayOffset);
-
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
     // Calculate weeks
     const weeks = [];
     const d = new Date(startDate);
-    while (d <= today) {
+    while (d <= endDate) {
       const week = [];
       for (let dow = 0; dow < 7; dow++) {
         const key = d.toISOString().slice(0, 10);
@@ -2540,8 +2538,8 @@ const App = {
     grid.innerHTML = html;
 
     if (totalEl) {
-      const activeDays = values.filter(v => v > 0).length;
-      totalEl.textContent = `${totalWords.toLocaleString()} words in ${activeDays} days`;
+      const sessionCount = allDocs.filter(doc => !doc.deletedBySystem && !doc.deactivatedByAdmin).length;
+      totalEl.textContent = `${sessionCount.toLocaleString()} sessions · 6 months`;
     }
   },
 
@@ -3954,8 +3952,7 @@ const App = {
   _lbPerPage: 10,
 
   async loadLeaderboard() {
-    const tbody = document.querySelector('#leaderboard-table tbody');
-    const podium = document.getElementById('leaderboard-podium');
+    const rows = document.getElementById('leaderboard-rows');
 
     // Wire up tab buttons once
     if (!this._lbTabsWired) {
@@ -3975,15 +3972,15 @@ const App = {
       this._lbData = await API.getLeaderboard();
       this._renderLeaderboard(this._lbData);
     } catch {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Failed to load leaderboard</td></tr>';
+      if (rows) rows.innerHTML = '<div class="claude-empty-row">Failed to load leaderboard.</div>';
     }
   },
 
   _renderLeaderboard(rawData) {
-    const tbody = document.querySelector('#leaderboard-table tbody');
-    const podium = document.getElementById('leaderboard-podium');
-    const thead = document.getElementById('leaderboard-thead');
+    const rows = document.getElementById('leaderboard-rows');
+    const pager = document.getElementById('leaderboard-pager');
     const kicker = document.getElementById('leaderboard-kicker');
+    const metricLabel = document.getElementById('leaderboard-metric-label');
     const tabs = document.querySelectorAll('.lb-tab');
     const isTime = this._lbTab === 'time';
     const isReferrals = this._lbTab === 'referrals';
@@ -3999,13 +3996,8 @@ const App = {
       };
       kicker.textContent = labels[this._lbTab] || labels.overall;
     }
-
-    // Toggle tab class on leaderboard view for mobile column visibility
-    const lbView = document.getElementById('view-leaderboard');
-    if (lbView) {
-      lbView.classList.toggle('lb-tab-time', isTime);
-      lbView.classList.toggle('lb-tab-streaks', isStreak);
-      lbView.classList.toggle('lb-tab-referrals', isReferrals);
+    if (metricLabel) {
+      metricLabel.textContent = isReferrals ? 'Invites' : isTime ? 'Writing time' : isStreak ? 'Streak' : 'XP';
     }
 
     // Sort based on active tab, filter out zero-referral users for referrals tab
@@ -4020,137 +4012,68 @@ const App = {
     const myIndex = data.findIndex(entry => this.user && (entry.id === this.user.id || entry.name === this.user.name));
     const placeEl = document.getElementById('leaderboard-your-place');
     if (placeEl) placeEl.textContent = myIndex >= 0 ? `#${myIndex + 1}` : 'Top 100';
-
-    // Update thead
-    if (isReferrals) {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-referrals">Invites</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-level">Level</th></tr>`;
-    } else if (isTime) {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-time">Writing Time</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-level">Level</th></tr>`;
-    } else if (isStreak) {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-streak">Streak</th><th class="lb-col-words">Words</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-time">Time</th><th class="lb-col-level">Level</th></tr>`;
-    } else {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-xp">XP</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-level">Level</th></tr>`;
-    }
-
-    // Podium for top 3
-    const top3 = data.slice(0, 3);
-    const podiumOrder = [top3[1], top3[0], top3[2]];
-    const medals = ['&#x1F948;', '&#x1F947;', '&#x1F949;'];
-    const podiumLabels = ['2nd', '1st', '3rd'];
-    const heights = ['160px', '200px', '140px'];
-
-    podium.innerHTML = podiumOrder.map((entry, i) => {
-      if (!entry) return '<div class="podium-slot empty"></div>';
-      const isFirst = podiumLabels[i] === '1st';
-      const avatarContent = entry.avatar
-        ? `<img src="${entry.avatar}?t=${entry.avatarUpdatedAt || 0}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-        : entry.name.charAt(0).toUpperCase();
-      const statLine = isReferrals
-        ? `&#x1F4E9; ${entry.referralCount || 0} invite${(entry.referralCount || 0) === 1 ? '' : 's'}`
-        : isTime
-          ? `&#x23F1;&#xFE0F; ${this._formatWritingTime(entry.minutesWritten)}`
-          : `${entry.streak ? '&#x1F525; ' + entry.streak + ' day streak' : 'No streak'}`;
-      return `
-        <div class="podium-slot">
-          ${isFirst ? '<div class="podium-crown">&#x1F451;</div>' : ''}
-          <div class="podium-avatar">${avatarContent}</div>
-          <div class="podium-name">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span> ' : ''}${this.escapeHtml(entry.name)}</div>
-          ${entry.username ? `<div class="podium-username">${this.profileLink(entry.username)}</div>` : ''}
-          <div class="podium-words">${statLine}</div>
-          <div class="podium-pedestal" style="height:${heights[i]}">
-            <span class="podium-medal">${medals[i]}</span>
-            <span class="podium-rank">${podiumLabels[i]}</span>
-          </div>
-        </div>`;
-    }).join('');
+    const totalEl = document.getElementById('leaderboard-total-writers');
+    if (totalEl) totalEl.textContent = `of ${data.length.toLocaleString()}`;
 
     const totalPages = Math.max(1, Math.ceil(data.length / this._lbPerPage));
     if (this._lbPage > totalPages) this._lbPage = totalPages;
     const startIndex = (this._lbPage - 1) * this._lbPerPage;
     const pageData = data.slice(startIndex, startIndex + this._lbPerPage);
 
-    // Full table
-    tbody.innerHTML = pageData.map((entry, i) => {
+    const metricFor = entry => {
+      if (isReferrals) return (entry.referralCount || 0).toLocaleString();
+      if (isTime) return this._formatWritingTime(entry.minutesWritten);
+      if (isStreak) return `${entry.streak || 0} days`;
+      return `${(entry.xp || 0).toLocaleString()} XP`;
+    };
+
+    rows.innerHTML = pageData.map((entry, i) => {
       const absoluteIndex = startIndex + i;
-      const rankEmoji = absoluteIndex < 3 ? `#${absoluteIndex + 1}` : `${absoluteIndex + 1}`;
       const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
-      const timeStr = this._formatWritingTime(entry.minutesWritten);
-
-      const nameCell = entry.username
-        ? this.profileLink(entry.username, `${this.escapeHtml(entry.name)} <span class="lb-username">@${this.escapeHtml(entry.username)}</span>`, 'lb-name-link')
-        : this.escapeHtml(entry.name);
-      const youBadge = isMe ? ' <span class="lb-you">YOU</span>' : '';
-
-      if (isReferrals) {
-        return `
-          <tr class="${isMe ? 'leaderboard-me' : ''}">
-            <td class="lb-rank">${rankEmoji}</td>
-            <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-            <td class="lb-name">${nameCell}${youBadge}</td>
-            <td class="lb-col-referrals"><strong>${entry.referralCount || 0}</strong></td>
-            <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
-            <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-            <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-          </tr>`;
-      }
-      if (isTime) {
-        return `
-          <tr class="${isMe ? 'leaderboard-me' : ''}">
-            <td class="lb-rank">${rankEmoji}</td>
-            <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-            <td class="lb-name">${nameCell}${youBadge}</td>
-            <td class="lb-col-time"><strong>${timeStr}</strong></td>
-            <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
-            <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-            <td class="lb-col-sessions">${entry.totalSessions || 0}</td>
-            <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-          </tr>`;
-      }
-      if (!isStreak) {
-        return `
-        <tr class="${isMe ? 'leaderboard-me' : ''}">
-          <td class="lb-rank">${rankEmoji}</td>
-          <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-          <td class="lb-name">${nameCell}${youBadge}</td>
-          <td class="lb-col-xp"><strong>${(entry.xp || 0).toLocaleString()}</strong></td>
-          <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
-          <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-          <td class="lb-col-sessions">${entry.totalSessions || 0}</td>
-          <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-        </tr>`;
-      }
+      const initial = this.escapeHtml((entry.name || '?').charAt(0).toUpperCase());
+      const avatar = entry.avatar
+        ? `<img src="${this.escapeHtml(entry.avatar)}?t=${entry.avatarUpdatedAt || 0}" alt="">`
+        : initial;
+      const name = entry.username
+        ? this.profileLink(entry.username, this.escapeHtml(entry.name), 'claude-lb-name')
+        : `<span class="claude-lb-name">${this.escapeHtml(entry.name)}</span>`;
       return `
-        <tr class="${isMe ? 'leaderboard-me' : ''}">
-          <td class="lb-rank">${rankEmoji}</td>
-          <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-          <td class="lb-name">${nameCell}${youBadge}</td>
-          <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-          <td class="lb-col-words"><strong>${(entry.totalWords || 0).toLocaleString()}</strong></td>
-          <td class="lb-col-sessions">${entry.totalSessions || 0}</td>
-          <td class="lb-col-time">${timeStr}</td>
-          <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-        </tr>`;
+        <div class="claude-lb-row${isMe ? ' is-me' : ''}">
+          <strong class="claude-lb-rank${absoluteIndex < 3 ? ' is-top' : ''}">${absoluteIndex + 1}</strong>
+          <div class="claude-lb-writer">
+            <span class="claude-lb-avatar">${avatar}</span>
+            <span class="claude-lb-writer-copy">${name}<small>Level ${this.calcXPLevel(entry.xp || 0).level}${entry.plan === 'premium' ? ' · Pro' : ''}${isMe ? ' · You' : ''}</small></span>
+          </div>
+          <strong class="claude-lb-metric">${metricFor(entry)}</strong>
+        </div>`;
     }).join('');
 
-    const existingPager = document.getElementById('leaderboard-pager');
-    if (existingPager) existingPager.remove();
-    if (totalPages > 1) {
-      const pager = document.createElement('div');
-      pager.id = 'leaderboard-pager';
-      pager.className = 'docs-pagination leaderboard-pager';
-      pager.innerHTML = `
-        <button class="docs-pagination-btn" id="lb-prev" ${this._lbPage <= 1 ? 'disabled' : ''}>← Prev</button>
-        <span class="docs-pagination-info">${this._lbPage} / ${totalPages}</span>
-        <button class="docs-pagination-btn" id="lb-next" ${this._lbPage >= totalPages ? 'disabled' : ''}>Next →</button>
-      `;
-      document.getElementById('leaderboard-container')?.appendChild(pager);
-      document.getElementById('lb-prev')?.addEventListener('click', () => { this._lbPage--; this._renderLeaderboard(this._lbData); });
-      document.getElementById('lb-next')?.addEventListener('click', () => { this._lbPage++; this._renderLeaderboard(this._lbData); });
-    }
+    pager.innerHTML = `
+      <span>${data.length ? startIndex + 1 : 0}-${Math.min(startIndex + this._lbPerPage, data.length)} of ${data.length}</span>
+      <div>
+        <button id="lb-prev" ${this._lbPage <= 1 ? 'disabled' : ''} aria-label="Previous page">&lsaquo;</button>
+        <strong>${this._lbPage} / ${totalPages}</strong>
+        <button id="lb-next" ${this._lbPage >= totalPages ? 'disabled' : ''} aria-label="Next page">&rsaquo;</button>
+      </div>`;
+    document.getElementById('lb-prev')?.addEventListener('click', () => { this._lbPage--; this._renderLeaderboard(this._lbData); });
+    document.getElementById('lb-next')?.addEventListener('click', () => { this._lbPage++; this._renderLeaderboard(this._lbData); });
+
+    const sortRank = (field, fallback = 'totalWords') => {
+      const sorted = [...rawData].sort((a, b) => (b[field] || 0) - (a[field] || 0) || (b[fallback] || 0) - (a[fallback] || 0));
+      const index = sorted.findIndex(entry => this.user && (entry.id === this.user.id || entry.name === this.user.name));
+      return index >= 0 ? `#${index + 1}` : '-';
+    };
+    const rankOverall = document.getElementById('leaderboard-rank-overall');
+    const rankStreak = document.getElementById('leaderboard-rank-streak');
+    const rankTime = document.getElementById('leaderboard-rank-time');
+    const rankReferrals = document.getElementById('leaderboard-rank-referrals');
+    if (rankOverall) rankOverall.textContent = sortRank('xp');
+    if (rankStreak) rankStreak.textContent = sortRank('streak');
+    if (rankTime) rankTime.textContent = sortRank('minutesWritten');
+    if (rankReferrals) rankReferrals.textContent = sortRank('referralCount');
 
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">No writers yet. Be the first!</td></tr>';
-      podium.innerHTML = '';
+      rows.innerHTML = '<div class="claude-empty-row">No writers yet. Be the first.</div>';
     }
   },
 
@@ -5441,20 +5364,21 @@ const App = {
 
       // Name + badge
       document.getElementById('mp-name').textContent = p.name;
-      document.getElementById('mp-pro-badge').style.display = p.plan === 'premium' ? 'inline-block' : 'none';
+      document.getElementById('mp-pro-badge').textContent = p.plan === 'premium' ? 'PRO' : 'FREE';
 
       // Username + bio
       document.getElementById('mp-username').textContent = `@${p.username}`;
+      document.getElementById('mp-joined').textContent = ` · joined ${new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
       const bioEl = document.getElementById('mp-bio');
       bioEl.textContent = p.bio || '';
       bioEl.style.display = p.bio ? 'block' : 'none';
 
       // Stats
       document.getElementById('mp-stats').innerHTML = `
-        <span class="up-stat-link" data-userid="${this.escapeHtml(p.id)}" data-type="followers"><strong>${p.followerCount}</strong> followers</span>
-        <span class="up-stat-link" data-userid="${this.escapeHtml(p.id)}" data-type="following"><strong>${p.followingCount}</strong> following</span>
-        <span class="up-stat-link" data-type="stories"><strong>${p.storyCount}</strong> stories</span>
-        <span>Joined ${new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+        <span><strong>${(p.totalWords || 0).toLocaleString()}</strong><small>Words</small></span>
+        <span><strong>${p.totalSessions || 0}</strong><small>Sessions</small></span>
+        <span><strong>${p.streak || 0}</strong><small>Streak</small></span>
+        <span class="up-stat-link" data-userid="${this.escapeHtml(p.id)}" data-type="followers"><strong>${p.followerCount || 0}</strong><small>Followers</small></span>
       `;
 
       // Tabs
@@ -6802,11 +6726,12 @@ const App = {
   async loadFriends() {
     this._friendsLoaded = true;
     this._friendsDirty = false;
-    // Copy Invite Link button
-    const copyInvBtn = document.getElementById('copy-invite-link-btn');
-    if (copyInvBtn) {
-      copyInvBtn.onclick = () => {
-        document.getElementById('friend-email-input')?.focus();
+    const addFriendTrigger = document.getElementById('copy-invite-link-btn');
+    const addFriendPanel = document.getElementById('add-friend-panel');
+    if (addFriendTrigger && addFriendPanel) {
+      addFriendTrigger.onclick = () => {
+        addFriendPanel.hidden = !addFriendPanel.hidden;
+        if (!addFriendPanel.hidden) document.getElementById('friend-email-input')?.focus();
       };
     }
 
@@ -6832,7 +6757,7 @@ const App = {
 
       // Friend requests
       if (requests.length > 0) {
-        reqSection.style.display = 'block';
+        reqSection.hidden = false;
         document.getElementById('friend-requests-list').innerHTML = requests.map(r => `
           <div class="doc-card" style="margin-bottom:8px">
             <div class="doc-card-info">
@@ -6847,12 +6772,12 @@ const App = {
             </div>
           </div>`).join('');
       } else {
-        reqSection.style.display = 'none';
+        reqSection.hidden = true;
       }
 
       // Suggestions
       if (suggestions.length > 0) {
-        sugSection.style.display = 'block';
+        sugSection.hidden = false;
         document.getElementById('friend-suggestions-list').innerHTML = suggestions.map(s => `
           <div class="doc-card" style="margin-bottom:8px">
             <div class="doc-card-info">
@@ -6866,7 +6791,7 @@ const App = {
             </div>
           </div>`).join('');
       } else {
-        sugSection.style.display = 'none';
+        sugSection.hidden = true;
       }
 
       // Load first page of friends
@@ -6887,6 +6812,11 @@ const App = {
       const friends = data.friends || [];
       this.friends = friends;
       this._friendsTotalPages = data.totalPages || 1;
+      const friendsKicker = document.getElementById('friends-kicker');
+      if (friendsKicker) {
+        const online = friends.filter(friend => friend.online).length;
+        friendsKicker.textContent = `${data.total || 0} writers · ${online} online`;
+      }
 
       if (data.total === 0) {
         container.innerHTML = `<div class="empty-state"><p>Add friends by their email above to start challenging them to duels.</p></div>`;
@@ -7054,10 +6984,11 @@ const App = {
         return;
       }
       container.innerHTML = activities.map(a => {
-        const { icon, text } = this._formatActivity(a);
+        const { text } = this._formatActivity(a);
+        const initial = this.escapeHtml((a.data?.name || 'W').charAt(0).toUpperCase());
         return `
         <div class="activity-item">
-          <div class="activity-icon">${icon}</div>
+          <div class="activity-icon">${initial}</div>
           <div class="activity-content">
             <div class="activity-text">${text}</div>
             <div class="activity-time">${this._timeAgo(a.createdAt)}</div>

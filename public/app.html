@@ -20,7 +20,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="stylesheet" href="/css/style.css?v=143">
-  <link rel="stylesheet" href="/css/redesign.css?v=2">
+  <link rel="stylesheet" href="/css/redesign.css?v=3">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -309,175 +309,135 @@
       <main class="main-content">
         <!-- DASHBOARD VIEW -->
         <div id="view-dashboard" class="view claude-view claude-dashboard">
-          <div class="dashboard-hero-row">
-            <div class="dashboard-hero">
-              <div class="dashboard-hero-text">
-                <h1 id="greeting-text">Ready to write?</h1>
-                <p class="dashboard-hero-sub"><span id="dashboard-words-today">0 words today</span> &middot; <span id="dashboard-time-left">6h left</span></p>
+          <section class="claude-card claude-dashboard-hero">
+            <img class="claude-dashboard-hero-art" src="/media/redesign/hero-agora-c.png" alt="" width="2048" height="1143" decoding="async">
+            <div class="claude-dashboard-hero-copy">
+              <p class="claude-kicker"><span id="dashboard-words-today">0 words today</span> &middot; <span id="dashboard-time-left">6h left</span></p>
+              <h1 id="greeting-text">Think for yourself.<br>Write for <em>yourself</em>.</h1>
+              <div class="claude-dashboard-hero-actions">
+                <button class="claude-pill claude-pill-primary dashboard-start-btn" id="new-doc-btn">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>
+                  Start writing
+                </button>
                 <div class="online-indicator" id="online-indicator" style="display:none">
                   <span class="online-dot"></span>
-                  <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
+                  <strong id="online-count">0</strong> <span id="online-writer-text">writing now</span>
                 </div>
               </div>
-              <!-- Test Mode only: writer's-desk polaroid (photo emoji rotates daily) -->
-              <div class="td-hero-aside test-only" aria-hidden="true">
-                <div class="td-polaroid">
-                  <span class="td-polaroid-tape"></span>
-                  <div class="td-polaroid-photo" id="td-polaroid-photo">&#x2615;</div>
-                </div>
+            </div>
+          </section>
+
+          <div id="username-reminder" class="claude-username-reminder" style="display:none">
+            <span>You haven't set a username yet. Pick one so others can find you.</span>
+            <button class="claude-pill claude-pill-primary" onclick="App.switchView('settings')">Set username</button>
+          </div>
+
+          <section class="claude-card claude-stat-strip">
+            <button class="claude-stat-cell dash-stat-words" type="button">
+              <img src="/media/redesign/icon-scroll.png" alt="" class="claude-ink-art" width="110" height="110">
+              <strong id="total-words">0</strong>
+              <span>Words</span>
+            </button>
+            <button class="claude-stat-cell dash-stat-sessions" type="button" onclick="App.switchView('documents')" title="View all sessions">
+              <img src="/media/redesign/icon-target.png" alt="" class="claude-ink-art" width="110" height="110">
+              <strong id="total-sessions">0</strong>
+              <span>Sessions</span>
+            </button>
+            <button class="claude-stat-cell dash-stat-streak" type="button" onclick="App.openStreakPopup()">
+              <img src="/media/redesign/icon-flame.png" alt="" class="claude-ink-art" width="110" height="110">
+              <strong id="current-streak">0</strong>
+              <span>Day streak</span>
+              <small id="longest-streak-text">Best: 0</small>
+            </button>
+            <div class="claude-stat-cell dash-stat-xp">
+              <img src="/media/redesign/icon-wreath.png" alt="" class="claude-ink-art" width="110" height="110">
+              <strong id="total-xp">0</strong>
+              <span>Total XP</span>
+            </div>
+            <div class="claude-level-row xp-bar-container">
+              <div class="xp-bar-header">
+                <span class="xp-bar-level" id="xp-level-text">Level 1</span>
+                <span class="xp-bar-progress-text" id="xp-progress-text">0 / 100 XP</span>
               </div>
-              <div class="td-hero-actions">
-                <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">
-                  <span style="padding-right:10px;font-size:1.3em;line-height:1">&#x270F;&#xFE0F;</span> Start Writing
-                </button>
-              </div>
+              <div class="xp-bar"><div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div></div>
+              <p id="xp-next-level-text">Keep writing to reach the next level.</p>
             </div>
-          </div>
+          </section>
 
-          <!-- Username reminder -->
-          <div id="username-reminder" style="display:none;align-items:center;gap:12px;padding:12px 16px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);margin-bottom:16px">
-            <span style="font-size:13px;color:var(--text-primary);flex:1">You haven't set a username yet. Pick one so others can find you!</span>
-            <button class="btn btn-primary btn-small" onclick="App.switchView('profile')">Set Username</button>
-          </div>
-
-          <div class="dashboard-stats-row">
-            <div class="dash-stat-card dash-stat-words">
-              <div class="dash-stat-emoji">&#x1F4DD;</div>
-              <div class="dash-stat-value" id="total-words">0</div>
-              <div class="dash-stat-label">Words</div>
-            </div>
-            <div class="dash-stat-card dash-stat-sessions" style="cursor:pointer" onclick="App.switchView('documents')" title="View all sessions">
-              <div class="dash-stat-emoji">&#x1F3AF;</div>
-              <div class="dash-stat-value" id="total-sessions">0</div>
-              <div class="dash-stat-label">Sessions</div>
-            </div>
-            <div class="dash-stat-card dash-stat-streak" style="cursor:pointer" onclick="App.openStreakPopup()">
-              <div class="dash-stat-emoji">&#x1F525;</div>
-              <div class="dash-stat-value" id="current-streak">0</div>
-              <div class="dash-stat-label">Day Streak</div>
-              <div class="dash-stat-sub" id="longest-streak-text">Best: 0</div>
-            </div>
-            <div class="dash-stat-card dash-stat-xp">
-              <div class="dash-stat-emoji">&#x2B50;</div>
-              <div class="dash-stat-value" id="total-xp">0</div>
-              <div class="dash-stat-label">Total XP</div>
-            </div>
-            <!-- Test Mode only: level progress lives inline at the end of the stat bar -->
-            <div class="dash-level-segment test-only">
-              <div class="dls-head">
-                <span class="dls-label">Level <span id="td-level">1</span></span>
-                <span class="dls-xp" id="td-level-xp">0 / 100 XP</span>
-              </div>
-              <div class="dls-bar"><div class="dls-fill" id="td-level-fill" style="width:0%"></div></div>
-            </div>
-          </div>
-
-          <div class="xp-bar-container">
-            <div class="xp-bar-header">
-              <span class="xp-bar-level" id="xp-level-text">&#x1F396;&#xFE0F; Level 1</span>
-              <span class="xp-bar-progress-text" id="xp-progress-text">0 / 100 XP</span>
-            </div>
-            <div class="xp-bar">
-              <div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div>
-            </div>
-          </div>
-
-          <div class="dashboard-grid">
-            <div class="td-mid-stack">
-              <div class="td-progress-card">
-                <div class="td-progress-body">
-                  <div class="td-ring">
-                    <svg viewBox="0 0 120 120" width="120" height="120">
+          <div class="claude-dashboard-row claude-dashboard-row-primary">
+            <section class="claude-card claude-goal-reflection">
+              <div class="claude-goal-block">
+                <p class="claude-kicker">Today's goal</p>
+                <div class="claude-goal-content">
+                  <div class="claude-goal-ring">
+                    <svg viewBox="0 0 120 120" width="92" height="92" aria-hidden="true">
                       <circle class="td-ring-track" cx="60" cy="60" r="52"></circle>
                       <circle class="td-ring-fill" id="td-ring-fill" cx="60" cy="60" r="52"></circle>
                     </svg>
-                    <span class="td-ring-emoji">&#x1F331;</span>
+                    <strong id="td-goal-percent">0%</strong>
                   </div>
-                  <div class="td-progress-text">
-                    <div class="td-progress-head" id="td-progress-head">Keep going!</div>
-                    <p class="td-progress-sub">You&rsquo;re building something great.</p>
-                    <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span></div>
-                    <div class="td-progress-goal-label">Daily Word Goal</div>
-                    <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">&#x270E; Edit Goal</button>
+                  <div class="claude-goal-copy">
+                    <h3 id="td-progress-head">Keep going</h3>
+                    <p><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span> today</p>
+                    <button class="claude-pill claude-pill-ghost" id="td-edit-goal-btn">Edit goal</button>
                   </div>
                 </div>
               </div>
-              <div class="td-reflection-card">
-                <div class="td-card-head">
-                  <h3>&#x275D; Reflection</h3>
-                  <button class="td-newprompt-btn" id="td-new-prompt-btn">&#x21BB; New</button>
+              <div class="claude-reflection-block">
+                <div class="claude-section-heading">
+                  <p class="claude-kicker">Reflection</p>
+                  <button class="claude-text-action" id="td-new-prompt-btn">New prompt</button>
                 </div>
-                <div class="td-sticky">
-                  <p id="td-prompt-text">&ldquo;What&rsquo;s one small truth you discovered while writing recently?&rdquo;</p>
-                  <img class="td-sticky-bust" src="/media/redesign/philosopher-bust.webp" alt="" loading="lazy" decoding="async">
+                <div class="claude-reflection-note">
+                  <p id="td-prompt-text">"What did you refuse to write down today, and why?"</p>
+                  <img src="/media/redesign/philosopher-bust.webp" alt="" class="claude-ink-art" loading="lazy" decoding="async">
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div class="dashboard-recent">
-              <div class="docs-header">
+            <section class="claude-card claude-recent-sessions">
+              <div class="claude-section-heading">
                 <h2>Recent sessions</h2>
-                <button class="td-link-btn" type="button" onclick="App.switchView('documents')">View all &#x2192;</button>
+                <button class="claude-text-action" type="button" onclick="App.switchView('documents')">View all</button>
               </div>
               <div id="recent-docs"></div>
-              <div class="dashboard-recent-actions">
-                <button class="btn btn-primary btn-small" id="new-doc-btn-2">New Session</button>
-                <button class="btn btn-ghost btn-small" type="button" onclick="App.switchView('documents')">Folders</button>
+              <div class="claude-recent-actions">
+                <button class="claude-pill claude-pill-primary" id="new-doc-btn-2">New session</button>
+                <button class="claude-pill claude-pill-ghost" type="button" onclick="App.switchView('documents')">Folders</button>
               </div>
-            </div>
+            </section>
+          </div>
 
-            <div class="heatmap-section">
-              <div class="heatmap-header">
-                <h3 class="heatmap-title">Writing Activity</h3>
-                <span class="heatmap-total" id="heatmap-total"></span>
+          <div class="claude-dashboard-row claude-dashboard-row-secondary">
+            <section class="claude-card claude-activity-card">
+              <div class="claude-section-heading">
+                <p class="claude-kicker">Writing activity</p>
+                <span class="claude-metric" id="heatmap-total"></span>
               </div>
-              <div class="heatmap-scroll">
-                <div class="heatmap-grid" id="heatmap-grid"></div>
+              <div class="heatmap-scroll"><div class="heatmap-grid" id="heatmap-grid"></div></div>
+              <div class="heatmap-legend">
+                <span>Less</span>
+                <i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i><i data-level="4"></i>
+                <span>More</span>
               </div>
-              <div class="heatmap-footer">
-                <div class="heatmap-legend">
-                  <span class="heatmap-legend-label">Less</span>
-                  <div class="heatmap-legend-cell" data-level="0"></div>
-                  <div class="heatmap-legend-cell" data-level="1"></div>
-                  <div class="heatmap-legend-cell" data-level="2"></div>
-                  <div class="heatmap-legend-cell" data-level="3"></div>
-                  <div class="heatmap-legend-cell" data-level="4"></div>
-                  <span class="heatmap-legend-label">More</span>
-                </div>
-              </div>
-              <div class="td-achievements-card">
-                <div class="td-card-head">
-                  <h3>Achievements</h3>
-                  <div class="td-ach-nav">
-                    <button class="td-ach-arrow" id="td-ach-prev" aria-label="Previous">&#x2039;</button>
-                    <button class="td-ach-arrow" id="td-ach-next" aria-label="Next">&#x203A;</button>
+              <div class="claude-achievements">
+                <div class="claude-section-heading">
+                  <p class="claude-kicker">Achievements</p>
+                  <div class="claude-round-actions">
+                    <button id="td-ach-prev" aria-label="Previous achievements">&#x2039;</button>
+                    <button id="td-ach-next" aria-label="Next achievements">&#x203A;</button>
                   </div>
                 </div>
                 <div class="td-ach-viewport"><div class="td-ach-track" id="td-ach-track"></div></div>
-                <div class="td-ach-dots" id="td-ach-dots"></div>
+                <div id="td-ach-dots" hidden></div>
               </div>
-            </div>
-            <div class="tree-container">
-              <h3>Your writing tree</h3>
-              <canvas id="tree-canvas" width="280" height="300"></canvas>
-              <p class="tree-info">Stage: <span class="tree-stage-label" id="tree-stage-text">Seed</span></p>
-            </div>
-          </div>
-          <!-- Test Mode only: footer quote + maker's stamp -->
-          <div class="td-footer test-only">
-            <blockquote class="td-footer-quote">
-              &#x201C;The first draft doesn&rsquo;t have to be perfect. It just has to be written.&#x201D;
-              <cite>&mdash; James Clear</cite>
-            </blockquote>
-            <div class="td-stamp" aria-hidden="true">
-              <svg viewBox="0 0 100 100" width="84" height="84">
-                <defs><path id="td-stamp-path" d="M 50,50 m -34,0 a 34,34 0 1,1 68,0 a 34,34 0 1,1 -68,0"></path></defs>
-                <circle cx="50" cy="50" r="47" class="td-stamp-ring"></circle>
-                <circle cx="50" cy="50" r="28" class="td-stamp-ring-inner"></circle>
-                <text class="td-stamp-text"><textPath href="#td-stamp-path" startOffset="0">WRITE &#x00B7; REFLECT &#x00B7; GROW &#x00B7; WRITE &#x00B7; REFLECT &#x00B7; GROW &#x00B7; </textPath></text>
-                <text x="50" y="57" text-anchor="middle" class="td-stamp-center">&#x1F58B;</text>
-              </svg>
-            </div>
+            </section>
+
+            <section class="claude-card claude-tree-card">
+              <p class="claude-kicker">Your writing tree</p>
+              <canvas id="tree-canvas" width="512" height="440"></canvas>
+              <p>Stage <strong class="tree-stage-label" id="tree-stage-text">Seed</strong> &middot; keep your streak growing</p>
+            </section>
           </div>
         </div>
 
@@ -577,8 +537,8 @@
           <div class="stories-layout">
             <section class="stories-feed-panel">
               <div id="stories-feed"></div>
-              <aside id="stories-popular" class="stories-popular-panel" aria-label="Popular writers"></aside>
             </section>
+            <aside id="stories-popular" class="stories-popular-panel" aria-label="Popular writers"></aside>
             <section class="stories-detail-panel">
               <div id="story-detail"></div>
             </section>
@@ -590,9 +550,9 @@
 
         <!-- LEADERBOARD VIEW -->
         <div id="view-leaderboard" class="view claude-view claude-leaderboard" style="display:none">
-          <div class="dashboard-header claude-page-head">
+          <div class="claude-page-head">
+            <p class="claude-kicker" id="leaderboard-kicker">Overall ranking by XP. Refreshes hourly.</p>
             <h1>Leaderboard</h1>
-            <p id="leaderboard-kicker">Overall ranking by XP. Refreshes hourly.</p>
           </div>
           <div class="lb-tabs" id="lb-tabs">
             <button class="lb-tab active" data-lb-tab="overall">Overall</button>
@@ -601,39 +561,38 @@
             <button class="lb-tab" data-lb-tab="referrals">Referrals</button>
           </div>
           <div class="leaderboard-layout">
-            <div class="leaderboard-container" id="leaderboard-container">
-              <div class="leaderboard-podium" id="leaderboard-podium"></div>
-              <div class="leaderboard-table-wrap">
-                <table class="leaderboard-table" id="leaderboard-table">
-                  <thead id="leaderboard-thead">
-                    <tr>
-                      <th>Rank</th>
-                      <th class="lb-pro-col"></th>
-                      <th>Writer</th>
-                      <th>Streak</th>
-                      <th class="lb-col-words">Words</th>
-                      <th class="lb-col-sessions">Sessions</th>
-                      <th class="lb-col-time">Time</th>
-                      <th class="lb-col-level">Level</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
+            <section class="claude-card leaderboard-container" id="leaderboard-container">
+              <div class="claude-lb-head">
+                <span>Rank</span>
+                <span>Writer</span>
+                <span id="leaderboard-metric-label">XP</span>
               </div>
-            </div>
-            <aside class="leaderboard-side-rail">
-              <section class="leaderboard-side-card">
-                <span class="view-kicker">Your place</span>
+              <div id="leaderboard-rows" class="claude-lb-rows"></div>
+              <div id="leaderboard-pager" class="claude-lb-pager"></div>
+            </section>
+            <aside class="claude-card leaderboard-side-card">
+              <p class="claude-kicker">Your overall place</p>
+              <div class="claude-lb-place">
                 <strong id="leaderboard-your-place">Top 100</strong>
-                <p>Ranks refresh hourly. Streaks break at local midnight.</p>
-              </section>
-              <section class="leaderboard-side-card">
-                <span class="view-kicker">Movers this week</span>
-                <div class="lb-mover"><span>Sora</span><strong>+6</strong></div>
-                <div class="lb-mover"><span>Deniz</span><strong>+4</strong></div>
-                <div class="lb-mover down"><span>Lena</span><strong>-3</strong></div>
-                <div class="lb-mover down"><span>Jonas</span><strong>-5</strong></div>
-              </section>
+                <span id="leaderboard-total-writers"></span>
+              </div>
+              <p id="leaderboard-place-note">Keep writing to move up the ranking.</p>
+              <div class="claude-lb-divider"></div>
+              <div class="claude-lb-rank-list">
+                <div><span>Overall</span><strong id="leaderboard-rank-overall">-</strong></div>
+                <div><span>Streak</span><strong id="leaderboard-rank-streak">-</strong></div>
+                <div><span>Time spent</span><strong id="leaderboard-rank-time">-</strong></div>
+                <div><span>Referrals</span><strong id="leaderboard-rank-referrals">-</strong></div>
+              </div>
+              <div class="claude-lb-divider"></div>
+              <p class="claude-kicker">Movers this week</p>
+              <div class="claude-lb-movers">
+                <div><span>Sora</span><strong>+6</strong></div>
+                <div><span>Deniz</span><strong>+4</strong></div>
+                <div><span>Lena</span><strong class="down">-3</strong></div>
+                <div><span>Jonas</span><strong class="down">-5</strong></div>
+              </div>
+              <p class="claude-lb-note">Ranks refresh every hour. Streaks break at midnight in your own timezone.</p>
             </aside>
           </div>
         </div>
@@ -711,117 +670,88 @@
 
         <!-- FRIENDS VIEW -->
         <div id="view-friends" class="view claude-view claude-friends" style="display:none">
-          <div class="dashboard-header claude-page-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div class="claude-page-head claude-friends-head">
             <div>
+              <p class="claude-kicker" id="friends-kicker">Writers you follow closely.</p>
               <h1>Friends</h1>
-              <p id="friends-kicker">Writers you follow closely.</p>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-              <div class="share-dropdown-wrap claude-legacy-hidden" style="position:relative">
-                <button class="btn-share-analytics" id="btn-share-analytics-top">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                  Share My Progress
-                </button>
-                <div class="share-dropdown" id="share-dropdown" style="display:none">
-                  <button class="share-dropdown-item" id="share-download-card">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Download stat card
-                  </button>
-                  <div class="share-dropdown-divider"></div>
-                  <button class="share-dropdown-item" id="share-to-x">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    Share on X
-                  </button>
-                  <button class="share-dropdown-item" id="share-to-telegram">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0h-.056zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                    Share on Telegram
-                  </button>
-                  <button class="share-dropdown-item" id="share-to-instagram">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                    Share on Instagram
-                  </button>
-                </div>
-              </div>
-              <button class="btn btn-small" id="copy-invite-link-btn" style="white-space:nowrap;display:flex;align-items:center;gap:6px">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                Add a friend
-              </button>
-            </div>
+            <button class="claude-pill claude-pill-primary" id="copy-invite-link-btn">Add a friend</button>
           </div>
+
+          <section class="claude-card claude-add-friend-panel" id="add-friend-panel" hidden>
+            <div class="claude-add-friend-row">
+              <input type="text" id="friend-email-input" placeholder="Username or email">
+              <button class="claude-pill claude-pill-primary" id="add-friend-btn">Send request</button>
+            </div>
+            <div id="friend-requests-section" hidden>
+              <p class="claude-kicker">Friend requests</p>
+              <div id="friend-requests-list"></div>
+            </div>
+            <div id="friend-suggestions-section" hidden>
+              <p class="claude-kicker">People you may know</p>
+              <div id="friend-suggestions-list"></div>
+            </div>
+          </section>
+
           <div class="friends-split-layout">
-            <!-- Left: Friends list -->
-            <div class="friends-left">
-              <div style="display:flex;gap:12px;margin-bottom:24px">
-                <input type="text" id="friend-email-input" placeholder="Enter friend's username or email" style="flex:1;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:14px;outline:none;background:var(--bg-card);color:var(--text-primary)">
-                <button class="btn btn-primary btn-small" id="add-friend-btn" title="Send friend request">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                </button>
+            <section class="claude-card friends-left">
+              <div class="claude-friends-table-head">
+                <span>Writer</span><span>Streak</span><span>Words</span><span></span>
               </div>
-              <div id="friend-requests-section" style="display:none;margin-bottom:24px">
-                <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">&#x1F514; Friend Requests</h3>
-                <div id="friend-requests-list"></div>
+              <div class="friends-sort-row" hidden>
+                <button class="friends-sort-btn active" data-sort="added">Recent</button>
+                <button class="friends-sort-btn" data-sort="added_oldest">Oldest</button>
+                <button class="friends-sort-btn" data-sort="streak">Streak</button>
+                <button class="friends-sort-btn" data-sort="xp">XP</button>
               </div>
-              <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-                  <h3 style="font-size:15px;font-weight:700;color:var(--text-secondary)">🤝 Your Friends</h3>
-                  <div class="friends-sort-row">
-                    <button class="friends-sort-btn active" data-sort="added">Recent</button>
-                    <button class="friends-sort-btn" data-sort="added_oldest">Oldest</button>
-                    <button class="friends-sort-btn" data-sort="streak">Streak</button>
-                    <button class="friends-sort-btn" data-sort="xp">XP</button>
-                  </div>
-                </div>
-                <div id="friends-list">
-                  <div class="empty-state">
-                    <p>Add friends by their email above to start challenging them to duels.</p>
-                  </div>
-                </div>
+              <div id="friends-list">
+                <div class="empty-state"><p>Add a friend to start building your writing circle.</p></div>
               </div>
-              <div id="friend-suggestions-section" style="display:none;margin-top:24px">
-                <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-muted)">&#x1F4A1; People You May Know</h3>
-                <div id="friend-suggestions-list"></div>
-              </div>
-            </div>
-            <!-- Right: Activity feed -->
-            <div class="friends-right">
-              <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text-secondary)">📢 Friends Activity</h3>
+            </section>
+            <section class="claude-card friends-right">
+              <p class="claude-kicker">Recent activity</p>
               <div id="activity-feed">
-                <div class="empty-state"><p>No activity yet. Your friends' milestones will appear here!</p></div>
+                <div class="empty-state"><p>Your friends' milestones will appear here.</p></div>
               </div>
-            </div>
+            </section>
           </div>
         </div>
 
         <!-- PROFILE VIEW (now last) -->
         <!-- MY PROFILE (own public profile) -->
         <div id="view-my-profile" class="view claude-view claude-profile" style="display:none">
-          <div class="up-banner" id="mp-banner"></div>
-          <div class="up-header">
+          <div class="claude-profile-cover">
+            <div class="up-banner" id="mp-banner"></div>
+            <button class="claude-pill claude-pill-glass" type="button" onclick="App.switchView('settings')">Change banner</button>
             <div class="up-avatar-wrap" id="mp-avatar"></div>
-            <div class="up-header-info">
-              <div class="up-name-row">
-                <h1 class="up-name" id="mp-name"></h1>
-                <span class="pro-nav-badge up-pro-badge" id="mp-pro-badge" style="display:none;padding:0px 5px">PRO</span>
-              </div>
-              <div class="up-username" id="mp-username"></div>
-              <div class="up-bio" id="mp-bio"></div>
+            <div class="claude-profile-name">
+              <h1 class="up-name" id="mp-name"></h1>
+              <span class="up-pro-badge" id="mp-pro-badge">FREE</span>
             </div>
-            <div class="up-actions">
+          </div>
+          <section class="claude-card claude-profile-body">
+            <div class="claude-profile-meta-row">
+              <div class="claude-profile-copy">
+                <div><strong class="up-username" id="mp-username"></strong><span id="mp-joined"></span></div>
+                <p class="up-bio" id="mp-bio"></p>
+              </div>
+              <div class="up-actions">
               <button class="btn btn-ghost btn-small" onclick="App.switchView('settings')" id="mp-edit-btn" style="display:inline-flex;align-items:center;gap:6px">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="flex-shrink:0"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit Profile
               </button>
+              </div>
             </div>
-          </div>
-          <div class="up-stats" id="mp-stats"></div>
-          <div class="up-tabs" role="tablist">
-            <button class="up-tab active" data-mptab="about" role="tab" aria-selected="true">About</button>
-            <button class="up-tab" data-mptab="posts" role="tab" aria-selected="false">Posts</button>
-          </div>
-          <div class="up-tab-content">
-            <div id="mp-about" role="tabpanel"></div>
-            <div id="mp-posts" role="tabpanel" style="display:none"></div>
-          </div>
+            <div class="up-stats" id="mp-stats"></div>
+            <div class="up-tabs" role="tablist">
+              <button class="up-tab active" data-mptab="about" role="tab" aria-selected="true">About</button>
+              <button class="up-tab" data-mptab="posts" role="tab" aria-selected="false">Posts</button>
+            </div>
+            <div class="up-tab-content">
+              <div id="mp-about" role="tabpanel"></div>
+              <div id="mp-posts" role="tabpanel" style="display:none"></div>
+            </div>
+          </section>
         </div>
         <!-- SETTINGS (old Profile tab content) -->
         <div id="view-settings" class="view claude-view claude-settings" style="display:none">
@@ -909,7 +839,7 @@
               </div>
 
               <div class="profile-section" id="change-password-section">
-                <h3 class="profile-section-title">&#x1F512; Change Password</h3>
+                <h3 class="profile-section-title">Change Password</h3>
                 <div class="auth-error" id="password-error"></div>
                 <div class="auth-field">
                   <label>Current Password</label>
@@ -1852,8 +1782,8 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=49"></script>
-  <script src="/js/app.js?v=140"></script>
-  <script src="/js/stories.js?v=20"></script>
+  <script src="/js/app.js?v=141"></script>
+  <script src="/js/stories.js?v=21"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
       const el = document.getElementById('version-tag');

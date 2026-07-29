@@ -390,10 +390,14 @@
         this._popularBound = true;
         el.addEventListener('click', (e) => {
           const item = e.target.closest('.stories-popular-item');
-          if (!item) return;
-          e.preventDefault();
-          const username = item.dataset.username;
-          if (username) App.switchView('user-profile', { username });
+          if (item) {
+            e.preventDefault();
+            const username = item.dataset.username;
+            if (username) App.switchView('user-profile', { username });
+            return;
+          }
+          const story = e.target.closest('.stories-top-week-item[data-story-id]');
+          if (story) this.selectStory(story.dataset.storyId);
         });
       }
       // Render instantly when writers are already cached.
@@ -440,7 +444,20 @@
           <div class="stories-popular-followers">${followers}</div>
         </a>`;
       }).join('');
-      return `<div class="stories-popular-card"><h3>Most followed</h3>${rows}<button class="stories-popular-more" type="button">See all writers &#x2192;</button></div>`;
+      const topStories = [...(this.storyList || [])]
+        .sort((a, b) => ((b.likeCount || 0) + (b.commentCount || 0)) - ((a.likeCount || 0) + (a.commentCount || 0)))
+        .slice(0, 3);
+      const topRows = topStories.map((story, index) => `
+        <button class="stories-top-week-item" type="button" data-story-id="${story.id}">
+          <span>${index === 0 ? 'Most discussed' : index === 1 ? 'Readers choice' : 'Rising'}</span>
+          <strong>${esc(story.title)}</strong>
+          <small>${esc(story.authorName || story.authorUsername || 'Writer')} · ${(story.likeCount || 0).toLocaleString()} likes</small>
+        </button>
+      `).join('');
+      return `<div class="stories-popular-stack">
+        <div class="stories-popular-card"><h3>Most followed</h3>${rows}<button class="stories-popular-more" type="button">See all writers &#x2192;</button></div>
+        ${topRows ? `<div class="stories-popular-card stories-top-week"><h3>Top this week</h3>${topRows}</div>` : ''}
+      </div>`;
     },
 
     async loadStories() {
@@ -474,6 +491,10 @@
         }
 
         this.renderStoriesFeed();
+        if (this._popularWriters) {
+          const popularEl = document.getElementById('stories-popular');
+          if (popularEl) popularEl.innerHTML = this._renderPopularWriters(this._popularWriters);
+        }
         if (this.storyMode === 'feed') {
           const detailEl = document.getElementById('story-detail');
           if (detailEl) detailEl.innerHTML = '';

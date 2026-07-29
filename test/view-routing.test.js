@@ -150,3 +150,19 @@ test('switchView hides every inactive view and preserves dashboard flex layout',
   assert.equal(dashboard.style.getPropertyPriority('display'), 'important');
   assert.equal(dashboardNav.classList.contains('active'), true);
 });
+
+test('every primary redesign tab has its own view and the session picker keeps all modes', () => {
+  const htmlPath = path.join(__dirname, '..', 'public', 'app.html');
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const primaryViews = ['dashboard', 'documents', 'stories', 'leaderboard', 'friends', 'my-profile', 'settings'];
+
+  for (const view of primaryViews) {
+    assert.match(html, new RegExp(`data-view="${view}"`), `${view} nav item is missing`);
+    assert.match(html, new RegExp(`id="view-${view}"`), `${view} view is missing`);
+  }
+
+  assert.match(html, /id="session-modal"/);
+  for (const mode of ['zen', 'normal', 'dangerous', 'research']) {
+    assert.match(html, new RegExp(`class="[^"]*mode-option[^"]*" data-mode="${mode}"`), `${mode} mode is missing`);
+  }
+});
