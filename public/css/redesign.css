@@ -366,8 +366,8 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 html.dark .dashboard-hero {
   background: #0a0a0a;
   background-image: url('/media/hero-philosophers.png');
-  background-position: right center;
-  background-size: auto 100%;
+  background-position: center;
+  background-size: cover;
   background-repeat: no-repeat;
 }
 html.dark .dashboard-hero, html.dark .dashboard-hero-text h1 {
