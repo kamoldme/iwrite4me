@@ -345,8 +345,8 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 .dashboard-hero {
   background: #f5f0e8;
   background-image: url('/media/hero-light.png');
-  background-size: auto 100%;
-  background-position: right center;
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
   border-radius: 24px;
   min-height: 200px;
@@ -368,7 +368,7 @@ html.dark .dashboard-hero {
   background: #0a0a0a;
   background-image: url('/media/hero-dark.png');
   background-position: center;
-  background-size: 105% 100%;
+  background-size: 105% 115%;
   background-repeat: no-repeat;
 }
 html.dark .dashboard-hero, html.dark .dashboard-hero-text h1 {
