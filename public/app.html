@@ -15,13 +15,14 @@
   <title>iWrite4.me — Dashboard</title>
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Space+Grotesk:wght@500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
   <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Story+Script&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="stylesheet" href="/css/style.css?v=143">
+  <link rel="stylesheet" href="/css/redesign.css?v=1">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -212,16 +213,20 @@
       <!-- Mobile sidebar backdrop — must be inside app-container so z-index is in the same stacking context as .sidebar -->
       <div class="mobile-sidebar-overlay" id="mobile-sidebar-overlay"></div>
       <aside class="sidebar" id="sidebar">
+        <img class="sidebar-bg-illustration" src="/media/philosopher-bust.webp" alt="" aria-hidden="true">
         <div class="sidebar-header">
-          <div style="display:flex;flex-direction:column">
-            <a href="/" class="logo">iWrite4.me</a>
-            <span class="version-tag" id="version-tag">v...</span>
-          </div>
+          <button class="sidebar-logo-btn" id="sidebar-logo-btn" title="Collapse sidebar">
+            <img class="logo-mark" src="/media/logo-knot-128.png" alt="">
+            <span class="logo">iWrite4.me</span>
+          </button>
           <div style="display:flex;align-items:center;gap:8px">
             <div class="streak-indicator" id="streak-badge" style="display:none;cursor:pointer" onclick="App.openStreakPopup()">
               <span class="streak-fire">&#x1F525;</span>
               <span id="streak-count">0</span>
             </div>
+            <button class="sidebar-collapse-chevron" id="sidebar-collapse-chevron" title="Collapse sidebar" aria-label="Collapse sidebar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
             <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close sidebar">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -246,7 +251,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 21h8M12 17v4"/><path d="M7 4h10l-1 9H8L7 4z"/><path d="M7 8H4l1 4h2M17 8h3l-1 4h-2"/></svg>
             Leaderboard
           </button>
-          <button class="sidebar-nav-item" data-view="duels">
+          <button class="sidebar-nav-item" data-view="duels" style="display:none">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             Duels
             <span class="duels-lobby-pulse" id="duels-lobby-pulse" title="People looking for a duel" style="display:none"></span>
@@ -310,18 +315,12 @@
           <div class="dashboard-hero-row">
             <div class="dashboard-hero">
               <div class="dashboard-hero-text">
+                <span class="dashboard-hero-kicker" id="hero-kicker">0 words today · 12h left</span>
                 <h1 id="greeting-text">Ready to write?</h1>
                 <p class="dashboard-hero-sub">Your writing journey continues. Pick up where you left off.</p>
                 <div class="online-indicator" id="online-indicator" style="display:none">
                   <span class="online-dot"></span>
                   <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
-                </div>
-              </div>
-              <!-- Test Mode only: writer's-desk polaroid (photo emoji rotates daily) -->
-              <div class="td-hero-aside test-only" aria-hidden="true">
-                <div class="td-polaroid">
-                  <span class="td-polaroid-tape"></span>
-                  <div class="td-polaroid-photo" id="td-polaroid-photo">&#x2615;</div>
                 </div>
               </div>
               <div class="td-hero-actions">
@@ -342,33 +341,25 @@
 
           <div class="dashboard-stats-row">
             <div class="dash-stat-card dash-stat-words">
-              <div class="dash-stat-emoji">&#x1F4DD;</div>
+              <div class="dash-stat-emoji" aria-hidden="true"></div>
               <div class="dash-stat-value" id="total-words">0</div>
               <div class="dash-stat-label">Session Words</div>
             </div>
             <div class="dash-stat-card dash-stat-sessions" style="cursor:pointer" onclick="App.switchView('documents')" title="View all sessions">
-              <div class="dash-stat-emoji">&#x1F3AF;</div>
+              <div class="dash-stat-emoji" aria-hidden="true"></div>
               <div class="dash-stat-value" id="total-sessions">0</div>
               <div class="dash-stat-label">Sessions Done</div>
             </div>
             <div class="dash-stat-card dash-stat-streak" style="cursor:pointer" onclick="App.openStreakPopup()">
-              <div class="dash-stat-emoji">&#x1F525;</div>
+              <div class="dash-stat-emoji" aria-hidden="true"></div>
               <div class="dash-stat-value" id="current-streak">0</div>
               <div class="dash-stat-label">Day Streak</div>
               <div class="dash-stat-sub" id="longest-streak-text">Best: 0</div>
             </div>
             <div class="dash-stat-card dash-stat-xp">
-              <div class="dash-stat-emoji">&#x2B50;</div>
+              <div class="dash-stat-emoji" aria-hidden="true"></div>
               <div class="dash-stat-value" id="total-xp">0</div>
               <div class="dash-stat-label">Total XP</div>
-            </div>
-            <!-- Test Mode only: level progress lives inline at the end of the stat bar -->
-            <div class="dash-level-segment test-only">
-              <div class="dls-head">
-                <span class="dls-label">Level <span id="td-level">1</span></span>
-                <span class="dls-xp" id="td-level-xp">0 / 100 XP</span>
-              </div>
-              <div class="dls-bar"><div class="dls-fill" id="td-level-fill" style="width:0%"></div></div>
             </div>
           </div>
 
@@ -383,96 +374,89 @@
           </div>
 
           <div class="dashboard-grid">
-            <div class="heatmap-section">
-              <div class="heatmap-header">
-                <h3 class="heatmap-title">Writing Activity</h3>
-                <span class="heatmap-total" id="heatmap-total"></span>
-              </div>
-              <div class="heatmap-scroll">
-                <div class="heatmap-grid" id="heatmap-grid"></div>
-              </div>
-              <div class="heatmap-footer">
-                <div class="heatmap-legend">
-                  <span class="heatmap-legend-label">Less</span>
-                  <div class="heatmap-legend-cell" data-level="0"></div>
-                  <div class="heatmap-legend-cell" data-level="1"></div>
-                  <div class="heatmap-legend-cell" data-level="2"></div>
-                  <div class="heatmap-legend-cell" data-level="3"></div>
-                  <div class="heatmap-legend-cell" data-level="4"></div>
-                  <span class="heatmap-legend-label">More</span>
-                </div>
-              </div>
-            </div>
-            <!-- Test Mode only: Today's Progress ring + Reflection stacked -->
-            <div class="td-mid-stack test-only">
-              <div class="td-progress-card">
-                <div class="td-progress-body">
-                  <div class="td-ring">
-                    <svg viewBox="0 0 120 120" width="120" height="120">
-                      <circle class="td-ring-track" cx="60" cy="60" r="52"></circle>
-                      <circle class="td-ring-fill" id="td-ring-fill" cx="60" cy="60" r="52"></circle>
-                    </svg>
-                    <span class="td-ring-emoji">&#x1F331;</span>
+            <div class="dash-row-top">
+              <div class="td-mid-stack">
+                <div class="td-progress-card">
+                  <div class="td-progress-body">
+                    <div class="td-ring">
+                      <svg viewBox="0 0 120 120" width="120" height="120">
+                        <circle class="td-ring-track" cx="60" cy="60" r="52"></circle>
+                        <circle class="td-ring-fill" id="td-ring-fill" cx="60" cy="60" r="52"></circle>
+                      </svg>
+                      <span class="td-ring-emoji">&#x1F331;</span>
+                    </div>
+                    <div class="td-progress-text">
+                      <div class="td-progress-head" id="td-progress-head">Keep going!</div>
+                      <p class="td-progress-sub">You&rsquo;re building something great.</p>
+                      <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span></div>
+                      <div class="td-progress-goal-label">Daily Word Goal</div>
+                      <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">&#x270E; Edit Goal</button>
+                    </div>
                   </div>
-                  <div class="td-progress-text">
-                    <div class="td-progress-head" id="td-progress-head">Keep going!</div>
-                    <p class="td-progress-sub">You&rsquo;re building something great.</p>
-                    <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span></div>
-                    <div class="td-progress-goal-label">Daily Word Goal</div>
-                    <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">&#x270E; Edit Goal</button>
+                </div>
+                <div class="td-reflection-card">
+                  <div class="td-card-head">
+                    <h3>&#x275D; Reflection</h3>
+                    <button class="td-newprompt-btn" id="td-new-prompt-btn">&#x21BB; New</button>
+                  </div>
+                  <div class="td-sticky">
+                    <p id="td-prompt-text">&ldquo;What&rsquo;s one small truth you discovered while writing recently?&rdquo;</p>
+                    <span class="td-sticky-feather">&#x1FAB6;</span>
                   </div>
                 </div>
               </div>
-              <div class="td-reflection-card">
-                <div class="td-card-head">
-                  <h3>&#x275D; Reflection Prompt</h3>
-                  <button class="td-newprompt-btn" id="td-new-prompt-btn">&#x21BB; New Prompt</button>
+              <div class="dash-panel-tabs">
+                <div class="dash-panel-tabs-head">
+                  <button class="dash-panel-tab active" data-pane="recent">&#x1F4C4; Recent Sessions</button>
+                  <button class="dash-panel-tab" data-pane="achievements">&#x1F3C6; Achievements</button>
                 </div>
-                <div class="td-sticky">
-                  <p id="td-prompt-text">&ldquo;What&rsquo;s one small truth you discovered while writing recently?&rdquo;</p>
-                  <span class="td-sticky-feather">&#x1FAB6;</span>
+                <div class="dash-panel-pane active" id="dash-pane-recent">
+                  <div class="docs-header">
+                    <h2 class="dash-panel-pane-title">Recent Sessions</h2>
+                    <button class="btn btn-primary btn-small" id="new-doc-btn-2">New Session</button>
+                  </div>
+                  <div id="recent-docs"></div>
                 </div>
-              </div>
-            </div>
-            <div class="tree-container">
-              <h3>&#x1F333; Your Writing Tree</h3>
-              <canvas id="tree-canvas" width="280" height="300"></canvas>
-              <p class="tree-info">Stage: <span class="tree-stage-label" id="tree-stage-text">Seed</span></p>
-            </div>
-            <div class="dashboard-recent">
-              <div class="docs-header">
-                <h2>&#x1F4C4; Recent Sessions</h2>
-                <button class="btn btn-primary btn-small" id="new-doc-btn-2">New Session</button>
-              </div>
-              <div id="recent-docs"></div>
-            </div>
-            <!-- Test Mode only: achievements swiper -->
-            <div class="td-achievements-card test-only">
-              <div class="td-card-head">
-                <h3>&#x1F3C6; Achievements</h3>
-                <div class="td-ach-nav">
-                  <button class="td-ach-arrow" id="td-ach-prev" aria-label="Previous">&#x2039;</button>
-                  <button class="td-ach-arrow" id="td-ach-next" aria-label="Next">&#x203A;</button>
+                <div class="dash-panel-pane" id="dash-pane-achievements">
+                  <div class="td-card-head">
+                    <h2 class="dash-panel-pane-title">Achievements</h2>
+                    <div class="td-ach-nav">
+                      <button class="td-ach-arrow" id="td-ach-prev" aria-label="Previous">&#x2039;</button>
+                      <button class="td-ach-arrow" id="td-ach-next" aria-label="Next">&#x203A;</button>
+                    </div>
+                  </div>
+                  <div class="td-ach-viewport"><div class="td-ach-track" id="td-ach-track"></div></div>
+                  <div class="td-ach-dots" id="td-ach-dots"></div>
                 </div>
               </div>
-              <div class="td-ach-viewport"><div class="td-ach-track" id="td-ach-track"></div></div>
-              <div class="td-ach-dots" id="td-ach-dots"></div>
             </div>
-          </div>
-          <!-- Test Mode only: footer quote + maker's stamp -->
-          <div class="td-footer test-only">
-            <blockquote class="td-footer-quote">
-              &#x201C;The first draft doesn&rsquo;t have to be perfect. It just has to be written.&#x201D;
-              <cite>&mdash; James Clear</cite>
-            </blockquote>
-            <div class="td-stamp" aria-hidden="true">
-              <svg viewBox="0 0 100 100" width="84" height="84">
-                <defs><path id="td-stamp-path" d="M 50,50 m -34,0 a 34,34 0 1,1 68,0 a 34,34 0 1,1 -68,0"></path></defs>
-                <circle cx="50" cy="50" r="47" class="td-stamp-ring"></circle>
-                <circle cx="50" cy="50" r="28" class="td-stamp-ring-inner"></circle>
-                <text class="td-stamp-text"><textPath href="#td-stamp-path" startOffset="0">WRITE &#x00B7; REFLECT &#x00B7; GROW &#x00B7; WRITE &#x00B7; REFLECT &#x00B7; GROW &#x00B7; </textPath></text>
-                <text x="50" y="57" text-anchor="middle" class="td-stamp-center">&#x1F58B;</text>
-              </svg>
+
+            <div class="dash-row-bottom">
+              <div class="heatmap-section">
+                <div class="heatmap-header">
+                  <h3 class="heatmap-title">Writing Activity</h3>
+                  <span class="heatmap-total" id="heatmap-total"></span>
+                </div>
+                <div class="heatmap-scroll">
+                  <div class="heatmap-grid" id="heatmap-grid"></div>
+                </div>
+                <div class="heatmap-footer">
+                  <div class="heatmap-legend">
+                    <span class="heatmap-legend-label">Less</span>
+                    <div class="heatmap-legend-cell" data-level="0"></div>
+                    <div class="heatmap-legend-cell" data-level="1"></div>
+                    <div class="heatmap-legend-cell" data-level="2"></div>
+                    <div class="heatmap-legend-cell" data-level="3"></div>
+                    <div class="heatmap-legend-cell" data-level="4"></div>
+                    <span class="heatmap-legend-label">More</span>
+                  </div>
+                </div>
+              </div>
+              <div class="tree-container">
+                <h3>&#x1F333; Your Writing Tree</h3>
+                <canvas id="tree-canvas" width="280" height="300"></canvas>
+                <p class="tree-info">Stage: <span class="tree-stage-label" id="tree-stage-text">Seed</span></p>
+              </div>
             </div>
           </div>
         </div>
@@ -495,6 +479,13 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" class="session-search" id="session-search" placeholder="Search sessions by title...">
           </div>
+          <div class="docs-filter-pills" id="docs-filter-pills">
+            <button class="docs-filter-pill active" data-docs-filter="all">All</button>
+            <button class="docs-filter-pill" data-docs-filter="dangerous">Dangerous</button>
+            <button class="docs-filter-pill" data-docs-filter="zen">Zen</button>
+            <button class="docs-filter-pill" data-docs-filter="pinned">Pinned</button>
+            <button class="docs-filter-pill" data-docs-filter="folders">Folders</button>
+          </div>
           <!-- Folder back button -->
           <div id="folder-back-btn" style="display:none"></div>
           <!-- Folder breadcrumb -->
@@ -510,6 +501,18 @@
 
         <!-- STORIES VIEW -->
         <div id="view-stories" class="view stories-view stories-mode-feed" style="display:none">
+          <div class="community-hero">
+            <div class="community-hero-text">
+              <span class="community-hero-kicker">Community</span>
+              <h1>Publish your writing to the world</h1>
+              <p>Share a finished session with other writers, get feedback, and build a following around what you write.</p>
+              <div class="community-hero-actions">
+                <button class="btn btn-primary" id="community-hero-publish-btn">Publish a session</button>
+                <button class="btn btn-ghost" id="community-hero-mine-btn">My writing</button>
+              </div>
+            </div>
+            <img class="community-hero-illustration" src="/media/community-column.webp" alt="">
+          </div>
           <div class="stories-header-row">
             <div class="stories-navbar">
               <div class="stories-filter-row stories-primary-tabs">
@@ -533,9 +536,9 @@
             <div class="stories-topbar">
               <div class="stories-topbar-filters">
                 <div class="stories-filter-row" id="stories-feed-sort-row">
-                  <button class="stories-filter-btn active" data-story-sort="newest">Newest</button>
+                  <button class="stories-filter-btn active" data-story-sort="newest">Latest</button>
                   <button class="stories-filter-btn" data-story-sort="oldest">Oldest</button>
-                  <button class="stories-filter-btn" data-story-sort="popular">Popular</button>
+                  <button class="stories-filter-btn" data-story-sort="popular">Most read</button>
                 </div>
                 <div class="stories-filter-row" id="stories-mine-filter-row" style="display:none">
                   <button class="stories-filter-btn active" data-story-mine-filter="drafts">Drafts</button>
@@ -576,29 +579,40 @@
             <p>See who's writing the most. Climb the ranks!</p>
           </div>
           <div class="lb-tabs" id="lb-tabs">
-            <button class="lb-tab active" data-lb-tab="streaks">Streaks</button>
-            <button class="lb-tab" data-lb-tab="time">Writing Time</button>
+            <button class="lb-tab active" data-lb-tab="overall">Overall (XP)</button>
+            <button class="lb-tab" data-lb-tab="streaks">Streak</button>
+            <button class="lb-tab" data-lb-tab="time">Time spent</button>
             <button class="lb-tab" data-lb-tab="referrals">Referrals</button>
           </div>
-          <div class="leaderboard-container" id="leaderboard-container">
-            <div class="leaderboard-podium" id="leaderboard-podium"></div>
-            <div class="leaderboard-table-wrap">
-              <table class="leaderboard-table" id="leaderboard-table">
-                <thead id="leaderboard-thead">
-                  <tr>
-                    <th>Rank</th>
-                    <th class="lb-pro-col"></th>
-                    <th>Writer</th>
-                    <th>Streak</th>
-                    <th class="lb-col-words">Words</th>
-                    <th class="lb-col-sessions">Sessions</th>
-                    <th class="lb-col-time">Time</th>
-                    <th class="lb-col-level">Level</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+          <div class="leaderboard-layout">
+            <div class="leaderboard-container" id="leaderboard-container">
+              <div class="leaderboard-podium" id="leaderboard-podium"></div>
+              <div class="leaderboard-table-wrap">
+                <table class="leaderboard-table" id="leaderboard-table">
+                  <thead id="leaderboard-thead">
+                    <tr>
+                      <th>Rank</th>
+                      <th class="lb-pro-col"></th>
+                      <th>Writer</th>
+                      <th>Streak</th>
+                      <th class="lb-col-words">Words</th>
+                      <th class="lb-col-sessions">Sessions</th>
+                      <th class="lb-col-time">Time</th>
+                      <th class="lb-col-level">Level</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="lb-pagination" id="lb-pagination" style="display:none"></div>
             </div>
+            <aside class="leaderboard-rail" id="leaderboard-rail">
+              <div class="lb-rail-card">
+                <h3>Your overall place</h3>
+                <div id="lb-your-place">—</div>
+              </div>
+              <p class="lb-rail-note">Ranks refresh hourly. Streaks break at local midnight.</p>
+            </aside>
           </div>
         </div>
 
@@ -678,7 +692,7 @@
           <div class="dashboard-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div>
               <h1>&#x1F46B; Friends</h1>
-              <p>Add friends by their email to challenge them to writing duels.</p>
+              <p id="friends-kicker">See how your friends are progressing.</p>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
               <div class="share-dropdown-wrap" style="position:relative">
@@ -737,7 +751,7 @@
                 </div>
                 <div id="friends-list">
                   <div class="empty-state">
-                    <p>Add friends by their email above to start challenging them to duels.</p>
+                    <p>Add friends by their email above to see their progress alongside yours.</p>
                   </div>
                 </div>
               </div>
@@ -828,6 +842,17 @@
                 </div>
               </div>
 
+              <div class="profile-section" id="appearance-section">
+                <h3 class="profile-section-title">Appearance</h3>
+                <div class="appearance-theme-tabs">
+                  <button class="appearance-theme-tab" id="appearance-light-btn" type="button">&#x2600;&#xFE0F; Light</button>
+                  <button class="appearance-theme-tab" id="appearance-dark-btn" type="button">&#x1F319; Dark</button>
+                </div>
+                <div class="appearance-row">
+                  <span>Collapse sidebar by default</span>
+                  <button class="appearance-toggle" id="appearance-collapse-toggle" type="button" role="switch" aria-label="Collapse sidebar by default"></button>
+                </div>
+              </div>
               <div class="profile-section" id="referral-section"></div>
             </div>
 
@@ -1035,9 +1060,9 @@
               <span class="help-topic-icon">&#x1F3C6;</span>
               <span class="help-topic-title">Leaderboard</span>
             </button>
-            <button class="help-topic-btn" onclick="App.openHelpTopic('friends-duels')">
+            <button class="help-topic-btn" onclick="App.openHelpTopic('friends')">
               <span class="help-topic-icon">&#x1F46B;</span>
-              <span class="help-topic-title">Friends &amp; Duels</span>
+              <span class="help-topic-title">Friends</span>
             </button>
             <button class="help-topic-btn" onclick="App.openHelpTopic('sharing')">
               <span class="help-topic-icon">&#x1F4E4;</span>

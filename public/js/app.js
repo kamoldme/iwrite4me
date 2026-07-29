@@ -372,10 +372,9 @@ const App = {
       localStorage.setItem('iwrite_last_level', level.toString());
     }
 
-    let savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
-    if (savedTheme === 'test') savedTheme = 'light';
-    document.documentElement.classList.add('test'); // Writer's Desk structure — always on
-    if (savedTheme === 'light' || savedTheme === 'sepia') document.documentElement.classList.add(savedTheme);
+    let savedTheme = localStorage.getItem('iwrite_theme') || 'light';
+    if (savedTheme === 'test' || savedTheme === 'sepia') savedTheme = 'light';
+    if (savedTheme === 'dark') document.documentElement.classList.add('dark');
 
     // Resolve current URL to determine which view to show
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -1090,10 +1089,72 @@ const App = {
       });
     });
 
-    // Theme toggle — restore the saved theme (dark / light / sepia / test)
-    this._applyTheme(localStorage.getItem('iwrite_theme') || 'dark');
+    // Theme toggle — restore the saved theme (default: light)
+    this._applyTheme(localStorage.getItem('iwrite_theme') || 'light');
     document.getElementById('theme-toggle-btn').addEventListener('click', () => {
       this._cycleTheme();
+    });
+
+    // Sidebar collapse (desktop rail, 248px <-> 68px) — logo click or chevron toggles.
+    // Uses its own key — the old full-hide collapseSidebar()/expandSidebar() above
+    // (bound to the now-hidden-on-desktop sidebar-close-btn) shares no state with this.
+    this._applySidebarCollapsed(localStorage.getItem('iwrite_sidebar_rail_collapsed') === '1');
+    const collapseToggle = () => {
+      const collapsed = !document.querySelector('.app-container').classList.contains('sidebar-collapsed');
+      this._applySidebarCollapsed(collapsed);
+      localStorage.setItem('iwrite_sidebar_rail_collapsed', collapsed ? '1' : '0');
+    };
+    document.getElementById('sidebar-logo-btn').addEventListener('click', collapseToggle);
+    document.getElementById('sidebar-collapse-chevron').addEventListener('click', collapseToggle);
+
+    // Sessions: filter pills (All/Dangerous/Zen/Pinned/Folders)
+    const filterPillsEl = document.getElementById('docs-filter-pills');
+    if (filterPillsEl) {
+      filterPillsEl.addEventListener('click', (e) => {
+        const pill = e.target.closest('.docs-filter-pill');
+        if (!pill) return;
+        filterPillsEl.querySelectorAll('.docs-filter-pill').forEach(p => p.classList.toggle('active', p === pill));
+        this._docsFilter = pill.dataset.docsFilter;
+        this._docsPage = 1;
+        this._renderDocumentsView();
+      });
+    }
+
+    // Settings: Appearance section — mirrors the sidebar footer theme toggle
+    // and the logo/chevron rail-collapse, just exposed as explicit controls too.
+    const syncAppearanceUI = () => {
+      const theme = localStorage.getItem('iwrite_theme') === 'dark' ? 'dark' : 'light';
+      const lightBtn = document.getElementById('appearance-light-btn');
+      const darkBtn = document.getElementById('appearance-dark-btn');
+      if (lightBtn) lightBtn.classList.toggle('active', theme === 'light');
+      if (darkBtn) darkBtn.classList.toggle('active', theme === 'dark');
+      const collapseToggleBtn = document.getElementById('appearance-collapse-toggle');
+      if (collapseToggleBtn) collapseToggleBtn.classList.toggle('on', localStorage.getItem('iwrite_sidebar_rail_collapsed') === '1');
+    };
+    document.getElementById('appearance-light-btn')?.addEventListener('click', () => { this._applyTheme('light'); syncAppearanceUI(); });
+    document.getElementById('appearance-dark-btn')?.addEventListener('click', () => { this._applyTheme('dark'); syncAppearanceUI(); });
+    document.getElementById('appearance-collapse-toggle')?.addEventListener('click', () => {
+      const collapsed = !document.querySelector('.app-container').classList.contains('sidebar-collapsed');
+      this._applySidebarCollapsed(collapsed);
+      localStorage.setItem('iwrite_sidebar_rail_collapsed', collapsed ? '1' : '0');
+      syncAppearanceUI();
+    });
+    syncAppearanceUI();
+    this._syncAppearanceUI = syncAppearanceUI;
+
+    // Community hero — delegate to the existing New Story / My Stories controls
+    const communityPublishBtn = document.getElementById('community-hero-publish-btn');
+    if (communityPublishBtn) communityPublishBtn.addEventListener('click', () => document.getElementById('new-story-btn')?.click());
+    const communityMineBtn = document.getElementById('community-hero-mine-btn');
+    if (communityMineBtn) communityMineBtn.addEventListener('click', () => document.querySelector('[data-story-tab="mine"]')?.click());
+
+    // Dashboard: Recent Sessions / Achievements tabbed panel
+    document.querySelectorAll('.dash-panel-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.dash-panel-tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.dash-panel-pane').forEach(p => p.classList.toggle('active', p.id === `dash-pane-${tab.dataset.pane}`));
+        if (tab.dataset.pane === 'achievements') this._updateAchSwiper();
+      });
     });
     // Support submit
     const supportBtn = document.getElementById('support-submit-btn');
@@ -1864,14 +1925,20 @@ const App = {
       }
     }
 
-    const hour = new Date().getHours();
-    let greeting = 'Good evening';
-    let emoji = '&#x1F319;';
-    if (hour < 12) { greeting = 'Good morning'; emoji = '&#x2600;&#xFE0F;'; }
-    else if (hour < 18) { greeting = 'Good afternoon'; emoji = '&#x1F324;&#xFE0F;'; }
-    const firstName = (this.user.name || '').split(' ')[0];
     const greetingEl = document.getElementById('greeting-text');
-    if (greetingEl) greetingEl.innerHTML = `${emoji} ${greeting}, <em>${firstName}</em>`;
+    if (greetingEl) greetingEl.innerHTML = `Think for yourself. Write for <em>yourself.</em>`;
+
+    const kickerEl = document.getElementById('hero-kicker');
+    if (kickerEl) {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      let wordsToday = 0;
+      (this.documents || []).forEach(d => {
+        if (!d.updatedAt || !d.wordCount || d.deletedBySystem) return;
+        if (new Date(d.updatedAt).toISOString().slice(0, 10) === todayKey) wordsToday += d.wordCount;
+      });
+      const hoursLeft = Math.max(1, 24 - new Date().getHours());
+      kickerEl.textContent = `${wordsToday.toLocaleString()} words today · ${hoursLeft}h left`;
+    }
   },
 
   async loadDashboard() {
@@ -2412,7 +2479,15 @@ const App = {
       folderDocs = folderDocs.filter(d => (d.title || '').toLowerCase().includes(this._searchQuery));
     }
 
-    this.renderDocumentList('all-docs', folderDocs);
+    // Apply mode/pinned filter pill
+    const activeFilter = this._docsFilter || 'all';
+    if (activeFilter === 'dangerous') folderDocs = folderDocs.filter(d => d.mode === 'dangerous');
+    else if (activeFilter === 'zen') folderDocs = folderDocs.filter(d => d.mode === 'zen');
+    else if (activeFilter === 'pinned') folderDocs = folderDocs.filter(d => d.pinned);
+
+    const allDocsEl = document.getElementById('all-docs');
+    if (allDocsEl) allDocsEl.style.display = activeFilter === 'folders' ? 'none' : '';
+    if (activeFilter !== 'folders') this.renderDocumentList('all-docs', folderDocs);
 
     // Shared docs (only at root level)
     if (!this.currentFolder) {
@@ -2501,9 +2576,15 @@ const App = {
         : isDangerous
         ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
         : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+      const modeGlyphClass = isDangerous ? 'dangerous' : doc.mode === 'zen' ? 'zen' : 'normal';
+      const folderGlyph = `<svg class="doc-folder-glyph doc-folder-glyph-${modeGlyphClass}" width="30" height="26" viewBox="0 0 30 26" fill="none">
+        <path class="doc-folder-glyph-back" d="M2 4a2 2 0 012-2h7l2 2.5h11a2 2 0 012 2V22a2 2 0 01-2 2H4a2 2 0 01-2-2V4z"/>
+        <path class="doc-folder-glyph-front" d="M1 9a2 2 0 012-2h24a2 2 0 012 2l-1.6 12.5A2 2 0 0125.4 23H4.6a2 2 0 01-1.98-1.5L1 9z"/>
+      </svg>`;
       return `
       <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}">
         <div class="doc-card-info">
+          ${folderGlyph}
           <div class="doc-icon ${iconClass}">${iconSvg}</div>
           <div class="doc-card-text">
             <h4>${doc.pinned ? '<span class="pin-icon" title="Pinned">&#x1F4CC;</span> ' : ''}${this.escapeHtml(doc.title)} ${isFailed ? '<span class="badge badge-failed">FAILED</span>' : ''}</h4>
@@ -3664,22 +3745,56 @@ const App = {
     const thead = document.getElementById('leaderboard-thead');
     const isTime = this._lbTab === 'time';
     const isReferrals = this._lbTab === 'referrals';
+    const isOverall = this._lbTab === 'overall' || !this._lbTab;
 
     // Toggle tab class on leaderboard view for mobile column visibility
     const lbView = document.getElementById('view-leaderboard');
     if (lbView) {
       lbView.classList.toggle('lb-tab-time', isTime);
-      lbView.classList.toggle('lb-tab-streaks', !isTime && !isReferrals);
+      lbView.classList.toggle('lb-tab-streaks', !isTime && !isReferrals && !isOverall);
       lbView.classList.toggle('lb-tab-referrals', isReferrals);
+      lbView.classList.toggle('lb-tab-overall', isOverall);
     }
 
     // Sort based on active tab, filter out zero-referral users for referrals tab
     const filtered = isReferrals ? rawData.filter(e => (e.referralCount || 0) > 0) : rawData;
-    const data = [...filtered].sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       if (isReferrals) return (b.referralCount || 0) - (a.referralCount || 0) || (b.totalWords || 0) - (a.totalWords || 0);
       if (isTime) return (b.minutesWritten || 0) - (a.minutesWritten || 0) || (b.totalWords || 0) - (a.totalWords || 0);
+      if (isOverall) return (b.xp || 0) - (a.xp || 0) || (b.totalWords || 0) - (a.totalWords || 0);
       return (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0);
     });
+
+    // "Your overall place" rail — computed from the full (unpaginated) sorted list
+    const placeEl = document.getElementById('lb-your-place');
+    if (placeEl) {
+      const myIdx = this.user ? sorted.findIndex(e => e.id === this.user.id || e.name === this.user.name) : -1;
+      placeEl.textContent = myIdx >= 0 ? `#${myIdx + 1} of ${sorted.length}` : 'Not ranked yet';
+    }
+
+    // Pagination — 10 per page, up to 100 ranks (per-tab, resets when the tab changes)
+    const PER_PAGE = 10, MAX_RANKS = 100;
+    const ranked = sorted.slice(0, MAX_RANKS);
+    const totalPages = Math.max(1, Math.ceil(ranked.length / PER_PAGE));
+    if (!this._lbPage || this._lbPageTab !== this._lbTab) { this._lbPage = 1; this._lbPageTab = this._lbTab; }
+    if (this._lbPage > totalPages) this._lbPage = totalPages;
+    const data = ranked.slice((this._lbPage - 1) * PER_PAGE, this._lbPage * PER_PAGE);
+
+    const pagerEl = document.getElementById('lb-pagination');
+    if (pagerEl) {
+      if (totalPages > 1) {
+        const pages = [];
+        for (let i = 1; i <= totalPages; i++) pages.push(`<button class="lb-page-btn${i === this._lbPage ? ' active' : ''}" data-lb-page="${i}">${i}</button>`);
+        pagerEl.style.display = '';
+        pagerEl.innerHTML = pages.join('');
+        pagerEl.querySelectorAll('[data-lb-page]').forEach(btn => {
+          btn.onclick = () => { this._lbPage = parseInt(btn.dataset.lbPage, 10); this._renderLeaderboard(this._lbData); };
+        });
+      } else {
+        pagerEl.style.display = 'none';
+        pagerEl.innerHTML = '';
+      }
+    }
 
     // Update thead
     if (isReferrals) {
@@ -3690,8 +3805,11 @@ const App = {
       thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-streak">Streak</th><th class="lb-col-words">Words</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-time">Time</th><th class="lb-col-level">Level</th></tr>`;
     }
 
-    // Podium for top 3
-    const top3 = data.slice(0, 3);
+    // Podium for top 3 — always the true top 3 of the full sorted list, shown on page 1 only
+    if (this._lbPage > 1) {
+      podium.innerHTML = '';
+    } else {
+    const top3 = sorted.slice(0, 3);
     const podiumOrder = [top3[1], top3[0], top3[2]];
     const medals = ['&#x1F948;', '&#x1F947;', '&#x1F949;'];
     const podiumLabels = ['2nd', '1st', '3rd'];
@@ -3721,10 +3839,13 @@ const App = {
           </div>
         </div>`;
     }).join('');
+    }
 
-    // Full table
+    // Full table — rank numbers are absolute (account for the current page's offset)
+    const pageOffset = (this._lbPage - 1) * PER_PAGE;
     tbody.innerHTML = data.map((entry, i) => {
-      const rankEmoji = i === 0 ? '&#x1F947;' : i === 1 ? '&#x1F948;' : i === 2 ? '&#x1F949;' : `${i + 1}`;
+      const absRank = pageOffset + i;
+      const rankEmoji = absRank === 0 ? '&#x1F947;' : absRank === 1 ? '&#x1F948;' : absRank === 2 ? '&#x1F949;' : `${absRank + 1}`;
       const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
       const timeStr = this._formatWritingTime(entry.minutesWritten);
 
@@ -6511,8 +6632,11 @@ const App = {
       this.friends = friends;
       this._friendsTotalPages = data.totalPages || 1;
 
+      const kickerEl = document.getElementById('friends-kicker');
+      if (kickerEl) kickerEl.textContent = data.total ? `${data.total} writer${data.total === 1 ? '' : 's'}` : 'See how your friends are progressing.';
+
       if (data.total === 0) {
-        container.innerHTML = `<div class="empty-state"><p>Add friends by their email above to start challenging them to duels.</p></div>`;
+        container.innerHTML = `<div class="empty-state"><p>Add friends by their email above to see their progress alongside yours.</p></div>`;
         return;
       }
 
@@ -6531,11 +6655,8 @@ const App = {
             </div>
           </div>
           <div class="doc-card-actions">
-            <button class="doc-action-btn" onclick="App.challengeFriend('${f.id}')" title="Challenge to duel">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>
-            </button>
-            <button class="doc-action-btn delete" onclick="App.confirmRemoveFriend('${f.id}', '${this.escapeHtml(f.name)}')" title="Remove friend">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            <button class="doc-card-menu-btn" data-friend-menu="${f.id}" data-friend-name="${this.escapeHtml(f.name)}" title="Options">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
             </button>
           </div>
         </div>`;
@@ -6552,9 +6673,32 @@ const App = {
       }
 
       container.innerHTML = cards + pager;
+      container.querySelectorAll('[data-friend-menu]').forEach(btn => {
+        btn.onclick = (e) => { e.stopPropagation(); this.showFriendMenu(btn, btn.dataset.friendMenu, btn.dataset.friendName); };
+      });
     } catch {
       container.innerHTML = `<div class="empty-state"><p>Failed to load friends.</p></div>`;
     }
+  },
+
+  showFriendMenu(anchorEl, friendId, friendName) {
+    document.querySelectorAll('.folder-context-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'folder-context-menu';
+    menu.innerHTML = `<button data-action="remove" style="color:var(--danger)">Remove friend</button>`;
+    const rect = anchorEl.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.visibility = 'hidden';
+    menu.style.top = `${rect.bottom + 4}px`;
+    menu.style.right = `${window.innerWidth - rect.right}px`;
+    menu.style.left = 'auto';
+    document.body.appendChild(menu);
+    const menuH = menu.offsetHeight;
+    if (rect.bottom + 4 + menuH > window.innerHeight - 8) menu.style.top = `${Math.max(8, rect.top - menuH - 4)}px`;
+    menu.style.visibility = '';
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+    menu.querySelector('[data-action="remove"]').onclick = (e) => { e.stopPropagation(); close(); this.confirmRemoveFriend(friendId, friendName); };
   },
 
   _goFriendsPage(page) {
@@ -7652,26 +7796,30 @@ const App = {
 
   _applyTheme(theme) {
     const root = document.documentElement;
-    if (theme === 'test') theme = 'light'; // legacy: Test folded into Light
-    // 'test' = Writer's Desk structure layer — always on; color theme adds light/sepia (dark = none)
-    root.classList.remove('light', 'sepia');
-    root.classList.add('test');
-    if (theme === 'light') root.classList.add('light');
-    else if (theme === 'sepia') root.classList.add('sepia');
+    if (theme === 'test' || theme === 'sepia') theme = 'light'; // legacy: Test/Sepia folded into Light
+    root.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('iwrite_theme', theme);
     const btn = document.getElementById('theme-toggle-btn');
     if (!btn) return;
-    const labels = { dark: 'Light Mode', light: 'Sepia Mode', sepia: 'Dark Mode' };
+    const labels = { dark: 'Light Mode', light: 'Dark Mode' };
     btn.querySelector('.theme-icon-dark').style.display = theme === 'dark' ? '' : 'none';
     btn.querySelector('.theme-icon-light').style.display = theme !== 'dark' ? '' : 'none';
-    btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Light Mode';
+    btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Dark Mode';
+    this._syncAppearanceUI?.();
+  },
+
+  _applySidebarCollapsed(collapsed) {
+    const container = document.querySelector('.app-container');
+    if (!container) return;
+    container.classList.toggle('sidebar-collapsed', !!collapsed);
+    const chevron = document.getElementById('sidebar-collapse-chevron');
+    if (chevron) chevron.style.display = collapsed ? 'none' : '';
   },
 
   _cycleTheme() {
-    let current = localStorage.getItem('iwrite_theme') || 'dark';
-    if (current === 'test') current = 'light';
-    // dark → light → sepia → dark (all share the Writer's Desk structure)
-    const next = current === 'dark' ? 'light' : current === 'light' ? 'sepia' : 'dark';
+    let current = localStorage.getItem('iwrite_theme') || 'light';
+    if (current === 'test' || current === 'sepia') current = 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
     this._applyTheme(next);
   },
 
@@ -8844,11 +8992,10 @@ const App = {
       html: `<p>The leaderboard ranks writers by <strong>writing streak</strong> first, then total words.</p>
         <ul><li>The podium shows the top 3 writers with their current streak.</li><li>Usernames are displayed below names.</li><li>Your row is highlighted so you can see where you stand.</li><li>Keep your streak alive to climb the ranks!</li></ul>`
     },
-    'friends-duels': {
-      title: 'Friends & Duels',
-      html: `<p>Add friends by their email address to challenge them to writing duels.</p>
-        <ul><li><strong>Duels</strong> — a timed head-to-head battle. Most words written in the time limit wins.</li><li><strong>Adding friends</strong> — enter their email in the Friends tab. They'll appear in your friends list.</li></ul>
-        <p style="color:var(--text-muted);font-size:13px">Live duel matchmaking is coming soon.</p>`
+    'friends': {
+      title: 'Friends',
+      html: `<p>Add friends by their email address to see their progress alongside yours.</p>
+        <ul><li><strong>Adding friends</strong> — enter their email in the Friends tab. They'll appear in your friends list.</li><li><strong>Friends list</strong> — see each friend's level, streak, and total words at a glance.</li></ul>`
     },
     'sharing': {
       title: 'Sharing Documents',

@@ -175,11 +175,16 @@ function buildPasswordResetEmail({ name, code }) {
 </html>`;
 }
 
-async function sendTransactionalEmail({ user, subject, htmlContent }) {
+async function sendTransactionalEmail({ user, subject, htmlContent, devCode }) {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.MAIL_FROM_EMAIL || process.env.BREVO_SENDER_EMAIL;
   const senderName = process.env.MAIL_FROM_NAME || process.env.BREVO_SENDER_NAME || 'iWrite4.me';
   if (!apiKey || !senderEmail) {
+    if (process.env.NODE_ENV !== 'production') {
+      // Local dev only — no Brevo configured, so just log instead of failing signup/reset.
+      console.log(`[dev-email] to=${user.email} subject="${subject}" code=${devCode}`);
+      return true;
+    }
     throw new Error('Brevo is not configured. Set BREVO_API_KEY and MAIL_FROM_EMAIL.');
   }
 
@@ -198,7 +203,8 @@ async function sendVerificationEmail(user, code) {
   return sendTransactionalEmail({
     user,
     subject: 'Your iWrite4.me verification code',
-    htmlContent: buildVerificationEmail({ name: user.name, code })
+    htmlContent: buildVerificationEmail({ name: user.name, code }),
+    devCode: code
   });
 }
 
@@ -206,7 +212,8 @@ async function sendPasswordResetEmail(user, code) {
   return sendTransactionalEmail({
     user,
     subject: 'Your iWrite4.me password reset code',
-    htmlContent: buildPasswordResetEmail({ name: user.name, code })
+    htmlContent: buildPasswordResetEmail({ name: user.name, code }),
+    devCode: code
   });
 }
 

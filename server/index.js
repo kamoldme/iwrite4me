@@ -89,7 +89,7 @@ const allowedOrigins = [
   'https://iwrite.up.railway.app'
 ];
 if (process.env.NODE_ENV !== 'production') {
-  allowedOrigins.push('http://localhost:3000', 'http://localhost:5173');
+  allowedOrigins.push('http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173');
 }
 // Add Railway staging/public domain
 if (process.env.RAILWAY_PUBLIC_DOMAIN) {
@@ -105,6 +105,7 @@ app.use(cors({
     if (!origin) return callback(null, true);
     // Allow any Railway-assigned domain
     if (allowedOrigins.includes(origin) || /\.up\.railway\.app$/.test(origin)) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production' && /\.trycloudflare\.com$/.test(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
