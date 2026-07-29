@@ -484,8 +484,6 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 /* Recent Sessions / Achievements — one card, two tabs, matched to Tree height */
 .dash-panel-tabs { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .dash-panel-tabs-head { display: flex; gap: 4px; margin: -4px -6px 14px; }
-/* When there's no tab switching (only achievements), always show the pane */
-.dash-panel-tabs > .dash-panel-pane { display: flex !important; flex-direction: column !important; flex: 1 !important; }
 .dash-panel-tab {
   background: none; border: none; cursor: pointer;
   padding: 7px 12px; border-radius: 9999px;
