@@ -1492,9 +1492,24 @@
 
     const newStoryBtn = document.getElementById('new-story-btn');
     if (newStoryBtn) newStoryBtn.addEventListener('click', () => this.createStoryDraft());
+    const newStoryHeroBtn = document.getElementById('new-story-hero-btn');
+    if (newStoryHeroBtn) newStoryHeroBtn.addEventListener('click', () => this.createStoryDraft());
 
     const refreshStoriesBtn = document.getElementById('story-refresh-btn');
     if (refreshStoriesBtn) refreshStoriesBtn.addEventListener('click', () => this.loadStories());
+
+    document.querySelectorAll('[data-story-tab-jump]').forEach(button => {
+      button.addEventListener('click', () => {
+        this.storyTab = button.dataset.storyTabJump;
+        this.storySelectedId = null;
+        this.storyEditingId = null;
+        this.storyDetail = null;
+        this.storyComments = [];
+        this.setStoriesMode('feed');
+        this.syncStoryControls();
+        this.loadStories();
+      });
+    });
 
     document.querySelectorAll('.stories-filter-btn[data-story-tab]').forEach(button => {
       button.addEventListener('click', () => {

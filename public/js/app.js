@@ -1921,7 +1921,6 @@ const App = {
     if (this._onlineInterval) clearInterval(this._onlineInterval);
     this.loadOnlineCount();
     this._onlineInterval = setInterval(() => this.loadOnlineCount(), 60000);
-    this.loadAnnouncements();
 
     // Queue level-up celebrations (once, against the fresh level)
     const { level } = this.calcXPLevel((this.user && this.user.xp) || 0);
@@ -2055,13 +2054,19 @@ const App = {
     setT('td-words-today', wordsToday.toLocaleString());
     setT('td-words-goal', goal.toLocaleString());
     const pct = Math.min(1, wordsToday / goal);
+    const pctNum = Math.round(pct * 100);
+    const remaining = Math.max(0, goal - wordsToday);
     const ring = document.getElementById('td-ring-fill');
     if (ring) {
       const C = 2 * Math.PI * 52;
       ring.style.strokeDasharray = C;
       ring.style.strokeDashoffset = C * (1 - pct);
     }
-    setT('td-progress-head', wordsToday >= goal ? 'Goal reached!' : wordsToday > 0 ? 'Keep going!' : 'Start your day');
+    const ringCenter = document.querySelector('.td-ring-emoji');
+    if (ringCenter) ringCenter.dataset.percent = `${pctNum}%`;
+    setT('td-progress-head', remaining > 0 ? `${remaining.toLocaleString()} words left` : 'Goal reached');
+    const progressSub = document.querySelector('.td-progress-sub');
+    if (progressSub) progressSub.textContent = `${wordsToday.toLocaleString()} / ${goal.toLocaleString()} today`;
 
     // Polaroid photo emoji — rotates once per day
     const polaroidEmojis = ['&#x2615;', '&#x1F4D6;', '&#x1F58B;&#xFE0F;', '&#x1F56F;&#xFE0F;', '&#x1F33F;', '&#x1F4D3;', '&#x1F375;', '&#x1F319;', '&#x270D;&#xFE0F;', '&#x1FAB4;'];
@@ -2088,12 +2093,6 @@ const App = {
       groupOf(a) - groupOf(b) || (b.cur / b.max) - (a.cur / a.max));
     this._achList = sorted;
 
-    // Group into pages (two columns × two rows per page)
-    const PER_PAGE = 4;
-    const pages = [];
-    for (let i = 0; i < sorted.length; i += PER_PAGE) pages.push(sorted.slice(i, i + PER_PAGE));
-    this._achPages = pages.length;
-
     // Small circular progress indicator (check when done, clock while pending)
     const ringHTML = (a) => {
       const r = 18, C = 2 * Math.PI * r;
@@ -2110,8 +2109,7 @@ const App = {
 
     const track = document.getElementById('td-ach-track');
     if (track) {
-      track.innerHTML = pages.map(page => `<div class="td-ach-slide">${
-        page.map(a => {
+      track.innerHTML = sorted.map(a => {
           const cur = Math.min(a.cur, a.max);
           return `<div class="td-ach-item">
             <div class="td-ach-icon">${a.icon}</div>
@@ -2122,12 +2120,10 @@ const App = {
             </div>
             ${ringHTML(a)}
           </div>`;
-        }).join('')
-      }</div>`).join('');
+        }).join('');
     }
     const dotsEl = document.getElementById('td-ach-dots');
-    if (dotsEl) dotsEl.innerHTML = pages.map((_, i) => `<button class="td-ach-dot" data-idx="${i}" aria-label="Page ${i + 1}"></button>`).join('');
-    this._updateAchSwiper();
+    if (dotsEl) dotsEl.innerHTML = '';
 
     // Bind interactive controls once
     if (!this._tdBound) {
@@ -2152,12 +2148,8 @@ const App = {
       // Achievements swiper navigation
       const achPrev = document.getElementById('td-ach-prev');
       const achNext = document.getElementById('td-ach-next');
-      if (achPrev) achPrev.onclick = () => { this._achIdx = (this._achIdx || 0) - 1; this._updateAchSwiper(); };
-      if (achNext) achNext.onclick = () => { this._achIdx = (this._achIdx || 0) + 1; this._updateAchSwiper(); };
-      if (dotsEl) dotsEl.onclick = (e) => {
-        const b = e.target.closest('[data-idx]');
-        if (b) { this._achIdx = parseInt(b.dataset.idx, 10); this._updateAchSwiper(); }
-      };
+      if (achPrev) achPrev.onclick = () => { document.getElementById('td-ach-track')?.scrollBy({ left: -252, behavior: 'smooth' }); };
+      if (achNext) achNext.onclick = () => { document.getElementById('td-ach-track')?.scrollBy({ left: 252, behavior: 'smooth' }); };
 
       // Edit-goal opens the in-app modal
       const editGoalBtn = document.getElementById('td-edit-goal-btn');
@@ -2558,17 +2550,24 @@ const App = {
       ? docs.slice((page - 1) * this._docsPerPage, page * this._docsPerPage)
       : docs;
 
-    let html = pageDocs.map(doc => {
+    let html = isPaginated ? `<div class="docs-table-head">
+      <span>Session</span>
+      <span>Words</span>
+      <span>Duration</span>
+      <span>Mode</span>
+      <span>XP</span>
+      <span></span>
+    </div>` : '';
+    html += pageDocs.map(doc => {
       const isFailed = doc.deletedBySystem;
       const isDangerous = doc.mode === 'dangerous';
       const modeName = doc.mode === 'dangerous' ? 'Dangerous' : doc.mode === 'zen' ? 'Zen' : doc.mode === 'research' ? 'Research' : 'Normal';
       const durationMin = doc.duration ? Math.max(1, Math.round(doc.duration / 60)) : 0;
       const iconClass = isFailed ? 'doc-icon-failed' : isDangerous ? 'doc-icon-dangerous' : doc.completed ? 'doc-icon-completed' : 'doc-icon-draft';
-      const iconSvg = isFailed
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-        : isDangerous
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+      const iconSvg = `<svg viewBox="0 0 28 24" width="30" height="26" aria-hidden="true">
+        <path class="folder-back" d="M1.5 5.5A2.5 2.5 0 014 3h6.2l2.2 2.6H24a2.5 2.5 0 012.5 2.5v11A2.5 2.5 0 0124 21.6H4A2.5 2.5 0 011.5 19z"></path>
+        <path class="folder-front" d="M1.5 8.6h25V19A2.5 2.5 0 0124 21.6H4A2.5 2.5 0 011.5 19z"></path>
+      </svg>`;
       return `
       <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}" data-doc-mode="${doc.mode || 'normal'}">
         <div class="doc-card-info">
@@ -2588,19 +2587,24 @@ const App = {
         <span class="doc-mode-badge doc-mode-${doc.mode === 'dangerous' ? 'dangerous' : doc.mode === 'zen' ? 'zen' : doc.mode === 'research' ? 'research' : 'time'}">${modeName}</span>
         <span class="doc-row-xp">${doc.xpEarned ? `+${doc.xpEarned}` : '0'}</span>
         <div class="doc-card-right">
-          <button class="doc-card-menu-btn" data-doc-id="${doc.id}" title="Options">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-          </button>
+          <button class="doc-card-menu-btn dots" data-doc-id="${doc.id}" title="Options">&#x22EF;</button>
         </div>
       </div>`;
     }).join('');
 
     // Add pagination controls if more than one page
     if (isPaginated && totalPages > 1) {
+      const pageButtons = Array.from({ length: totalPages }, (_, i) => {
+        const n = i + 1;
+        return `<button class="docs-pagination-btn docs-page-num${n === page ? ' active' : ''}" data-docs-page="${n}">${n}</button>`;
+      }).join('');
       html += `<div class="docs-pagination">
-        <button class="docs-pagination-btn" id="docs-prev" ${page <= 1 ? 'disabled' : ''}>← Prev</button>
-        <span class="docs-pagination-info">${page} / ${totalPages}</span>
-        <button class="docs-pagination-btn" id="docs-next" ${page >= totalPages ? 'disabled' : ''}>Next →</button>
+        <span class="docs-pagination-info">Showing ${(page - 1) * this._docsPerPage + 1}-${Math.min(docs.length, page * this._docsPerPage)} of ${docs.length}</span>
+        <span class="docs-pagination-pages">
+          <button class="docs-pagination-btn" id="docs-prev" ${page <= 1 ? 'disabled' : ''}>‹</button>
+          ${pageButtons}
+          <button class="docs-pagination-btn" id="docs-next" ${page >= totalPages ? 'disabled' : ''}>›</button>
+        </span>
       </div>`;
     }
 
@@ -2612,6 +2616,9 @@ const App = {
       const nextBtn = document.getElementById('docs-next');
       if (prevBtn) prevBtn.onclick = () => { this._docsPage--; this._renderDocumentsView(); };
       if (nextBtn) nextBtn.onclick = () => { this._docsPage++; this._renderDocumentsView(); };
+      container.querySelectorAll('[data-docs-page]').forEach(btn => {
+        btn.onclick = () => { this._docsPage = parseInt(btn.dataset.docsPage, 10); this._renderDocumentsView(); };
+      });
     }
 
     container.onclick = (e) => {
