@@ -504,7 +504,7 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 }
 .td-ach-arrow:hover:not(:disabled) { color: var(--accent); border-color: var(--accent-glow); background: var(--accent-soft); }
 .td-ach-arrow:disabled { opacity: .35; cursor: default; }
-.td-ach-viewport { overflow: hidden; margin-top: 4px; }
+.td-ach-viewport { overflow: hidden; margin-top: 4px; flex: 1; min-height: 200px; }
 .td-ach-track { display: flex; transition: transform .35s cubic-bezier(.4,0,.2,1); }
 .td-ach-slide { flex: 0 0 100%; min-width: 100%; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; row-gap: 10px; }
 @media (max-width: 1100px) { .td-ach-slide { grid-template-columns: 1fr; } }
