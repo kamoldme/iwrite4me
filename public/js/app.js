@@ -1947,10 +1947,15 @@ const App = {
 
   switchView(view, opts = {}) {
     const { fromHash, username } = typeof opts === 'string' ? { username: opts } : opts;
-    const targetView = document.getElementById(`view-${view}`);
+    let targetView = document.getElementById(`view-${view}`);
     if (!targetView) {
       console.warn(`[iWrite] Missing view: ${view}`);
       view = 'dashboard';
+      targetView = document.getElementById('view-dashboard');
+    }
+    if (!targetView) {
+      console.error('[iWrite] Dashboard view is missing');
+      return;
     }
     // Remember where we came from when navigating to a user profile
     if (view === 'user-profile' && this.currentView && this.currentView !== 'user-profile') {
@@ -1976,8 +1981,18 @@ const App = {
         }
       }
     }
-    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-    document.getElementById(`view-${view}`).style.display = 'block';
+    document.querySelectorAll('.view').forEach(v => {
+      v.classList.remove('view-active');
+      v.setAttribute('aria-hidden', 'true');
+      v.style.setProperty('display', 'none', 'important');
+    });
+    targetView.classList.add('view-active');
+    targetView.setAttribute('aria-hidden', 'false');
+    targetView.style.setProperty(
+      'display',
+      targetView.classList.contains('claude-dashboard') ? 'flex' : 'block',
+      'important'
+    );
     document.querySelectorAll('.sidebar-nav-item[data-view]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.view === view);
     });

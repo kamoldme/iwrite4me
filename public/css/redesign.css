@@ -2678,7 +2678,6 @@ html.dark .dash-stat-emoji {
 }
 
 .claude-dashboard {
-  display: flex !important;
   flex-direction: column;
   gap: 16px !important;
 }
