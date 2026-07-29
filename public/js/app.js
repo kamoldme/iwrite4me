@@ -1142,6 +1142,15 @@ const App = {
     syncAppearanceUI();
     this._syncAppearanceUI = syncAppearanceUI;
 
+    // Friends: single "Add a friend" button reveals the email/username input row
+    document.getElementById('friends-add-toggle-btn')?.addEventListener('click', () => {
+      const row = document.getElementById('friends-add-row');
+      if (!row) return;
+      const showing = row.style.display !== 'none';
+      row.style.display = showing ? 'none' : 'flex';
+      if (!showing) document.getElementById('friend-email-input')?.focus();
+    });
+
     // Community hero — delegate to the existing New Story / My Stories controls
     const communityPublishBtn = document.getElementById('community-hero-publish-btn');
     if (communityPublishBtn) communityPublishBtn.addEventListener('click', () => document.getElementById('new-story-btn')?.click());
@@ -2379,6 +2388,13 @@ const App = {
   },
 
   _renderDocumentsView() {
+    const kickerEl = document.getElementById('sessions-kicker');
+    if (kickerEl) {
+      const visible = (this.documents || []).filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
+      const totalWords = visible.reduce((sum, d) => sum + (d.wordCount || 0), 0);
+      kickerEl.textContent = visible.length ? `${visible.length} session${visible.length === 1 ? '' : 's'} · ${totalWords.toLocaleString()} words` : 'Sessions';
+    }
+
     // Update folder button UI based on plan
     const folderBtn = document.getElementById('create-folder-btn');
     if (folderBtn) {
@@ -6644,21 +6660,22 @@ const App = {
         const fl = this.calcXPLevel(f.xp || 0);
         const fPro = f.plan === 'premium' ? ' <span class="pro-inline-badge">PRO</span>' : '';
         const fHandle = f.username ? ` ${this.profileLink(f.username, null, 'friend-handle')}` : '';
+        const initial = this.escapeHtml((f.name || '?').charAt(0).toUpperCase());
         return `
-        <div class="doc-card friend-card">
-          <div class="doc-card-info">
-            <h4>${this.escapeHtml(f.name)}${fHandle}${fPro}</h4>
-            <div class="friend-stats">
-              <span class="friend-stat" title="Total words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>${(f.totalWords || 0).toLocaleString()}</span>
-              <span class="friend-stat" title="Streak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>${f.streak || 0}</span>
-              <span class="friend-stat" title="Level"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>Lv${fl.level} (${(f.xp || 0).toLocaleString()} XP)</span>
+        <div class="friend-row">
+          <div class="friend-row-who">
+            <div class="friend-row-avatar-wrap">
+              <div class="friend-row-avatar">${initial}</div>
+              <span class="friend-row-dot"></span>
+            </div>
+            <div class="friend-row-name-wrap">
+              <div class="friend-row-name">${this.escapeHtml(f.name)}${fPro}${fHandle}</div>
+              <div class="friend-row-level">Level ${fl.level}</div>
             </div>
           </div>
-          <div class="doc-card-actions">
-            <button class="doc-card-menu-btn" data-friend-menu="${f.id}" data-friend-name="${this.escapeHtml(f.name)}" title="Options">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-            </button>
-          </div>
+          <div class="friend-row-streak">${f.streak || 0}&#x1F525;</div>
+          <div class="friend-row-words">${(f.totalWords || 0).toLocaleString()}</div>
+          <button class="dots" data-friend-menu="${f.id}" data-friend-name="${this.escapeHtml(f.name)}" title="View profile, unfriend">&#x22EF;</button>
         </div>`;
       }).join('');
 
