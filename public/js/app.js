@@ -1728,6 +1728,11 @@ const App = {
 
   switchView(view, opts = {}) {
     const { fromHash, username } = typeof opts === 'string' ? { username: opts } : opts;
+    const targetView = document.getElementById(`view-${view}`);
+    if (!targetView) {
+      console.warn(`[iWrite] Missing view: ${view}`);
+      view = 'dashboard';
+    }
     // Remember where we came from when navigating to a user profile
     if (view === 'user-profile' && this.currentView && this.currentView !== 'user-profile') {
       this._profileReturnView = this.currentView;

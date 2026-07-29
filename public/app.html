@@ -248,7 +248,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 21h8M12 17v4"/><path d="M7 4h10l-1 9H8L7 4z"/><path d="M7 8H4l1 4h2M17 8h3l-1 4h-2"/></svg>
             Leaderboard
           </button>
-          <button class="sidebar-nav-item" data-view="duels">
+          <button class="sidebar-nav-item redesign-hidden-nav" data-view="duels">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             Duels
             <span class="duels-lobby-pulse" id="duels-lobby-pulse" title="People looking for a duel" style="display:none"></span>
@@ -274,11 +274,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             Settings
           </button>
-          <button class="sidebar-nav-item" data-view="support">
+          <button class="sidebar-nav-item redesign-hidden-nav" data-view="support">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             Support
           </button>
-          <button class="sidebar-nav-item" data-view="help">
+          <button class="sidebar-nav-item redesign-hidden-nav" data-view="help">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Help
           </button>
@@ -1391,8 +1391,9 @@
       <div class="session-modal-wrapper" id="session-modal-wrapper">
         <!-- LEFT PANEL: mode chooser + shared fields -->
         <div class="modal session-main-panel">
-          <h2>New Session</h2>
-          <p>Pick a mode and start writing.</p>
+          <div class="session-picker-kicker">Choose your arena</div>
+          <h2>Start a writing session</h2>
+          <p>Pick the kind of pressure you want, then set the rules.</p>
           <div class="modal-field">
             <label>What are you writing about?</label>
             <div class="topic-input-wrap">
@@ -1419,20 +1420,28 @@
           </div>
           <div class="modal-field">
             <label>Writing Mode</label>
-            <div class="mode-selector">
+            <div class="mode-selector claude-mode-selector">
               <div class="mode-option" data-mode="zen">
+                <img src="/media/redesign/mode-eirene.png" alt="" loading="lazy" decoding="async">
+                <span class="mode-card-kicker">Calm</span>
                 <h4>Zen</h4>
                 <p>No timer, no XP, no streak. Just write.</p>
               </div>
               <div class="mode-option active" data-mode="normal">
+                <img src="/media/redesign/mode-aristotle.png" alt="" loading="lazy" decoding="async">
+                <span class="mode-card-kicker">Focus</span>
                 <h4>Time</h4>
                 <p>Tab-lock only. Leave and lose it.</p>
               </div>
               <div class="mode-option dangerous-opt" data-mode="dangerous">
+                <img src="/media/redesign/mode-leonidas.png" alt="" loading="lazy" decoding="async">
+                <span class="mode-card-kicker">Pressure</span>
                 <h4>Dangerous</h4>
                 <p>Stop typing and the session fails.</p>
               </div>
               <div class="mode-option research-opt" data-mode="research">
+                <img src="/media/redesign/mode-arena.png" alt="" loading="lazy" decoding="async">
+                <span class="mode-card-kicker">Inquiry</span>
                 <h4>Research</h4>
                 <p>Wikipedia + AI sidebar, side-by-side with your writing.</p>
               </div>

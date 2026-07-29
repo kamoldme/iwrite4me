@@ -3099,3 +3099,222 @@ html.dark .dash-stat-emoji {
     display: none !important;
   }
 }
+
+/* ---------- 20. Redesign nav + Claude session mode picker ---------- */
+.redesign-hidden-nav {
+  display: none !important;
+}
+
+#session-modal {
+  padding: 28px !important;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(22,99,79,.18), transparent 34%),
+    radial-gradient(circle at 84% 18%, rgba(63,107,138,.16), transparent 30%),
+    rgba(59,53,42,.42) !important;
+  backdrop-filter: blur(18px);
+}
+
+#session-modal.modal-overlay.active {
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#session-modal .session-modal-wrapper {
+  width: min(1180px, calc(100vw - 40px)) !important;
+  max-height: min(820px, calc(100vh - 48px)) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.72fr) minmax(300px, .86fr) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  overflow: visible !important;
+}
+
+#session-modal .session-main-panel,
+#session-modal .session-config-panel {
+  border: 1px solid var(--border) !important;
+  border-radius: 24px !important;
+  background: var(--bg-card) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+#session-modal .session-main-panel {
+  padding: 24px !important;
+  overflow: auto !important;
+}
+
+#session-modal .session-config-panel {
+  padding: 22px !important;
+  overflow: auto !important;
+}
+
+#session-modal .session-picker-kicker,
+#session-modal .mode-card-kicker {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+  color: var(--text-muted) !important;
+}
+
+#session-modal .session-main-panel h2 {
+  margin: 8px 0 6px !important;
+  max-width: 620px;
+  font-family: var(--font-display) !important;
+  font-size: clamp(32px, 4vw, 54px) !important;
+  line-height: .96 !important;
+  letter-spacing: -.02em !important;
+}
+
+#session-modal .session-main-panel > p {
+  margin: 0 0 20px !important;
+  max-width: 580px;
+  color: var(--text-secondary) !important;
+  font-size: 15px !important;
+}
+
+#session-modal .session-topic-input {
+  min-height: 70px !important;
+  resize: vertical;
+}
+
+#session-modal .claude-mode-selector {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+#session-modal .claude-mode-selector .mode-option {
+  position: relative;
+  min-height: 286px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  padding: 14px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 22px !important;
+  background: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  cursor: pointer;
+  box-shadow: var(--shadow-3d) !important;
+  isolation: isolate;
+}
+
+#session-modal .claude-mode-selector .mode-option::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 48%;
+  z-index: -1;
+  background: linear-gradient(180deg, transparent, rgba(0,0,0,.52));
+  opacity: .72;
+}
+
+#session-modal .claude-mode-selector .mode-option::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+#session-modal .claude-mode-selector .mode-option img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+
+#session-modal .claude-mode-selector .mode-option:hover img,
+#session-modal .claude-mode-selector .mode-option.active img {
+  transform: scale(1.07);
+}
+
+#session-modal .claude-mode-selector .mode-option:hover {
+  border-color: var(--border-hover) !important;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+#session-modal .claude-mode-selector .mode-option.active {
+  border-color: rgba(255,255,255,.72) !important;
+  box-shadow: 0 0 0 2px var(--accent), var(--shadow-lg) !important;
+}
+
+#session-modal .claude-mode-selector .mode-option.active::after {
+  border-color: rgba(255,255,255,.58);
+}
+
+#session-modal .claude-mode-selector .mode-card-kicker,
+#session-modal .claude-mode-selector .mode-option h4,
+#session-modal .claude-mode-selector .mode-option p {
+  position: relative;
+  z-index: 1;
+  color: #fff !important;
+  text-shadow: 0 2px 14px rgba(0,0,0,.38);
+}
+
+#session-modal .claude-mode-selector .mode-card-kicker {
+  color: rgba(255,255,255,.72) !important;
+}
+
+#session-modal .claude-mode-selector .mode-option h4 {
+  margin: 0 !important;
+  font-size: 22px !important;
+}
+
+#session-modal .claude-mode-selector .mode-option p {
+  min-height: 50px;
+  color: rgba(255,255,255,.78) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+#session-modal .modal-actions {
+  position: sticky;
+  bottom: -24px;
+  margin: 20px -24px -24px !important;
+  padding: 14px 24px 24px !important;
+  background: linear-gradient(180deg, transparent, var(--bg-card) 22%);
+}
+
+#session-modal .modal-actions .btn {
+  min-height: 44px;
+}
+
+@media (max-width: 1120px) {
+  #session-modal .session-modal-wrapper {
+    grid-template-columns: 1fr !important;
+    overflow: auto !important;
+  }
+
+  #session-modal .session-config-panel {
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 820px) {
+  #session-modal {
+    padding: 14px !important;
+  }
+
+  #session-modal .session-modal-wrapper {
+    width: 100% !important;
+    max-height: calc(100vh - 28px) !important;
+  }
+
+  #session-modal .claude-mode-selector {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #session-modal .claude-mode-selector .mode-option {
+    min-height: 220px !important;
+  }
+}
