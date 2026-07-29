@@ -2263,9 +2263,8 @@ const App = {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Build map of last 13 weeks (91 days) — word counts per day. Kept short
-    // enough that the grid fits the card width without needing to scroll.
-    const totalDays = 91;
+    // Build map of last 17 weeks (119 days) — word counts per day.
+    const totalDays = 119;
     const dayMap = {};
     for (let i = totalDays - 1; i >= 0; i--) {
       const d = new Date(today);
