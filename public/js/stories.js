@@ -204,23 +204,36 @@
     },
 
     renderFeedStoryCard(story, isHero) {
-      const tag = isHero ? 'article class="story-hero-card"' : 'article class="story-feed-item"';
+      const tag = isHero ? 'article class="story-hero-card story-feed-card"' : 'article class="story-feed-item story-feed-card"';
       const closeTag = 'article';
+      const authorName = story.authorName || story.authorUsername || 'Writer';
+      const authorInitial = esc((authorName || 'W').charAt(0).toUpperCase());
+      const authorHandle = story.authorUsername
+        ? `<a href="/app/profile/${encodeURIComponent(story.authorUsername)}" class="username-link is-username" data-username="${esc(story.authorUsername)}" onclick="event.stopPropagation()">${esc(authorName)}</a>`
+        : esc(authorName);
+      const published = formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt);
+      const readTime = `${this.getReadTime(story)} min read`;
+      const words = Number(story.wordCount || story.words || 0);
+      const wordsLabel = words > 0 ? `${words.toLocaleString()} words` : 'Story';
+      const mode = story.mode || story.sessionMode || story.documentMode || 'Published';
       return `
         <${tag} data-story-id="${story.id}">
-          <div class="story-feed-item-head">
-            ${this.renderStoryAuthor(story)}
+          <div class="story-feed-card-head">
+            <div class="story-feed-author-pill">
+              <span class="story-feed-avatar">${authorInitial}</span>
+              <span class="story-feed-author-name">${authorHandle}</span>
+              <span class="story-feed-dot">&middot;</span>
+              <span>${published}</span>
+            </div>
+            <span class="story-feed-read-time">${readTime}</span>
           </div>
           <h3>${esc(story.title)}</h3>
           ${story.excerpt ? `<p class="story-feed-excerpt">${esc(story.excerpt)}</p>` : ''}
-          <div class="story-feed-footer">
-            ${renderMetaLine([
-              formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt),
-              `${this.getReadTime(story)} min read`
-            ])}
-            ${this.renderMetric('view', story.viewCount)}
-            ${this.renderMetric('heart', story.likeCount, { active: story.likedByMe })}
-            ${this.renderMetric('comment', story.commentCount)}
+          <div class="story-feed-card-footer">
+            <span>&#9825; ${(story.likeCount || 0).toLocaleString()}</span>
+            <span>&#128172; ${(story.commentCount || 0).toLocaleString()}</span>
+            <span>${wordsLabel}</span>
+            <span class="story-feed-mode">${esc(mode)}</span>
           </div>
         </${closeTag}>
       `;
@@ -269,7 +282,7 @@
       if (!list.length) {
         const emptyTitle = this.storyTab === 'feed' ? 'No stories yet' : 'Nothing in this section yet';
         const emptyText = this.storyTab === 'feed'
-          ? 'Approved stories appear here.'
+          ? (this.storySort === 'following' ? 'Stories from writers you follow will appear here.' : 'Approved stories appear here.')
           : this.storyMineFilter === 'drafts'
           ? 'Start a new story or publish one of your sessions.'
           : this.storyMineFilter === 'review'
@@ -427,7 +440,7 @@
           <div class="stories-popular-followers">${followers}</div>
         </a>`;
       }).join('');
-      return `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3>${rows}</div>`;
+      return `<div class="stories-popular-card"><h3>Most followed</h3>${rows}<button class="stories-popular-more" type="button">See all writers &#x2192;</button></div>`;
     },
 
     async loadStories() {

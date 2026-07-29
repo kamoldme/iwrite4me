@@ -3778,6 +3778,10 @@ const App = {
       return (b.xp || 0) - (a.xp || 0) || (b.totalWords || 0) - (a.totalWords || 0);
     });
 
+    const myIndex = data.findIndex(entry => this.user && (entry.id === this.user.id || entry.name === this.user.name));
+    const placeEl = document.getElementById('leaderboard-your-place');
+    if (placeEl) placeEl.textContent = myIndex >= 0 ? `#${myIndex + 1}` : 'Top 100';
+
     // Update thead
     if (isReferrals) {
       thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-referrals">Invites</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-level">Level</th></tr>`;
@@ -3829,7 +3833,7 @@ const App = {
     // Full table
     tbody.innerHTML = pageData.map((entry, i) => {
       const absoluteIndex = startIndex + i;
-      const rankEmoji = absoluteIndex === 0 ? '&#x1F947;' : absoluteIndex === 1 ? '&#x1F948;' : absoluteIndex === 2 ? '&#x1F949;' : `${absoluteIndex + 1}`;
+      const rankEmoji = absoluteIndex < 3 ? `#${absoluteIndex + 1}` : `${absoluteIndex + 1}`;
       const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
       const timeStr = this._formatWritingTime(entry.minutesWritten);
 

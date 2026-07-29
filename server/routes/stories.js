@@ -335,7 +335,12 @@ router.get('/', async (req, res) => {
     } else {
       filtered = hydrated.filter(s => s.status === 'published');
 
-      if (sort === 'oldest') {
+      if (sort === 'following') {
+        const following = new Set(req.user.following || []);
+        filtered = filtered
+          .filter(s => following.has(s.userId))
+          .sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
+      } else if (sort === 'oldest') {
         filtered.sort((a, b) => new Date(a.publishedAt || a.createdAt) - new Date(b.publishedAt || b.createdAt));
       } else if (sort === 'popular') {
         filtered.sort((a, b) => b.popularityScore - a.popularityScore || new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));

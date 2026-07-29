@@ -308,7 +308,7 @@
 
       <main class="main-content">
         <!-- DASHBOARD VIEW -->
-        <div id="view-dashboard" class="view">
+        <div id="view-dashboard" class="view claude-view claude-dashboard">
           <div class="dashboard-hero-row">
             <div class="dashboard-hero">
               <div class="dashboard-hero-text">
@@ -482,7 +482,7 @@
         </div>
 
         <!-- SESSIONS VIEW -->
-        <div id="view-documents" class="view" style="display:none">
+        <div id="view-documents" class="view claude-view claude-sessions" style="display:none">
           <div class="docs-header">
             <div>
               <span class="view-kicker" id="documents-count-kicker">Sessions</span>
@@ -516,7 +516,7 @@
         </div>
 
         <!-- STORIES VIEW -->
-        <div id="view-stories" class="view stories-view stories-mode-feed" style="display:none">
+        <div id="view-stories" class="view claude-view claude-community stories-view stories-mode-feed" style="display:none">
           <div class="stories-header-row">
             <div class="stories-hero-copy">
               <span class="view-kicker">Community</span>
@@ -527,6 +527,9 @@
                 <button class="btn btn-ghost stories-my-writing-btn" type="button" data-story-tab-jump="mine">My writing</button>
               </div>
             </div>
+            <img class="stories-hero-art" src="/media/redesign/community-column.webp" alt="" loading="lazy" decoding="async">
+          </div>
+          <div class="stories-community-controls">
             <div class="stories-navbar">
               <div class="stories-filter-row stories-primary-tabs">
                 <button class="stories-filter-btn active" data-story-tab="feed">Feed</button>
@@ -550,7 +553,7 @@
               <div class="stories-topbar-filters">
                 <div class="stories-filter-row" id="stories-feed-sort-row">
                   <button class="stories-filter-btn active" data-story-sort="newest">Latest</button>
-                  <button class="stories-filter-btn" data-story-sort="oldest">Following</button>
+                  <button class="stories-filter-btn" data-story-sort="following">Following</button>
                   <button class="stories-filter-btn" data-story-sort="popular">Most read</button>
                 </div>
                 <div class="stories-filter-row" id="stories-mine-filter-row" style="display:none">
@@ -586,8 +589,8 @@
         </div>
 
         <!-- LEADERBOARD VIEW -->
-        <div id="view-leaderboard" class="view" style="display:none">
-          <div class="dashboard-header">
+        <div id="view-leaderboard" class="view claude-view claude-leaderboard" style="display:none">
+          <div class="dashboard-header claude-page-head">
             <h1>Leaderboard</h1>
             <p id="leaderboard-kicker">Overall ranking by XP. Refreshes hourly.</p>
           </div>
@@ -707,14 +710,14 @@
         </div>
 
         <!-- FRIENDS VIEW -->
-        <div id="view-friends" class="view" style="display:none">
-          <div class="dashboard-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div id="view-friends" class="view claude-view claude-friends" style="display:none">
+          <div class="dashboard-header claude-page-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div>
               <h1>Friends</h1>
               <p id="friends-kicker">Writers you follow closely.</p>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-              <div class="share-dropdown-wrap" style="position:relative">
+              <div class="share-dropdown-wrap claude-legacy-hidden" style="position:relative">
                 <button class="btn-share-analytics" id="btn-share-analytics-top">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                   Share My Progress
@@ -791,7 +794,7 @@
 
         <!-- PROFILE VIEW (now last) -->
         <!-- MY PROFILE (own public profile) -->
-        <div id="view-my-profile" class="view" style="display:none">
+        <div id="view-my-profile" class="view claude-view claude-profile" style="display:none">
           <div class="up-banner" id="mp-banner"></div>
           <div class="up-header">
             <div class="up-avatar-wrap" id="mp-avatar"></div>
@@ -821,9 +824,9 @@
           </div>
         </div>
         <!-- SETTINGS (old Profile tab content) -->
-        <div id="view-settings" class="view" style="display:none">
-          <div class="dashboard-header">
-            <h1>&#x2699;&#xFE0F; Settings</h1>
+        <div id="view-settings" class="view claude-view claude-settings" style="display:none">
+          <div class="dashboard-header claude-page-head">
+            <h1>Settings</h1>
           </div>
           <div class="profile-layout settings-layout">
             <!-- Column 1: Avatar, Banner, Referral -->
@@ -956,7 +959,7 @@
         </div>
 
         <!-- USER PROFILE VIEW (public, reached via clicking @username) -->
-        <div id="view-user-profile" class="view" style="display:none">
+        <div id="view-user-profile" class="view claude-view claude-profile" style="display:none">
           <button class="up-back-btn" id="up-back-btn" title="Go back">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
           </button>
