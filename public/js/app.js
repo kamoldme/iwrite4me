@@ -1234,6 +1234,13 @@ const App = {
         opt.classList.add('active');
         document.getElementById('mode-selector')?.classList.add('has-chosen');
         this.sessionMode = opt.dataset.mode;
+
+        // Expand modal to show config panel
+        const shell = document.getElementById('session-modal-wrapper');
+        const body = document.querySelector('.mp-body');
+        if (shell) shell.classList.add('mp-expanded');
+        if (body) body.classList.add('mp-body-expanded');
+
         this._applyModeConfigPanel(this.sessionMode);
         const isDanger = this.sessionMode === 'dangerous';
         const isZen = this.sessionMode === 'zen';
@@ -2755,6 +2762,13 @@ const App = {
     // and the user has to actually pick a mode before it lights up.
     document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
     document.getElementById('mode-selector')?.classList.remove('has-chosen');
+
+    // Start collapsed
+    const shell = document.getElementById('session-modal-wrapper');
+    const body = document.querySelector('.mp-body');
+    if (shell) shell.classList.remove('mp-expanded');
+    if (body) body.classList.remove('mp-body-expanded');
+
     this.sessionMode = null;
     this.sessionDuration = 30;
     this._applyModeConfigPanel(null);
