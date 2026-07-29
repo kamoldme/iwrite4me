@@ -15,13 +15,12 @@
   <title>iWrite4.me — Dashboard</title>
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-  <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Story+Script&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Space+Grotesk:wght@500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="stylesheet" href="/css/style.css?v=143">
+  <link rel="stylesheet" href="/css/redesign.css?v=1">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -214,7 +213,10 @@
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
           <div style="display:flex;flex-direction:column">
-            <a href="/" class="logo">iWrite4.me</a>
+            <button type="button" class="logo sidebar-logo-btn" id="sidebar-logo-btn" aria-label="Toggle collapsed sidebar">
+              <img src="/media/redesign/logo-knot.png" alt="" class="sidebar-logo-mark">
+              <span class="sidebar-logo-word">iWrite4.me</span>
+            </button>
             <span class="version-tag" id="version-tag">v...</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
@@ -311,7 +313,7 @@
             <div class="dashboard-hero">
               <div class="dashboard-hero-text">
                 <h1 id="greeting-text">Ready to write?</h1>
-                <p class="dashboard-hero-sub">Your writing journey continues. Pick up where you left off.</p>
+                <p class="dashboard-hero-sub"><span id="dashboard-words-today">0 words today</span> &middot; <span id="dashboard-time-left">6h left</span></p>
                 <div class="online-indicator" id="online-indicator" style="display:none">
                   <span class="online-dot"></span>
                   <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
@@ -480,7 +482,10 @@
         <!-- SESSIONS VIEW -->
         <div id="view-documents" class="view" style="display:none">
           <div class="docs-header">
-            <h1 style="font-size: 40px;">📚 All Sessions</h1>
+            <div>
+              <span class="view-kicker" id="documents-count-kicker">Sessions</span>
+              <h1 style="font-size: 40px;">Sessions</h1>
+            </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button class="doc-action-btn" id="create-folder-btn" title="Create Folder" style="width:40px;height:40px">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
@@ -533,9 +538,9 @@
             <div class="stories-topbar">
               <div class="stories-topbar-filters">
                 <div class="stories-filter-row" id="stories-feed-sort-row">
-                  <button class="stories-filter-btn active" data-story-sort="newest">Newest</button>
-                  <button class="stories-filter-btn" data-story-sort="oldest">Oldest</button>
-                  <button class="stories-filter-btn" data-story-sort="popular">Popular</button>
+                  <button class="stories-filter-btn active" data-story-sort="newest">Latest</button>
+                  <button class="stories-filter-btn" data-story-sort="oldest">Following</button>
+                  <button class="stories-filter-btn" data-story-sort="popular">Most read</button>
                 </div>
                 <div class="stories-filter-row" id="stories-mine-filter-row" style="display:none">
                   <button class="stories-filter-btn active" data-story-mine-filter="drafts">Drafts</button>
@@ -549,7 +554,7 @@
                 </button>
                 <button class="btn btn-primary stories-primary-btn" id="new-story-btn" aria-label="Create new story">
                   <span class="stories-primary-icon">+</span>
-                  <span class="stories-primary-label">New Story</span>
+                  <span class="stories-primary-label">Publish a session</span>
                 </button>
               </div>
             </div>
@@ -572,11 +577,12 @@
         <!-- LEADERBOARD VIEW -->
         <div id="view-leaderboard" class="view" style="display:none">
           <div class="dashboard-header">
-            <h1>&#x1F3C6; Leaderboard</h1>
-            <p>See who's writing the most. Climb the ranks!</p>
+            <h1>Leaderboard</h1>
+            <p id="leaderboard-kicker">Overall ranking by XP. Refreshes hourly.</p>
           </div>
           <div class="lb-tabs" id="lb-tabs">
-            <button class="lb-tab active" data-lb-tab="streaks">Streaks</button>
+            <button class="lb-tab active" data-lb-tab="overall">Overall</button>
+            <button class="lb-tab" data-lb-tab="streaks">Streak</button>
             <button class="lb-tab" data-lb-tab="time">Writing Time</button>
             <button class="lb-tab" data-lb-tab="referrals">Referrals</button>
           </div>
@@ -677,8 +683,8 @@
         <div id="view-friends" class="view" style="display:none">
           <div class="dashboard-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div>
-              <h1>&#x1F46B; Friends</h1>
-              <p>Add friends by their email to challenge them to writing duels.</p>
+              <h1>Friends</h1>
+              <p id="friends-kicker">Writers you follow closely.</p>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
               <div class="share-dropdown-wrap" style="position:relative">
@@ -708,7 +714,7 @@
               </div>
               <button class="btn btn-small" id="copy-invite-link-btn" style="white-space:nowrap;display:flex;align-items:center;gap:6px">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                Copy Invite Link
+                Add a friend
               </button>
             </div>
           </div>
@@ -829,6 +835,18 @@
               </div>
 
               <div class="profile-section" id="referral-section"></div>
+
+              <div class="profile-section settings-appearance-section">
+                <h3 class="profile-section-title">Appearance</h3>
+                <div class="settings-segmented" role="group" aria-label="Theme">
+                  <button type="button" class="settings-theme-choice active" data-settings-theme="light">Light</button>
+                  <button type="button" class="settings-theme-choice" data-settings-theme="dark">Dark</button>
+                </div>
+                <label class="settings-toggle-row">
+                  <span>Collapse sidebar</span>
+                  <input type="checkbox" id="settings-collapse-sidebar">
+                </label>
+              </div>
             </div>
 
             <!-- Column 2: Account Details, Change Password -->

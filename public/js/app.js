@@ -51,7 +51,7 @@ const App = {
   _docsCacheLoaded: false,
   _docsCacheDirty: true,
   _docsPage: 1,
-  _docsPerPage: 10,
+  _docsPerPage: 8,
   _searchQuery: '',
   sessionDuration: 15,
   sessionMode: 'normal',
@@ -372,10 +372,9 @@ const App = {
       localStorage.setItem('iwrite_last_level', level.toString());
     }
 
-    let savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
-    if (savedTheme === 'test') savedTheme = 'light';
-    document.documentElement.classList.add('test'); // Writer's Desk structure — always on
-    if (savedTheme === 'light' || savedTheme === 'sepia') document.documentElement.classList.add(savedTheme);
+    let savedTheme = localStorage.getItem('iwrite_theme') || 'light';
+    if (savedTheme === 'test' || savedTheme === 'sepia') savedTheme = 'light';
+    if (savedTheme === 'dark') document.documentElement.classList.add('dark');
 
     // Resolve current URL to determine which view to show
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -1082,6 +1081,15 @@ const App = {
     if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', () => {
       isDesktop() ? collapseSidebar() : closeMobileSidebar();
     });
+    const sidebarLogoBtn = document.getElementById('sidebar-logo-btn');
+    if (sidebarLogoBtn) sidebarLogoBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (isDesktop()) {
+        document.body.classList.contains('sidebar-collapsed') ? expandSidebar() : collapseSidebar();
+      } else {
+        sidebar.classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
+      }
+    });
 
     // Close sidebar on mobile when a nav item is clicked
     sidebar.querySelectorAll('.sidebar-nav-item[data-view]').forEach(btn => {
@@ -1090,11 +1098,21 @@ const App = {
       });
     });
 
-    // Theme toggle — restore the saved theme (dark / light / sepia / test)
-    this._applyTheme(localStorage.getItem('iwrite_theme') || 'dark');
+    // Theme toggle — restore the saved binary theme.
+    this._applyTheme(localStorage.getItem('iwrite_theme') || 'light');
     document.getElementById('theme-toggle-btn').addEventListener('click', () => {
       this._cycleTheme();
     });
+    document.querySelectorAll('[data-settings-theme]').forEach(btn => {
+      btn.addEventListener('click', () => this._applyTheme(btn.dataset.settingsTheme));
+    });
+    const collapseSetting = document.getElementById('settings-collapse-sidebar');
+    if (collapseSetting) {
+      collapseSetting.checked = document.body.classList.contains('sidebar-collapsed');
+      collapseSetting.addEventListener('change', () => {
+        collapseSetting.checked ? collapseSidebar() : expandSidebar();
+      });
+    }
     // Support submit
     const supportBtn = document.getElementById('support-submit-btn');
     if (supportBtn) supportBtn.addEventListener('click', () => this.submitSupportTicket());
@@ -1942,11 +1960,18 @@ const App = {
     const ur = document.getElementById('username-reminder');
     if (ur) ur.style.display = (this.user && !u.username) ? 'flex' : 'none';
 
-    setText('total-words', (u.totalWords || 0).toLocaleString());
-    setText('total-sessions', u.totalSessions || 0);
-    setText('current-streak', u.streak || 0);
+    const greetingEl = document.getElementById('greeting-text');
+    if (greetingEl) greetingEl.innerHTML = 'Think for yourself.<br>Write for <em>yourself.</em>';
+
+    const todaysWords = this._wordsWrittenToday();
+    setText('dashboard-words-today', `${todaysWords.toLocaleString()} words today`);
+    setText('dashboard-time-left', `${this._hoursLeftToday()}h left`);
+
+    this._setCountUp('total-words', u.totalWords || 0);
+    this._setCountUp('total-sessions', u.totalSessions || 0);
+    this._setCountUp('current-streak', u.streak || 0);
     setText('longest-streak-text', `Best: ${u.longestStreak || 0}`);
-    setText('total-xp', (u.xp || 0).toLocaleString());
+    this._setCountUp('total-xp', u.xp || 0);
 
     const { level, xpInLevel, xpForNextLevel } = this.calcXPLevel(u.xp || 0);
     const xlt = document.getElementById('xp-level-text'); if (xlt) xlt.innerHTML = `Level ${level}`;
@@ -1964,6 +1989,45 @@ const App = {
     const visibleDocs = (this.documents || []).filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
     this.renderDocumentList('recent-docs', visibleDocs.slice(0, 3));
     this._renderTestDashboard();
+  },
+
+  _wordsWrittenToday() {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    return (this.documents || []).reduce((sum, d) => {
+      if (!d.updatedAt || !d.wordCount || d.deletedBySystem || d.deactivatedByAdmin) return sum;
+      return new Date(d.updatedAt).toISOString().slice(0, 10) === todayKey ? sum + (d.wordCount || 0) : sum;
+    }, 0);
+  },
+
+  _hoursLeftToday() {
+    const now = new Date();
+    return Math.max(0, 24 - now.getHours() - 1);
+  },
+
+  _setCountUp(id, target) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const finalText = Number(target || 0).toLocaleString();
+    this._countTargets = this._countTargets || {};
+    if (this._countTargets[id] === target) {
+      el.textContent = finalText;
+      return;
+    }
+    this._countTargets[id] = target;
+    if (document.hidden || target <= 0) {
+      el.textContent = finalText;
+      return;
+    }
+    const duration = 1100;
+    const start = Date.now();
+    const ease = t => 1 - Math.pow(1 - t, 3);
+    const tick = () => {
+      const p = Math.min(1, (Date.now() - start) / duration);
+      el.textContent = Math.round(target * ease(p)).toLocaleString();
+      if (p < 1) setTimeout(tick, 32);
+      else el.textContent = finalText;
+    };
+    setTimeout(tick, 24);
   },
 
   // Test Mode ("Writer's Desk") dashboard extras: inline level bar, Today's
@@ -2322,6 +2386,8 @@ const App = {
 
     // Only show non-failed, non-admin-deactivated docs in main list
     const visibleDocs = this.documents.filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
+    const countKicker = document.getElementById('documents-count-kicker');
+    if (countKicker) countKicker.textContent = `${visibleDocs.length.toLocaleString()} sessions`;
 
     // Build breadcrumb path
     const bc = document.getElementById('folder-breadcrumb');
@@ -2495,6 +2561,8 @@ const App = {
     let html = pageDocs.map(doc => {
       const isFailed = doc.deletedBySystem;
       const isDangerous = doc.mode === 'dangerous';
+      const modeName = doc.mode === 'dangerous' ? 'Dangerous' : doc.mode === 'zen' ? 'Zen' : doc.mode === 'research' ? 'Research' : 'Normal';
+      const durationMin = doc.duration ? Math.max(1, Math.round(doc.duration / 60)) : 0;
       const iconClass = isFailed ? 'doc-icon-failed' : isDangerous ? 'doc-icon-dangerous' : doc.completed ? 'doc-icon-completed' : 'doc-icon-draft';
       const iconSvg = isFailed
         ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
@@ -2502,20 +2570,24 @@ const App = {
         ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
         : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
       return `
-      <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}">
+      <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}" data-doc-mode="${doc.mode || 'normal'}">
         <div class="doc-card-info">
           <div class="doc-icon ${iconClass}">${iconSvg}</div>
           <div class="doc-card-text">
             <h4>${doc.pinned ? '<span class="pin-icon" title="Pinned">&#x1F4CC;</span> ' : ''}${this.escapeHtml(doc.title)} ${isFailed ? '<span class="badge badge-failed">FAILED</span>' : ''}</h4>
             <div class="doc-card-meta">
               <span>${doc.wordCount || 0} words</span>
+              ${durationMin ? `<span>${durationMin} min</span>` : ''}
               <span>${this.formatDate(doc.updatedAt)}</span>
               ${doc.xpEarned ? `<span class="xp-gained">+${doc.xpEarned} XP</span>` : ''}
             </div>
           </div>
         </div>
+        <span class="doc-row-words">${(doc.wordCount || 0).toLocaleString()}</span>
+        <span class="doc-row-duration">${durationMin ? `${durationMin}m` : '-'}</span>
+        <span class="doc-mode-badge doc-mode-${doc.mode === 'dangerous' ? 'dangerous' : doc.mode === 'zen' ? 'zen' : doc.mode === 'research' ? 'research' : 'time'}">${modeName}</span>
+        <span class="doc-row-xp">${doc.xpEarned ? `+${doc.xpEarned}` : '0'}</span>
         <div class="doc-card-right">
-          <span class="doc-mode-badge doc-mode-${doc.mode === 'dangerous' ? 'dangerous' : doc.mode === 'zen' ? 'zen' : doc.mode === 'research' ? 'research' : 'time'}">${doc.mode === 'dangerous' ? 'DANGEROUS' : doc.mode === 'zen' ? 'ZEN' : doc.mode === 'research' ? 'RESEARCH' : 'TIME'}</span>
           <button class="doc-card-menu-btn" data-doc-id="${doc.id}" title="Options">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
           </button>
@@ -3631,7 +3703,9 @@ const App = {
   },
 
   _lbData: null,
-  _lbTab: 'streaks',
+  _lbTab: 'overall',
+  _lbPage: 1,
+  _lbPerPage: 10,
 
   async loadLeaderboard() {
     const tbody = document.querySelector('#leaderboard-table tbody');
@@ -3643,6 +3717,7 @@ const App = {
       document.querySelectorAll('.lb-tab').forEach(btn => {
         btn.addEventListener('click', () => {
           this._lbTab = btn.dataset.lbTab;
+          this._lbPage = 1;
           document.querySelectorAll('.lb-tab').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           if (this._lbData) this._renderLeaderboard(this._lbData);
@@ -3662,14 +3737,28 @@ const App = {
     const tbody = document.querySelector('#leaderboard-table tbody');
     const podium = document.getElementById('leaderboard-podium');
     const thead = document.getElementById('leaderboard-thead');
+    const kicker = document.getElementById('leaderboard-kicker');
+    const tabs = document.querySelectorAll('.lb-tab');
     const isTime = this._lbTab === 'time';
     const isReferrals = this._lbTab === 'referrals';
+    const isStreak = this._lbTab === 'streaks';
+
+    tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.lbTab === this._lbTab));
+    if (kicker) {
+      const labels = {
+        overall: 'Overall ranking by XP. Refreshes hourly.',
+        streaks: 'Current streak ranking. Streaks break at local midnight.',
+        time: 'Time spent writing, capped by realistic writing pace.',
+        referrals: 'Referral ranking by accepted invitations.'
+      };
+      kicker.textContent = labels[this._lbTab] || labels.overall;
+    }
 
     // Toggle tab class on leaderboard view for mobile column visibility
     const lbView = document.getElementById('view-leaderboard');
     if (lbView) {
       lbView.classList.toggle('lb-tab-time', isTime);
-      lbView.classList.toggle('lb-tab-streaks', !isTime && !isReferrals);
+      lbView.classList.toggle('lb-tab-streaks', isStreak);
       lbView.classList.toggle('lb-tab-referrals', isReferrals);
     }
 
@@ -3678,7 +3767,8 @@ const App = {
     const data = [...filtered].sort((a, b) => {
       if (isReferrals) return (b.referralCount || 0) - (a.referralCount || 0) || (b.totalWords || 0) - (a.totalWords || 0);
       if (isTime) return (b.minutesWritten || 0) - (a.minutesWritten || 0) || (b.totalWords || 0) - (a.totalWords || 0);
-      return (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0);
+      if (isStreak) return (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0);
+      return (b.xp || 0) - (a.xp || 0) || (b.totalWords || 0) - (a.totalWords || 0);
     });
 
     // Update thead
@@ -3686,8 +3776,10 @@ const App = {
       thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-referrals">Invites</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-level">Level</th></tr>`;
     } else if (isTime) {
       thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-time">Writing Time</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-level">Level</th></tr>`;
-    } else {
+    } else if (isStreak) {
       thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-streak">Streak</th><th class="lb-col-words">Words</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-time">Time</th><th class="lb-col-level">Level</th></tr>`;
+    } else {
+      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-xp">XP</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-level">Level</th></tr>`;
     }
 
     // Podium for top 3
@@ -3722,9 +3814,15 @@ const App = {
         </div>`;
     }).join('');
 
+    const totalPages = Math.max(1, Math.ceil(data.length / this._lbPerPage));
+    if (this._lbPage > totalPages) this._lbPage = totalPages;
+    const startIndex = (this._lbPage - 1) * this._lbPerPage;
+    const pageData = data.slice(startIndex, startIndex + this._lbPerPage);
+
     // Full table
-    tbody.innerHTML = data.map((entry, i) => {
-      const rankEmoji = i === 0 ? '&#x1F947;' : i === 1 ? '&#x1F948;' : i === 2 ? '&#x1F949;' : `${i + 1}`;
+    tbody.innerHTML = pageData.map((entry, i) => {
+      const absoluteIndex = startIndex + i;
+      const rankEmoji = absoluteIndex === 0 ? '&#x1F947;' : absoluteIndex === 1 ? '&#x1F948;' : absoluteIndex === 2 ? '&#x1F949;' : `${absoluteIndex + 1}`;
       const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
       const timeStr = this._formatWritingTime(entry.minutesWritten);
 
@@ -3758,6 +3856,19 @@ const App = {
             <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
           </tr>`;
       }
+      if (!isStreak) {
+        return `
+        <tr class="${isMe ? 'leaderboard-me' : ''}">
+          <td class="lb-rank">${rankEmoji}</td>
+          <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
+          <td class="lb-name">${nameCell}${youBadge}</td>
+          <td class="lb-col-xp"><strong>${(entry.xp || 0).toLocaleString()}</strong></td>
+          <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
+          <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
+          <td class="lb-col-sessions">${entry.totalSessions || 0}</td>
+          <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
+        </tr>`;
+      }
       return `
         <tr class="${isMe ? 'leaderboard-me' : ''}">
           <td class="lb-rank">${rankEmoji}</td>
@@ -3770,6 +3881,22 @@ const App = {
           <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
         </tr>`;
     }).join('');
+
+    const existingPager = document.getElementById('leaderboard-pager');
+    if (existingPager) existingPager.remove();
+    if (totalPages > 1) {
+      const pager = document.createElement('div');
+      pager.id = 'leaderboard-pager';
+      pager.className = 'docs-pagination leaderboard-pager';
+      pager.innerHTML = `
+        <button class="docs-pagination-btn" id="lb-prev" ${this._lbPage <= 1 ? 'disabled' : ''}>← Prev</button>
+        <span class="docs-pagination-info">${this._lbPage} / ${totalPages}</span>
+        <button class="docs-pagination-btn" id="lb-next" ${this._lbPage >= totalPages ? 'disabled' : ''}>Next →</button>
+      `;
+      document.getElementById('leaderboard-container')?.appendChild(pager);
+      document.getElementById('lb-prev')?.addEventListener('click', () => { this._lbPage--; this._renderLeaderboard(this._lbData); });
+      document.getElementById('lb-next')?.addEventListener('click', () => { this._lbPage++; this._renderLeaderboard(this._lbData); });
+    }
 
     if (data.length === 0) {
       tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">No writers yet. Be the first!</td></tr>';
@@ -6428,8 +6555,7 @@ const App = {
     const copyInvBtn = document.getElementById('copy-invite-link-btn');
     if (copyInvBtn) {
       copyInvBtn.onclick = () => {
-        const link = `${window.location.origin}/invite/${this.user.username || ''}`;
-        navigator.clipboard.writeText(link).then(() => this.toast('Invite link copied!', 'success'));
+        document.getElementById('friend-email-input')?.focus();
       };
     }
 
@@ -6520,22 +6646,27 @@ const App = {
         const fl = this.calcXPLevel(f.xp || 0);
         const fPro = f.plan === 'premium' ? ' <span class="pro-inline-badge">PRO</span>' : '';
         const fHandle = f.username ? ` ${this.profileLink(f.username, null, 'friend-handle')}` : '';
+        const initials = (f.name || '?').split(' ').map(part => part[0]).join('').toUpperCase().slice(0, 2);
+        const avatar = f.avatar
+          ? `<img src="${this.escapeHtml(f.avatar)}?t=${f.avatarUpdatedAt || 0}" alt="" class="friend-avatar-img">`
+          : `<span>${this.escapeHtml(initials)}</span>`;
         return `
-        <div class="doc-card friend-card">
+        <div class="doc-card friend-card" data-friend-id="${this.escapeHtml(f.id)}">
           <div class="doc-card-info">
-            <h4>${this.escapeHtml(f.name)}${fHandle}${fPro}</h4>
-            <div class="friend-stats">
-              <span class="friend-stat" title="Total words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>${(f.totalWords || 0).toLocaleString()}</span>
-              <span class="friend-stat" title="Streak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>${f.streak || 0}</span>
-              <span class="friend-stat" title="Level"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>Lv${fl.level} (${(f.xp || 0).toLocaleString()} XP)</span>
+            <div class="friend-avatar-wrap">
+              <div class="friend-avatar">${avatar}</div>
+              <span class="friend-presence-dot ${f.online ? 'online' : 'offline'}"></span>
+            </div>
+            <div class="friend-main">
+              <h4>${this.escapeHtml(f.name)}${fHandle}${fPro}</h4>
+              <div class="doc-card-meta">Level ${fl.level}</div>
             </div>
           </div>
+          <span class="friend-row-streak">${f.streak || 0} day</span>
+          <span class="friend-row-words">${(f.totalWords || 0).toLocaleString()}</span>
           <div class="doc-card-actions">
-            <button class="doc-action-btn" onclick="App.challengeFriend('${f.id}')" title="Challenge to duel">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>
-            </button>
-            <button class="doc-action-btn delete" onclick="App.confirmRemoveFriend('${f.id}', '${this.escapeHtml(f.name)}')" title="Remove friend">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            <button class="doc-action-btn" data-friend-menu="${this.escapeHtml(f.id)}" data-friend-name="${this.escapeHtml(f.name)}" title="Options">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
             </button>
           </div>
         </div>`;
@@ -6552,6 +6683,12 @@ const App = {
       }
 
       container.innerHTML = cards + pager;
+      container.querySelectorAll('[data-friend-menu]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showFriendMenu(btn, btn.dataset.friendMenu, btn.dataset.friendName || 'this friend');
+        });
+      });
     } catch {
       container.innerHTML = `<div class="empty-state"><p>Failed to load friends.</p></div>`;
     }
@@ -6617,6 +6754,32 @@ const App = {
     document.getElementById('confirm-remove-friend-name').textContent = name;
     modal.classList.add('active');
     this._removeFriendId = id;
+  },
+
+  showFriendMenu(anchorEl, id, name) {
+    document.querySelectorAll('.folder-context-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'folder-context-menu';
+    menu.innerHTML = `<button data-action="remove" style="color:var(--danger)">Remove Friend</button>`;
+    const rect = anchorEl.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.visibility = 'hidden';
+    menu.style.top = `${rect.bottom + 4}px`;
+    menu.style.right = `${window.innerWidth - rect.right}px`;
+    menu.style.left = 'auto';
+    document.body.appendChild(menu);
+    const menuH = menu.offsetHeight;
+    if (rect.bottom + 4 + menuH > window.innerHeight - 8) {
+      menu.style.top = `${Math.max(8, rect.top - menuH - 4)}px`;
+    }
+    menu.style.visibility = '';
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+    menu.querySelector('[data-action="remove"]').onclick = (e) => {
+      e.stopPropagation();
+      close();
+      this.confirmRemoveFriend(id, name);
+    };
   },
 
   async removeFriend(id) {
@@ -7652,26 +7815,30 @@ const App = {
 
   _applyTheme(theme) {
     const root = document.documentElement;
-    if (theme === 'test') theme = 'light'; // legacy: Test folded into Light
-    // 'test' = Writer's Desk structure layer — always on; color theme adds light/sepia (dark = none)
-    root.classList.remove('light', 'sepia');
-    root.classList.add('test');
-    if (theme === 'light') root.classList.add('light');
-    else if (theme === 'sepia') root.classList.add('sepia');
+    if (theme === 'test' || theme === 'sepia') theme = 'light'; // legacy: Test/Sepia folded into Light
+    root.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('iwrite_theme', theme);
     const btn = document.getElementById('theme-toggle-btn');
     if (!btn) return;
-    const labels = { dark: 'Light Mode', light: 'Sepia Mode', sepia: 'Dark Mode' };
+    const labels = { dark: 'Light Mode', light: 'Dark Mode' };
     btn.querySelector('.theme-icon-dark').style.display = theme === 'dark' ? '' : 'none';
     btn.querySelector('.theme-icon-light').style.display = theme !== 'dark' ? '' : 'none';
-    btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Light Mode';
+    btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Dark Mode';
+    document.querySelectorAll('[data-settings-theme]').forEach(b => {
+      b.classList.toggle('active', b.dataset.settingsTheme === theme);
+    });
+    if (this.currentView === 'dashboard') {
+      const canvas = document.getElementById('tree-canvas');
+      if (canvas && typeof TreeRenderer !== 'undefined' && this.user) {
+        TreeRenderer.draw(canvas, this.user.treeStage || 0, this.user.streak || 0);
+      }
+    }
   },
 
   _cycleTheme() {
-    let current = localStorage.getItem('iwrite_theme') || 'dark';
-    if (current === 'test') current = 'light';
-    // dark → light → sepia → dark (all share the Writer's Desk structure)
-    const next = current === 'dark' ? 'light' : current === 'light' ? 'sepia' : 'dark';
+    let current = localStorage.getItem('iwrite_theme') || 'light';
+    if (current === 'test' || current === 'sepia') current = 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
     this._applyTheme(next);
   },
 

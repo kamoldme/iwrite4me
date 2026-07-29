@@ -186,6 +186,12 @@
       `;
     },
 
+    getReadTime(story) {
+      const words = Number(story.wordCount || story.words || 0);
+      if (words > 0) return Math.max(1, Math.ceil(words / 200));
+      return story.readTimeMinutes || 1;
+    },
+
     getMineStories() {
       const mine = this.storyList.filter(story => story.userId === this.user.id);
       if (this.storyMineFilter === 'review') {
@@ -210,7 +216,7 @@
           <div class="story-feed-footer">
             ${renderMetaLine([
               formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt),
-              `${story.readTimeMinutes || 1} min read`
+              `${this.getReadTime(story)} min read`
             ])}
             ${this.renderMetric('view', story.viewCount)}
             ${this.renderMetric('heart', story.likeCount, { active: story.likedByMe })}
@@ -233,7 +239,7 @@
             <div class="doc-card-text">
               <h4>${esc(story.title)}</h4>
               <div class="doc-card-meta">
-                <span>${story.readTimeMinutes || 1} min read</span>
+                <span>${this.getReadTime(story)} min read</span>
                 <span>${formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt)}</span>
                 <span>${story.viewCount || 0} views</span>
                 <span>${story.commentCount || 0} comments</span>
@@ -675,7 +681,7 @@
               ${this.renderStoryAuthor(story)}
               <div class="story-reader-author-meta">
                 ${renderMetaLine([
-                  `${story.readTimeMinutes || 1} min read`,
+                  `${this.getReadTime(story)} min read`,
                   formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt)
                 ])}
               </div>

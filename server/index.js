@@ -528,26 +528,12 @@ app.get('/api/leaderboard', async (req, res) => {
         };
       });
 
-    // Top 10 by streak
-    const byStreak = [...all].sort((a, b) => b.streak - a.streak || b.totalWords - a.totalWords).slice(0, 10);
-    // Top 10 by time written
-    const byTime = [...all].sort((a, b) => b.minutesWritten - a.minutesWritten || b.totalWords - a.totalWords).slice(0, 10);
-    // Top 10 by referrals
-    const byReferrals = [...all].filter(u => (u.referralCount || 0) > 0).sort((a, b) => b.referralCount - a.referralCount || b.totalWords - a.totalWords).slice(0, 10);
-
-    // Merge all lists (deduplicate by id)
-    const seen = new Set();
-    const merged = [];
-    for (const entry of [...byStreak, ...byTime, ...byReferrals]) {
-      if (!seen.has(entry.id)) {
-        seen.add(entry.id);
-        merged.push(entry);
-      }
-    }
-
-    // Sort merged by streak (default), frontend re-sorts per tab
-    merged.sort((a, b) => b.streak - a.streak || b.totalWords - a.totalWords);
-    const leaderboard = merged.map((entry, i) => ({ rank: i + 1, ...entry }));
+    // Return enough users for the logged-in app's tabbed/paginated leaderboard.
+    // The frontend ranks the same payload by XP, streak, time, and referrals.
+    const leaderboard = [...all]
+      .sort((a, b) => (b.xp || 0) - (a.xp || 0) || (b.totalWords || 0) - (a.totalWords || 0))
+      .slice(0, 100)
+      .map((entry, i) => ({ rank: i + 1, ...entry }));
 
     res.json(leaderboard);
   } catch (err) {
