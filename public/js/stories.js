@@ -386,7 +386,7 @@
       }
       // Show the loading card only on the first attempt (don't flash it on retries).
       if (attempt === 0 && !el.querySelector('.stories-popular-item')) {
-        el.innerHTML = `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3><div style="padding:8px 0;color:var(--text-muted);font-size:12px">Loading…</div></div>`;
+        el.innerHTML = `<div class="stories-popular-card"><h3>Most followed</h3><div class="stories-popular-empty">Loading…</div></div>`;
       }
       try {
         const list = await API.request('/follow/popular');
@@ -407,7 +407,11 @@
 
     _renderPopularWriters(list) {
       const el = document.getElementById('stories-popular');
-      if (!list || !list.length) { if (el) el.innerHTML = ''; return ''; }
+      if (!list || !list.length) {
+        const empty = `<div class="stories-popular-card"><h3>Most followed</h3><div class="stories-popular-empty">No writers to show yet — check back once more people join.</div></div>`;
+        if (el) el.innerHTML = empty;
+        return empty;
+      }
       const rows = list.map(u => {
         const initial = esc((u.name || u.username || '?').charAt(0).toUpperCase());
         const avatar = u.avatar

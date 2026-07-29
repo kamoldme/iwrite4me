@@ -94,6 +94,8 @@ const Editor = {
     this.isEditing = false;
     this.isDirty = false;
     this.targetWords = opts.targetWords || 0;
+    const targetWordsInput = document.getElementById('editor-target-words');
+    if (targetWordsInput) targetWordsInput.value = this.targetWords || '';
     this.sessionTopic = opts.topic || '';
     // Custom danger threshold (Pro feature)
     if (opts.dangerThreshold) this.dangerThreshold = opts.dangerThreshold;
@@ -181,7 +183,7 @@ const Editor = {
     document.getElementById('status-bar').style.display = 'flex';
     this.titleInput.readOnly = false;
 
-    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous' : mode === 'zen' ? 'Zen' : mode === 'research' ? 'Research' : 'Time';
+    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous' : mode === 'zen' ? 'Zen' : mode === 'research' ? 'Research' : mode === 'duel' ? 'Duel' : 'Time';
     this.modeBadge.className = `editor-mode-badge ${mode}`;
     // Show session controls (swap add-time buttons for duel mode)
     document.getElementById('editor-timer').style.display = '';
@@ -990,6 +992,18 @@ const Editor = {
 
   _timerMasked: false,
 
+  // Session-elapsed hairline at the very top of the viewport — one tone per
+  // mode, matching the mode picker/detail-panel colors.
+  _elapsedTone() {
+    return this.mode === 'dangerous' ? 'tone-danger' : this.mode === 'zen' ? 'tone-info' : this.mode === 'duel' ? 'tone-warning' : '';
+  },
+  _updateElapsedBar(pct) {
+    const fill = document.getElementById('editor-elapsed-fill');
+    if (!fill) return;
+    fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    fill.className = `editor-elapsed-fill ${this._elapsedTone()}`;
+  },
+
   updateTimer() {
     if (this.duration === 0) {
       const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
@@ -998,15 +1012,17 @@ const Editor = {
       this.timerEl.textContent = this._timerMasked ? '**:**' : `${min}:${String(sec).padStart(2, '0')}`;
       this.timerEl.className = 'editor-timer';
       this._applyTimerVisibility();
+      this._updateElapsedBar(0);
       return;
     }
 
     // In duel mode, use server-synced endAt for timer (both sides see same clock)
-    let remaining;
+    let remaining, totalSeconds;
     if (this._duelEndAt) {
       remaining = Math.max(0, Math.ceil((this._duelEndAt - Date.now()) / 1000));
+      totalSeconds = this.duration * 60;
     } else {
-      const totalSeconds = this.duration * 60;
+      totalSeconds = this.duration * 60;
       const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       remaining = Math.max(0, totalSeconds - elapsed);
     }
@@ -1017,6 +1033,7 @@ const Editor = {
     this._applyTimerVisibility();
 
     this.timerEl.textContent = this._timerMasked ? '**:**' : `${min}:${String(sec).padStart(2, '0')}`;
+    this._updateElapsedBar(((totalSeconds - remaining) / totalSeconds) * 100);
 
     if (remaining <= 60) {
       this.timerEl.className = 'editor-timer danger';
@@ -1366,7 +1383,7 @@ const Editor = {
       if (addTimeEl) addTimeEl.style.display = this.mode === 'zen' ? 'none' : '';
       this.titleInput.readOnly = false;
 
-      this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous' : 'Normal';
+      this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous' : this.mode === 'zen' ? 'Zen' : this.mode === 'research' ? 'Research' : this.mode === 'duel' ? 'Duel' : 'Time';
       this.modeBadge.className = `editor-mode-badge ${this.mode}`;
 
       // Setup mode-specific UI

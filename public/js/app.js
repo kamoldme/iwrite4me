@@ -1180,27 +1180,6 @@ const App = {
     document.getElementById('modal-cancel').addEventListener('click', () => this.closeSessionModal());
     document.getElementById('modal-start').addEventListener('click', () => this.startSession());
 
-    // Document name modal
-    const docNameInput = document.getElementById('doc-name-input');
-    const tryConfirmDocName = () => {
-      const name = docNameInput.value.trim();
-      if (!name) {
-        docNameInput.classList.add('input-invalid');
-        docNameInput.focus();
-        return;
-      }
-      this._confirmDocName(name);
-    };
-    document.getElementById('doc-name-confirm').addEventListener('click', tryConfirmDocName);
-    document.getElementById('doc-name-skip').addEventListener('click', () => this._confirmDocName('Untitled'));
-    document.getElementById('doc-name-back').addEventListener('click', () => {
-      document.getElementById('doc-name-modal').classList.remove('active');
-      this.openSessionModal();
-    });
-    docNameInput.addEventListener('input', () => docNameInput.classList.remove('input-invalid'));
-    docNameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') tryConfirmDocName();
-    });
 
     document.querySelectorAll('#time-presets .time-preset[data-minutes]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1216,6 +1195,7 @@ const App = {
         btn.classList.add('active');
         this.sessionDuration = mins;
         document.getElementById('time-custom-row').style.display = 'none';
+        this._renderModePickerBottom(this.sessionMode);
       });
     });
 
@@ -1240,77 +1220,56 @@ const App = {
       this.sessionDuration = val;
       document.getElementById('time-custom-row').style.display = 'none';
       document.getElementById('custom-time-input').value = '';
+      this._renderModePickerBottom(this.sessionMode);
     };
     document.getElementById('custom-time-set').addEventListener('click', setCustomTime);
     document.getElementById('custom-time-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') setCustomTime();
     });
 
-    // Auto-grow topic textarea as user types
-    const topicInput = document.getElementById('session-topic-input');
-    if (topicInput) {
-      topicInput.addEventListener('input', () => this._autoGrowTopic());
-    }
-
-    // Prompt generator: ✨ button + category popover
-    const genBtn = document.getElementById('prompt-generate-btn');
-    const pop = document.getElementById('prompt-popover');
-    if (genBtn && pop) {
-      genBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const showing = pop.style.display !== 'none';
-        if (showing) { pop.style.display = 'none'; return; }
-        pop.style.display = 'block';
-        this._refreshPromptQuota();
-      });
-      document.addEventListener('click', (e) => {
-        if (pop.style.display === 'none') return;
-        if (!pop.contains(e.target) && e.target !== genBtn && !genBtn.contains(e.target)) {
-          pop.style.display = 'none';
-        }
-      });
-      pop.querySelectorAll('.prompt-chip').forEach(chip => {
-        chip.addEventListener('click', () => this._fetchPrompt(chip.dataset.category));
-      });
-    }
 
     document.querySelectorAll('.mode-option').forEach(opt => {
       opt.addEventListener('click', () => {
         document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
         opt.classList.add('active');
+        document.getElementById('mode-selector')?.classList.add('has-chosen');
         this.sessionMode = opt.dataset.mode;
         this._applyModeConfigPanel(this.sessionMode);
         const isDanger = this.sessionMode === 'dangerous';
         const isZen = this.sessionMode === 'zen';
+        const isDuel = this.sessionMode === 'duel';
         document.getElementById('time-custom-row').style.display = 'none';
         if (isZen) {
           this.sessionDuration = 0;
         } else if (isDanger) {
           const dangerActive = document.querySelector('#danger-time-presets .time-preset.active');
           this.sessionDuration = parseInt(dangerActive?.dataset.minutes || 5);
+        } else if (isDuel) {
+          const duelActive = document.querySelector('#duel-duration-presets .time-preset.active');
+          this.sessionDuration = parseInt(duelActive?.dataset.minutes || 10);
         } else {
           const normalActive = document.querySelector('#time-presets .time-preset.active');
           this.sessionDuration = parseInt(normalActive?.dataset.minutes || 30);
         }
         this._applyTimerRestrictions();
+        this._renderModePickerBottom(this.sessionMode);
       });
     });
 
-    // Bind danger variant tabs (Dangerous classic vs Chill Danger)
-    this.sessionDangerVariant = 'classic';
-    const variantDescEl = document.getElementById('danger-variant-desc');
-    const variantDescMap = {
-      classic: 'Stop typing and everything you wrote is gone.',
-      chill: '3 hearts. Stop typing and you lose 40% of your progress. Run out of hearts — everything is gone.'
-    };
-    document.querySelectorAll('.danger-variant-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.danger-variant-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        this.sessionDangerVariant = tab.dataset.variant;
-        if (variantDescEl) variantDescEl.textContent = variantDescMap[this.sessionDangerVariant] || '';
+    // Duel duration chips (10/30/45 min) — real matchmaking buckets.
+    document.querySelectorAll('#duel-duration-presets .time-preset[data-minutes]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#duel-duration-presets .time-preset').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (this.sessionMode === 'duel') {
+          this.sessionDuration = parseInt(btn.dataset.minutes);
+          this._renderModePickerBottom('duel');
+        }
       });
     });
+
+    // Dangerous mode only has the classic variant now (Chill Danger removed).
+    this.sessionDangerVariant = 'classic';
 
     // Bind danger mode time presets
     document.querySelectorAll('#danger-time-presets .time-preset[data-minutes]').forEach(btn => {
@@ -1319,6 +1278,7 @@ const App = {
         btn.classList.add('active');
         this.sessionDuration = parseInt(btn.dataset.minutes);
         document.getElementById('time-custom-row').style.display = 'none';
+        this._renderModePickerBottom(this.sessionMode);
       });
     });
     // Danger mode custom time "+" button (Pro only)
@@ -1352,6 +1312,7 @@ const App = {
         btn.classList.add('active');
         document.getElementById('danger-threshold-input').value = secs;
         document.getElementById('death-timer-custom-row').style.display = 'none';
+        if (this.sessionMode === 'dangerous') this._renderModeDetailPanel('dangerous');
       });
     });
     // Death Timer custom "+" (Pro only)
@@ -1379,6 +1340,7 @@ const App = {
       document.getElementById('danger-threshold-input').value = val;
       document.getElementById('death-timer-custom-row').style.display = 'none';
       document.getElementById('death-timer-custom-input').value = '';
+      if (this.sessionMode === 'dangerous') this._renderModeDetailPanel('dangerous');
     };
     document.getElementById('death-timer-custom-set').addEventListener('click', setDeathCustom);
     document.getElementById('death-timer-custom-input').addEventListener('keydown', (e) => {
@@ -1476,7 +1438,7 @@ const App = {
         const audioDD = document.getElementById('editor-audio-dropdown');
         if (audioDD) audioDD.style.display = 'none';
         if (open) {
-          const rect = focusBtn.getBoundingClientRect();
+          const rect = document.getElementById('editor-tools-btn').getBoundingClientRect();
           const W = 224;
           // Right-align dropdown to button, but clamp so it stays inside viewport
           let left = rect.right - W;
@@ -1590,6 +1552,81 @@ const App = {
       const fd = document.getElementById('editor-focus-dropdown');
       if (fd) fd.style.display = 'none';
     });
+
+    // Session tools kebab menu — consolidates the toolbar icon buttons into
+    // one dropdown per the Writing Session design. Each row forwards to the
+    // real (now visually hidden) button so existing feature logic — Pro
+    // gates, dropdown positioning, conditional visibility — stays untouched.
+    const toolsBtn = document.getElementById('editor-tools-btn');
+    const toolsMenu = document.getElementById('editor-tools-menu');
+    if (toolsBtn && toolsMenu) {
+      const syncToolsMenu = () => {
+        const isDark = document.documentElement.classList.contains('dark');
+        const themeLabel = document.getElementById('tools-theme-label');
+        if (themeLabel) themeLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
+        const commentBtn = document.getElementById('editor-comment-history-btn');
+        const commentRow = document.getElementById('tools-comment-history-row');
+        if (commentBtn && commentRow) commentRow.style.display = commentBtn.style.display === 'none' ? 'none' : 'flex';
+      };
+      toolsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = toolsMenu.style.display === 'none';
+        audioDrop.style.display = 'none';
+        document.getElementById('editor-focus-dropdown').style.display = 'none';
+        if (willOpen) syncToolsMenu();
+        toolsMenu.style.display = willOpen ? 'block' : 'none';
+      });
+      toolsMenu.addEventListener('click', (e) => e.stopPropagation());
+      document.addEventListener('click', () => { toolsMenu.style.display = 'none'; });
+
+      const forward = (rowId, btnId, keepOpen) => {
+        const row = document.getElementById(rowId);
+        if (!row) return;
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.getElementById(btnId).click();
+          if (!keepOpen) toolsMenu.style.display = 'none';
+          syncToolsMenu();
+        });
+      };
+      // Focus/Audio open their own dropdown — keep the tools menu open behind them off,
+      // closing it immediately reads cleanest since those dropdowns render above it.
+      forward('tools-theme-row', 'editor-theme-btn');
+      forward('tools-focus-row', 'editor-focus-btn');
+      forward('tools-research-row', 'editor-research-btn');
+      forward('tools-audio-row', 'editor-audio-btn');
+      forward('tools-fullscreen-row', 'editor-fullscreen-btn');
+      forward('tools-copy-row', 'editor-copy-btn');
+      forward('tools-comment-history-row', 'editor-comment-history-btn');
+
+      // Formatting: toggle the persistent format bar directly
+      const formattingRow = document.getElementById('tools-formatting-row');
+      if (formattingRow) {
+        formattingRow.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const bar = document.getElementById('formatting-toolbar');
+          bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+          toolsMenu.style.display = 'none';
+        });
+      }
+
+      // Typography: inline zoom buttons forward to the real page-zoom handlers
+      const toolsFontDec = document.getElementById('tools-font-dec');
+      const toolsFontInc = document.getElementById('tools-font-inc');
+      if (toolsFontDec) toolsFontDec.addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('editor-font-dec').click(); });
+      if (toolsFontInc) toolsFontInc.addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('editor-font-inc').click(); });
+
+      // Target words — moved here from the mode picker so it's adjustable
+      // mid-session instead of only being set up front.
+      const targetWordsInput = document.getElementById('editor-target-words');
+      if (targetWordsInput) {
+        targetWordsInput.addEventListener('click', (e) => e.stopPropagation());
+        targetWordsInput.addEventListener('input', () => {
+          Editor.targetWords = parseInt(targetWordsInput.value) || 0;
+          Editor._updateWordsRemaining();
+        });
+      }
+    }
 
     // Restore saved font preference
     const savedFont = localStorage.getItem('iwrite_editor_font') || 'sans';
@@ -1935,7 +1972,7 @@ const App = {
     }
 
     const greetingEl = document.getElementById('greeting-text');
-    if (greetingEl) greetingEl.innerHTML = `Think for yourself. Write for <em>yourself.</em>`;
+    if (greetingEl) greetingEl.innerHTML = `Think for yourself.<br>Write for <em>yourself.</em>`;
 
     const kickerEl = document.getElementById('hero-kicker');
     if (kickerEl) {
@@ -2219,8 +2256,9 @@ const App = {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Build map of last 20 weeks (140 days) — word counts per day
-    const totalDays = 140;
+    // Build map of last 13 weeks (91 days) — word counts per day. Kept short
+    // enough that the grid fits the card width without needing to scroll.
+    const totalDays = 91;
     const dayMap = {};
     for (let i = totalDays - 1; i >= 0; i--) {
       const d = new Date(today);
@@ -2586,12 +2624,6 @@ const App = {
     let html = pageDocs.map(doc => {
       const isFailed = doc.deletedBySystem;
       const isDangerous = doc.mode === 'dangerous';
-      const iconClass = isFailed ? 'doc-icon-failed' : isDangerous ? 'doc-icon-dangerous' : doc.completed ? 'doc-icon-completed' : 'doc-icon-draft';
-      const iconSvg = isFailed
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-        : isDangerous
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
       const modeGlyphClass = isDangerous ? 'dangerous' : doc.mode === 'zen' ? 'zen' : 'normal';
       const folderGlyph = `<svg class="doc-folder-glyph doc-folder-glyph-${modeGlyphClass}" width="30" height="26" viewBox="0 0 30 26" fill="none">
         <path class="doc-folder-glyph-back" d="M2 4a2 2 0 012-2h7l2 2.5h11a2 2 0 012 2V22a2 2 0 01-2 2H4a2 2 0 01-2-2V4z"/>
@@ -2601,7 +2633,6 @@ const App = {
       <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}">
         <div class="doc-card-info">
           ${folderGlyph}
-          <div class="doc-icon ${iconClass}">${iconSvg}</div>
           <div class="doc-card-text">
             <h4>${doc.pinned ? '<span class="pin-icon" title="Pinned">&#x1F4CC;</span> ' : ''}${this.escapeHtml(doc.title)} ${isFailed ? '<span class="badge badge-failed">FAILED</span>' : ''}</h4>
             <div class="doc-card-meta">
@@ -2720,12 +2751,13 @@ const App = {
     const addBtn = document.getElementById('time-preset-add-btn');
     addBtn.textContent = '+';
     addBtn.classList.remove('active');
-    // Reset to normal mode when opening
+    // Nothing is pre-chosen when the picker opens — the grid starts neutral
+    // and the user has to actually pick a mode before it lights up.
     document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
-    document.querySelector('.mode-option[data-mode="normal"]').classList.add('active');
-    this.sessionMode = 'normal';
+    document.getElementById('mode-selector')?.classList.remove('has-chosen');
+    this.sessionMode = null;
     this.sessionDuration = 30;
-    this._applyModeConfigPanel('normal');
+    this._applyModeConfigPanel(null);
     document.querySelectorAll('#time-presets .time-preset').forEach(b => b.classList.remove('active'));
     document.querySelector('#time-presets .time-preset[data-minutes="30"]').classList.add('active');
     document.getElementById('danger-threshold-input').value = '5';
@@ -2735,19 +2767,69 @@ const App = {
     document.getElementById('death-timer-custom-row').style.display = 'none';
     const deathCustBtn = document.getElementById('death-timer-custom-btn');
     if (deathCustBtn) { deathCustBtn.textContent = '+'; deathCustBtn.classList.remove('active'); }
-    // Reset new fields
-    document.getElementById('session-topic-input').value = '';
-    document.getElementById('session-target-words').value = '';
-    const pGenBtn = document.getElementById('prompt-generate-btn');
-    if (pGenBtn) pGenBtn.classList.remove('has-prompt');
-    const pPop = document.getElementById('prompt-popover');
-    if (pPop) pPop.style.display = 'none';
-    const pTopic = document.getElementById('session-topic-input');
-    if (pTopic) pTopic.style.height = '';
+    document.querySelectorAll('#duel-duration-presets .time-preset').forEach(b => b.classList.remove('active'));
+    const defaultDuel = document.querySelector('#duel-duration-presets .time-preset[data-minutes="10"]');
+    if (defaultDuel) defaultDuel.classList.add('active');
     // Apply plan-based timer restrictions
     this._applyTimerRestrictions();
     // Session limits are invisible — enforced server-side only
     this._showWeeklySessionInfo();
+  },
+
+  // Mode lore shown in the picker's detail panel — kept in sync with the
+  // "Writing Session + Mode picker" design (figure names, blurbs, rules).
+  MODE_LORE: {
+    normal: {
+      tag: 'NORMAL MODE', figure: 'Aristotle', kicker: 'Timed Mode', tone: 'var(--accent)',
+      blurb: 'Aristotle believed excellence is a habit, not an accident — built through steady, measured practice. This mode is his method: a fixed timer, a full toolbar, and formatting and autosave switched on so nothing but the writing itself demands your attention.',
+      rules: ['Timer runs; you can add minutes', 'Autosaves as you go', 'Earns XP on completion']
+    },
+    zen: {
+      tag: 'ZEN MODE', figure: 'Eirene', kicker: 'Zen Mode', tone: 'var(--info)',
+      blurb: 'Eirene, Greek goddess of peace, is shown with the olive branch and the dove — emblems of a world where nothing needs defending or measuring. Her mode strips away every counter, every XP tally and every streak, so the page asks nothing of you but the words themselves.',
+      rules: ['Word count hidden', 'No XP, no streak effect', 'Leave whenever you like']
+    },
+    dangerous: {
+      tag: 'DANGEROUS MODE', figure: 'Leonidas', kicker: 'Dangerous Mode', tone: 'var(--danger)',
+      blurb: 'Leonidas held the pass at Thermopylae knowing retreat meant survival and standing meant loss — and chose to stand. His mode carries that same wager: stop typing and the page begins to erase your words, and only three lives stand between you and losing the draft entirely.',
+      rules: ['{idle} seconds idle begins the decay', 'Three lives, then the draft is lost', 'Double XP if you survive']
+    },
+    duel: {
+      tag: 'DUEL MODE', figure: 'Arena', kicker: 'Duel Mode', tone: 'var(--warning)',
+      blurb: 'The arena was where reputations were made in full view of a crowd — one combatant against another, nothing decided until the contest ended. This mode puts two writers head to head on a live word count, with the pot of XP going to whoever is still ahead when the clock runs out.',
+      rules: ['Live word count for both writers', 'Either side may offer +5 min', 'Winner takes the XP pot']
+    }
+  },
+
+  _renderModeDetailPanel(mode) {
+    const lore = this.MODE_LORE[mode];
+    const panel = document.getElementById('mode-detail-panel');
+    if (!lore) {
+      if (panel) panel.innerHTML = '<p class="mode-detail-placeholder">Pick a mode to see how it works.</p>';
+      return;
+    }
+    if (panel && !document.getElementById('mode-detail-tag')) {
+      // Placeholder was showing — restore the real structure before filling it in.
+      panel.innerHTML = `
+        <div class="mode-detail-tag" id="mode-detail-tag"></div>
+        <h3 class="mode-detail-figure" id="mode-detail-figure"></h3>
+        <div class="mode-detail-kicker" id="mode-detail-kicker"></div>
+        <p class="mode-detail-blurb" id="mode-detail-blurb"></p>
+        <div class="mode-detail-rules" id="mode-detail-rules"></div>`;
+    }
+    const tagEl = document.getElementById('mode-detail-tag');
+    const figureEl = document.getElementById('mode-detail-figure');
+    const kickerEl = document.getElementById('mode-detail-kicker');
+    const blurbEl = document.getElementById('mode-detail-blurb');
+    const rulesEl = document.getElementById('mode-detail-rules');
+    if (tagEl) { tagEl.textContent = lore.tag; tagEl.style.color = lore.tone; tagEl.style.borderColor = lore.tone; }
+    if (figureEl) figureEl.textContent = lore.figure;
+    if (kickerEl) { kickerEl.textContent = lore.kicker; kickerEl.style.color = lore.tone; }
+    if (blurbEl) blurbEl.textContent = lore.blurb;
+    if (rulesEl) {
+      const idleSecs = document.getElementById('danger-threshold-input')?.value || '5';
+      rulesEl.innerHTML = lore.rules.map(r => `<div class="mode-detail-rule"><span style="color:${lore.tone}">·</span><span>${r.replace('{idle}', idleSecs)}</span></div>`).join('');
+    }
   },
 
   // Show/hide mode-specific config sections based on data-for-mode attributes.
@@ -2760,21 +2842,64 @@ const App = {
     let anyVisible = false;
     sections.forEach(sec => {
       const modes = (sec.dataset.forMode || '').split(/\s+/).filter(Boolean);
-      const show = modes.includes(mode);
+      const show = !!mode && modes.includes(mode);
       sec.style.display = show ? '' : 'none';
       if (show) anyVisible = true;
     });
-    // Nested mode-specific preset rows (e.g. #time-presets vs #danger-time-presets)
-    panel.querySelectorAll('.time-presets[data-for-mode]').forEach(row => {
+    // Duration chip rows live in the bottom bar now (not inside the detail
+    // panel), so query the whole modal wrapper, not just the config panel.
+    wrapper.querySelectorAll('.time-presets[data-for-mode]').forEach(row => {
       const modes = (row.dataset.forMode || '').split(/\s+/).filter(Boolean);
-      row.style.display = modes.includes(mode) ? 'flex' : 'none';
+      row.style.display = !!mode && modes.includes(mode) ? 'flex' : 'none';
     });
     wrapper.classList.toggle('has-config', anyVisible);
-    const title = document.getElementById('config-panel-title');
-    if (title) {
-      const map = { normal: 'Time Settings', dangerous: 'Dangerous Settings', zen: '', research: 'Research Settings' };
-      title.textContent = map[mode] || 'Settings';
+    this._renderModeDetailPanel(mode);
+    this._renderModePickerBottom(mode);
+    // Nothing chosen yet — no bottom bar, no starting.
+    const bottomBar = document.getElementById('mp-bottom');
+    if (bottomBar) bottomBar.style.display = mode ? '' : 'none';
+    const startBtn = document.getElementById('modal-start');
+    if (startBtn) {
+      startBtn.textContent = mode === 'dangerous' ? 'I accept the risk — begin' : mode === 'duel' ? 'Find an opponent' : 'Begin writing';
+      startBtn.classList.toggle('btn-danger-solid', mode === 'dangerous');
     }
+  },
+
+  // Bottom bar's goal-line + summary — mirrors the design's goalLine/summary
+  // fields exactly, driven by real duration/goal state.
+  _renderModePickerBottom(mode) {
+    if (!mode) return;
+    const goalEl = document.getElementById('mp-goal-line');
+    const summaryEl = document.getElementById('mp-summary');
+    if (goalEl) {
+      if (mode === 'zen') {
+        goalEl.textContent = 'Zen sessions do not count toward the daily goal — that is the point.';
+      } else if (mode === 'duel') {
+        goalEl.textContent = '';
+      } else {
+        const goal = parseInt(localStorage.getItem('iwrite_daily_goal') || '1000', 10) || 1000;
+        const today = (this.documents || []).filter(d => {
+          const dt = new Date(d.updatedAt || d.createdAt);
+          const now = new Date();
+          return dt.toDateString() === now.toDateString();
+        }).reduce((sum, d) => sum + (d.wordCount || 0), 0);
+        const left = Math.max(0, goal - today);
+        goalEl.textContent = left > 0 ? `${left.toLocaleString()} words left of today's ${goal.toLocaleString()}.` : `Today's ${goal.toLocaleString()}-word goal is done.`;
+      }
+    }
+    if (summaryEl) {
+      const modeLabel = { zen: 'ZEN', normal: 'NORMAL', dangerous: 'DANGEROUS', duel: 'DUEL' }[mode] || mode.toUpperCase();
+      const minutes = this.sessionDuration || 0;
+      summaryEl.textContent = mode === 'duel' ? modeLabel : minutes === 0 ? `${modeLabel} · UNLIMITED` : `${modeLabel} · ${minutes} MIN`;
+    }
+    // Duel has no duration options and no goal line — hide that whole side
+    // and let the bottom bar collapse to just the summary/start button.
+    const durationLabel = document.getElementById('mp-duration-label');
+    const bottomLeft = document.getElementById('mp-bottom-left');
+    const bottomBar = document.getElementById('mp-bottom');
+    if (durationLabel) durationLabel.style.display = (mode === 'zen' || mode === 'duel') ? 'none' : '';
+    if (bottomLeft) bottomLeft.style.display = mode === 'duel' ? 'none' : '';
+    if (bottomBar) bottomBar.classList.toggle('mp-bottom-solo', mode === 'duel');
   },
 
   _openResearch() {
@@ -3161,63 +3286,6 @@ const App = {
     return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   },
 
-  async _refreshPromptQuota() {
-    const quotaEl = document.getElementById('prompt-popover-quota');
-    if (!quotaEl) return;
-    try {
-      const q = await API.promptQuota();
-      const remaining = Math.max(0, q.limit - q.used);
-      const capped = remaining === 0;
-      quotaEl.className = 'prompt-popover-quota' + (capped ? ' capped' : '');
-      quotaEl.textContent = capped
-        ? (q.isPro ? `You've used all ${q.limit} prompts today.` : `Daily prompt used. Upgrade to PRO for 10/day.`)
-        : `${remaining} of ${q.limit} prompt${q.limit === 1 ? '' : 's'} left today${q.isPro ? '' : ' · PRO gets 10/day'}`;
-      document.querySelectorAll('.prompt-chip').forEach(c => { c.disabled = capped; });
-    } catch (e) {
-      quotaEl.textContent = '';
-    }
-  },
-
-  _autoGrowTopic() {
-    const topic = document.getElementById('session-topic-input');
-    if (!topic) return;
-    const min = 56;
-    const max = 220;
-    const current = topic.style.height || (topic.offsetHeight + 'px');
-    topic.style.height = 'auto';
-    const target = Math.min(max, Math.max(min, topic.scrollHeight));
-    topic.style.height = current;
-    requestAnimationFrame(() => {
-      topic.style.height = target + 'px';
-    });
-  },
-
-  async _fetchPrompt(category) {
-    const btn = document.getElementById('prompt-generate-btn');
-    const pop = document.getElementById('prompt-popover');
-    const topic = document.getElementById('session-topic-input');
-    if (btn) btn.disabled = true;
-    try {
-      const res = await API.nextPrompt(category);
-      if (topic) {
-        topic.value = res.prompt.text;
-        this._autoGrowTopic();
-      }
-      if (btn) btn.classList.add('has-prompt');
-      if (pop) pop.style.display = 'none';
-      if (typeof this.toast === 'function') this.toast('Prompt loaded', 'success');
-    } catch (e) {
-      if (e.status === 429) {
-        await this._refreshPromptQuota();
-        if (typeof this.toast === 'function') this.toast(e.message || 'Daily limit reached', 'error');
-      } else {
-        if (typeof this.toast === 'function') this.toast('Failed: ' + (e.message || 'error'), 'error');
-      }
-    } finally {
-      if (btn) btn.disabled = false;
-    }
-  },
-
   _applyTimerRestrictions() {
     const isPro = this.user && this.user.plan === 'premium';
     // Normal mode presets: show all, but Pro-locked ones get badge for free users
@@ -3235,7 +3303,7 @@ const App = {
         btn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         btn.appendChild(badge);
       } else {
@@ -3253,7 +3321,7 @@ const App = {
         addBtn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         addBtn.appendChild(badge);
       } else {
@@ -3275,7 +3343,7 @@ const App = {
         dangerCustomBtn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         dangerCustomBtn.appendChild(badge);
       } else {
@@ -3293,7 +3361,7 @@ const App = {
         btn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         btn.appendChild(badge);
       }
@@ -3308,7 +3376,7 @@ const App = {
         deathCustomBtn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         deathCustomBtn.appendChild(badge);
       }
@@ -3324,7 +3392,7 @@ const App = {
         btn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         btn.appendChild(badge);
       }
@@ -3339,7 +3407,7 @@ const App = {
         tabCustomBtn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         tabCustomBtn.appendChild(badge);
       }
@@ -3355,7 +3423,7 @@ const App = {
         btn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         btn.appendChild(badge);
       }
@@ -3374,29 +3442,36 @@ const App = {
   },
 
   startSession() {
-    // Monthly session limit is enforced server-side (invisible to user)
-    const targetInput = parseInt(document.getElementById('session-target-words').value) || 0;
-    if (targetInput > 0 && targetInput <= 50) {
-      const jokes = [
-        "Bro, are you even planning to write something? 😂",
-        "50 words? That's barely a text message 💀",
-        "Come on, even a grocery list is longer than that 🛒",
-        "Is this a writing session or a tweet? 🐦",
-        "Your target should be at least 51 words. Dream bigger! ✨"
-      ];
-      this.showToast(jokes[Math.floor(Math.random() * jokes.length)], 'warning');
+    if (!this.sessionMode) return;
+    // Duel mode hands straight off to the real matchmaking flow: close the
+    // picker, land on the Duels view, and immediately start searching with
+    // the duration chosen in the picker — matching "another window opens
+    // instantly starting a searching period, with its own Cancel button" —
+    // reusing the real queue/join flow already built there instead of a
+    // second, duplicate "searching" modal.
+    if (this.sessionMode === 'duel') {
+      const duelMinutes = this.sessionDuration || 10;
+      this.closeSessionModal();
+      this.switchView('duels');
+      this._mmDuration = duelMinutes;
+      document.querySelectorAll('.duel-mm-dur-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.duration) === duelMinutes);
+      });
+      this.matchmakingFind();
       return;
     }
     this.closeSessionModal();
-    // Show document name modal before starting
-    this._pendingTopic = document.getElementById('session-topic-input').value.trim();
-    this._pendingTargetWords = targetInput;
-    document.getElementById('doc-name-input').value = '';
-    document.getElementById('doc-name-modal').classList.add('active');
+    // No separate "name your document" step — matches the design, where the
+    // title is just an inline editable field in the session header itself
+    // (this also sidesteps the old modal's silent required-name validation).
+    // Target word count is no longer set up front either — it's adjustable
+    // mid-session from the session tools menu instead.
+    this._pendingTopic = '';
+    this._pendingTargetWords = 0;
+    this._confirmDocName('Untitled');
   },
 
   _confirmDocName(name) {
-    document.getElementById('doc-name-modal').classList.remove('active');
     const titleInput = document.getElementById('editor-title');
     titleInput.value = (!name || name === 'Untitled') ? '' : name;
     titleInput.placeholder = 'Write a title...';
@@ -3701,7 +3776,7 @@ const App = {
 
   _renderNotificationHistory(items) {
     if (!items || items.length === 0) {
-      return '<h2 style="font-size:18px;margin-bottom:16px">📢 Notification History</h2><p style="color:var(--text-muted);padding:30px 0;text-align:center">No notifications yet.</p>';
+      return '<h2 style="font-size:18px;margin-bottom:16px">Notification History</h2><p style="color:var(--text-muted);padding:30px 0;text-align:center">No notifications yet.</p>';
     }
     const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
     const rows = items.map(a => {
@@ -3722,17 +3797,16 @@ const App = {
         <div style="font-size:11px;color:var(--text-muted);flex-shrink:0;text-align:right">${fmtDate(a.createdAt)}</div>
       </div>`;
     }).join('');
-    return `<h2 style="font-size:18px;margin-bottom:6px">📢 Notification History</h2>
+    return `<h2 style="font-size:18px;margin-bottom:6px">Notification History</h2>
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Every announcement we've published. Tap one to see the full content.</p>
       ${rows}`;
   },
 
   _lbData: null,
-  _lbTab: 'streaks',
+  _lbTab: 'overall',
 
   async loadLeaderboard() {
-    const tbody = document.querySelector('#leaderboard-table tbody');
-    const podium = document.getElementById('leaderboard-podium');
+    const rowsEl = document.getElementById('leaderboard-rows');
 
     // Wire up tab buttons once
     if (!this._lbTabsWired) {
@@ -3751,50 +3825,53 @@ const App = {
       this._lbData = await API.getLeaderboard();
       this._renderLeaderboard(this._lbData);
     } catch {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Failed to load leaderboard</td></tr>';
+      rowsEl.innerHTML = '<div class="lb-row-empty">Failed to load leaderboard</div>';
     }
   },
 
+  // Board shows a single dynamic metric column per active tab (Overall=XP,
+  // Streak, Time spent, Referrals) with medal ranks in-row — no separate
+  // podium — matching the real "iWrite Dashboard v1 (approved)" design.
+  // The rail's per-category breakdown is computed from all four sorts at
+  // once so "Your overall place" can show every rank simultaneously.
   _renderLeaderboard(rawData) {
-    const tbody = document.querySelector('#leaderboard-table tbody');
-    const podium = document.getElementById('leaderboard-podium');
-    const thead = document.getElementById('leaderboard-thead');
+    const rowsEl = document.getElementById('leaderboard-rows');
     const isTime = this._lbTab === 'time';
     const isReferrals = this._lbTab === 'referrals';
-    const isOverall = this._lbTab === 'overall' || !this._lbTab;
+    const isStreaks = this._lbTab === 'streaks';
+    const isOverall = !isTime && !isReferrals && !isStreaks;
 
-    // Toggle tab class on leaderboard view for mobile column visibility
     const lbView = document.getElementById('view-leaderboard');
     if (lbView) {
       lbView.classList.toggle('lb-tab-time', isTime);
-      lbView.classList.toggle('lb-tab-streaks', !isTime && !isReferrals && !isOverall);
+      lbView.classList.toggle('lb-tab-streaks', isStreaks);
       lbView.classList.toggle('lb-tab-referrals', isReferrals);
       lbView.classList.toggle('lb-tab-overall', isOverall);
     }
 
-    // Sort based on active tab, filter out zero-referral users for referrals tab
-    const filtered = isReferrals ? rawData.filter(e => (e.referralCount || 0) > 0) : rawData;
-    const sorted = [...filtered].sort((a, b) => {
-      if (isReferrals) return (b.referralCount || 0) - (a.referralCount || 0) || (b.totalWords || 0) - (a.totalWords || 0);
-      if (isTime) return (b.minutesWritten || 0) - (a.minutesWritten || 0) || (b.totalWords || 0) - (a.totalWords || 0);
-      if (isOverall) return (b.xp || 0) - (a.xp || 0) || (b.totalWords || 0) - (a.totalWords || 0);
-      return (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0);
-    });
+    const byXp = [...rawData].sort((a, b) => (b.xp || 0) - (a.xp || 0) || (b.totalWords || 0) - (a.totalWords || 0));
+    const byStreak = [...rawData].sort((a, b) => (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0));
+    const byTime = [...rawData].sort((a, b) => (b.minutesWritten || 0) - (a.minutesWritten || 0) || (b.totalWords || 0) - (a.totalWords || 0));
+    const byReferrals = rawData.filter(e => (e.referralCount || 0) > 0).sort((a, b) => (b.referralCount || 0) - (a.referralCount || 0) || (b.totalWords || 0) - (a.totalWords || 0));
+    const sorted = isReferrals ? byReferrals : isTime ? byTime : isStreaks ? byStreak : byXp;
 
-    // "Your overall place" rail — computed from the full (unpaginated) sorted list
-    const placeEl = document.getElementById('lb-your-place');
-    if (placeEl) {
-      const myIdx = this.user ? sorted.findIndex(e => e.id === this.user.id || e.name === this.user.name) : -1;
-      placeEl.textContent = myIdx >= 0 ? `#${myIdx + 1} of ${sorted.length}` : 'Not ranked yet';
-    }
+    const metricLabel = isReferrals ? 'Referrals' : isTime ? 'Time' : isStreaks ? 'Streak' : 'XP';
+    const kickerBy = isReferrals ? 'referrals' : isTime ? 'time written' : isStreaks ? 'streak' : 'XP';
+    const metricLabelEl = document.getElementById('lb-metric-label');
+    if (metricLabelEl) metricLabelEl.textContent = metricLabel;
+    const kickerEl = document.getElementById('lb-kicker');
+    if (kickerEl) kickerEl.textContent = `Top 100 · by ${kickerBy}`;
 
-    // Pagination — 10 per page, up to 100 ranks (per-tab, resets when the tab changes)
     const PER_PAGE = 10, MAX_RANKS = 100;
     const ranked = sorted.slice(0, MAX_RANKS);
     const totalPages = Math.max(1, Math.ceil(ranked.length / PER_PAGE));
     if (!this._lbPage || this._lbPageTab !== this._lbTab) { this._lbPage = 1; this._lbPageTab = this._lbTab; }
     if (this._lbPage > totalPages) this._lbPage = totalPages;
     const data = ranked.slice((this._lbPage - 1) * PER_PAGE, this._lbPage * PER_PAGE);
+    const pageOffset = (this._lbPage - 1) * PER_PAGE;
+
+    const rangeEl = document.getElementById('lb-range');
+    if (rangeEl) rangeEl.textContent = ranked.length ? `Ranks ${pageOffset + 1}–${Math.min(ranked.length, pageOffset + PER_PAGE)} of ${ranked.length}` : '';
 
     const pagerEl = document.getElementById('lb-pagination');
     if (pagerEl) {
@@ -3812,106 +3889,67 @@ const App = {
       }
     }
 
-    // Update thead
-    if (isReferrals) {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-referrals">Invites</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-level">Level</th></tr>`;
-    } else if (isTime) {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-time">Writing Time</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-level">Level</th></tr>`;
-    } else {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-streak">Streak</th><th class="lb-col-words">Words</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-time">Time</th><th class="lb-col-level">Level</th></tr>`;
-    }
+    const metricValue = (entry) => isReferrals
+      ? (entry.referralCount || 0).toLocaleString()
+      : isTime
+        ? this._formatWritingTime(entry.minutesWritten)
+        : isStreaks
+          ? `${entry.streak || 0} day${entry.streak === 1 ? '' : 's'}`
+          : `${(entry.xp || 0).toLocaleString()} XP`;
 
-    // Podium for top 3 — always the true top 3 of the full sorted list, shown on page 1 only
-    if (this._lbPage > 1) {
-      podium.innerHTML = '';
-    } else {
-    const top3 = sorted.slice(0, 3);
-    const podiumOrder = [top3[1], top3[0], top3[2]];
-    const medals = ['&#x1F948;', '&#x1F947;', '&#x1F949;'];
-    const podiumLabels = ['2nd', '1st', '3rd'];
-    const heights = ['160px', '200px', '140px'];
-
-    podium.innerHTML = podiumOrder.map((entry, i) => {
-      if (!entry) return '<div class="podium-slot empty"></div>';
-      const isFirst = podiumLabels[i] === '1st';
-      const avatarContent = entry.avatar
-        ? `<img src="${entry.avatar}?t=${entry.avatarUpdatedAt || 0}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-        : entry.name.charAt(0).toUpperCase();
-      const statLine = isReferrals
-        ? `&#x1F4E9; ${entry.referralCount || 0} invite${(entry.referralCount || 0) === 1 ? '' : 's'}`
-        : isTime
-          ? `&#x23F1;&#xFE0F; ${this._formatWritingTime(entry.minutesWritten)}`
-          : `${entry.streak ? '&#x1F525; ' + entry.streak + ' day streak' : 'No streak'}`;
+    rowsEl.innerHTML = data.map((entry, i) => {
+      const absRank = pageOffset + i;
+      const isTop3 = absRank < 3;
+      const rankLabel = absRank === 0 ? '&#x1F947;' : absRank === 1 ? '&#x1F948;' : absRank === 2 ? '&#x1F949;' : String(absRank + 1);
+      const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
+      const nameCell = entry.username
+        ? this.profileLink(entry.username, this.escapeHtml(entry.name), 'lb-name-link')
+        : this.escapeHtml(entry.name);
       return `
-        <div class="podium-slot">
-          ${isFirst ? '<div class="podium-crown">&#x1F451;</div>' : ''}
-          <div class="podium-avatar">${avatarContent}</div>
-          <div class="podium-name">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span> ' : ''}${this.escapeHtml(entry.name)}</div>
-          ${entry.username ? `<div class="podium-username">${this.profileLink(entry.username)}</div>` : ''}
-          <div class="podium-words">${statLine}</div>
-          <div class="podium-pedestal" style="height:${heights[i]}">
-            <span class="podium-medal">${medals[i]}</span>
-            <span class="podium-rank">${podiumLabels[i]}</span>
+        <div class="lb-row${isMe ? ' lb-row-me' : ''}">
+          <div class="lb-row-rank${isTop3 ? ' lb-row-rank-medal' : ''}">${rankLabel}</div>
+          <div class="lb-row-writer">
+            <div class="lb-row-avatar">${entry.name.charAt(0).toUpperCase()}</div>
+            <div class="lb-row-writer-info">
+              <div class="lb-row-name">${nameCell}${isMe ? ' <span class="lb-you">YOU</span>' : ''}${entry.plan === 'premium' ? ' <span class="lb-pro-badge">PRO</span>' : ''}</div>
+              <div class="lb-row-level">Level ${this.calcXPLevel(entry.xp || 0).level}</div>
+            </div>
           </div>
+          <div class="lb-row-metric">${metricValue(entry)}</div>
         </div>`;
     }).join('');
+
+    if (!data.length) {
+      rowsEl.innerHTML = '<div class="lb-row-empty">No writers yet. Be the first!</div>';
     }
 
-    // Full table — rank numbers are absolute (account for the current page's offset)
-    const pageOffset = (this._lbPage - 1) * PER_PAGE;
-    tbody.innerHTML = data.map((entry, i) => {
-      const absRank = pageOffset + i;
-      const rankEmoji = absRank === 0 ? '&#x1F947;' : absRank === 1 ? '&#x1F948;' : absRank === 2 ? '&#x1F949;' : `${absRank + 1}`;
-      const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
-      const timeStr = this._formatWritingTime(entry.minutesWritten);
+    // Rail: your place across all four categories at once
+    const myIdxIn = (list) => this.user ? list.findIndex(e => e.id === this.user.id || e.name === this.user.name) : -1;
+    const overallIdx = myIdxIn(byXp), streakIdx = myIdxIn(byStreak), timeIdx = myIdxIn(byTime), refIdx = myIdxIn(byReferrals);
 
-      const nameCell = entry.username
-        ? this.profileLink(entry.username, `${this.escapeHtml(entry.name)} <span class="lb-username">@${this.escapeHtml(entry.username)}</span>`, 'lb-name-link')
-        : this.escapeHtml(entry.name);
-      const youBadge = isMe ? ' <span class="lb-you">YOU</span>' : '';
+    const rankEl = document.getElementById('lb-your-rank');
+    const ofEl = document.getElementById('lb-your-of');
+    const noteEl = document.getElementById('lb-your-note');
+    if (rankEl) rankEl.textContent = overallIdx >= 0 ? `#${overallIdx + 1}` : '—';
+    if (ofEl) ofEl.textContent = overallIdx >= 0 ? `of ${byXp.length.toLocaleString()}` : '';
+    if (noteEl) noteEl.textContent = overallIdx < 0 ? 'Complete a session to get ranked.' : this._lbPlaceNote(overallIdx);
 
-      if (isReferrals) {
-        return `
-          <tr class="${isMe ? 'leaderboard-me' : ''}">
-            <td class="lb-rank">${rankEmoji}</td>
-            <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-            <td class="lb-name">${nameCell}${youBadge}</td>
-            <td class="lb-col-referrals"><strong>${entry.referralCount || 0}</strong></td>
-            <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
-            <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-            <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-          </tr>`;
-      }
-      if (isTime) {
-        return `
-          <tr class="${isMe ? 'leaderboard-me' : ''}">
-            <td class="lb-rank">${rankEmoji}</td>
-            <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-            <td class="lb-name">${nameCell}${youBadge}</td>
-            <td class="lb-col-time"><strong>${timeStr}</strong></td>
-            <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
-            <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-            <td class="lb-col-sessions">${entry.totalSessions || 0}</td>
-            <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-          </tr>`;
-      }
-      return `
-        <tr class="${isMe ? 'leaderboard-me' : ''}">
-          <td class="lb-rank">${rankEmoji}</td>
-          <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-          <td class="lb-name">${nameCell}${youBadge}</td>
-          <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-          <td class="lb-col-words"><strong>${(entry.totalWords || 0).toLocaleString()}</strong></td>
-          <td class="lb-col-sessions">${entry.totalSessions || 0}</td>
-          <td class="lb-col-time">${timeStr}</td>
-          <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-        </tr>`;
-    }).join('');
-
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">No writers yet. Be the first!</td></tr>';
-      podium.innerHTML = '';
+    const breakdownRow = (label, idx, list, fmt) => `<div class="lb-rail-row"><span>${label}</span><span class="lb-rail-row-value">${idx >= 0 ? '#' + (idx + 1) + ' · ' + fmt(list[idx]) : '—'}</span></div>`;
+    const breakdownEl = document.getElementById('lb-rail-breakdown');
+    if (breakdownEl) {
+      breakdownEl.innerHTML = [
+        breakdownRow('Overall', overallIdx, byXp, e => (e.xp || 0).toLocaleString() + ' XP'),
+        breakdownRow('Streak', streakIdx, byStreak, e => (e.streak || 0) + ' days'),
+        breakdownRow('Time spent', timeIdx, byTime, e => this._formatWritingTime(e.minutesWritten)),
+        breakdownRow('Referrals', refIdx, byReferrals, e => (e.referralCount || 0))
+      ].join('');
     }
+  },
+
+  _lbPlaceNote(idx) {
+    if (idx === 0) return "You're #1 — stay ahead of the pack.";
+    if (idx < 10) return "You're in the top ten.";
+    return `${idx} writer${idx === 1 ? '' : 's'} ahead of you.`;
   },
 
   _formatWritingTime(minutes) {
@@ -5055,20 +5093,24 @@ const App = {
     const avatarUsernameEl = document.getElementById('profile-avatar-username');
     if (avatarUsernameEl) avatarUsernameEl.textContent = `@${this.user.username || ''}`;
 
-    // Plan info on right side
+    // Plan row — highlighted box below the avatar block, matching the
+    // design's "Free plan · N early completes left / Go Pro" treatment.
     const planInfoEl = document.getElementById('profile-plan-info');
     if (planInfoEl) {
       const isPro = this.user.plan === 'premium';
       if (isPro) {
-        let expiryText = '';
-        if (this.user.planExpiresAt === 'infinite') {
-          expiryText = 'Lifetime';
-        } else if (this.user.planExpiresAt) {
+        let expiryText = 'Lifetime';
+        if (this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite') {
           expiryText = `Expires ${new Date(this.user.planExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
         }
-        planInfoEl.innerHTML = `<span class="profile-plan-badge pro">PRO</span><span class="profile-plan-expiry">${expiryText}</span>`;
+        planInfoEl.innerHTML = `<span>Pro plan · ${expiryText}</span>`;
       } else {
-        planInfoEl.innerHTML = `<span class="profile-plan-badge free">FREE</span><span class="profile-plan-expiry">Free forever</span>`;
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const used = (this.user.earlyCompletesMonth === currentMonth) ? (this.user.earlyCompletes || 0) : 0;
+        const left = Math.max(0, 3 - used);
+        planInfoEl.innerHTML = `<span>Free plan · ${left} early complete${left === 1 ? '' : 's'} left</span><button class="pill pill-a" id="settings-go-pro-btn">Go Pro</button>`;
+        const goProBtn = document.getElementById('settings-go-pro-btn');
+        if (goProBtn) goProBtn.onclick = () => this.openPricing();
       }
     }
 
@@ -5838,7 +5880,6 @@ const App = {
           <div class="upgrade-provider-price upgrade-provider-price-payme">
             ${this._paymentLogo('payme')}
             <span>${this._formatSom(payme)}</span>
-            <em>${this._paymeValueLabel(duration)}</em>
           </div>
         </div>
       </button>`;
@@ -7011,8 +7052,8 @@ const App = {
     menu.innerHTML = `
       ${isFailed ? '' : `<button data-action="move"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Move to folder</button>`}
       ${isFailed ? '' : `<button data-action="publish"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M5 19h14"/></svg> Publish to Stories</button>`}
-      ${isFailed ? '' : `<button data-action="pin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"/><path d="M4.93 10.93l2.83 2.83"/><path d="M19.07 10.93l-2.83 2.83"/><path d="M8 16h8"/><path d="M12 16v6"/><circle cx="12" cy="10" r="2"/></svg> ${doc.pinned ? 'Unpin' : 'Pin to top'}${!isPro ? ' <span style="color:#f59e0b;font-size:10px">PRO</span>' : ''}</button>`}
-      ${isFailed ? '' : `<button data-action="export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Export PDF${!isPro ? ' <span style="color:#f59e0b;font-size:10px">PRO</span>' : ''}</button>`}
+      ${isFailed ? '' : `<button data-action="pin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"/><path d="M4.93 10.93l2.83 2.83"/><path d="M19.07 10.93l-2.83 2.83"/><path d="M8 16h8"/><path d="M12 16v6"/><circle cx="12" cy="10" r="2"/></svg> ${doc.pinned ? 'Unpin' : 'Pin to top'}${!isPro ? ' <span style="color:var(--accent);font-size:10px">PRO</span>' : ''}</button>`}
+      ${isFailed ? '' : `<button data-action="export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Export PDF${!isPro ? ' <span style="color:var(--accent);font-size:10px">PRO</span>' : ''}</button>`}
       ${isFailed ? '' : `<button data-action="export-md"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Markdown</button>`}
       ${isFailed ? '' : `<button data-action="export-txt"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Text</button>`}
       ${isFailed ? '' : `<button data-action="share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16,6 12,2 8,6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Share</button>`}
@@ -7511,7 +7552,7 @@ const App = {
       if (!el.querySelector('.pro-lock-dynamic')) {
         const badge = document.createElement('span');
         badge.className = 'pro-lock-dynamic';
-        badge.style.cssText = 'position:absolute;top:-6px;right:-6px;font-size:8px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 4px;border-radius:6px;pointer-events:none;z-index:2';
+        badge.style.cssText = 'position:absolute;top:-6px;right:-6px;font-size:8px;font-weight:700;background:var(--accent);color:#fff;padding:1px 4px;border-radius:6px;pointer-events:none;z-index:2';
         badge.textContent = 'PRO';
         el.appendChild(badge);
       }
@@ -7783,7 +7824,7 @@ const App = {
     if (!banner) {
       banner = document.createElement('div');
       banner.id = 'maintenance-banner';
-      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.2)';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:var(--accent);color:#fff;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.2)';
       document.body.prepend(banner);
     }
 

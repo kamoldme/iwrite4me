@@ -104,7 +104,9 @@ html.dark {
   --h2: rgba(53, 180, 143, 0.42); --h3: rgba(53, 180, 143, 0.66); --h4: #35b48f;
 
   --banner-gradient: linear-gradient(120deg,#0d3b2e 0%,#14563f 48%,#08201a 100%);
-  --hero-paper: #1a1a1a;
+  /* Hero paper stays the light illustration tone in dark mode too — it's a
+     fixed parchment image, not a themed surface (see .dashboard-hero below). */
+  --hero-paper: #eee6de;
 }
 
 body { font-family: var(--font-sans); }
@@ -126,7 +128,13 @@ h1, h2, h3, .dashboard-hero-text h1, .docs-header h1, .docs-header h2,
 .heatmap-cell[data-level="2"], .heatmap-legend-cell[data-level="2"] { background: var(--h2) !important; }
 .heatmap-cell[data-level="3"], .heatmap-legend-cell[data-level="3"] { background: var(--h3) !important; }
 .heatmap-cell[data-level="4"], .heatmap-legend-cell[data-level="4"] { background: var(--h4) !important; }
-.heatmap-cell { width: 100%; aspect-ratio: 1; } /* rule: heatmap cells must be fluid, never fixed px */
+/* Cells are flex children of .heatmap-row (style.css) — keep the legacy
+   fixed 27x27 sizing rather than width:100%, which stretched each cell to
+   fill the whole row (they'd stack into full-width bars instead of a grid). */
+.heatmap-cell { flex-shrink: 0; }
+/* 12 weeks (see _renderHeatmap) fits the card without scrolling — never
+   show a scrollbar even if a narrower viewport would otherwise need one. */
+.heatmap-scroll { overflow-x: hidden; }
 .heatmap-cell:hover { box-shadow: 0 0 6px var(--accent-glow); }
 
 /* ---------- 4. Nav / sidebar base surface (component detail in shell layer below) ---------- */
@@ -263,6 +271,13 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 .sidebar-collapse-chevron:hover { background: var(--hover-bg); color: var(--text-primary); }
 .app-container.sidebar-collapsed .sidebar-header { justify-content: center; padding: 0; }
 .app-container.sidebar-collapsed .sidebar-header > div { display: none; }
+.app-container.sidebar-collapsed .sidebar-logo-btn { gap: 0; }
+.app-container.sidebar-collapsed .sidebar-logo-btn .logo { display: none; }
+
+/* .main-content is already a flex sibling of .sidebar (.app-container is
+   display:flex) — the legacy margin-left:260px (style.css) was left over
+   from when the sidebar was position:fixed and doubled the real gap. */
+.main-content { margin-left: 0 !important; }
 
 .sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 10px; }
 .sidebar-nav-item {
@@ -293,6 +308,7 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 .app-container.sidebar-collapsed .sidebar-nav-item {
   font-size: 0;
   justify-content: center;
+  gap: 0;
   width: 44px;
   padding: 10px;
 }
@@ -313,7 +329,7 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 .user-info { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; }
 .user-info:hover { background: var(--hover-bg); }
 .user-avatar { width: 33px; height: 33px; border-radius: 50%; }
-.app-container.sidebar-collapsed .user-info { padding: 8px 5px; justify-content: center; }
+.app-container.sidebar-collapsed .user-info { padding: 8px 5px; justify-content: center; gap: 0; }
 .app-container.sidebar-collapsed .user-details { display: none; }
 
 /* Presence / pulse dots */
@@ -322,7 +338,10 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 
 /* ---------- 9. Dashboard ---------- */
 
-/* Hero — full-bleed illustration, no scrim, paper-matched card background */
+/* Hero — full-bleed illustration, fixed paper-matched card background and
+   dark ink text in every theme (the illustration is a fixed light plate,
+   not a themed surface — this is the simple version that actually renders
+   correctly; the dark-mode invert/scrim experiments broke the image). */
 .dashboard-hero {
   background: var(--hero-paper);
   background-image: url('/media/hero-agora-c.png');
@@ -339,11 +358,18 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
   gap: 14px;
 }
 .dashboard-hero::before { display: none; }
-/* Hero always sits on the same fixed illustration paper tone regardless of
-   theme (README: "matches the illustration's paper") — text stays ink-dark
-   even in dark mode rather than flipping to white on a light image. */
-.dashboard-hero, .dashboard-hero-text h1, .dashboard-hero-sub, .online-indicator {
+.dashboard-hero, .dashboard-hero-text h1 {
   color: #3b352a;
+}
+/* Dark mode uses its own purpose-made illustration (dark ground, white
+   linework) instead of inverting the light parchment plate. */
+html.dark .dashboard-hero {
+  background: #0a0a0a;
+  background-image: url('/media/hero-agora-dark.png');
+  background-position: 100% 60%;
+}
+html.dark .dashboard-hero, html.dark .dashboard-hero-text h1 {
+  color: var(--text-primary);
 }
 .dashboard-hero-kicker {
   display: block;
@@ -450,7 +476,7 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 }
 .td-newprompt-btn:hover { background: var(--accent-glow); }
 .td-sticky p { font-style: italic; font-size: 21px; color: var(--text-primary); line-height: 1.4; margin: 0; padding-right: 28px; }
-.td-sticky-feather { position: absolute; right: 18px; bottom: 16px; font-size: 20px; opacity: .4; }
+.td-sticky-feather { position: absolute; right: 18px; bottom: 16px; font-size: 40px; opacity: .5; }
 
 /* Recent Sessions / Achievements — one card, two tabs, matched to Tree height */
 .dash-panel-tabs { display: flex; flex-direction: column; min-height: 0; }
@@ -543,10 +569,11 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .doc-icon.doc-icon-draft { background: var(--hover-bg); color: var(--text-muted); }
 .doc-icon.doc-icon-dangerous { background: rgba(192, 87, 63, .12); color: var(--danger); }
 
-.doc-mode-badge { font-family: var(--font-mono); letter-spacing: .06em; }
+.doc-mode-badge { font-family: var(--font-mono); letter-spacing: .06em; color: #fff; }
 .doc-mode-badge.doc-mode-time { background: var(--info); }
 .doc-mode-badge.doc-mode-dangerous { background: var(--danger); }
 .doc-mode-badge.doc-mode-zen { background: var(--accent); }
+.doc-mode-badge.doc-mode-research { background: var(--warning); }
 
 .folder-card {
   background: var(--bg-card);
@@ -579,7 +606,7 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .upgrade-trial-link { color: var(--accent); }
 
 /* ---------- 12. Support ---------- */
-#view-support .dashboard-header h1 { font-size: 28px; letter-spacing: -.8px; }
+#view-support .dashboard-header h1 { font-size: 32px; letter-spacing: -.8px; }
 .support-form {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -658,6 +685,14 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .story-author-copy span { color: var(--text-muted); }
 .story-author-avatar { background: var(--accent-soft); color: var(--accent); }
 
+/* Both rail cards (Most followed, Top this week) now share one wrapper so
+   grid auto-placement can't split them across columns — the wrapper is the
+   sticky grid-column-2 item; legacy sticky/margin on the individual panels
+   (style.css) is reset so they just stack inside it. */
+.stories-rail { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 16px; align-self: start; }
+.stories-layout { margin-top: 20px; }
+.stories-mode-feed .stories-popular-panel { position: static; margin-inline-end: 0; }
+
 /* Styling lives on .stories-popular-card (only rendered when there's data),
    not on the outer .stories-popular-panel aside — otherwise the empty aside
    shows as a floating box with no content. */
@@ -677,8 +712,15 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .stories-topweek-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 5px; line-height: 1.35; }
 .stories-topweek-by { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
 
-/* ---------- 15. Leaderboard ---------- */
-.lb-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+/* ---------- 15. Leaderboard — 1:1 with iWrite Dashboard v1 (approved).dc.html:
+   single dynamic metric column per tab (no multi-column table, no separate
+   podium — medals sit in the rank cell), rail shows "Your overall place"
+   plus a live per-category breakdown computed across all four sorts.
+   ("Movers this week" from the mockup is omitted — no real day-over-day
+   rank history exists to back it, and fabricating deltas isn't acceptable.) ---------- */
+.lb-kicker { font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); }
+.lb-page-title { margin: 8px 0 18px; font-family: var(--font-display); font-weight: 900; font-size: 40px; letter-spacing: -1.4px; line-height: 1; color: var(--text-primary); }
+.lb-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; background: none; padding: 0; border-radius: 0; width: auto; }
 .lb-tab {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -689,14 +731,30 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .lb-tab:hover:not(.active) { border-color: var(--border-hover); color: var(--text-primary); }
 
 .leaderboard-layout { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(232px, 1fr); gap: 16px; align-items: start; }
-.leaderboard-container, .leaderboard-podium, .leaderboard-table-wrap {
-  background: var(--bg-card);
+.lb-board-card { min-width: 0; border: 1px solid var(--border); border-radius: 24px; background: var(--bg-card); box-shadow: var(--shadow); overflow: hidden; }
+.lb-board-head {
+  display: grid; grid-template-columns: 44px minmax(0,1.6fr) minmax(0,0.85fr); gap: 12px;
+  padding: 13px 22px; border-bottom: 1px solid var(--border); background: var(--bg-elevated);
+  font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted);
 }
-.leaderboard-container { border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow); overflow: hidden; }
-.leaderboard-table th { color: var(--text-muted); font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; border-bottom: 1px solid var(--border); background: var(--bg-elevated); }
-.leaderboard-table td { border-bottom: 1px solid var(--border); }
-.leaderboard-me td { background: var(--accent-soft); }
-.lb-pagination { display: flex; justify-content: center; gap: 6px; padding: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.lb-board-metric-th { text-align: right; }
+.lb-row {
+  display: grid; grid-template-columns: 44px minmax(0,1.6fr) minmax(0,0.85fr); gap: 12px; align-items: center;
+  padding: 13px 22px; border-bottom: 1px solid var(--border);
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-row-me { background: var(--accent-soft); }
+.lb-row-rank { display: flex; align-items: center; height: 34px; font-family: var(--font-mono); font-weight: 500; font-size: 14px; letter-spacing: .02em; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.lb-row-rank-medal { font-size: 19px; color: var(--text-primary); }
+.lb-row-writer { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lb-row-avatar { width: 32px; height: 32px; flex: none; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.lb-row-name { font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-row-level { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); }
+.lb-row-metric { text-align: right; font-family: var(--font-mono); font-size: 13.5px; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lb-row-empty { padding: 40px 22px; text-align: center; color: var(--text-muted); }
+.lb-board-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 22px; flex-wrap: wrap; }
+.lb-range { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.lb-pagination { display: flex; gap: 6px; flex-wrap: wrap; }
 .lb-page-btn {
   width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--bg-elevated);
@@ -709,15 +767,24 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .lb-rail-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 18px 20px;
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  padding: 22px;
 }
-.lb-rail-card h3 { font-size: 13px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: 8px; }
-#lb-your-place { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--accent); }
-.lb-rail-note { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+.lb-rail-kicker { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); }
+.lb-rail-rank-row { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.lb-rail-rank-num { font-family: var(--font-display); font-weight: 900; font-size: 52px; line-height: 1; letter-spacing: -2.5px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.lb-rail-rank-of { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.lb-rail-note { font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
+.lb-rail-divider { height: 1px; background: var(--border); margin: 18px 0; }
+.lb-rail-breakdown { display: flex; flex-direction: column; gap: 12px; }
+.lb-rail-row { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--text-secondary); }
+.lb-rail-row-value { font-family: var(--font-mono); color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lb-rail-static-note { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; margin: 0; }
 
 @media (max-width: 900px) {
   .leaderboard-layout { grid-template-columns: 1fr; }
+  .lb-board-head, .lb-row { grid-template-columns: 36px minmax(0,1fr) auto; }
 }
 
 /* ---------- 16. Friends ---------- */
@@ -769,7 +836,7 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 }
 .friend-row .dots:hover { background: var(--hover-bg); color: var(--text-primary); }
 
-.friends-sort-row { display: flex; gap: 8px; margin-top: 12px; }
+.friends-sort-row { display: flex; gap: 8px; margin-bottom: 12px; }
 .friends-sort-btn {
   background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 9999px;
   padding: 6px 14px; font-size: 12px;
@@ -794,27 +861,123 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 
 @media (max-width: 900px) { .friends-split-layout { grid-template-columns: 1fr; } }
 
-/* ---------- 17a. New Session modal: mode picker (no source mockup screen for
-   this — colors extend the mode palette already established for session rows
-   / folder glyphs: Zen=accent, Time=warn, Dangerous=danger, Research=info) ---------- */
+/* ---------- 17a. New Session modal — literal 1:1 rebuild of the picker
+   screen in Writing Session.dc.html: centered title + close button, a
+   960px-wide row (2x2 full-bleed image cards + a 270px live detail panel),
+   then a separate bottom bar (duration chips + summary/start). Real fields
+   the mockup doesn't have (topic prompt, target words, danger-variant,
+   idle/tab timers) are folded in as their own rows rather than dropped. ---------- */
+.mp-shell {
+  width: 100%; max-width: 1080px; max-height: 94vh; overflow-y: auto;
+  padding: 20px 22px; border-radius: 26px; background: var(--bg-card); box-shadow: var(--shadow-lg, var(--shadow));
+}
+.mp-topbar { display: flex; align-items: center; justify-content: center; position: relative; }
+.mp-title {
+  margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(20px, 2.6vw, 28px);
+  line-height: 1; letter-spacing: -1.2px; color: var(--text-primary); text-align: center;
+}
+.mp-title-accent { color: var(--accent); }
+.mp-close-btn { position: absolute; right: 0; width: 34px; height: 34px; }
+
+.mp-body {
+  position: relative; max-width: 960px; margin: 36px auto 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start;
+}
+
+/* Mode cards — full-bleed image with a bottom gradient scrim and the
+   figure/mode name overlaid in white, exactly like the mockup. Nothing is
+   chosen on open (#mode-selector has no .has-chosen yet): hovering any card
+   previews it full-color and blurs the rest. Once a mode IS chosen
+   (.has-chosen), every other card is permanently grayscale — hovering them
+   no longer restores color, it just scales/lightens slightly. */
+.mode-selector { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 18px; }
 .mode-option {
-  background: var(--bg-card);
-  border-radius: 14px;
+  position: relative; width: 100%; aspect-ratio: 1.5; border: none; padding: 0; text-align: left;
+  border-radius: 20px; overflow: hidden; cursor: pointer; background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  transition: transform .4s cubic-bezier(.4,0,.2,1), box-shadow .4s ease, filter .4s ease;
 }
-.mode-option:hover { border-color: var(--accent-glow); box-shadow: var(--shadow); }
-.mode-option h4 { font-family: var(--font-display); letter-spacing: -.2px; }
-.mode-option.active {
-  background: var(--accent); color: #fff; border-color: transparent; box-shadow: 0 4px 20px var(--accent-glow);
+.mode-option img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transition: transform .6s cubic-bezier(.4,0,.2,1);
 }
-.mode-option.active[data-mode="normal"] {
-  background: var(--warning); box-shadow: 0 4px 20px rgba(192, 138, 58, .3);
+.mode-card-scrim { position: absolute; inset: 0; border-radius: 20px; background: linear-gradient(180deg, transparent 38%, rgba(0,0,0,.6) 100%); }
+.mode-card-badge {
+  display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
+  color: #fff; padding: 4px 12px; border-radius: 9999px;
 }
-.mode-option.active.dangerous-opt {
-  background: var(--danger); box-shadow: 0 4px 20px var(--danger-soft);
+.mode-card-text { position: absolute; left: 14px; right: 14px; bottom: 13px; overflow: hidden; }
+.mode-card-figure {
+  font-family: var(--font-display); font-weight: 900; font-size: 18px; letter-spacing: -.6px; color: #fff;
+  text-shadow: 0 2px 12px rgba(0,0,0,.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.mode-option.active.research-opt {
-  background: var(--info); box-shadow: 0 4px 20px rgba(74, 111, 156, .3);
+.mode-card-name {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(255,255,255,.8); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.mode-option.active { box-shadow: var(--shadow-lg, var(--shadow)), 0 0 0 2px var(--accent); }
+.mode-option.active .mode-card-badge { display: block; background: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
+.mode-option[data-mode="zen"].active { box-shadow: var(--shadow-lg, var(--shadow)), 0 0 0 2px var(--info); }
+.mode-option[data-mode="zen"].active .mode-card-badge { background: var(--info); box-shadow: 0 0 16px rgba(74, 111, 156, .4); }
+.mode-option[data-mode="dangerous"].active { box-shadow: var(--shadow-lg, var(--shadow)), 0 0 0 2px var(--danger); }
+.mode-option[data-mode="dangerous"].active .mode-card-badge { background: var(--danger); box-shadow: 0 0 16px var(--danger-soft); }
+.mode-option[data-mode="duel"].active { box-shadow: var(--shadow-lg, var(--shadow)), 0 0 0 2px var(--warning); }
+.mode-option[data-mode="duel"].active .mode-card-badge { background: var(--warning); box-shadow: 0 0 16px rgba(192, 138, 58, .4); }
+
+/* Before anything is chosen: hovering a card previews full color + scale,
+   every other card blurs/dims. */
+.mode-selector:not(.has-chosen) .mode-option:hover { filter: none !important; transform: scale(1.035); z-index: 2; box-shadow: var(--shadow-lg, var(--shadow)); }
+.mode-selector:not(.has-chosen) .mode-option:hover img { transform: scale(1.07); }
+.mode-selector:not(.has-chosen):hover .mode-option:not(:hover) { filter: blur(2.5px) brightness(.65) !important; transform: scale(.98); }
+
+/* Once chosen: every non-active card is permanently grayscale, hover or
+   not — it just scales up a touch and lightens slightly on hover. */
+.mode-selector.has-chosen .mode-option:not(.active) { filter: grayscale(.9) brightness(.6); }
+.mode-selector.has-chosen .mode-option:not(.active):hover { filter: grayscale(.9) brightness(.72) !important; transform: scale(1.02); }
+.mode-selector.has-chosen .mode-option.active:hover { transform: scale(1.02); box-shadow: var(--shadow-lg, var(--shadow)), 0 0 0 2px var(--accent); }
+
+.mp-detail {
+  padding: 0 0 0 18px; margin-left: -1px; border-left: 1px solid var(--border);
+  align-self: stretch; display: flex; flex-direction: column; min-height: 0; overflow-y: auto;
+}
+.mode-detail-placeholder { margin: 0; font-size: 13px; color: var(--text-muted); }
+.mp-config-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+.mp-config-label-hint { display: block; text-transform: none; letter-spacing: normal; font-family: var(--font-sans); color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+
+.mp-bottom {
+  max-width: 960px; margin: 20px auto 0; padding: 0; border-top: 1px solid var(--border); padding-top: 18px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, auto); gap: 18px; align-items: center;
+}
+.mp-bottom.mp-bottom-solo { grid-template-columns: 1fr; justify-items: center; }
+.mp-bottom.mp-bottom-solo .mp-bottom-right { width: 100%; max-width: 320px; }
+.mp-bottom-left { min-width: 0; }
+.mp-goal-line { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+.mp-bottom-right { display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; }
+.mp-summary { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+.mp-start-btn {
+  height: 46px; padding: 0 28px; font-size: 12.5px; border-radius: 9999px; border: none; cursor: pointer;
+  background: var(--accent); color: #fff; font-weight: 700; box-shadow: 0 4px 16px var(--accent-glow);
+  transition: background .2s, transform .2s;
+}
+.mp-start-btn:hover { transform: translateY(-1px); }
+.mp-start-btn.btn-danger-solid { background: var(--danger); box-shadow: 0 4px 16px var(--danger-soft); }
+
+@media (max-width: 900px) {
+  .mp-body { grid-template-columns: 1fr; }
+  .mp-bottom { grid-template-columns: 1fr; }
+}
+
+.mode-detail-panel { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+.mode-detail-tag {
+  display: inline-flex; font-family: var(--font-mono); font-size: 9px; letter-spacing: .16em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 9999px; border: 1px solid; margin-bottom: 10px;
+}
+.mode-detail-figure { margin: 0; font-family: var(--font-display); font-weight: 900; font-size: 21px; letter-spacing: -.6px; color: var(--text-primary); }
+.mode-detail-kicker { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-top: 4px; }
+.mode-detail-blurb { margin: 10px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); }
+.mode-detail-rules { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.mode-detail-rule { display: flex; gap: 8px; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.5; color: var(--text-secondary); }
 
 /* ---------- 17. Settings: Appearance ---------- */
 .appearance-theme-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -838,6 +1001,49 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 }
 .appearance-toggle.on { background: var(--accent); border-color: var(--accent); }
 .appearance-toggle.on::after { transform: translateX(20px); }
+
+/* Community: latest/following/most-read sort row removed from view (kept in
+   DOM/JS — .storySort still defaults to 'newest' — just not user-facing). */
+#stories-feed-sort-row { display: none !important; }
+
+/* Upgrade: Free and Pro cards equal width (mockup gave Pro 1.18fr vs .82fr). */
+.upgrade-cards { grid-template-columns: 1fr 1fr !important; }
+
+/* Settings: Invite Friends is column 1's last card — grow it to fill the
+   column so it reaches Danger zone at the same height as column 2. */
+#referral-section { flex: 1; display: flex; flex-direction: column; }
+
+/* ---------- 17z. PRO badges — unify every "PRO" tag to the platform's
+   accent green instead of the old gold/orange gradient (nav, leaderboard,
+   upgrade heading, duel modal, timer/session-config gates, folder menu). ---------- */
+.pro-badge-inline, .pro-nav-badge, .lb-pro-badge, .duel-mm-pro-badge,
+.timer-pro-badge, .pro-lock-dynamic, .pro-feature-badge {
+  background: var(--accent) !important;
+  color: #fff !important;
+}
+.upgrade-pro-badge {
+  background: var(--accent) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Change Password is column 2's last card — grow it to fill the column so
+   both settings columns end at the same height (Danger zone row below). */
+#change-password-section { flex: 1; display: flex; flex-direction: column; }
+
+/* ---------- 17a. Settings: plan row — real "Free plan · N early completes
+   left / Go Pro" box below the avatar card. ---------- */
+.settings-plan-row {
+  margin-top: 18px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px;
+  background: var(--bg-elevated); display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary);
+}
+.settings-plan-row .pill-a {
+  height: 30px; padding: 0 14px; font-size: 9.5px; border-radius: 9999px; border: none; cursor: pointer;
+  background: var(--accent); color: #fff; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+}
+.settings-plan-row .pill-a:hover { background: var(--accent-hover, var(--accent)); }
 
 /* Community hero */
 .community-hero {
@@ -875,4 +1081,105 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .community-hero-actions .btn-ghost:hover { border-color: var(--accent-glow); color: var(--accent); }
 .community-hero-illustration { width: 180px; flex-shrink: 0; object-fit: contain; }
 html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) brightness(1.15); }
+
+/* ---------- 18. Writing session / editor chrome — from Writing Session.dc.html.
+   Icon buttons that used to sit loose in .editor-toolbar-right are now behind
+   one "session tools" kebab; the DOM buttons still exist (hidden) so every
+   existing handler / Pro-gate / dropdown keeps working — rows just forward. ---------- */
+.editor-toolbar { background: var(--bg-primary); padding: 12px 24px; }
+.editor-back-btn { border-radius: 10px; background: transparent; }
+.editor-title-input { font-family: var(--font-sans); }
+.editor-mode-badge {
+  font-family: var(--font-mono); letter-spacing: .16em; border-radius: 9999px;
+  padding: 4px 10px; border: 1px solid; background: transparent !important;
+}
+.editor-mode-badge.normal { color: var(--accent); border-color: var(--accent); background: var(--bg-card) !important; }
+.editor-mode-badge.zen { color: var(--info); border-color: var(--info); background: var(--bg-card) !important; }
+.editor-mode-badge.dangerous { color: var(--danger); border-color: var(--danger); background: var(--bg-card) !important; }
+.editor-mode-badge.duel { color: var(--warning); border-color: var(--warning); background: var(--bg-card) !important; }
+.editor-mode-badge.research { color: var(--info); border-color: var(--info); background: var(--bg-card) !important; }
+.editor-timer { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.editor-add-time-btn { border-radius: 9999px; font-family: var(--font-mono); }
+
+.tools-menu-wrap { position: relative; }
+.tool {
+  width: 32px; height: 32px; flex: none; display: grid; place-items: center;
+  border: 1px solid transparent; border-radius: 10px; background: transparent;
+  color: var(--text-secondary); cursor: pointer; transition: all .2s;
+}
+.tool:hover { background: var(--hover-bg); color: var(--text-primary); border-color: var(--border); }
+.tool svg { width: 15px; height: 15px; stroke-width: 1.7; }
+.tools-menu {
+  position: fixed; z-index: 99999; width: 236px; padding: 8px;
+  border: 1px solid var(--border); border-radius: 16px;
+  background: var(--bg-card); box-shadow: var(--shadow-lg, var(--shadow));
+}
+.menu-row {
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 9px 12px; border: none; border-radius: 9px; background: none;
+  color: var(--text-primary); font-size: 13px; font-family: var(--font-sans);
+  text-align: left; cursor: pointer;
+}
+.menu-row:hover { background: var(--hover-bg); }
+.menu-row svg { width: 15px; height: 15px; flex: none; stroke-width: 1.7; color: var(--text-muted); }
+.menu-row-label { flex: 1; }
+.menu-row-badge {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em;
+  padding: 2px 6px; border-radius: 9999px; background: var(--accent-soft); color: var(--accent);
+}
+.menu-row-static { cursor: default; }
+.menu-row-static:hover { background: none; }
+.menu-row-input {
+  width: 64px; height: 26px; padding: 0 8px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--bg-elevated); color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; text-align: right;
+}
+.menu-row-zoom { display: flex; gap: 4px; }
+.menu-row-zoom-btn {
+  width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-secondary); font-weight: 700; cursor: pointer; line-height: 1;
+}
+.menu-row-zoom-btn:hover { background: var(--hover-bg); color: var(--text-primary); }
+
+/* Position the kebab dropdown just under its trigger — JS only toggles
+   display; positioning is fixed relative to the toolbar's right edge. */
+#editor-tools-menu { top: 52px; right: 18px; }
+
+/* Session-elapsed hairline — full viewport width, fixed to the very top,
+   above the toolbar (Writing Session.dc.html: the fixed 3px top track). */
+.editor-elapsed-track {
+  position: fixed; left: 0; right: 0; top: 0; height: 3px;
+  background: var(--border); z-index: 2600;
+}
+.editor-elapsed-fill {
+  height: 100%; width: 0%; background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow); transition: width 1s linear;
+}
+.editor-elapsed-fill.tone-danger { background: var(--danger); box-shadow: 0 0 10px var(--danger-soft); }
+.editor-elapsed-fill.tone-info { background: var(--info); box-shadow: 0 0 10px rgba(74, 111, 156, .3); }
+.editor-elapsed-fill.tone-warning { background: var(--warning); box-shadow: 0 0 10px rgba(192, 138, 58, .3); }
+
+/* Bottom status bar — full-width chrome strip, not a small corner box
+   (Writing Session.dc.html: fixed left:0 right:0 bottom:0, words/pace on
+   the left, saved-state pushed to the right with margin-left:auto). */
+.status-bar {
+  left: 0; right: 0; border-radius: 0; border-right: none;
+  padding: 10px 22px; justify-content: flex-start;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 11px;
+  color: var(--text-secondary);
+}
+.status-bar #editor-words-remaining { margin-left: auto; }
+.status-state-dot {
+  display: inline-flex; align-items: center; gap: 7px; margin-left: auto;
+}
+.status-state-dot::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+/* Main writing column — 68ch measure, Instrument Sans 19px/1.75 (matches
+   the design's contentEditable column exactly, not the old 760px/17px). */
+.editor-area { padding: 52px 32px 120px; }
+.editor-textarea {
+  max-width: 68ch; font-size: 19px; line-height: 1.75; font-weight: 400; letter-spacing: -.1px;
+}
 @media (max-width: 760px) { .community-hero-illustration { display: none; } }
