@@ -256,10 +256,7 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
   background: none;
   border: none;
   padding: 0;
-  /* Lines up the logo mark's left edge with the nav icons below it —
-     .sidebar-header's own padding put the logo 30px further left than
-     .sidebar-nav-item's icons. */
-  margin-left: 30px;
+  margin-left: 10px;
   cursor: pointer;
   color: inherit;
   min-width: 0;
@@ -275,7 +272,7 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 .sidebar-logo-btn .logo {
   font-family: var(--font-wordmark);
   font-weight: 800;
-  font-size: 17px;
+  font-size: 20.4px;
   letter-spacing: -0.02em;
   white-space: nowrap;
   color: var(--text-primary);
@@ -513,7 +510,16 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
    tab switcher: the pill-tab bar duplicated each pane's own heading, and
    its click handler compared the wrong id so "Recent Sessions" never
    actually opened anyway — dropping it fixes both problems at once). */
-.dash-panel-tabs { display: flex; flex-direction: column; gap: 22px; min-height: 0; flex: 1; }
+/* Stretches to the row's full height (matching whichever of the two
+   columns is taller) even though the row itself no longer force-stretches
+   both columns — .td-mid-stack stays content-sized (see .dash-row-top
+   above; that's what stopped the dead gap under Reflection), but this
+   column still visually fills the row. Any leftover height distributes
+   as breathing room via justify-content rather than a bare empty strip. */
+.dash-panel-tabs {
+  display: flex; flex-direction: column; gap: 22px; min-height: 0;
+  height: 100%; align-self: stretch; justify-content: center;
+}
 .dash-panel-pane { display: flex; flex-direction: column; min-height: 0; }
 .dash-panel-pane + .dash-panel-pane { padding-top: 22px; border-top: 1px solid var(--border); }
 .dash-panel-pane-title { font-size: 16px; letter-spacing: -.4px; margin: 0; }
