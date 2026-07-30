@@ -415,7 +415,8 @@ html.dark .dashboard-hero, html.dark .dashboard-hero-text h1 {
 }
 .dashboard-hero-text h1 { font-size: clamp(26px, 3vw, 40px); line-height: 1.05; letter-spacing: -1.2px; max-width: 100%; font-style: normal; }
 .dashboard-hero-text h1 em { font-style: italic; color: var(--accent); }
-.td-hero-actions { display: flex; align-items: center; gap: 14px; flex-direction: row; }
+.td-hero-actions { display: flex; align-items: center; gap: 30px; flex-direction: row; }
+.td-hero-actions .online-indicator { margin-top: 0; }
 .dashboard-start-btn { height: 41px; padding: 0 25px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
 
 /* Stat strip + level row fused into one unified card (README: "4 equal columns
@@ -454,6 +455,12 @@ html.dark .dashboard-hero, html.dark .dashboard-hero-text h1 {
    other ink plates (sidebar bust, hero exempted per README) */
 html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.15); }
 .dash-stat-value { font-family: var(--font-sans); font-size: clamp(24px, 3.1vw, 34px); letter-spacing: -1.2px; font-variant-numeric: tabular-nums; }
+/* All four stat numbers match Total XP's green rather than each having
+   its own hue (blue/mint/orange) — one consistent accent color. */
+.dash-stat-words .dash-stat-value,
+.dash-stat-sessions .dash-stat-value,
+.dash-stat-streak .dash-stat-value,
+.dash-stat-xp .dash-stat-value { color: var(--xp-color); }
 .dash-stat-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; }
 
 .xp-bar-container {
@@ -1233,12 +1240,13 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
   background: #fff; transition: transform .2s;
 }
 .menu-row-toggle.on .menu-row-toggle-thumb { transform: translateX(12px); }
-/* Formatting bar's own close button — far left, away from the actual
+/* Formatting bar's own close button — far right, away from the actual
    formatting controls so it isn't mistaken for one of them. */
 .fmt-close-btn {
   flex: none; width: 26px; height: 26px; border-radius: 8px; border: none; background: transparent;
   color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
-  margin-right: 10px;
+  margin-left: auto;
+  order: 999;
 }
 .fmt-close-btn:hover { background: var(--hover-bg); color: var(--text-primary); }
 /* Target-words number input — hide the native spin arrows; the value

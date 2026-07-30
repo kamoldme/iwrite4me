@@ -1612,7 +1612,6 @@ const App = {
       this._syncToolsToggles = () => {
         setToggle('tools-theme-toggle', document.documentElement.classList.contains('dark'));
         setToggle('tools-formatting-toggle', document.getElementById('formatting-toolbar').style.display !== 'none');
-        setToggle('tools-focus-toggle', Editor._focusMode);
       };
 
       // Formatting: toggle the persistent format bar directly

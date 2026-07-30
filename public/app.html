@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="stylesheet" href="/css/style.css?v=146">
-  <link rel="stylesheet" href="/css/redesign.css?v=17">
+  <link rel="stylesheet" href="/css/redesign.css?v=19">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -321,10 +321,10 @@
               </div>
               <div class="td-hero-actions">
                 <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">Start Writing</button>
-              </div>
-              <div class="online-indicator" id="online-indicator" style="display:none">
-                <span class="online-dot"></span>
-                <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
+                <div class="online-indicator" id="online-indicator" style="display:none">
+                  <span class="online-dot"></span>
+                  <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
+                </div>
               </div>
             </div>
             <!-- Announcements carousel (renders only when there are announcements) -->
@@ -1094,7 +1094,6 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
                 <span class="menu-row-label">Focus mode</span>
                 <span class="menu-row-badge">PRO</span>
-                <span class="menu-row-toggle" id="tools-focus-toggle"><span class="menu-row-toggle-thumb"></span></span>
               </button>
               <button class="menu-row" id="tools-research-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -1822,7 +1821,7 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=54"></script>
-  <script src="/js/app.js?v=148"></script>
+  <script src="/js/app.js?v=149"></script>
   <script src="/js/stories.js?v=20"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
