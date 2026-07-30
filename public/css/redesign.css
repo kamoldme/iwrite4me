@@ -205,7 +205,7 @@ body {
 
 .sidebar-header {
   min-height: 66px;
-  padding: 16px 14px;
+  padding: 16px 14px 16px 44px;
   gap: 10px;
 }
 
@@ -3660,8 +3660,9 @@ html.dark .claude-dashboard-hero-art {
 .claude-goal-reflection {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 0;
   padding: 22px;
+  height: 100%;
 }
 
 .claude-goal-content {
@@ -3740,7 +3741,8 @@ html.dark .claude-dashboard-hero-art {
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding-top: 16px;
+  padding-top: 18px;
+  margin-top: 18px;
   border-top: 1px solid var(--border);
 }
 
@@ -3778,6 +3780,11 @@ html.dark .claude-dashboard-hero-art {
   display: flex;
   flex-direction: column;
   padding: 22px 24px;
+  height: 100%;
+}
+
+.dash-panel-tabs {
+  height: 100%;
 }
 
 #recent-docs {
