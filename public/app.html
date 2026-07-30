@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="stylesheet" href="/css/style.css?v=146">
-  <link rel="stylesheet" href="/css/redesign.css?v=19">
+  <link rel="stylesheet" href="/css/redesign.css?v=22">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -1240,7 +1240,7 @@
         <button class="duel-extra-time-decline" onclick="Editor.declineExtraTime()">✗</button>
       </div>
       <!-- Row 2: Formatting toolbar (hidden in danger mode) -->
-      <div class="editor-format-bar" id="formatting-toolbar" style="display:none">
+      <div class="editor-format-bar chrome-el" id="formatting-toolbar" style="display:none">
         <button class="fmt-close-btn" id="formatting-toolbar-close" title="Hide formatting toolbar">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -1683,7 +1683,7 @@
 
     <!-- SESSION FAILED -->
     <div class="session-failed" id="session-failed">
-      <div class="session-failed-icon">&#x1F480;</div>
+      <img class="session-failed-icon" src="/media/session-failed-skull.png" alt="">
       <h2>Session Failed</h2>
       <p id="sf-reason">Your writing is gone.</p>
       <div style="display:flex;gap:12px;margin-top:32px">

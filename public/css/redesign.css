@@ -1297,6 +1297,31 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
 #status-bar.chrome-el.chrome-hidden {
   opacity: 0; transform: translateY(8px); pointer-events: none;
 }
+/* Formatting toolbar fades on idle same as the rest of the chrome — only
+   matters while it's actually open (display:flex); opacity-only, no
+   transform, since it sits in normal flow above the editor area and a
+   translate would visually overlap the text below it. */
+.editor-container.chrome-hidden .editor-format-bar.chrome-el {
+  opacity: 0; pointer-events: none;
+}
+
+/* Tab-abandon countdown ("Come back!") — was hardcoded near-black
+   regardless of theme (the old .light override it shipped with relied on
+   a body class the redesign no longer applies, so it silently went dead
+   and this screen never actually changed with the theme). */
+.tab-warning { background: rgba(245, 240, 232, .97); }
+html.dark .tab-warning { background: rgba(10, 10, 10, .97); }
+
+/* Session Failed — green heading (was red/danger), skull emoji replaced
+   with a real cutout image matching the jade-statue illustration style
+   used elsewhere in the app. */
+.session-failed-icon {
+  width: 96px; height: 96px; object-fit: contain; margin-bottom: 16px; filter: none;
+}
+.session-failed h2 { color: var(--accent); text-shadow: 0 0 40px var(--accent-glow); }
+
+/* Tab-abandon countdown number — green instead of red/danger. */
+.tab-warning-timer { color: var(--accent); text-shadow: 0 0 60px var(--accent-glow); }
 /* Timer dims rather than vanishing — it's still useful at a glance while idle. */
 .editor-container.chrome-hidden #editor-timer { opacity: .35; }
 
