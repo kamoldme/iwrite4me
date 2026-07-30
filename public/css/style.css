@@ -2237,10 +2237,10 @@ button.test-only { display: none; }
     text-align: center;
   }
   .mobile-gate-inner { max-width: 360px; }
-  .mobile-gate-emoji { font-size: 48px; margin-bottom: 18px; line-height: 1; }
-  .mobile-gate-logo { font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--accent); margin-bottom: 18px; }
-  #mobile-gate h1 { font-family: 'Fraunces', Georgia, serif; font-size: 25px; font-weight: 600; color: var(--text-primary); line-height: 1.25; margin: 0 0 12px; }
-  #mobile-gate p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+  .mobile-gate-mark { width: 56px; height: 56px; margin-bottom: 18px; }
+  .mobile-gate-logo { font-family: var(--font-wordmark); font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--accent); margin-bottom: 18px; }
+  #mobile-gate h1 { font-family: var(--font-display); font-size: 25px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-primary); line-height: 1.25; margin: 0 0 12px; }
+  #mobile-gate p { font-family: var(--font-sans); font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -9456,26 +9456,13 @@ body.editor-active .mobile-sidebar-toggle {
 }
 
 /* ===== EDITOR FONT FAMILIES ===== */
-.editor-textarea.font-serif {
-  font-family: 'Archivo', system-ui, sans-serif;
-  font-size: 18px;
-}
-.editor-textarea.font-mono {
-  font-family: var(--font-mono);
-  font-size: 15px;
-  line-height: 1.8;
-}
-.editor-textarea.font-georgia {
-  font-family: Georgia, 'Times New Roman', serif;
-}
-.editor-textarea.font-garamond {
-  font-family: 'EB Garamond', Garamond, 'Times New Roman', serif;
-}
-.editor-textarea.font-courier {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 15px;
-  line-height: 1.8;
-}
+/* Font-family swap only — size/line-height stay fixed (redesign.css) so
+   the writing space itself never changes shape when you switch fonts. */
+.editor-textarea.font-serif { font-family: 'Archivo', system-ui, sans-serif; }
+.editor-textarea.font-mono { font-family: var(--font-mono); }
+.editor-textarea.font-georgia { font-family: Georgia, 'Times New Roman', serif; }
+.editor-textarea.font-garamond { font-family: 'EB Garamond', Garamond, 'Times New Roman', serif; }
+.editor-textarea.font-courier { font-family: 'Courier New', Courier, monospace; }
 
 /* Payment trust row in the pricing modal */
 .pricing-payments {
@@ -9561,8 +9548,8 @@ body.editor-active .mobile-sidebar-toggle {
   min-width: 0;
 }
 .upgrade-provider-price {
-  display: grid;
-  grid-template-columns: 64px minmax(92px, 1fr) auto;
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
   min-height: 28px;
@@ -9576,11 +9563,12 @@ body.editor-active .mobile-sidebar-toggle {
   height: auto;
   max-height: 22px;
   object-fit: contain;
-  justify-self: start;
+  flex: none;
 }
 .upgrade-provider-price span {
   min-width: 0;
   white-space: nowrap;
+  text-align: right;
 }
 .upgrade-provider-price-payme {
   color: var(--text-primary);
@@ -9759,7 +9747,7 @@ body.editor-active .mobile-sidebar-toggle {
   src: url('/fonts/opendyslexic-700.woff2') format('woff2');
   font-weight: 700; font-style: normal; font-display: swap;
 }
-.editor-textarea.font-dyslexic,
+.editor-textarea.font-dyslexic { font-family: 'OpenDyslexic', Comic Sans MS, sans-serif; }
 .story-editor.font-dyslexic {
   font-family: 'OpenDyslexic', Comic Sans MS, sans-serif;
   letter-spacing: 0.2px;

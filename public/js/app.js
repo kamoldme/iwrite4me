@@ -1157,14 +1157,6 @@ const App = {
     const communityMineBtn = document.getElementById('community-hero-mine-btn');
     if (communityMineBtn) communityMineBtn.addEventListener('click', () => document.querySelector('[data-story-tab="mine"]')?.click());
 
-    // Dashboard: Recent Sessions / Achievements tabbed panel
-    document.querySelectorAll('.dash-panel-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.dash-panel-tab').forEach(t => t.classList.toggle('active', t === tab));
-        document.querySelectorAll('.dash-panel-pane').forEach(p => p.classList.toggle('active', p.id === `dash-pane-${tab.dataset.pane}`));
-        if (tab.dataset.pane === 'achievements') this._updateAchSwiper();
-      });
-    });
     // Support submit
     const supportBtn = document.getElementById('support-submit-btn');
     if (supportBtn) supportBtn.addEventListener('click', () => this.submitSupportTicket());
@@ -1174,7 +1166,6 @@ const App = {
     document.getElementById('help-popup-overlay').addEventListener('click', () => this.closeHelpPopup());
 
     document.getElementById('new-doc-btn').addEventListener('click', () => this.openSessionModal());
-    document.getElementById('new-doc-btn-2').addEventListener('click', () => this.openSessionModal());
     document.getElementById('new-doc-btn-3').addEventListener('click', () => this.openSessionModal());
 
     document.getElementById('modal-cancel').addEventListener('click', () => this.closeSessionModal());
@@ -1229,9 +1220,7 @@ const App = {
 
 
     document.querySelectorAll('.mode-option').forEach(opt => {
-      console.log('Attaching click listener to mode-option:', opt.dataset.mode);
       opt.addEventListener('click', () => {
-        console.log('Mode option clicked:', opt.dataset.mode);
         document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
         opt.classList.add('active');
         document.getElementById('mode-selector')?.classList.add('has-chosen');
@@ -1470,21 +1459,21 @@ const App = {
 
     // Timer toggle + add time
     document.getElementById('editor-timer-toggle').addEventListener('click', () => Editor.toggleTimerVisibility());
-    document.getElementById('add-time-1').addEventListener('click', () => {
-      if (!this.user || this.user.plan !== 'premium') {
-        this.toast('Adding time is a Pro feature.', 'info');
-        this.openPricing();
-        return;
-      }
-      Editor.addTime(1);
-    });
+    const addTimeConfirm = document.getElementById('add-time-confirm');
     document.getElementById('add-time-5').addEventListener('click', () => {
       if (!this.user || this.user.plan !== 'premium') {
         this.toast('Adding time is a Pro feature.', 'info');
         this.openPricing();
         return;
       }
+      addTimeConfirm.style.display = 'flex';
+    });
+    document.getElementById('add-time-confirm-yes').addEventListener('click', () => {
+      addTimeConfirm.style.display = 'none';
       Editor.addTime(5);
+    });
+    document.getElementById('add-time-confirm-no').addEventListener('click', () => {
+      addTimeConfirm.style.display = 'none';
     });
 
     // Format bar: font selector
@@ -1545,7 +1534,9 @@ const App = {
       e.stopPropagation();
       const willOpen = audioDrop.style.display === 'none';
       if (willOpen) {
-        const r = audioBtn.getBoundingClientRect();
+        const focusDD = document.getElementById('editor-focus-dropdown');
+        if (focusDD) focusDD.style.display = 'none';
+        const r = document.getElementById('editor-tools-btn').getBoundingClientRect();
         audioDrop.style.top = (r.bottom + 6) + 'px';
         audioDrop.style.right = (window.innerWidth - r.right) + 'px';
       }
@@ -1569,6 +1560,11 @@ const App = {
     const toolsBtn = document.getElementById('editor-tools-btn');
     const toolsMenu = document.getElementById('editor-tools-menu');
     if (toolsBtn && toolsMenu) {
+      // Escape .editor-container's stacking context (fixed + z-index:2000
+      // caps descendants there regardless of their own z-index) same as the
+      // audio/focus dropdowns — otherwise the research drawer (z-index:2500)
+      // renders on top of this menu and it's invisible while open.
+      if (toolsMenu.parentElement !== document.body) document.body.appendChild(toolsMenu);
       const syncToolsMenu = () => {
         const isDark = document.documentElement.classList.contains('dark');
         const themeLabel = document.getElementById('tools-theme-label');
@@ -1619,11 +1615,17 @@ const App = {
         });
       }
 
-      // Typography: inline zoom buttons forward to the real page-zoom handlers
-      const toolsFontDec = document.getElementById('tools-font-dec');
-      const toolsFontInc = document.getElementById('tools-font-inc');
-      if (toolsFontDec) toolsFontDec.addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('editor-font-dec').click(); });
-      if (toolsFontInc) toolsFontInc.addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('editor-font-inc').click(); });
+      // Typography: opens the format bar and focuses the font-family picker.
+      const typographyRow = document.getElementById('tools-typography-row');
+      if (typographyRow) {
+        typographyRow.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const bar = document.getElementById('formatting-toolbar');
+          bar.style.display = 'flex';
+          toolsMenu.style.display = 'none';
+          document.getElementById('fmt-font-select')?.focus();
+        });
+      }
 
       // Target words — moved here from the mode picker so it's adjustable
       // mid-session instead of only being set up front.
@@ -1636,6 +1638,50 @@ const App = {
         });
       }
     }
+
+    // Tabs rail — title syncs the sole tab's label until a second tab
+    // exists; New Tab opens a real blank space inside the same document
+    // (persisted via an invisible marker in the saved content), gated Pro.
+    document.getElementById('editor-title').addEventListener('input', () => Editor._syncTabName());
+    document.getElementById('editor-tabs-list').addEventListener('click', (e) => {
+      if (e.target.closest('.editor-tab-rename-input')) return;
+      const row = e.target.closest('.editor-tab-row[data-tab-idx]');
+      if (row) Editor._switchTab(parseInt(row.dataset.tabIdx));
+    });
+    document.getElementById('editor-tabs-list').addEventListener('dblclick', (e) => {
+      const row = e.target.closest('.editor-tab-row[data-tab-idx]');
+      if (row) Editor._renameTab(parseInt(row.dataset.tabIdx));
+    });
+    document.getElementById('editor-tab-new').addEventListener('click', () => {
+      if (!this.user || this.user.plan !== 'premium') {
+        this.toast('Multiple tabs per session is a Pro feature.', 'info');
+        this.openPricing();
+        return;
+      }
+      Editor._addTab();
+    });
+
+    // Idle chrome-hide — back/title, +5m/kebab, Tabs rail and the bottom
+    // bar fade out after ~2.6s of no mouse movement, wake instantly on move.
+    const editorContainer = document.getElementById('editor-container');
+    const editorStatusBar = document.getElementById('status-bar');
+    const setChromeHidden = (hidden) => {
+      editorContainer.classList.toggle('chrome-hidden', hidden);
+      editorStatusBar.classList.toggle('chrome-hidden', hidden);
+    };
+    editorContainer.addEventListener('mousemove', () => {
+      Editor._lastMove = Date.now();
+      if (Editor.active) setChromeHidden(false);
+    });
+    setInterval(() => {
+      if (!Editor.active) return;
+      const menuOpen = document.getElementById('editor-tools-menu').style.display !== 'none';
+      const addTimeOpen = document.getElementById('add-time-confirm').style.display !== 'none';
+      const focusOpen = document.getElementById('editor-focus-dropdown').style.display !== 'none';
+      const audioOpen = document.getElementById('editor-audio-dropdown').style.display !== 'none';
+      if (menuOpen || addTimeOpen || focusOpen || audioOpen) return;
+      if (Date.now() - (Editor._lastMove || 0) > 2600) setChromeHidden(true);
+    }, 600);
 
     // Restore saved font preference
     const savedFont = localStorage.getItem('iwrite_editor_font') || 'sans';
@@ -2083,8 +2129,6 @@ const App = {
     }
 
     this._renderHeatmap();
-    const visibleDocs = (this.documents || []).filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
-    this.renderDocumentList('recent-docs', visibleDocs.slice(0, 3));
     this._renderTestDashboard();
   },
 
@@ -2265,8 +2309,10 @@ const App = {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Build map of last 17 weeks (119 days) — word counts per day.
-    const totalDays = 119;
+    // Build map of last 21 weeks (147 days, ~1 month more than before) —
+    // word counts per day. Cell size is shrunk slightly (redesign.css) to
+    // fit the extra weeks in the same card width without scrolling.
+    const totalDays = 147;
     const dayMap = {};
     for (let i = totalDays - 1; i >= 0; i--) {
       const d = new Date(today);
@@ -2705,6 +2751,11 @@ const App = {
       Editor.isEditing = false;
       Editor.originalContent = doc.content || '';
       Editor.originalTitle = doc.title;
+      // Viewing a saved doc isn't a live session — show it as one tab rather
+      // than carrying over stale tab state from whatever was open before.
+      Editor._tabs = [{ name: doc.title || 'Draft', html: doc.content || '' }];
+      Editor._activeTabIdx = 0;
+      Editor._renderTabsList();
 
       document.getElementById('editor-container').classList.add('active');
       document.getElementById('editor-timer').textContent = '';
@@ -2717,7 +2768,6 @@ const App = {
       document.getElementById('editor-timer').style.display = 'none';
       document.querySelector('.editor-add-time').style.display = 'none';
       document.getElementById('duel-add-time-btn').style.display = 'none';
-      document.getElementById('editor-topic-bar').style.display = 'none';
 
       // Show Edit button, hide session buttons
       document.getElementById('editor-save-btn').style.display = 'none';
@@ -6071,9 +6121,14 @@ const App = {
     // "Secure payment via" logos — centered, just below the hero subtitle.
     const logosEl = document.getElementById('upgrade-pay-logos');
     if (logosEl) {
-      const logos = [];
-      if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
-      if (p.payme) logos.push(this._paymentLogo('payme'));
+      // Stripe + Payme always show here — the pricing cards themselves
+      // already list both providers' prices unconditionally, so this row
+      // shouldn't disagree just because a dev/local server's live config
+      // (e.g. no Stripe key configured on this instance) reports one off.
+      const logos = [
+        '<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">',
+        this._paymentLogo('payme')
+      ];
       if (p.click) logos.push('<img src="/img/click.svg?v=1" alt="Click" class="pay-logo pay-logo-click" data-chip="click">');
       logosEl.innerHTML = `<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
       this._bindPayLogoFallbacks(logosEl);

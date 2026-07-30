@@ -21,15 +21,15 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
-  <link rel="stylesheet" href="/css/style.css?v=143">
-  <link rel="stylesheet" href="/css/redesign.css?v=1">
+  <link rel="stylesheet" href="/css/style.css?v=146">
+  <link rel="stylesheet" href="/css/redesign.css?v=13">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
   <div id="mobile-gate" aria-hidden="true">
     <div class="mobile-gate-inner">
-      <div class="mobile-gate-emoji">&#x1F4BB;</div>
+      <img class="mobile-gate-mark" src="/media/logo-knot-128.png" alt="">
       <div class="mobile-gate-logo">iWrite4.me</div>
       <h1>Best on a bigger screen</h1>
       <p>Focused writing needs a keyboard and room to think. Please open iWrite4.me on a laptop or PC to start writing.</p>
@@ -314,6 +314,7 @@
         <div id="view-dashboard" class="view">
           <div class="dashboard-hero-row">
             <div class="dashboard-hero">
+              <img class="dashboard-hero-art" src="/media/hero-philosopher-statue.png?v=2" alt="">
               <div class="dashboard-hero-text">
                 <span class="dashboard-hero-kicker" id="hero-kicker">0 words today · 12h left</span>
                 <h1 id="greeting-text">Ready to write?</h1>
@@ -405,11 +406,7 @@
                 </div>
               </div>
               <div class="dash-panel-tabs">
-                <div class="dash-panel-tabs-head">
-                  <button class="dash-panel-tab active" data-pane="dash-pane-achievements">Achievements</button>
-                  <button class="dash-panel-tab" data-pane="dash-pane-recent">Recent Sessions</button>
-                </div>
-                <div class="dash-panel-pane active" id="dash-pane-achievements">
+                <div class="dash-panel-pane" id="dash-pane-achievements">
                   <div class="td-card-head">
                     <h2 class="dash-panel-pane-title">Achievements</h2>
                     <div class="td-ach-nav">
@@ -419,13 +416,6 @@
                   </div>
                   <div class="td-ach-viewport"><div class="td-ach-track" id="td-ach-track"></div></div>
                   <div class="td-ach-dots" id="td-ach-dots"></div>
-                </div>
-                <div class="dash-panel-pane" id="dash-pane-recent">
-                  <h2 class="dash-panel-pane-title">Recent Sessions</h2>
-                  <div class="docs-header">
-                    <button class="docs-action" onclick="App.switchView('documents')">View all</button>
-                  </div>
-                  <div id="recent-docs"></div>
                 </div>
               </div>
             </div>
@@ -1060,7 +1050,7 @@
       </div>
       <!-- Row 1: Back / Title / Timer / Buttons -->
       <div class="editor-toolbar">
-        <div class="editor-toolbar-left">
+        <div class="editor-toolbar-left chrome-el">
           <button class="editor-back-btn" id="editor-back">&larr;</button>
           <input type="text" class="editor-title-input" id="editor-title" placeholder="Give your writing a title..." value="">
         </div>
@@ -1071,19 +1061,20 @@
             <svg id="timer-eye-open" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <svg id="timer-eye-closed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
           </button>
-          <div class="editor-add-time">
-            <button class="editor-add-time-btn" id="add-time-1" title="Add 1 minute">+1m</button>
+          <div class="editor-add-time chrome-el">
             <button class="editor-add-time-btn" id="add-time-5" title="Add 5 minutes">+5m</button>
+            <div class="add-time-confirm" id="add-time-confirm" style="display:none">
+              <div class="add-time-confirm-text">Add 5 more minutes to this session?</div>
+              <div class="add-time-confirm-actions">
+                <button class="btn btn-primary btn-small" id="add-time-confirm-yes">Yes, add</button>
+                <button class="btn btn-ghost btn-small" id="add-time-confirm-no">Cancel</button>
+              </div>
+            </div>
           </div>
           <button class="editor-add-time-btn duel-add-time-btn" id="duel-add-time-btn" onclick="Editor.addExtraTime()" title="Add 5 minutes" style="display:none">+5m</button>
-          <div class="editor-hearts" id="editor-hearts" style="display:none">
-            <span class="heart" data-idx="0">❤</span>
-            <span class="heart" data-idx="1">❤</span>
-            <span class="heart" data-idx="2">❤</span>
-          </div>
         </div>
         <div class="editor-toolbar-right">
-          <div class="tools-menu-wrap">
+          <div class="tools-menu-wrap chrome-el">
             <button class="tool" id="editor-tools-btn" title="Session tools">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
             </button>
@@ -1099,10 +1090,6 @@
               <button class="menu-row" id="tools-typography-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6M12 4v16"/></svg>
                 <span class="menu-row-label">Typography</span>
-                <span class="menu-row-zoom">
-                  <button class="menu-row-zoom-btn" id="tools-font-dec" title="Zoom out">−</button>
-                  <button class="menu-row-zoom-btn" id="tools-font-inc" title="Zoom in">+</button>
-                </span>
               </button>
               <button class="menu-row" id="tools-focus-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
@@ -1222,9 +1209,9 @@
           <button class="doc-action-btn" id="editor-comment-history-btn" title="Comment History" style="display:none;width:30px;height:30px;flex-shrink:0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
           </button>
-          <button class="btn btn-primary btn-small" id="editor-save-btn">Complete</button>
-          <button class="btn btn-primary btn-small" id="editor-edit-btn" style="display:none">Edit</button>
-          <button class="btn btn-primary btn-small" id="editor-save-edit-btn" style="display:none">Save</button>
+          <button class="btn btn-primary btn-small chrome-el" id="editor-save-btn">Complete</button>
+          <button class="btn btn-primary btn-small chrome-el" id="editor-edit-btn" style="display:none">Edit</button>
+          <button class="btn btn-primary btn-small chrome-el" id="editor-save-edit-btn" style="display:none">Save</button>
         </div>
       </div>
       <!-- Duel bar (shown during active duel) -->
@@ -1298,15 +1285,28 @@
         <button class="fmt-btn fmt-color-btn" data-color="#f59e0b" title="Yellow" style="color:#f59e0b">A</button>
       </div>
       <div class="danger-progress" id="danger-progress" style="display:none">
-        <div class="danger-progress-bar" id="danger-progress-bar"></div>
+        <div class="danger-progress-track"><div class="danger-progress-bar" id="danger-progress-bar"></div></div>
+        <div class="editor-hearts" id="editor-hearts">
+          <span class="heart" data-idx="0">❤</span>
+          <span class="heart" data-idx="1">❤</span>
+          <span class="heart" data-idx="2">❤</span>
+        </div>
       </div>
       <div class="screen-vignette" id="screen-vignette"></div>
-      <!-- Topic bar (shown when topic is set) -->
-      <div class="editor-topic-bar" id="editor-topic-bar" style="display:none">
-        <input type="text" class="editor-topic-input" id="editor-topic-text" placeholder="Enter your topic or question...">
-      </div>
-      <div class="editor-area">
-        <div class="editor-textarea" id="editor-textarea" contenteditable="true" data-placeholder="Start writing your thoughts..."></div>
+      <div class="editor-body">
+        <aside class="editor-tabs-rail chrome-el" id="editor-tabs-rail">
+          <div class="editor-tabs-label">Tabs</div>
+          <div id="editor-tabs-list"></div>
+          <button class="editor-tab-row editor-tab-new" id="editor-tab-new">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span class="editor-tab-name">New tab</span>
+            <span class="editor-tab-pro-badge" id="editor-tab-new-badge">PRO</span>
+          </button>
+          <div class="editor-tabs-note">Tabs keep one session's notes and drafts side by side.</div>
+        </aside>
+        <div class="editor-area">
+          <div class="editor-textarea" id="editor-textarea" contenteditable="true" data-placeholder="Start writing your thoughts..."></div>
+        </div>
       </div>
     </div>
 
@@ -1323,10 +1323,13 @@
     </div>
 
     <!-- GLOBAL STATUS BAR (bottom-left, like Google Docs) -->
-    <div class="status-bar" id="status-bar" style="display:none">
+    <div class="status-bar chrome-el" id="status-bar" style="display:none">
       <span id="editor-word-count">0 words</span>
       <span class="status-separator">|</span>
+      <span id="editor-pace">— wpm</span>
+      <span class="status-separator" id="editor-words-remaining-sep" style="display:none">|</span>
       <span id="editor-words-remaining" style="display:none"></span>
+      <span id="editor-saved-line" class="status-saved-line">saved just now</span>
       <span class="status-state-dot" id="status-state-label">Writing</span>
     </div>
     <!-- Word limit indicator (bottom-left, above status bar) -->
@@ -1819,8 +1822,8 @@
   <script src="/js/api.js?v=23"></script>
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
-  <script src="/js/editor.js?v=49"></script>
-  <script src="/js/app.js?v=139"></script>
+  <script src="/js/editor.js?v=53"></script>
+  <script src="/js/app.js?v=147"></script>
   <script src="/js/stories.js?v=20"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

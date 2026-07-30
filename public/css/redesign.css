@@ -128,12 +128,22 @@ h1, h2, h3, .dashboard-hero-text h1, .docs-header h1, .docs-header h2,
 .heatmap-cell[data-level="2"], .heatmap-legend-cell[data-level="2"] { background: var(--h2) !important; }
 .heatmap-cell[data-level="3"], .heatmap-legend-cell[data-level="3"] { background: var(--h3) !important; }
 .heatmap-cell[data-level="4"], .heatmap-legend-cell[data-level="4"] { background: var(--h4) !important; }
-/* Cells are flex children of .heatmap-row (style.css) — keep the legacy
-   fixed 27x27 sizing rather than width:100%, which stretched each cell to
-   fill the whole row (they'd stack into full-width bars instead of a grid). */
-.heatmap-cell { flex-shrink: 0; }
-/* 12 weeks (see _renderHeatmap) fits the card without scrolling — never
-   show a scrollbar even if a narrower viewport would otherwise need one. */
+/* Cells fill the available card width instead of a fixed px size — a fixed
+   size only ever fit one specific browser zoom level (21 weeks' worth of
+   23px cells fit at 125% zoom, but overflowed into a horizontal scrollbar
+   at 150%, and left a lot of dead card space at 100%). Every row shares
+   the same child count and container width, so flex:1 on each cell keeps
+   all rows' columns aligned while resizing fluidly with the card itself —
+   at any zoom level or viewport width, not just the one it was tuned for. */
+.heatmap-grid { width: 100%; }
+.heatmap-weeks { flex: 1; min-width: 0; }
+.heatmap-row, .heatmap-month-row { gap: 4px; }
+.heatmap-cell {
+  flex: 1 1 0; width: auto; min-width: 0; aspect-ratio: 1; height: auto;
+  max-width: 26px;
+}
+.heatmap-month-label { flex: 1 1 0; width: auto; min-width: 0; max-width: 26px; }
+/* Never show a scrollbar even if a narrower viewport would otherwise need one. */
 .heatmap-scroll { overflow-x: hidden; }
 .heatmap-cell:hover { box-shadow: 0 0 6px var(--accent-glow); }
 
@@ -187,13 +197,21 @@ h1, h2, h3, .dashboard-hero-text h1, .docs-header h1, .docs-header h2,
 
 /* ---------- 7. Focus ring ---------- */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.editor-textarea:focus-visible, .editor-textarea:focus { outline: none; }
 
 /* ---------- 8. Sidebar shell + collapsed rail ---------- */
+/* position: fixed rather than sticky — html/body both carry overflow-x:
+   hidden (style.css) which, per spec, forces overflow-y onto an implicit
+   auto too and makes body its own scroll container. That breaks sticky's
+   viewport-tracking (the sidebar would scroll away with the page). Fixed
+   positioning is immune to that and pins the rail unconditionally. */
 .sidebar {
   width: var(--sidebar-w);
   min-width: var(--sidebar-w);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  bottom: 0;
   height: 100vh;
   transition: width .28s cubic-bezier(.4,0,.2,1), min-width .28s cubic-bezier(.4,0,.2,1);
   overflow-x: hidden;
@@ -238,11 +256,16 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
   background: none;
   border: none;
   padding: 0;
+  /* Lines up the logo mark's left edge with the nav icons below it —
+     .sidebar-header's own padding put the logo 30px further left than
+     .sidebar-nav-item's icons. */
+  margin-left: 30px;
   cursor: pointer;
   color: inherit;
   min-width: 0;
   overflow: hidden;
 }
+.app-container.sidebar-collapsed .sidebar-logo-btn { margin-left: 0; }
 .sidebar-logo-btn .logo-mark {
   width: 32px; height: 32px;
   border-radius: 9px;
@@ -274,10 +297,11 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 .app-container.sidebar-collapsed .sidebar-logo-btn { gap: 0; }
 .app-container.sidebar-collapsed .sidebar-logo-btn .logo { display: none; }
 
-/* .main-content is already a flex sibling of .sidebar (.app-container is
-   display:flex) — the legacy margin-left:260px (style.css) was left over
-   from when the sidebar was position:fixed and doubled the real gap. */
-.main-content { margin-left: 0 !important; }
+/* .sidebar is position:fixed (see above), so .main-content has to reserve
+   the same width itself via margin-left, tracking the rail's collapsed
+   width rather than the old flat legacy margin-left:260px. */
+.main-content { margin-left: var(--sidebar-w) !important; transition: margin-left .28s cubic-bezier(.4,0,.2,1); }
+.app-container.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed) !important; }
 
 .sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 10px; }
 .sidebar-nav-item {
@@ -338,20 +362,20 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 
 /* ---------- 9. Dashboard ---------- */
 
-/* Hero — full-bleed illustration, fixed paper-matched card background and
-   dark ink text in every theme (the illustration is a fixed light plate,
-   not a themed surface — this is the simple version that actually renders
-   correctly; the dark-mode invert/scrim experiments broke the image). */
+/* Hero — one statue illustration, confined to a panel on the right rather
+   than a full-bleed background (no more bleeding behind the heading or
+   getting cropped by a hand-picked background-position offset). Same
+   image in both themes — only the card behind it changes: cream in
+   light mode, the dark mode's own gray/black in dark mode, with the art
+   simply sitting on top of whichever card color is active. */
 .dashboard-hero {
+  position: relative;
+  overflow: hidden;
   background: #f5f0e8;
-  background-image: url('/media/hero-light.png');
-  background-size: cover;
-  background-position: center -450px;
-  background-repeat: no-repeat;
   border-radius: 24px;
-  min-height: 200px;
-  padding: 30px 34px;
-  padding-right: 36%;
+  min-height: 240px;
+  padding: 34px 34px;
+  padding-right: 40%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -362,15 +386,14 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
 .dashboard-hero, .dashboard-hero-text h1 {
   color: #3b352a;
 }
-/* Dark mode uses its own purpose-made illustration (dark ground, white
-   linework) instead of inverting the light parchment plate. */
-html.dark .dashboard-hero {
-  background: #0a0a0a;
-  background-image: url('/media/hero-dark.png');
-  background-position: center -330px;
-  background-size: cover;
-  background-repeat: no-repeat;
+.dashboard-hero-art {
+  position: absolute; top: 50%; right: 0; transform: translateY(-50%);
+  height: 92%; width: 36%; object-fit: contain; object-position: right center;
 }
+.dashboard-hero-text, .dashboard-hero .td-hero-actions { position: relative; z-index: 1; }
+/* Dark mode keeps its own dark card color — the same statue image just
+   sits on top of it instead of the cream light-mode card. */
+html.dark .dashboard-hero { background: #161616; }
 html.dark .dashboard-hero, html.dark .dashboard-hero-text h1 {
   color: var(--text-primary);
 }
@@ -442,7 +465,12 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
    tabbed panel and the tree card the same height automatically. */
 .dashboard-grid { display: flex; flex-direction: column; gap: 16px; }
 .dash-row-top, .dash-row-bottom { display: grid; gap: 16px; align-items: stretch; }
-.dash-row-top { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.75fr); }
+/* Left column (Start-your-day + Reflection) sizes to its own content
+   instead of being force-stretched to match the Achievements column's
+   height — that stretch was the source of a growing empty box under the
+   Reflection card whenever the achievements list ran taller (worse at
+   higher browser zoom, since the columns' natural heights diverge more). */
+.dash-row-top { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.75fr); align-items: start; }
 .dash-row-bottom { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); }
 
 .heatmap-section, .tree-container,
@@ -481,18 +509,13 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .td-sticky p { font-style: italic; font-size: 21px; color: var(--text-primary); line-height: 1.4; margin: 0; padding-right: 28px; }
 .td-sticky-feather { position: absolute; right: 18px; bottom: 16px; font-size: 40px; opacity: .5; }
 
-/* Recent Sessions / Achievements — one card, two tabs, matched to Tree height */
-.dash-panel-tabs { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-.dash-panel-tabs-head { display: flex; gap: 4px; margin: -4px -6px 14px; }
-.dash-panel-tab {
-  background: none; border: none; cursor: pointer;
-  padding: 7px 12px; border-radius: 9999px;
-  font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
-}
-.dash-panel-tab:hover { background: var(--hover-bg); color: var(--text-primary); }
-.dash-panel-tab.active { background: var(--accent-soft); color: var(--accent); }
-.dash-panel-pane { display: none; flex-direction: column; flex: 1; min-height: 0; }
-.dash-panel-pane.active { display: flex; }
+/* Recent Sessions / Achievements — one card, both sections stacked (no
+   tab switcher: the pill-tab bar duplicated each pane's own heading, and
+   its click handler compared the wrong id so "Recent Sessions" never
+   actually opened anyway — dropping it fixes both problems at once). */
+.dash-panel-tabs { display: flex; flex-direction: column; gap: 22px; min-height: 0; flex: 1; }
+.dash-panel-pane { display: flex; flex-direction: column; min-height: 0; }
+.dash-panel-pane + .dash-panel-pane { padding-top: 22px; border-top: 1px solid var(--border); }
 .dash-panel-pane-title { font-size: 16px; letter-spacing: -.4px; margin: 0; }
 .dash-panel-pane .docs-header { margin-bottom: 12px; }
 .td-ach-nav { display: flex; gap: 6px; }
@@ -502,7 +525,10 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 }
 .td-ach-arrow:hover:not(:disabled) { color: var(--accent); border-color: var(--accent-glow); background: var(--accent-soft); }
 .td-ach-arrow:disabled { opacity: .35; cursor: default; }
-.td-ach-viewport { overflow: hidden; margin-top: 4px; flex: 1; min-height: 200px; }
+/* No fixed/flex-1 height — that reserved a hardcoded 200px regardless of
+   how tall a 2-row achievements grid actually is, leaving a dead gap
+   below the dots whenever the real content came in shorter. */
+.td-ach-viewport { overflow: hidden; margin-top: 4px; }
 .td-ach-track { display: flex; transition: transform .35s cubic-bezier(.4,0,.2,1); }
 .td-ach-slide { flex: 0 0 100%; min-width: 100%; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; column-gap: 20px; row-gap: 10px; }
 @media (max-width: 1100px) { .td-ach-slide { grid-template-columns: 1fr; } }
@@ -573,10 +599,13 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
 .doc-icon.doc-icon-dangerous { background: rgba(192, 87, 63, .12); color: var(--danger); }
 
 .doc-mode-badge { font-family: var(--font-mono); letter-spacing: .06em; color: #fff; }
-.doc-mode-badge.doc-mode-time { background: var(--info); }
-.doc-mode-badge.doc-mode-dangerous { background: var(--danger); }
-.doc-mode-badge.doc-mode-zen { background: var(--accent); }
-.doc-mode-badge.doc-mode-research { background: var(--warning); }
+/* Match style.css's per-mode specificity (.doc-mode-badge.doc-mode-X) —
+   its .doc-mode-time rule sets color:#1a1a1a, which otherwise beats the
+   base .doc-mode-badge{color:#fff} above regardless of file order. */
+.doc-mode-badge.doc-mode-time { background: var(--info); color: #fff; }
+.doc-mode-badge.doc-mode-dangerous { background: var(--danger); color: #fff; }
+.doc-mode-badge.doc-mode-zen { background: var(--accent); color: #fff; }
+.doc-mode-badge.doc-mode-research { background: var(--warning); color: #fff; }
 
 .folder-card {
   background: var(--bg-card);
@@ -1037,7 +1066,9 @@ html.dark .dash-stat-emoji { filter: invert(1) hue-rotate(180deg) brightness(1.1
    accent green instead of the old gold/orange gradient (nav, leaderboard,
    upgrade heading, duel modal, timer/session-config gates, folder menu). ---------- */
 .pro-badge-inline, .pro-nav-badge, .lb-pro-badge, .duel-mm-pro-badge,
-.timer-pro-badge, .pro-lock-dynamic, .pro-feature-badge {
+.timer-pro-badge, .pro-lock-dynamic, .pro-feature-badge,
+.analytics-pro-badge, .toast-pro-badge, .pro-inline-badge, .pro-lock-badge,
+.plan-badge.pro .plan-badge-pill, .profile-plan-badge.pro {
   background: var(--accent) !important;
   color: #fff !important;
 }
@@ -1107,6 +1138,10 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
    one "session tools" kebab; the DOM buttons still exist (hidden) so every
    existing handler / Pro-gate / dropdown keeps working — rows just forward. ---------- */
 .editor-toolbar { background: var(--bg-primary); padding: 12px 24px; }
+/* Dangerous mode has its own row (idle bar + hearts) directly under the
+   toolbar — the toolbar's border-bottom just added a second, redundant
+   dividing line right above it. */
+.editor-container.dangerous-active .editor-toolbar { border-bottom: none; }
 .editor-back-btn { border-radius: 10px; background: transparent; }
 .editor-title-input { font-family: var(--font-sans); }
 .editor-mode-badge {
@@ -1118,8 +1153,31 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
 .editor-mode-badge.dangerous { color: var(--danger); border-color: var(--danger); background: var(--bg-card) !important; }
 .editor-mode-badge.duel { color: var(--warning); border-color: var(--warning); background: var(--bg-card) !important; }
 .editor-mode-badge.research { color: var(--info); border-color: var(--info); background: var(--bg-card) !important; }
-.editor-timer { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.editor-timer { font-family: var(--font-mono); font-size: 26px; font-weight: 500; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.editor-add-time { position: relative; display: flex; }
 .editor-add-time-btn { border-radius: 9999px; font-family: var(--font-mono); }
+.add-time-confirm {
+  position: absolute; top: 38px; right: 0; width: 200px; padding: 14px; z-index: 50;
+  border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card); box-shadow: var(--shadow-lg, var(--shadow));
+}
+.add-time-confirm-text { font-size: 12.5px; line-height: 1.5; color: var(--text-primary); }
+.add-time-confirm-actions { display: flex; gap: 7px; margin-top: 10px; }
+.add-time-confirm-actions .btn { flex: 1; }
+
+/* Danger-mode row: idle-decay bar + hearts + status label, one line under
+   the header (Writing Session.dc.html's isDanger block) — replaces the old
+   dead 3px hairline that JS never actually animated. */
+.danger-progress {
+  position: static; height: auto; background: none; z-index: auto;
+  padding: 0 22px 10px; display: flex; align-items: center; gap: 14px;
+}
+.danger-progress-track {
+  flex: 1; height: 6px; border-radius: 9999px; background: var(--hover-bg);
+  overflow: hidden; border: 1px solid var(--border);
+}
+.danger-progress-bar { box-shadow: none; background: var(--danger); transition: width .25s linear; }
+.editor-hearts { margin-left: 0; background: none; border: none; padding: 0; gap: 5px; }
+.editor-hearts .heart { font-size: 14px; }
 
 .tools-menu-wrap { position: relative; }
 .tool {
@@ -1164,6 +1222,36 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
    display; positioning is fixed relative to the toolbar's right edge. */
 #editor-tools-menu { top: 52px; right: 18px; }
 
+/* Idle chrome-hide — back/title, +5m/kebab, the Tabs rail and the bottom
+   bar fade out ~2.6s after the mouse stops moving (Writing Session.dc.html:
+   .chrome[data-hidden]); mode badge, clock and Complete stay put since
+   they're outside .chrome-el. */
+.chrome-el, .chrome-dim, #editor-mode-badge, #editor-timer { transition: opacity .35s ease, transform .35s ease; }
+.editor-container.chrome-hidden .editor-toolbar-left.chrome-el,
+.editor-container.chrome-hidden .tools-menu-wrap.chrome-el {
+  opacity: 0; transform: translateY(-8px); pointer-events: none;
+}
+/* #editor-mode-badge/#editor-timer use ID selectors rather than the
+   .chrome-el/.chrome-dim marker classes — editor.js reassigns their
+   className wholesale on every mode/timer-state change (e.g.
+   `modeBadge.className = 'editor-mode-badge ' + mode`), which would wipe
+   a marker class right off; an ID can't be clobbered that way. */
+.editor-container.chrome-hidden #editor-mode-badge {
+  opacity: 0; transform: translateY(-8px); pointer-events: none;
+}
+.editor-container.chrome-hidden .editor-add-time.chrome-el,
+.editor-container.chrome-hidden .btn.chrome-el {
+  opacity: 0; pointer-events: none;
+}
+.editor-container.chrome-hidden .editor-tabs-rail.chrome-el {
+  opacity: 0; transform: translateX(-10px); pointer-events: none;
+}
+#status-bar.chrome-el.chrome-hidden {
+  opacity: 0; transform: translateY(8px); pointer-events: none;
+}
+/* Timer dims rather than vanishing — it's still useful at a glance while idle. */
+.editor-container.chrome-hidden #editor-timer { opacity: .35; }
+
 /* Session-elapsed hairline — full viewport width, fixed to the very top,
    above the toolbar (Writing Session.dc.html: the fixed 3px top track). */
 .editor-elapsed-track {
@@ -1187,19 +1275,64 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
   font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 11px;
   color: var(--text-secondary);
 }
-.status-bar #editor-words-remaining { margin-left: auto; }
+.status-saved-line { margin-left: auto; color: var(--text-muted); }
 .status-state-dot {
-  display: inline-flex; align-items: center; gap: 7px; margin-left: auto;
+  display: inline-flex; align-items: center; gap: 7px;
 }
 .status-state-dot::before {
   content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
   animation: pulseDot 2s ease-in-out infinite;
 }
 
+/* Body row — Tabs rail + main column, side by side (Writing Session.dc.html
+   body: aside width 196px + flex:1 column). */
+.editor-body { flex: 1; display: flex; min-height: 0; }
+.editor-tabs-rail {
+  flex: none; width: 196px; padding: 16px 12px 20px; border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+}
+.editor-tabs-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--text-muted); padding: 0 12px 8px;
+}
+.editor-tab-row {
+  display: flex; align-items: center; gap: 9px; width: 100%; padding: 10px 12px;
+  border: 1px solid transparent; border-radius: 10px; background: none; color: var(--text-secondary);
+  font-family: var(--font-sans); font-size: 12.5px; font-weight: 500; text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden; transition: all .2s;
+}
+.editor-tab-row:hover { background: var(--hover-bg); color: var(--text-primary); }
+.editor-tab-row.active {
+  background: var(--accent-soft); color: var(--accent); border-color: var(--accent-glow); font-weight: 600;
+}
+.editor-tab-row svg { flex: none; }
+.editor-tab-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.editor-tab-rename-input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  color: inherit; font: inherit; padding: 0;
+}
+.editor-tab-words {
+  font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); font-variant-numeric: tabular-nums;
+}
+.editor-tab-new { margin-top: 6px; color: var(--text-muted); cursor: pointer; }
+.editor-tab-pro-badge {
+  font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .1em; padding: 2px 6px;
+  border-radius: 9999px; background: var(--accent-soft); color: var(--accent);
+}
+.editor-tabs-note {
+  margin-top: 48px; padding: 12px; border-top: 1px solid var(--border);
+  font-size: 11.5px; line-height: 1.5; color: var(--text-muted);
+}
+
 /* Main writing column — 68ch measure, Instrument Sans 19px/1.75 (matches
    the design's contentEditable column exactly, not the old 760px/17px). */
-.editor-area { padding: 52px 32px 120px; }
+.editor-area { flex: 1; min-width: 0; padding: 52px 32px 120px; }
 .editor-textarea {
-  max-width: 68ch; font-size: 19px; line-height: 1.75; font-weight: 400; letter-spacing: -.1px;
+  /* Fixed px, not 68ch — "ch" is measured off the current font's own
+     glyph width, so the box would resize itself every time the font
+     picker changes fonts. A flat px keeps the writing space identical
+     no matter which font is chosen. */
+  max-width: 646px; font-size: 19px; line-height: 1.75; font-weight: 400; letter-spacing: -.1px;
 }
+@media (max-width: 900px) { .editor-tabs-rail { display: none; } }
 @media (max-width: 760px) { .community-hero-illustration { display: none; } }

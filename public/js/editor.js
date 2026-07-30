@@ -58,7 +58,7 @@ const Editor = {
         mode: this.mode,
         lastKeystroke: this.lastKeystroke,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content: this._serializeTabs()
       }));
     } catch {}
   },
@@ -83,6 +83,108 @@ const Editor = {
     } catch {
       return null;
     }
+  },
+
+  // ===== Tabs — multiple drafts/notes living inside the one session doc.
+  // Persisted in the single `content` field via an invisible HTML-comment
+  // marker between tabs, so no server schema change is needed and older
+  // single-tab documents load back in unchanged (no marker = one tab).
+  _tabMarkerRe: /<!--iwrite-tab:([^>]*?)-->/g,
+
+  _initTabs(html) {
+    const re = new RegExp(this._tabMarkerRe.source, 'g');
+    const parts = (html || '').split(re);
+    if (parts.length <= 1) {
+      this._tabs = [{ name: 'Draft', html: html || '' }];
+    } else {
+      this._tabs = [];
+      // parts[0] is whatever preceded the first marker (should be empty for
+      // documents we wrote ourselves, but keep it if a legacy doc has it).
+      if (parts[0]) this._tabs.push({ name: 'Draft', html: parts[0] });
+      for (let i = 1; i < parts.length; i += 2) {
+        this._tabs.push({ name: parts[i] || 'Draft', html: parts[i + 1] || '' });
+      }
+    }
+    this._activeTabIdx = 0;
+    this.textarea.innerHTML = this._tabs[0].html;
+    this._renderTabsList();
+  },
+
+  _serializeTabs() {
+    if (this._tabs && this._tabs[this._activeTabIdx]) this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    if (!this._tabs || this._tabs.length <= 1) return (this._tabs && this._tabs[0] && this._tabs[0].html) || this.textarea.innerHTML;
+    return this._tabs.map(t => `<!--iwrite-tab:${t.name}-->${t.html}`).join('');
+  },
+
+  _tabWordCount(html) {
+    const text = (html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ');
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  },
+
+  _renderTabsList() {
+    const list = document.getElementById('editor-tabs-list');
+    if (!list || !this._tabs) return;
+    list.innerHTML = this._tabs.map((t, i) => {
+      const words = i === this._activeTabIdx ? this.getWordCount() : this._tabWordCount(t.html);
+      return `<button class="editor-tab-row${i === this._activeTabIdx ? ' active' : ''}" data-tab-idx="${i}">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        <span class="editor-tab-name">${App.escapeHtml(t.name)}</span>
+        <span class="editor-tab-words">${words}</span>
+      </button>`;
+    }).join('');
+  },
+
+  _switchTab(idx) {
+    if (!this._tabs || idx === this._activeTabIdx || !this._tabs[idx]) return;
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    this._activeTabIdx = idx;
+    this.textarea.innerHTML = this._tabs[idx].html;
+    this._renderTabsList();
+    this.updateWordCount();
+    this.textarea.focus();
+  },
+
+  _addTab() {
+    if (!this._tabs) return;
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    this._tabs.push({ name: `Draft ${this._tabs.length + 1}`, html: '' });
+    this._activeTabIdx = this._tabs.length - 1;
+    this.textarea.innerHTML = '';
+    this._renderTabsList();
+    this.updateWordCount();
+    this.textarea.focus();
+  },
+
+  _syncTabName() {
+    if (!this._tabs || !this._tabs[this._activeTabIdx]) return;
+    if (this._tabs.length === 1) this._tabs[0].name = (this.titleInput.value || '').trim() || 'Draft';
+    this._renderTabsList();
+  },
+
+  _renameTab(idx) {
+    if (!this._tabs || !this._tabs[idx]) return;
+    const row = document.querySelector(`.editor-tab-row[data-tab-idx="${idx}"]`);
+    const nameEl = row && row.querySelector('.editor-tab-name');
+    if (!nameEl || row.querySelector('.editor-tab-rename-input')) return;
+    const current = this._tabs[idx].name;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'editor-tab-rename-input';
+    input.value = current;
+    input.maxLength = 40;
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+    const commit = () => {
+      this._tabs[idx].name = input.value.trim() || current;
+      this._renderTabsList();
+    };
+    input.addEventListener('blur', commit, { once: true });
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') input.blur();
+      else if (e.key === 'Escape') { input.value = current; input.blur(); }
+    });
   },
 
   async start(duration, mode, opts = {}) {
@@ -141,6 +243,14 @@ const Editor = {
     this.textarea.innerHTML = '';
     this.textarea.contentEditable = 'true';
     this.textarea.focus();
+    this._baseWordCount = 0;
+    this._lastSavedAt = null;
+    this._tabs = [{ name: 'Draft', html: '' }];
+    this._activeTabIdx = 0;
+    this._renderTabsList();
+    this._lastMove = Date.now();
+    this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
     this.active = true;
     if (this._originalTabTitle == null) this._originalTabTitle = document.title;
     document.title = '✍️ Writing in progress…';
@@ -183,7 +293,7 @@ const Editor = {
     document.getElementById('status-bar').style.display = 'flex';
     this.titleInput.readOnly = false;
 
-    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous' : mode === 'zen' ? 'Zen' : mode === 'research' ? 'Research' : mode === 'duel' ? 'Duel' : 'Time';
+    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous Mode' : mode === 'zen' ? 'Zen Mode' : mode === 'research' ? 'Research Mode' : mode === 'duel' ? 'Duel Mode' : 'Time Mode';
     this.modeBadge.className = `editor-mode-badge ${mode}`;
     // Show session controls (swap add-time buttons for duel mode)
     document.getElementById('editor-timer').style.display = '';
@@ -198,10 +308,11 @@ const Editor = {
 
     if (mode === 'dangerous') {
       this.container.classList.add('dangerous-active');
-      this.dangerProgress.style.display = 'none';
+      this.dangerProgress.style.display = '';
       this._renderHearts();
       this.startDangerMode();
     } else {
+      this.dangerProgress.style.display = 'none';
       const h = document.getElementById('editor-hearts');
       if (h) h.style.display = 'none';
     }
@@ -248,14 +359,10 @@ const Editor = {
     this._heartbeatInterval = setInterval(() => this._sendHeartbeat(), 5000);
     this._sendHeartbeat();
 
-    // Show topic bar if set
-    const topicBar = document.getElementById('editor-topic-bar');
-    const topicText = document.getElementById('editor-topic-text');
-    topicText.value = this.sessionTopic || '';
-    topicBar.style.display = 'block';
-
     // Show target word count in status bar
     this._updateWordsRemaining();
+    this._syncTabName();
+    this.updateWordCount();
 
     // Duel mode: start polling opponent word count, sync timer from server
     this._duelInfo = null;
@@ -738,7 +845,7 @@ const Editor = {
       localStorage.setItem(cacheKey, JSON.stringify({
         documentId: this.documentId,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         reason: 'tab_left',
         failedAt: new Date().toISOString()
       }));
@@ -831,12 +938,11 @@ const Editor = {
         this.vignette.style.opacity = 0;
       }
 
+      const idleRatio = Math.min(elapsed / total, 1);
+      if (this.dangerProgressBar) this.dangerProgressBar.style.width = (idleRatio * 100) + '%';
+
       if (elapsed >= total) {
-        if (this.dangerVariant === 'chill') {
-          this.handleChillExpire();
-        } else {
-          this.failDangerMode();
-        }
+        this.handleDangerExpire();
       }
     }, 50);
   },
@@ -844,7 +950,6 @@ const Editor = {
   _renderHearts() {
     const wrap = document.getElementById('editor-hearts');
     if (!wrap) return;
-    if (this.dangerVariant !== 'chill') { wrap.style.display = 'none'; return; }
     wrap.style.display = '';
     const hearts = wrap.querySelectorAll('.heart');
     hearts.forEach((h, i) => {
@@ -853,7 +958,7 @@ const Editor = {
     });
   },
 
-  handleChillExpire() {
+  handleDangerExpire() {
     if (this._chillExpiring) return;
     this._chillExpiring = true;
 
@@ -939,7 +1044,7 @@ const Editor = {
       localStorage.setItem(cacheKey, JSON.stringify({
         documentId: this.documentId,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         reason: 'typing_stopped',
         failedAt: new Date().toISOString()
       }));
@@ -1004,7 +1109,31 @@ const Editor = {
     fill.className = `editor-elapsed-fill ${this._elapsedTone()}`;
   },
 
+  _updatePaceAndSaved() {
+    const paceEl = document.getElementById('editor-pace');
+    if (paceEl) {
+      if (this.mode === 'zen') {
+        paceEl.textContent = 'nothing measured';
+      } else {
+        const elapsedSec = (Date.now() - this.startTime - this._effectivePaused()) / 1000;
+        paceEl.textContent = elapsedSec < 45 ? '— wpm' : `${Math.round(((this.getWordCount() - (this._baseWordCount || 0)) / elapsedSec) * 60)} wpm`;
+      }
+    }
+    const savedEl = document.getElementById('editor-saved-line');
+    if (savedEl) {
+      if (this.mode === 'zen') {
+        savedEl.textContent = 'not saved to stats';
+      } else if (!this._lastSavedAt) {
+        savedEl.textContent = 'not saved yet';
+      } else {
+        const secsAgo = Math.floor((Date.now() - this._lastSavedAt) / 1000);
+        savedEl.textContent = secsAgo < 15 ? 'saved just now' : `saved ${secsAgo}s ago`;
+      }
+    }
+  },
+
   updateTimer() {
+    this._updatePaceAndSaved();
     if (this.duration === 0) {
       const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       const min = Math.floor(elapsed / 60);
@@ -1063,6 +1192,7 @@ const Editor = {
     const words = this.getWordCount();
     const el = document.getElementById('editor-word-count');
     if (el) el.textContent = `${words} word${words !== 1 ? 's' : ''}`;
+    this._renderTabsList();
 
     // Word limit for all users
     if ((this.active || this.isEditing) && App.user) {
@@ -1107,6 +1237,14 @@ const Editor = {
 
   getWordCount() {
     return (this.textarea.innerText || '').trim().split(/\s+/).filter(Boolean).length;
+  },
+
+  // Words across every tab, not just the one currently open — used wherever
+  // the whole session's output matters (XP, word limit, completion checks).
+  _totalWordCount() {
+    if (!this._tabs || this._tabs.length <= 1) return this.getWordCount();
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    return this._tabs.reduce((sum, t, i) => sum + (i === this._activeTabIdx ? this.getWordCount() : this._tabWordCount(t.html)), 0);
   },
 
   // Ensure forfeit is sent even if user closes tab/browser
@@ -1335,8 +1473,9 @@ const Editor = {
     try {
       await API.updateDocument(this.documentId, {
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content: this._serializeTabs()
       });
+      this._lastSavedAt = Date.now();
       // Also save session state on each auto-save
       this._saveSessionState();
     } catch {}
@@ -1367,10 +1506,14 @@ const Editor = {
       // Show editor
       this.container.classList.add('active');
       this.titleInput.value = state.title;
-      this.textarea.innerHTML = state.content;
+      this._initTabs(state.content);
       this.textarea.contentEditable = 'true';
       this.textarea.focus();
       this.active = true;
+      this._baseWordCount = 0;
+      this._lastMove = Date.now();
+      this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
 
       // Show correct buttons and badges
       document.getElementById('editor-save-btn').style.display = this.mode === 'dangerous' ? 'none' : 'inline-flex';
@@ -1383,13 +1526,14 @@ const Editor = {
       if (addTimeEl) addTimeEl.style.display = this.mode === 'zen' ? 'none' : '';
       this.titleInput.readOnly = false;
 
-      this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous' : this.mode === 'zen' ? 'Zen' : this.mode === 'research' ? 'Research' : this.mode === 'duel' ? 'Duel' : 'Time';
+      this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous Mode' : this.mode === 'zen' ? 'Zen Mode' : this.mode === 'research' ? 'Research Mode' : this.mode === 'duel' ? 'Duel Mode' : 'Time Mode';
       this.modeBadge.className = `editor-mode-badge ${this.mode}`;
 
       // Setup mode-specific UI
       if (this.mode === 'dangerous') {
         this.container.classList.add('dangerous-active');
-        this.dangerProgress.style.display = 'none';
+        this.dangerProgress.style.display = '';
+        this._renderHearts();
         this.startDangerMode();
       }
 
@@ -1410,6 +1554,7 @@ const Editor = {
       this._startFocusCheck();
       if (this.mode !== 'dangerous') this.bindFormatting();
       this.updateWordCount();
+      this._syncTabName();
 
       this._fullscreenActive = false;
       this._blurCooldown = false;
@@ -1452,7 +1597,7 @@ const Editor = {
     // Bypass during maintenance — unlimited saves/copies
     // Bypass when word limit is reached — user can't write more, don't punish them
     const maintenanceActive = App._maintActive;
-    const atWordLimit = this.getWordCount() >= this.getWordLimit();
+    const atWordLimit = this._totalWordCount() >= this.getWordLimit();
     const isUnlimited = this.duration === 0;
     const isEarly = !timerExpired && !this._isTimerExpired() && !atWordLimit && !isUnlimited;
     if (isEarly && !maintenanceActive && this.mode !== 'zen') {
@@ -1475,7 +1620,7 @@ const Editor = {
     }
 
     // Task 10: If title is empty, prompt user to name it or keep as Untitled
-    if (this.getWordCount() > 0) {
+    if (this._totalWordCount() > 0) {
       const currentTitle = (this.titleInput.value || '').trim();
       if (!currentTitle) {
         const chosen = await App.promptTitle();
@@ -1492,7 +1637,7 @@ const Editor = {
     this._earlyComplete = (this.mode === 'zen' || isUnlimited) ? false : isEarly;
     this.cleanup();
 
-    const wordCount = this.getWordCount();
+    const wordCount = this._totalWordCount();
     const duration = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
 
     // If no words were written, silently discard — no XP, no streak, no stats
@@ -1519,7 +1664,7 @@ const Editor = {
         wordCount, duration, xpEarned,
         earlyComplete: !!this._earlyComplete,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         activeWritingSeconds: Math.round(this._activeWritingSeconds)
       });
     } catch {
@@ -1701,8 +1846,13 @@ const Editor = {
   // --- Words remaining / target ---
   _updateWordsRemaining() {
     const el = document.getElementById('editor-words-remaining');
+    const sep = document.getElementById('editor-words-remaining-sep');
     if (!el) return;
-    if (!this.targetWords) { el.style.display = 'none'; return; }
+    if (!this.targetWords) {
+      el.style.display = 'none';
+      if (sep) sep.style.display = 'none';
+      return;
+    }
     const words = this.getWordCount();
     const remaining = Math.max(0, this.targetWords - words);
     if (remaining > 0) {
@@ -1713,6 +1863,7 @@ const Editor = {
       el.style.color = 'var(--success)';
     }
     el.style.display = '';
+    if (sep) sep.style.display = '';
   },
 
   // --- Motivating notifications ---
@@ -2297,8 +2448,9 @@ const Editor = {
     clearInterval(this._focusCheckInterval);
     document.removeEventListener('selectionchange', this._onSelectionChange);
     document.getElementById('formatting-toolbar').style.display = 'none';
-    document.getElementById('editor-topic-bar').style.display = 'none';
     document.getElementById('selection-popup').style.display = 'none';
+    this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
     const limitEl = document.getElementById('word-limit-indicator');
     if (limitEl) limitEl.style.display = 'none';
     this.stopAudio();
