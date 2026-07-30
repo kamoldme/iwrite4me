@@ -124,14 +124,28 @@ const Editor = {
   _renderTabsList() {
     const list = document.getElementById('editor-tabs-list');
     if (!list || !this._tabs) return;
+    const canDelete = this._tabs.length > 1;
     list.innerHTML = this._tabs.map((t, i) => {
       const words = i === this._activeTabIdx ? this.getWordCount() : this._tabWordCount(t.html);
       return `<button class="editor-tab-row${i === this._activeTabIdx ? ' active' : ''}" data-tab-idx="${i}">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
         <span class="editor-tab-name">${App.escapeHtml(t.name)}</span>
         <span class="editor-tab-words">${words}</span>
+        ${canDelete ? `<span class="editor-tab-delete" role="button" data-tab-delete-idx="${i}" title="Delete tab"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>` : ''}
       </button>`;
     }).join('');
+  },
+
+  async _deleteTab(idx) {
+    if (!this._tabs || this._tabs.length <= 1 || !this._tabs[idx]) return;
+    const ok = await App.showConfirm(`Delete "${this._tabs[idx].name}"? This can't be undone.`);
+    if (!ok) return;
+    this._tabs.splice(idx, 1);
+    if (this._activeTabIdx >= this._tabs.length) this._activeTabIdx = this._tabs.length - 1;
+    else if (this._activeTabIdx > idx) this._activeTabIdx -= 1;
+    this.textarea.innerHTML = this._tabs[this._activeTabIdx].html;
+    this._renderTabsList();
+    this.updateWordCount();
   },
 
   _switchTab(idx) {
@@ -253,7 +267,7 @@ const Editor = {
     document.getElementById('status-bar').classList.remove('chrome-hidden');
     this.active = true;
     if (this._originalTabTitle == null) this._originalTabTitle = document.title;
-    document.title = '✍️ Writing in progress…';
+    document.title = 'Writing in progress…';
 
     // Show correct buttons for active session
     // In dangerous mode or duel mode, hide the Complete button — session ends only when time runs out
@@ -764,12 +778,12 @@ const Editor = {
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
     this.tabWarningTimer.textContent = this.tabGracePeriod;
-    document.title = `🔴 ${this.tabGracePeriod}s left. Come back!`;
+    document.title = `${this.tabGracePeriod}s left. Come back!`;
     this.tabCountdown = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = Math.max(0, this.tabGracePeriod - elapsed);
       this.tabWarningTimer.textContent = remaining;
-      document.title = `🔴 ${remaining}s left. Come back!`;
+      document.title = `${remaining}s left. Come back!`;
       if (remaining <= 0) {
         this.abandonSession();
       }
@@ -812,7 +826,7 @@ const Editor = {
     this._lastTabReturn = Date.now();
     // Tab countdown ended but session is still active — restore the session title
     if (this.active && !this.abandoned) {
-      document.title = '✍️ Writing in progress…';
+      document.title = 'Writing in progress…';
     }
     this.tabWarning.classList.remove('active');
     this.tabLeftTime = null;
@@ -2081,6 +2095,7 @@ const Editor = {
       if (lbl) lbl.textContent = on ? 'On' : 'Off';
     }
     try { localStorage.setItem('iwrite_focus_mode', on ? '1' : '0'); } catch {}
+    App._syncToolsToggles?.();
     if (on) { this._playFocusActivateAnim(); this._updateFocusLine(); }
     else this._clearFocusLine();
   },
@@ -2515,9 +2530,11 @@ const Editor = {
     document.getElementById('status-bar').style.display = 'none';
   },
 
-  // ── Copy blocking during active sessions ──
+  // ── Copy blocking during active sessions ── copying is fully disabled
+  // during a live session, no Pro exception; only maintenance mode (an
+  // operational, not a plan-tier, concern) bypasses it.
   _copyAllowed() {
-    return App._maintActive || (App.user && App.user.plan === 'premium');
+    return App._maintActive;
   },
 
   _onCopyBlock(e) {

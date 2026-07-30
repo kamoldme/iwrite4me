@@ -1572,6 +1572,7 @@ const App = {
         const commentBtn = document.getElementById('editor-comment-history-btn');
         const commentRow = document.getElementById('tools-comment-history-row');
         if (commentBtn && commentRow) commentRow.style.display = commentBtn.style.display === 'none' ? 'none' : 'flex';
+        this._syncToolsToggles();
       };
       toolsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1601,8 +1602,18 @@ const App = {
       forward('tools-research-row', 'editor-research-btn');
       forward('tools-audio-row', 'editor-audio-btn');
       forward('tools-fullscreen-row', 'editor-fullscreen-btn');
-      forward('tools-copy-row', 'editor-copy-btn');
       forward('tools-comment-history-row', 'editor-comment-history-btn');
+
+      // Theme/Focus/Formatting rows carry an on/off toggle switch — synced
+      // whenever the menu opens (syncToolsMenu) and whenever their state
+      // changes elsewhere (theme cycled via sidebar, formatting bar closed
+      // via its own × button).
+      const setToggle = (id, on) => document.getElementById(id)?.classList.toggle('on', !!on);
+      this._syncToolsToggles = () => {
+        setToggle('tools-theme-toggle', document.documentElement.classList.contains('dark'));
+        setToggle('tools-formatting-toggle', document.getElementById('formatting-toolbar').style.display !== 'none');
+        setToggle('tools-focus-toggle', Editor._focusMode);
+      };
 
       // Formatting: toggle the persistent format bar directly
       const formattingRow = document.getElementById('tools-formatting-row');
@@ -1612,20 +1623,13 @@ const App = {
           const bar = document.getElementById('formatting-toolbar');
           bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
           toolsMenu.style.display = 'none';
+          this._syncToolsToggles();
         });
       }
-
-      // Typography: opens the format bar and focuses the font-family picker.
-      const typographyRow = document.getElementById('tools-typography-row');
-      if (typographyRow) {
-        typographyRow.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const bar = document.getElementById('formatting-toolbar');
-          bar.style.display = 'flex';
-          toolsMenu.style.display = 'none';
-          document.getElementById('fmt-font-select')?.focus();
-        });
-      }
+      document.getElementById('formatting-toolbar-close').addEventListener('click', () => {
+        document.getElementById('formatting-toolbar').style.display = 'none';
+        this._syncToolsToggles();
+      });
 
       // Target words — moved here from the mode picker so it's adjustable
       // mid-session instead of only being set up front.
@@ -1645,6 +1649,8 @@ const App = {
     document.getElementById('editor-title').addEventListener('input', () => Editor._syncTabName());
     document.getElementById('editor-tabs-list').addEventListener('click', (e) => {
       if (e.target.closest('.editor-tab-rename-input')) return;
+      const del = e.target.closest('.editor-tab-delete[data-tab-delete-idx]');
+      if (del) { e.stopPropagation(); Editor._deleteTab(parseInt(del.dataset.tabDeleteIdx)); return; }
       const row = e.target.closest('.editor-tab-row[data-tab-idx]');
       if (row) Editor._switchTab(parseInt(row.dataset.tabIdx));
     });
@@ -2126,6 +2132,8 @@ const App = {
       const stage = u.treeStage || 0;
       TreeRenderer.draw(canvas, stage, u.streak || 0);
       setText('tree-stage-text', TreeRenderer.stages[stage] || 'Seed');
+      const seedNote = document.getElementById('tree-seed-note');
+      if (seedNote) seedNote.style.display = stage === 0 ? '' : 'none';
     }
 
     this._renderHeatmap();
@@ -7934,6 +7942,7 @@ const App = {
     btn.querySelector('.theme-icon-light').style.display = theme !== 'dark' ? '' : 'none';
     btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Dark Mode';
     this._syncAppearanceUI?.();
+    this._syncToolsToggles?.();
   },
 
   _applySidebarCollapsed(collapsed) {

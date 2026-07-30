@@ -147,6 +147,16 @@ h1, h2, h3, .dashboard-hero-text h1, .docs-header h1, .docs-header h2,
 .heatmap-scroll { overflow-x: hidden; }
 .heatmap-cell:hover { box-shadow: 0 0 6px var(--accent-glow); }
 
+/* Writing Tree — a short nudge overlaid on the canvas while the tree is
+   still a Seed (streak too short to have grown yet), encouraging the
+   user back rather than just showing a bare sprout with no context. */
+.tree-canvas-wrap { position: relative; }
+.tree-seed-note {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 78%; margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary);
+  text-align: center; pointer-events: none;
+}
+
 /* ---------- 4. Nav / sidebar base surface (component detail in shell layer below) ---------- */
 .nav {
   background: var(--bg-glass);
@@ -256,7 +266,7 @@ html.dark .sidebar-bg-illustration { filter: invert(1) hue-rotate(180deg) bright
   background: none;
   border: none;
   padding: 0;
-  margin-left: 10px;
+  margin-left: 5px;
   cursor: pointer;
   color: inherit;
   min-width: 0;
@@ -1213,6 +1223,30 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
 }
 .menu-row-static { cursor: default; }
 .menu-row-static:hover { background: none; }
+.menu-row-toggle {
+  flex: none; width: 30px; height: 18px; border-radius: 9999px; background: var(--border-hover);
+  position: relative; transition: background .2s;
+}
+.menu-row-toggle.on { background: var(--accent); }
+.menu-row-toggle-thumb {
+  position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; transition: transform .2s;
+}
+.menu-row-toggle.on .menu-row-toggle-thumb { transform: translateX(12px); }
+/* Formatting bar's own close button — far left, away from the actual
+   formatting controls so it isn't mistaken for one of them. */
+.fmt-close-btn {
+  flex: none; width: 26px; height: 26px; border-radius: 8px; border: none; background: transparent;
+  color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  margin-right: 10px;
+}
+.fmt-close-btn:hover { background: var(--hover-bg); color: var(--text-primary); }
+/* Target-words number input — hide the native spin arrows; the value
+   is set directly, no need for click-to-increment controls here. */
+.menu-row-input::-webkit-outer-spin-button, .menu-row-input::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.menu-row-input { -moz-appearance: textfield; }
 .menu-row-input {
   width: 64px; height: 26px; padding: 0 8px; border-radius: 7px; border: 1px solid var(--border);
   background: var(--bg-elevated); color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; text-align: right;
@@ -1320,6 +1354,12 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
 .editor-tab-words {
   font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); font-variant-numeric: tabular-nums;
 }
+.editor-tab-delete {
+  flex: none; display: none; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 6px; color: var(--text-muted); cursor: pointer;
+}
+.editor-tab-row:hover .editor-tab-delete { display: flex; }
+.editor-tab-delete:hover { background: var(--danger-soft); color: var(--danger); }
 .editor-tab-new { margin-top: 6px; color: var(--text-muted); cursor: pointer; }
 .editor-tab-pro-badge {
   font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .1em; padding: 2px 6px;
