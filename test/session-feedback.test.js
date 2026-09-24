@@ -55,6 +55,24 @@ test('session feedback integration', { skip: !process.env.FEEDBACK_TEST_DATABASE
       assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY - 1)).eligible, false);
       assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY)).eligible, true);
     });
+    await t.test('manual Next opens feedback during cooldown without resetting the quiet period', async () => {
+      const first = await fixture();
+      await recordFeedback(first.userId, first.id, null, now);
+      const second = await fixture({}, first.userId);
+      assert.equal((await recordFeedback(first.userId, second.id, null, now)).eligible, false);
+      assert.equal((await recordFeedback(first.userId, second.id, null, now, { manual: true })).eligible, true);
+      await recordFeedback(first.userId, second.id, { rating: 3, comment: 'Manual feedback' }, now);
+      const third = await fixture({}, first.userId);
+      assert.equal((await recordFeedback(first.userId, third.id, null, now)).eligible, false);
+      const manual = await recordFeedback(first.userId, third.id, null, now, { manual: true });
+      assert.equal(manual.eligible, true);
+      assert.equal(Date.parse(manual.nextPromptAt), now + 30 * DAY);
+      await assert.rejects(recordFeedback(randomUUID(), third.id, null, now, { manual: true }), { status: 404 });
+      const retry = await recordFeedback(first.userId, second.id, null, now, { manual: true });
+      assert.equal(retry.duplicate, true);
+      assert.deepEqual(retry.previousFeedback, { rating: 3, comment: 'Manual feedback' });
+      await pool.query('DELETE FROM session_feedback WHERE id=$1', [second.id]);
+    });
     await t.test('HTTP auth, admin summary, full comment and one notification on retries', async () => {
       const express = require('express');
       const { generateToken } = require('../server/middleware/auth');

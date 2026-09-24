@@ -66,9 +66,6 @@ const SessionFeedback = {
     next.disabled = true;
     next.textContent = 'Loading…';
     try {
-      if (!documentId) return;
-      const result = await API.request(`/feedback/${encodeURIComponent(documentId)}/prompt`, { method: 'POST', signal: AbortSignal.timeout(8000) });
-      if (!this.isCurrent(generation) || !result.eligible) return;
       this.documentId = documentId;
       card.innerHTML = `<form id="session-feedback-form">
         <h3 id="feedback-question">How enjoyable was your writing session?</h3>
@@ -83,7 +80,7 @@ const SessionFeedback = {
           <p class="feedback-hint">Shared privately with the iWrite team · 1,000 characters max</p>
         </div>
         <p id="feedback-error" role="alert"></p>
-        <p class="feedback-hint">Optional. Either button below sends your rating and thoughts. Leave blank to skip. We won’t ask again for 30 days after you send.</p>
+        <p class="feedback-hint">Optional. Either button below sends your rating and thoughts. Leave blank to skip. You can always share feedback by pressing NEXT.</p>
       </form>`;
       screen.querySelector('.completion-summary').setAttribute('aria-hidden', 'true');
       card.hidden = false;
@@ -96,13 +93,36 @@ const SessionFeedback = {
 
       }));
       card.querySelector('form').onsubmit = event => event.preventDefault();
-    } catch { /* A feedback outage must never interrupt a saved session. */ }
+      // NEXT is an explicit opt-in. Render the form immediately, and never let
+      // the automatic-prompt cooldown silently suppress this user action.
+      next.hidden = true;
+      this.setNavigation(true);
+      this.invitation = this.prepareInvitation(documentId);
+      const result = await this.invitation;
+      if (!this.isCurrent(generation)) return;
+      if (result.duplicate) {
+        const previous = result.previousFeedback;
+        const selected = card.querySelector(`input[value="${previous.rating}"]`);
+        selected.checked = true;
+        selected.dispatchEvent(new Event('change'));
+        card.querySelector('textarea').value = previous.comment || '';
+        card.querySelectorAll('input, textarea').forEach(el => el.disabled = true);
+        card.querySelector('#feedback-error').textContent = 'Your feedback for this session is already saved. Thank you!';
+      }
+    } catch {
+      if (this.isCurrent(generation)) card.querySelector('#feedback-error').textContent = 'Feedback could not connect. Choose a rating and either button to retry, or leave blank to continue.';
+    }
     finally {
       if (this.isCurrent(generation)) {
         next.hidden = true;
         this.setNavigation(true);
       }
     }
+  },
+  prepareInvitation(documentId) {
+    return API.request(`/feedback/${encodeURIComponent(documentId)}/prompt`, {
+      method: 'POST', body: JSON.stringify({ manual: true }), signal: AbortSignal.timeout(8000)
+    });
   },
   hide() {
     this.generation++;
@@ -128,6 +148,9 @@ const SessionFeedback = {
       ['sc-dashboard', 'sc-new-session'].forEach(id => document.getElementById(id).disabled = true);
       card.querySelector('#feedback-error').textContent = 'Sending your feedback…';
       try {
+        // If the initial invitation failed, retry it while retaining the draft.
+        await this.invitation.catch(() => this.prepareInvitation(this.documentId));
+        if (!this.isCurrent(generation)) return;
         await API.request(`/feedback/${encodeURIComponent(this.documentId)}`, {
           method: 'POST', body: JSON.stringify({ rating, comment }), signal: controller.signal
         });
