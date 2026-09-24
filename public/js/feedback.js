@@ -1,14 +1,43 @@
 /* Optional feedback lives inside the saved-session result, never in the editor. */
 const SessionFeedback = {
   generation: 0,
+  wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); },
+  isCurrent(generation) {
+    return generation === this.generation && document.getElementById('session-complete').classList.contains('active');
+  },
+  prepareSequence() {
+    const screen = document.getElementById('session-complete');
+    if (!screen.querySelector('.completion-stage')) {
+      const stage = document.createElement('div');
+      stage.className = 'completion-stage';
+      const summary = document.createElement('div');
+      summary.className = 'completion-summary';
+      [screen.querySelector('h2'), screen.querySelector('.session-stats'), document.getElementById('sc-streak')].forEach(el => summary.appendChild(el));
+      stage.appendChild(summary);
+      stage.appendChild(document.getElementById('session-feedback'));
+      screen.prepend(stage);
+      document.getElementById('sc-dashboard').parentElement.classList.add('completion-navigation');
+    }
+    screen.classList.add('completion-sequence');
+    screen.dataset.phase = 'title';
+    screen.querySelector('.completion-summary').removeAttribute('aria-hidden');
+    return screen;
+  },
   async show(documentId) {
     const generation = ++this.generation;
     const card = document.getElementById('session-feedback');
     card.hidden = true;
-    if (!documentId) return;
+    const screen = this.prepareSequence();
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Give the completion its own moment before revealing the session numbers.
+    await this.wait(reducedMotion ? 0 : 4000);
+    if (!this.isCurrent(generation)) return;
+    screen.dataset.phase = 'stats';
+    await this.wait(reducedMotion ? 0 : 3400);
+    if (!this.isCurrent(generation) || !documentId) return;
     try {
       const result = await API.request(`/feedback/${encodeURIComponent(documentId)}/prompt`, { method: 'POST' });
-      if (generation !== this.generation || !result.eligible || !document.getElementById('session-complete').classList.contains('active')) return;
+      if (!this.isCurrent(generation) || !result.eligible) return;
       this.documentId = documentId;
       card.innerHTML = `<form id="session-feedback-form">
         <h3 id="feedback-question">How enjoyable was your writing session?</h3>
@@ -26,7 +55,12 @@ const SessionFeedback = {
         <div class="feedback-actions"><button type="submit" class="btn btn-primary" id="feedback-submit" disabled>Send feedback</button><button type="button" class="btn btn-ghost" id="feedback-skip">Not now</button></div>
         <p class="feedback-hint">Optional. After you send, we won’t ask again for 30 days.</p>
       </form>`;
+      screen.dataset.phase = 'leaving';
+      await this.wait(reducedMotion ? 0 : 650);
+      if (!this.isCurrent(generation)) return;
+      screen.querySelector('.completion-summary').setAttribute('aria-hidden', 'true');
       card.hidden = false;
+      screen.dataset.phase = 'feedback';
       const radios = card.querySelectorAll('input[name="rating"]');
       radios.forEach(input => input.addEventListener('change', () => {
         radios.forEach(radio => radio.parentElement.classList.toggle('selected', Number(radio.value) <= Number(input.value)));
@@ -41,6 +75,9 @@ const SessionFeedback = {
   hide() {
     this.generation++;
     document.getElementById('session-feedback').hidden = true;
+    const screen = document.getElementById('session-complete');
+    screen.dataset.phase = 'stats';
+    screen.querySelector('.completion-summary')?.removeAttribute('aria-hidden');
   },
   async submit(card, generation, documentId) {
     const rating = Number(card.querySelector('input[name="rating"]:checked')?.value);

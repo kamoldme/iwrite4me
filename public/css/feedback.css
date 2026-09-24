@@ -14,14 +14,38 @@
 .feedback-actions { display: flex; justify-content: center; gap: 10px; margin: 12px 0; }
 #feedback-error { color: var(--danger, #c33); font-size: 13px; }
 .feedback-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-#session-complete.active:has(#session-feedback:not([hidden])) { overflow-y: auto; justify-content: flex-start; padding-top: max(32px, 5vh); padding-bottom: 32px; }
-@media (max-height: 760px) { #session-complete .session-stats { margin: 12px 0; } #session-feedback { margin: 12px auto; padding: 16px; } }
-
+@media (max-height: 760px) { #session-feedback { margin: 12px auto; padding: 16px; } }
 .feedback-actions .btn { min-height: 44px; padding: 10px 18px; border-radius: 24px; }
 #session-feedback { flex-shrink: 0; position: relative; }
-#session-complete > div:has(#sc-dashboard) { flex-wrap: wrap; justify-content: center; }
+
+/* A stable bottom row sits outside the scrolling animated stage. */
+#session-complete.completion-sequence { box-sizing: border-box; padding: 24px 20px; gap: 20px; justify-content: flex-start; overflow: hidden; }
+.completion-stage { display: grid; flex: 1; min-height: 0; width: 100%; overflow-y: auto; overflow-x: hidden; align-items: safe center; justify-items: center; }
+.completion-summary { grid-area: 1 / 1; text-align: center; display: flex; flex-direction: column; align-items: center; opacity: 1; transform: translateY(0); transition: opacity 650ms ease, transform 650ms ease; }
+#session-complete .completion-summary h2 { margin: 0 0 16px; }
+#session-complete .completion-summary .session-stats { margin: 24px 0; }
+#session-complete .completion-navigation { display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: center; gap: 12px; z-index: 1; }
+#session-complete[data-phase="title"] .session-stats,
+#session-complete[data-phase="title"] #sc-streak { opacity: 0; visibility: hidden; max-height: 0; margin: 0; overflow: hidden; }
+#session-complete[data-phase="stats"] .session-stat { animation: completion-reveal 900ms ease both; }
+#session-complete[data-phase="stats"] .session-stat:nth-child(2) { animation-delay: 180ms; }
+#session-complete[data-phase="stats"] .session-stat:nth-child(3) { animation-delay: 360ms; }
+#session-complete[data-phase="stats"] #sc-streak { animation: completion-reveal 900ms 540ms ease both; }
+#session-complete[data-phase="leaving"] .completion-summary { opacity: 0; transform: translateY(-16px); }
+#session-complete[data-phase="feedback"] .completion-summary { display: none; }
+.completion-stage > #session-feedback { grid-area: 1 / 1; margin: 0 auto; max-width: 100%; }
+#session-complete[data-phase="feedback"] #session-feedback { animation: completion-reveal 800ms ease both; }
+@keyframes completion-reveal { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 600px) {
-  #session-complete:has(#session-feedback:not([hidden])) h2 { font-size: 32px; letter-spacing: -1px; text-align: center; }
-  #session-complete:has(#session-feedback:not([hidden])) .session-stats { flex-direction: row; gap: 24px; margin: 16px 0; }
-  #session-complete:has(#session-feedback:not([hidden])) .session-stat-value { font-size: 26px; }
+  #session-complete.completion-sequence h2 { font-size: 32px; letter-spacing: -1px; text-align: center; }
+  #session-complete.completion-sequence .session-stats { flex-direction: row; gap: 24px; }
+  #session-complete.completion-sequence .session-stat-value { font-size: 26px; }
+  #session-complete .completion-navigation .btn { padding: 12px 16px; font-size: 12px; }
 }
+@media (prefers-reduced-motion: reduce) {
+  #session-complete.completion-sequence *, #session-complete.completion-sequence *::before { animation: none !important; transition: none !important; }
+}
+#session-complete .completion-summary .session-stats { max-height: 180px; transition: max-height 900ms ease, margin 900ms ease; }
+#session-complete .completion-summary #sc-streak { max-height: 80px; transition: max-height 900ms ease, margin 900ms ease; }
+#session-complete[data-phase="title"] .completion-summary .session-stats,
+#session-complete[data-phase="title"] .completion-summary #sc-streak { max-height: 0; margin: 0; }
