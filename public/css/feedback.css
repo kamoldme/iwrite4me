@@ -55,3 +55,12 @@
 
 #completion-next { margin-top: 32px; min-width: 140px; }
 #completion-next[hidden] { display: none !important; }
+
+.feedback-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 10px; }
+.feedback-meta span:last-child { text-align: right; white-space: nowrap; }
+#session-complete[data-phase="feedback"] { justify-content: center; gap: 16px; overflow-y: auto; }
+#session-complete[data-phase="feedback"] .completion-stage { flex: 0 0 auto; overflow: visible; }
+#session-complete[data-phase="feedback"] .completion-navigation { margin: 0; }
+@media (max-height: 560px) {
+  #session-complete[data-phase="feedback"] { justify-content: flex-start; }
+}
