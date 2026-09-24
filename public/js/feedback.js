@@ -77,10 +77,9 @@ const SessionFeedback = {
         <div id="feedback-comment-wrap">
           <label for="feedback-comment">Anything you’d like us to know? <span class="feedback-hint">(optional)</span></label>
           <textarea id="feedback-comment" maxlength="1000" rows="2" placeholder="What felt good? What could be better?"></textarea>
-          <p class="feedback-hint">Shared privately with the iWrite team · 1,000 characters max</p>
+          <div class="feedback-meta feedback-hint"><span>Shared privately with the iWrite team</span><span>1,000 characters max</span></div>
         </div>
         <p id="feedback-error" role="alert"></p>
-        <p class="feedback-hint">Optional. Either button below sends your rating and thoughts. Leave blank to skip. You can always share feedback by pressing NEXT.</p>
       </form>`;
       screen.querySelector('.completion-summary').setAttribute('aria-hidden', 'true');
       card.hidden = false;
