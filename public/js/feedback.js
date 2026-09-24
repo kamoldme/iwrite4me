@@ -22,7 +22,7 @@ const SessionFeedback = {
       next.id = 'completion-next';
       next.className = 'btn btn-primary btn-large';
       next.textContent = 'Next';
-      navigation.appendChild(next);
+      summary.appendChild(next);
     }
     screen.classList.add('completion-sequence');
     screen.dataset.phase = 'title';
