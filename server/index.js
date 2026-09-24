@@ -451,6 +451,7 @@ app.use('/api/friends', require('./routes/friends'));
 app.use('/api/stories', require('./routes/stories'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/share', require('./routes/share'));
+app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/support', require('./routes/support'));
 app.use('/api/duels', require('./routes/duels'));
 app.use('/api/stripe', require('./routes/stripe').router);

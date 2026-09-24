@@ -1,0 +1,27 @@
+#session-feedback[hidden], #session-feedback [hidden] { display: none !important; }
+#session-feedback { box-sizing: border-box; width: min(440px, calc(100vw - 40px)); margin: 20px auto; padding: 22px; border: 1px solid var(--border, #ddd); border-radius: 16px; background: var(--bg-card, var(--bg-secondary, #fff)); color: var(--text-primary, #222); text-align: center; }
+#session-feedback h3 { font-size: 18px; line-height: 1.4; margin: 0 0 6px; }
+#session-feedback p { margin: 8px 0; }
+.feedback-intro, .feedback-hint { font-size: 12px; line-height: 1.5; color: var(--text-secondary, #666); }
+.feedback-stars { display: flex; justify-content: center; gap: 8px; border: 0; padding: 4px 0; margin: 10px 0 0; }
+.feedback-stars label { position: relative; cursor: pointer; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 8px; }
+.feedback-stars input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; margin: 0; }
+.feedback-stars span { font-size: 36px; color: var(--text-muted, #888); pointer-events: none; }
+.feedback-stars .selected span { color: #bd821b; }
+.feedback-stars label:focus-within { outline: 2px solid var(--accent, #6c5ce7); outline-offset: 3px; }
+#feedback-comment-wrap { text-align: left; margin-top: 14px; font-size: 13px; }
+#feedback-comment { display: block; box-sizing: border-box; width: 100%; resize: vertical; min-height: 68px; max-height: 160px; margin-top: 7px; padding: 10px; border: 1px solid var(--border, #ccc); border-radius: 8px; background: var(--bg-primary, #fff); color: inherit; font: inherit; }
+.feedback-actions { display: flex; justify-content: center; gap: 10px; margin: 12px 0; }
+#feedback-error { color: var(--danger, #c33); font-size: 13px; }
+.feedback-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#session-complete.active:has(#session-feedback:not([hidden])) { overflow-y: auto; justify-content: flex-start; padding-top: max(32px, 5vh); padding-bottom: 32px; }
+@media (max-height: 760px) { #session-complete .session-stats { margin: 12px 0; } #session-feedback { margin: 12px auto; padding: 16px; } }
+
+.feedback-actions .btn { min-height: 44px; padding: 10px 18px; border-radius: 24px; }
+#session-feedback { flex-shrink: 0; position: relative; }
+#session-complete > div:has(#sc-dashboard) { flex-wrap: wrap; justify-content: center; }
+@media (max-width: 600px) {
+  #session-complete:has(#session-feedback:not([hidden])) h2 { font-size: 32px; letter-spacing: -1px; text-align: center; }
+  #session-complete:has(#session-feedback:not([hidden])) .session-stats { flex-direction: row; gap: 24px; margin: 16px 0; }
+  #session-complete:has(#session-feedback:not([hidden])) .session-stat-value { font-size: 26px; }
+}

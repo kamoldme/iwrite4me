@@ -318,6 +318,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
             Activity Logs
           </button>
+          <button class="admin-nav-item" data-tab="feedback"><span aria-hidden="true">☆</span> Session Feedback</button>
           <button class="admin-nav-item" data-tab="support">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             Support
@@ -567,6 +568,15 @@
         </div>
 
         <!-- SUPPORT -->
+        <div id="tab-feedback" style="display:none">
+          <h2>Session Feedback</h2>
+          <p id="feedback-summary">Loading feedback…</p>
+          <label for="feedback-filter">Rating</label>
+          <select id="feedback-filter" onchange="loadFeedback(1)"><option value="">All ratings</option><option value="1">1 star</option><option value="2">2 stars</option><option value="3">3 stars</option><option value="4">4 stars</option><option value="5">5 stars</option></select>
+          <button class="admin-btn admin-btn-ghost" onclick="loadFeedback(1)">Refresh</button>
+          <p id="feedback-distribution"></p>
+          <div id="feedback-list"></div><div id="feedback-pagination"></div>
+        </div>
         <div id="tab-support" style="display:none">
           <div class="admin-page-title">Support Tickets</div>
           <div class="admin-toolbar">
@@ -1185,6 +1195,7 @@
       if (tabEl) tabEl.style.display = 'block';
       localStorage.setItem('iwrite_admin_tab', tabName);
       if (history.replaceState) history.replaceState(null, '', '#' + tabName);
+      if (tabName === 'feedback') loadFeedback();
       if (tabName === 'stories') loadStoriesAdmin();
       if (tabName === 'prompts') loadPrompts();
       if (tabName === 'announcements') { loadAnnouncementsAdmin(); resetAnnouncementForm(); loadAnnAiQuota(); }
@@ -2625,6 +2636,26 @@
     }
 
     // ===== SUPPORT =====
+    let feedbackLoadId = 0;
+    async function loadFeedback(page = 1) {
+      const loadId = ++feedbackLoadId;
+      const list = document.getElementById('feedback-list');
+      list.textContent = 'Loading…';
+      try {
+        const rating = document.getElementById('feedback-filter').value;
+        const data = await adminRequest(`/admin/feedback?page=${page}&rating=${rating}`);
+        if (loadId !== feedbackLoadId) return;
+        document.getElementById('feedback-summary').textContent = data.total ? `${data.total} responses · Average ${data.average.toFixed(1)}/5 · ${data.positivePercent}% positive (4–5 stars)` : 'No feedback yet. Responses will appear after completed sessions.';
+        document.getElementById('feedback-distribution').textContent = [5,4,3,2,1].map(r => `${r}★: ${data.distribution.find(d => d.rating === r)?.count || 0}`).join(' · ');
+        list.innerHTML = data.items.map(item => `<article style="border:1px solid var(--border,#ddd);border-radius:12px;padding:18px;margin:12px 0">
+          <strong>${item.rating}/5 ${'★'.repeat(item.rating)}</strong> · ${esc(item.name)} ${item.username ? '(@' + esc(item.username) + ')' : ''}
+          <p style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(item.comment || 'No comment')}</p>
+          <small>${esc(new Date(item.createdAt).toLocaleString())} · ${esc(item.mode || 'standard')} · ${Number(item.wordCount) || 0} words · ${Math.round((Number(item.duration) || 0) / 60)} min</small>
+        </article>`).join('') || '<p>No responses for this rating.</p>';
+        document.getElementById('feedback-pagination').innerHTML = `<button class="admin-btn admin-btn-ghost" ${page <= 1 ? 'disabled' : ''} onclick="loadFeedback(${page - 1})">Previous</button> Page ${page} of ${data.pages} <button class="admin-btn admin-btn-ghost" ${page >= data.pages ? 'disabled' : ''} onclick="loadFeedback(${page + 1})">Next</button>`;
+      } catch { if (loadId === feedbackLoadId) list.textContent = 'Could not load feedback. Please refresh to try again.'; }
+    }
+
     async function loadSupport() {
       try {
         let tickets = await adminRequest('/admin/support');
@@ -3769,7 +3800,7 @@
     };
 
     // ===== SWIPE BETWEEN TABS =====
-    const ADMIN_TAB_ORDER = ['overview','users','documents','stories','lostfiles','logs','support','duels','maintenance','subscriptions','prompts','announcements'];
+    const ADMIN_TAB_ORDER = ['overview','users','documents','stories','lostfiles','logs','feedback','support','duels','maintenance','subscriptions','prompts','announcements'];
     let _swipeStartX = 0;
     let _swipeStartY = 0;
     const adminMain = document.querySelector('.admin-main');

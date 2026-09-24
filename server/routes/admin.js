@@ -17,6 +17,26 @@ function streakToTreeStage(streak) {
 const router = express.Router();
 router.use(authenticate, requireAdmin);
 
+// Saved session feedback is separate from support tickets.
+router.get('/feedback', async (req, res, next) => {
+  try {
+    const { pool } = require('../utils/storage');
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const rating = Number(req.query.rating);
+    const filter = Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null;
+    const distribution = (await pool.query(`SELECT (data->>'rating')::int AS rating, COUNT(*)::int AS count FROM session_feedback GROUP BY 1 ORDER BY 1`)).rows;
+    const total = distribution.reduce((sum, row) => sum + row.count, 0);
+    const count = filter ? (distribution.find(row => row.rating === filter)?.count || 0) : total;
+    const items = (await pool.query(`SELECT f.data, u.data->>'name' AS name, u.data->>'username' AS username
+      FROM session_feedback f LEFT JOIN users u ON u.id::text = f.data->>'userId'
+      WHERE ($1::int IS NULL OR (f.data->>'rating')::int = $1)
+      ORDER BY f.data->>'createdAt' DESC, f.id LIMIT 25 OFFSET $2`, [filter, (page - 1) * 25])).rows.map(row => ({ ...row.data, name: row.name || 'Deleted account', username: row.username || '' }));
+    res.json({ items, page, pages: Math.max(1, Math.ceil(count / 25)), total, distribution,
+      average: total ? distribution.reduce((sum, row) => sum + row.rating * row.count, 0) / total : null,
+      positivePercent: total ? Math.round(distribution.filter(row => row.rating >= 4).reduce((sum, row) => sum + row.count, 0) / total * 100) : null });
+  } catch (err) { next(err); }
+});
+
 // ===== STATS =====
 router.get('/stats', async (req, res) => {
   const users = await findMany('users.json');

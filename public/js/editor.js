@@ -1547,6 +1547,7 @@ const Editor = {
     App._docsCacheDirty = true;
     try { await App.loadDocuments(true); } catch {}
     this.showComplete(wordCount, duration, xpEarned, result.user);
+    SessionFeedback.show(result.document?.id);
     // Show admin-awarded PRO congrats after session wraps up
     setTimeout(() => App.checkPendingProCongrats(), 1200);
   },

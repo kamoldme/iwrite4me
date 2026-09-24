@@ -17,6 +17,8 @@ const TABLE_MAP = {
   'activities.json': 'activities',
   'logs.json': 'logs',
   'support.json': 'support',
+  'session-feedback.json': 'session_feedback',
+  'feedback-state.json': 'feedback_state',
   'stories.json': 'stories',
   'story-comments.json': 'story_comments',
   'story-likes.json': 'story_likes',
