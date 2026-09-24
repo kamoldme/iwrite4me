@@ -4,7 +4,7 @@ const { findOne } = require('../utils/storage');
 const { recordFeedback } = require('../utils/feedback');
 router.use(authenticate);
 router.post('/:documentId/prompt', async (req, res, next) => {
-  try { res.json(await recordFeedback(req.user.id, req.params.documentId)); }
+  try { res.json(await recordFeedback(req.user.id, req.params.documentId, null, Date.now(), { manual: req.body?.manual === true })); }
   catch (err) { if (err.status) return res.status(err.status).json({ error: err.message }); next(err); }
 });
 router.post('/:documentId', async (req, res, next) => {

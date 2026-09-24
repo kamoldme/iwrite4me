@@ -7,7 +7,7 @@ function validate(rating, comment = '') {
   if (typeof comment !== 'string' || comment.length > 1000) throw fail(400, 'Comments must be at most 1,000 characters.');
   return comment.trim();
 }
-async function recordFeedback(userId, documentId, input = null, now = Date.now()) {
+async function recordFeedback(userId, documentId, input = null, now = Date.now(), { manual = false } = {}) {
   if (!UUID.test(documentId || '')) throw fail(400, 'Invalid session.');
   const comment = input ? validate(input.rating, input.comment) : '';
   const client = await pool.connect();
@@ -20,20 +20,20 @@ async function recordFeedback(userId, documentId, input = null, now = Date.now()
     const existing = (await client.query('SELECT data FROM session_feedback WHERE id = $1', [documentId])).rows[0]?.data;
     if (existing) {
       await client.query('COMMIT');
-      return { eligible: false, duplicate: true, nextPromptAt: state.nextPromptAt };
+      return { eligible: false, duplicate: true, previousFeedback: { rating: existing.rating, comment: existing.comment }, nextPromptAt: state.nextPromptAt };
     }
     const age = now - Date.parse(doc.completedAt);
     if (!doc.completed || doc.deleted || doc.deactivatedByAdmin || !(doc.wordCount > 0) || !Number.isFinite(age) || age < 0 || age > DAY) {
       throw fail(409, 'Feedback is available only just after a completed session.');
     }
-    if (!input && Date.parse(state.nextPromptAt) > now) {
+    if (!input && !manual && Date.parse(state.nextPromptAt) > now) {
       await client.query('COMMIT');
       return { eligible: false, nextPromptAt: state.nextPromptAt };
     }
     if (input && (state.documentId !== documentId || !(Date.parse(state.nextPromptAt) > now))) {
       throw fail(409, 'This feedback invitation has expired.');
     }
-    const nextPromptAt = new Date(now + (input ? 30 : 7) * DAY).toISOString();
+    const nextPromptAt = new Date(Math.max(Date.parse(state.nextPromptAt) || 0, now + (input ? 30 : 7) * DAY)).toISOString();
     let feedback;
     if (input) {
       feedback = { id: documentId, userId, documentId, rating: input.rating, comment, mode: doc.mode,
