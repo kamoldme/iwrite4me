@@ -52,3 +52,6 @@
 
 .completion-navigation [hidden] { display: none !important; }
 .feedback-skip-error { color: inherit; font: inherit; background: none; border: 0; text-decoration: underline; cursor: pointer; }
+
+#completion-next { margin-top: 32px; min-width: 140px; }
+#completion-next[hidden] { display: none !important; }
