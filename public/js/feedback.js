@@ -27,7 +27,8 @@ const SessionFeedback = {
     screen.classList.add('completion-sequence');
     screen.dataset.phase = 'title';
     document.getElementById('sc-new-session').textContent = 'START AGAIN';
-    document.getElementById('sc-dashboard').textContent = 'GO TO DASHBOARD';
+    document.getElementById('sc-dashboard').textContent = 'SUBMIT';
+    document.getElementById('sc-dashboard').classList.replace('btn-ghost', 'btn-primary');
     this.setNavigation(false);
     document.getElementById('completion-next').hidden = true;
     screen.querySelector('.completion-summary').removeAttribute('aria-hidden');
@@ -53,7 +54,7 @@ const SessionFeedback = {
   },
   setNavigation(ready) {
     ['sc-dashboard', 'sc-new-session'].forEach(id => {
-      document.getElementById(id).hidden = !ready;
+      document.getElementById(id).hidden = !ready || id === 'sc-new-session';
       document.getElementById(id).disabled = false;
     });
   },
@@ -109,7 +110,7 @@ const SessionFeedback = {
         card.querySelector('#feedback-error').textContent = 'Your feedback for this session is already saved. Thank you!';
       }
     } catch {
-      if (this.isCurrent(generation)) card.querySelector('#feedback-error').textContent = 'Feedback could not connect. Choose a rating and either button to retry, or leave blank to continue.';
+      if (this.isCurrent(generation)) card.querySelector('#feedback-error').textContent = 'Feedback could not connect. Choose a rating and press Submit to retry, or leave blank to continue.';
     }
     finally {
       if (this.isCurrent(generation)) {
