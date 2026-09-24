@@ -177,6 +177,8 @@ app.use('/api/auth/google', authLimiter);
 app.use('/api/auth/change-password', authLimiter);
 app.use('/api/auth/request-password-reset', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
+// Public country-level presence has its own visitor-aware rate limit.
+app.use('/api/live-map', require('./routes/live-map'));
 app.use('/api', apiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
