@@ -1595,7 +1595,7 @@ const App = {
 
     document.getElementById('sc-dashboard').addEventListener('click', () => {
       document.getElementById('session-complete').classList.remove('active');
-      this.loadDashboard();
+      this.switchView('dashboard');
     });
 
     document.getElementById('sc-new-session').addEventListener('click', () => {
