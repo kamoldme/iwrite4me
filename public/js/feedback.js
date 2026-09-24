@@ -16,10 +16,20 @@ const SessionFeedback = {
       stage.appendChild(summary);
       stage.appendChild(document.getElementById('session-feedback'));
       screen.prepend(stage);
-      document.getElementById('sc-dashboard').parentElement.classList.add('completion-navigation');
+      const navigation = document.getElementById('sc-dashboard').parentElement;
+      navigation.classList.add('completion-navigation');
+      const next = document.createElement('button');
+      next.id = 'completion-next';
+      next.className = 'btn btn-primary btn-large';
+      next.textContent = 'Next';
+      navigation.appendChild(next);
     }
     screen.classList.add('completion-sequence');
     screen.dataset.phase = 'title';
+    document.getElementById('sc-new-session').textContent = 'START AGAIN';
+    document.getElementById('sc-dashboard').textContent = 'GO TO DASHBOARD';
+    this.setNavigation(false);
+    document.getElementById('completion-next').hidden = true;
     screen.querySelector('.completion-summary').removeAttribute('aria-hidden');
     return screen;
   },
@@ -29,14 +39,35 @@ const SessionFeedback = {
     card.hidden = true;
     const screen = this.prepareSequence();
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // Give the completion its own moment before revealing the session numbers.
-    await this.wait(reducedMotion ? 0 : 4000);
+    // The entire reveal finishes within two seconds; only Next opens feedback.
+    await this.wait(reducedMotion ? 0 : 500);
     if (!this.isCurrent(generation)) return;
     screen.dataset.phase = 'stats';
-    await this.wait(reducedMotion ? 0 : 3400);
-    if (!this.isCurrent(generation) || !documentId) return;
+    await this.wait(reducedMotion ? 0 : 1500);
+    if (!this.isCurrent(generation)) return;
+    const next = document.getElementById('completion-next');
+    next.hidden = false;
+    next.disabled = false;
+    next.textContent = 'Next';
+    next.onclick = () => this.openFeedback(documentId, generation);
+  },
+  setNavigation(ready) {
+    ['sc-dashboard', 'sc-new-session'].forEach(id => {
+      document.getElementById(id).hidden = !ready;
+      document.getElementById(id).disabled = false;
+    });
+  },
+  async openFeedback(documentId, generation) {
+    if (!this.isCurrent(generation)) return;
+    const screen = document.getElementById('session-complete');
+    const card = document.getElementById('session-feedback');
+    const next = document.getElementById('completion-next');
+    if (next.disabled) return;
+    next.disabled = true;
+    next.textContent = 'Loading…';
     try {
-      const result = await API.request(`/feedback/${encodeURIComponent(documentId)}/prompt`, { method: 'POST' });
+      if (!documentId) return;
+      const result = await API.request(`/feedback/${encodeURIComponent(documentId)}/prompt`, { method: 'POST', signal: AbortSignal.timeout(8000) });
       if (!this.isCurrent(generation) || !result.eligible) return;
       this.documentId = documentId;
       card.innerHTML = `<form id="session-feedback-form">
@@ -46,18 +77,14 @@ const SessionFeedback = {
           ${['Not enjoyable', 'Could be better', 'Okay', 'Enjoyable', 'Loved it'].map((label, i) => `<label><input type="radio" name="rating" value="${i + 1}" required aria-label="${i + 1} ${i ? 'stars' : 'star'} — ${label}"><span aria-hidden="true">★</span></label>`).join('')}
         </fieldset>
         <p id="feedback-rating-label" class="feedback-hint" aria-live="polite">Choose 1–5 stars</p>
-        <div id="feedback-comment-wrap" hidden>
+        <div id="feedback-comment-wrap">
           <label for="feedback-comment">Anything you’d like us to know? <span class="feedback-hint">(optional)</span></label>
           <textarea id="feedback-comment" maxlength="1000" rows="2" placeholder="What felt good? What could be better?"></textarea>
           <p class="feedback-hint">Shared privately with the iWrite team · 1,000 characters max</p>
         </div>
         <p id="feedback-error" role="alert"></p>
-        <div class="feedback-actions"><button type="submit" class="btn btn-primary" id="feedback-submit" disabled>Send feedback</button><button type="button" class="btn btn-ghost" id="feedback-skip">Not now</button></div>
-        <p class="feedback-hint">Optional. After you send, we won’t ask again for 30 days.</p>
+        <p class="feedback-hint">Optional. Either button below sends your rating and thoughts. Leave blank to skip. We won’t ask again for 30 days after you send.</p>
       </form>`;
-      screen.dataset.phase = 'leaving';
-      await this.wait(reducedMotion ? 0 : 650);
-      if (!this.isCurrent(generation)) return;
       screen.querySelector('.completion-summary').setAttribute('aria-hidden', 'true');
       card.hidden = false;
       screen.dataset.phase = 'feedback';
@@ -66,11 +93,16 @@ const SessionFeedback = {
         radios.forEach(radio => radio.parentElement.classList.toggle('selected', Number(radio.value) <= Number(input.value)));
         card.querySelector('#feedback-rating-label').textContent = input.getAttribute('aria-label');
         card.querySelector('#feedback-comment-wrap').hidden = false;
-        card.querySelector('#feedback-submit').disabled = false;
+
       }));
-      card.querySelector('#feedback-skip').onclick = () => this.hide();
-      card.querySelector('form').onsubmit = event => { event.preventDefault(); this.submit(card, generation, documentId); };
+      card.querySelector('form').onsubmit = event => event.preventDefault();
     } catch { /* A feedback outage must never interrupt a saved session. */ }
+    finally {
+      if (this.isCurrent(generation)) {
+        next.hidden = true;
+        this.setNavigation(true);
+      }
+    }
   },
   hide() {
     this.generation++;
@@ -79,28 +111,65 @@ const SessionFeedback = {
     screen.dataset.phase = 'stats';
     screen.querySelector('.completion-summary')?.removeAttribute('aria-hidden');
   },
-  async submit(card, generation, documentId) {
+  async continueTo(button) {
+    const card = document.getElementById('session-feedback');
+    if (this.sending) return;
     const rating = Number(card.querySelector('input[name="rating"]:checked')?.value);
-    const button = card.querySelector('#feedback-submit');
-    if (!rating || button.disabled) return;
-    button.disabled = true;
-    button.textContent = 'Sending…';
-    card.querySelector('#feedback-error').textContent = '';
-    try {
-      await API.request(`/feedback/${encodeURIComponent(documentId)}`, {
-        method: 'POST', body: JSON.stringify({ rating, comment: card.querySelector('textarea').value })
-      });
-      if (generation !== this.generation) return;
-      card.innerHTML = '<p role="status" tabindex="-1"><strong>Thank you — your feedback is saved.</strong><br><span class="feedback-hint">We won’t ask again for 30 days. Happy writing!</span></p>';
-      card.querySelector('[role="status"]').focus({ preventScroll: true });
-    } catch (err) {
-      if (generation !== this.generation) return;
-      card.querySelector('#feedback-error').textContent = err.message || 'Could not send. Please try again.';
-      button.disabled = false;
-      button.textContent = 'Try again';
+    const comment = card.querySelector('textarea')?.value || '';
+    if (!rating && comment.trim()) {
+      card.querySelector('#feedback-error').textContent = 'Choose a star rating to send your thoughts, or clear the comment to skip.';
+      return;
     }
+    if (rating) {
+      this.sending = true;
+      const generation = this.generation;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      ['sc-dashboard', 'sc-new-session'].forEach(id => document.getElementById(id).disabled = true);
+      card.querySelector('#feedback-error').textContent = 'Sending your feedback…';
+      try {
+        await API.request(`/feedback/${encodeURIComponent(this.documentId)}`, {
+          method: 'POST', body: JSON.stringify({ rating, comment }), signal: controller.signal
+        });
+        if (!this.isCurrent(generation)) return;
+      } catch {
+        if (!this.isCurrent(generation)) return;
+        const error = card.querySelector('#feedback-error');
+        error.textContent = 'Could not send. Try again, or ';
+        const skip = document.createElement('button');
+        skip.type = 'button';
+        skip.className = 'feedback-skip-error';
+        skip.textContent = 'continue without sending';
+        skip.onclick = () => this.navigate(button);
+        error.appendChild(skip);
+        return;
+      } finally {
+        clearTimeout(timeout);
+        this.sending = false;
+        if (this.isCurrent(generation)) this.setNavigation(true);
+      }
+    }
+    this.navigate(button);
+  },
+  navigate(button) {
+    // A nested click on the same button is ignored by browsers. Resume after
+    // the original click finishes, including the blank-feedback path.
+    queueMicrotask(() => {
+      this.allowNavigation = true;
+      try { button.click(); } finally { this.allowNavigation = false; }
+    });
   }
 };
+// Capture before the app's existing navigation listeners so chosen feedback is
+// persisted first. Blank feedback still uses the original navigation immediately.
+document.addEventListener('click', event => {
+  const button = event.target.closest?.('#sc-dashboard, #sc-new-session');
+  if (!button || SessionFeedback.allowNavigation) return;
+  if (document.getElementById('session-complete').dataset.phase !== 'feedback') return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  SessionFeedback.continueTo(button);
+}, true);
 document.addEventListener('DOMContentLoaded', () => {
   ['sc-dashboard', 'sc-new-session'].forEach(id => document.getElementById(id)?.addEventListener('click', () => SessionFeedback.hide()));
 });
