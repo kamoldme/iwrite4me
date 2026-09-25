@@ -68,6 +68,15 @@ const SessionFeedback = {
     next.textContent = 'Loading…';
     try {
       this.documentId = documentId;
+      // Claim the account's monthly invitation before revealing the form.
+      // Other sessions go straight to the dashboard during the quiet period.
+      this.invitation = this.prepareInvitation(documentId);
+      const result = await this.invitation;
+      if (!this.isCurrent(generation)) return;
+      if (!result.eligible) {
+        document.getElementById('sc-dashboard').click();
+        return;
+      }
       card.innerHTML = `<form id="session-feedback-form">
         <h3 id="feedback-question">How enjoyable was your writing session?</h3>
         <p class="feedback-intro">A quick rating helps us make iWrite better.</p>
@@ -93,27 +102,18 @@ const SessionFeedback = {
 
       }));
       card.querySelector('form').onsubmit = event => event.preventDefault();
-      // NEXT is an explicit opt-in. Render the form immediately, and never let
-      // the automatic-prompt cooldown silently suppress this user action.
       next.hidden = true;
       this.setNavigation(true);
-      this.invitation = this.prepareInvitation(documentId);
-      const result = await this.invitation;
-      if (!this.isCurrent(generation)) return;
-      if (result.duplicate) {
-        const previous = result.previousFeedback;
-        const selected = card.querySelector(`input[value="${previous.rating}"]`);
-        selected.checked = true;
-        selected.dispatchEvent(new Event('change'));
-        card.querySelector('textarea').value = previous.comment || '';
-        card.querySelectorAll('input, textarea').forEach(el => el.disabled = true);
-        card.querySelector('#feedback-error').textContent = 'Your feedback for this session is already saved. Thank you!';
-      }
     } catch {
-      if (this.isCurrent(generation)) card.querySelector('#feedback-error').textContent = 'Feedback could not connect. Choose a rating and press Submit to retry, or leave blank to continue.';
+      if (this.isCurrent(generation)) {
+        next.disabled = false;
+        next.textContent = 'Try again';
+        document.getElementById('sc-dashboard').textContent = 'GO TO DASHBOARD';
+        this.setNavigation(true);
+      }
     }
     finally {
-      if (this.isCurrent(generation)) {
+      if (this.isCurrent(generation) && screen.dataset.phase === 'feedback') {
         next.hidden = true;
         this.setNavigation(true);
       }
@@ -121,7 +121,7 @@ const SessionFeedback = {
   },
   prepareInvitation(documentId) {
     return API.request(`/feedback/${encodeURIComponent(documentId)}/prompt`, {
-      method: 'POST', body: JSON.stringify({ manual: true }), signal: AbortSignal.timeout(8000)
+      method: 'POST', signal: AbortSignal.timeout(8000)
     });
   },
   hide() {

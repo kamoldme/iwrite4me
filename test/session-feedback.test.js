@@ -31,14 +31,14 @@ test('session feedback integration', { skip: !process.env.FEEDBACK_TEST_DATABASE
       await assert.rejects(recordFeedback(randomUUID(), doc.id, null, now), { status: 404 });
       await assert.rejects(recordFeedback(doc.userId, 'invalid', null, now), { status: 400 });
     });
-    await t.test('concurrent invitations produce one prompt; skipping pauses seven days', async () => {
+    await t.test('concurrent invitations produce one prompt; skipping pauses thirty days', async () => {
       const doc = await fixture();
       const replies = await Promise.all([recordFeedback(doc.userId, doc.id, null, now), recordFeedback(doc.userId, doc.id, null, now)]);
       assert.equal(replies.filter(r => r.eligible).length, 1);
-      assert.equal(Date.parse(replies[0].nextPromptAt), now + 7 * DAY);
-      const next = await fixture({ completedAt: new Date(now + 7 * DAY - 1).toISOString() }, doc.userId);
-      assert.equal((await recordFeedback(doc.userId, next.id, null, now + 7 * DAY - 1)).eligible, false);
-      assert.equal((await recordFeedback(doc.userId, next.id, null, now + 7 * DAY)).eligible, true);
+      assert.equal(Date.parse(replies[0].nextPromptAt), now + 30 * DAY);
+      const next = await fixture({ completedAt: new Date(now + 30 * DAY - 1).toISOString() }, doc.userId);
+      assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY - 1)).eligible, false);
+      assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY)).eligible, true);
     });
     await t.test('validation, optional comment, duplicate retry and 30-day boundary', async () => {
       const doc = await fixture();
@@ -55,23 +55,31 @@ test('session feedback integration', { skip: !process.env.FEEDBACK_TEST_DATABASE
       assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY - 1)).eligible, false);
       assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY)).eligible, true);
     });
-    await t.test('manual Next opens feedback during cooldown without resetting the quiet period', async () => {
+    await t.test('NEXT cannot show feedback again within thirty days, even for a different session', async () => {
       const first = await fixture();
       await recordFeedback(first.userId, first.id, null, now);
       const second = await fixture({}, first.userId);
       assert.equal((await recordFeedback(first.userId, second.id, null, now)).eligible, false);
-      assert.equal((await recordFeedback(first.userId, second.id, null, now, { manual: true })).eligible, true);
-      await recordFeedback(first.userId, second.id, { rating: 3, comment: 'Manual feedback' }, now);
+      await assert.rejects(recordFeedback(first.userId, second.id, { rating: 3 }, now), { status: 409 });
+      await recordFeedback(first.userId, first.id, { rating: 3, comment: 'Monthly feedback' }, now);
       const third = await fixture({}, first.userId);
       assert.equal((await recordFeedback(first.userId, third.id, null, now)).eligible, false);
-      const manual = await recordFeedback(first.userId, third.id, null, now, { manual: true });
-      assert.equal(manual.eligible, true);
-      assert.equal(Date.parse(manual.nextPromptAt), now + 30 * DAY);
-      await assert.rejects(recordFeedback(randomUUID(), third.id, null, now, { manual: true }), { status: 404 });
-      const retry = await recordFeedback(first.userId, second.id, null, now, { manual: true });
+      assert.equal(Date.parse((await recordFeedback(first.userId, third.id, null, now)).nextPromptAt), now + 30 * DAY);
+      await assert.rejects(recordFeedback(randomUUID(), third.id, null, now), { status: 404 });
+      const retry = await recordFeedback(first.userId, first.id, null, now);
       assert.equal(retry.duplicate, true);
-      assert.deepEqual(retry.previousFeedback, { rating: 3, comment: 'Manual feedback' });
-      await pool.query('DELETE FROM session_feedback WHERE id=$1', [second.id]);
+      assert.deepEqual(retry.previousFeedback, { rating: 3, comment: 'Monthly feedback' });
+      await pool.query('DELETE FROM session_feedback WHERE id=$1', [first.id]);
+    });
+    await t.test('existing seven-day invitations are extended to the monthly interval', async () => {
+      const first = await fixture();
+      await pool.query('INSERT INTO feedback_state VALUES ($1,$2)', [first.userId, JSON.stringify({ documentId: first.id, nextPromptAt: new Date(now + 7 * DAY).toISOString() })]);
+      const second = await fixture({ completedAt: new Date(now + 7 * DAY).toISOString() }, first.userId);
+      const result = await recordFeedback(first.userId, second.id, null, now + 7 * DAY);
+      assert.equal(result.eligible, false);
+      assert.ok(Date.parse(result.nextPromptAt) > now + 29 * DAY);
+      const third = await fixture({ completedAt: new Date(now + 30 * DAY).toISOString() }, first.userId);
+      assert.equal((await recordFeedback(first.userId, third.id, null, now + 30 * DAY)).eligible, true);
     });
     await t.test('HTTP auth, admin summary, full comment and one notification on retries', async () => {
       const express = require('express');
