@@ -7,7 +7,7 @@ function validate(rating, comment = '') {
   if (typeof comment !== 'string' || comment.length > 1000) throw fail(400, 'Comments must be at most 1,000 characters.');
   return comment.trim();
 }
-async function recordFeedback(userId, documentId, input = null, now = Date.now(), { manual = false } = {}) {
+async function recordFeedback(userId, documentId, input = null, now = Date.now()) {
   if (!UUID.test(documentId || '')) throw fail(400, 'Invalid session.');
   const comment = input ? validate(input.rating, input.comment) : '';
   const client = await pool.connect();
@@ -26,21 +26,36 @@ async function recordFeedback(userId, documentId, input = null, now = Date.now()
     if (!doc.completed || doc.deleted || doc.deactivatedByAdmin || !(doc.wordCount > 0) || !Number.isFinite(age) || age < 0 || age > DAY) {
       throw fail(409, 'Feedback is available only just after a completed session.');
     }
-    if (!input && !manual && Date.parse(state.nextPromptAt) > now) {
+    let nextAllowedAt = Date.parse(state.nextPromptAt) || 0;
+    if (!input && state.documentId && !state.lastPromptAt) {
+      // Before this change, unanswered invitations lasted seven days. Extend
+      // those existing account invitations so deployment does not ask early.
+      const previous = (await client.query('SELECT data FROM documents WHERE id = $1', [state.documentId])).rows[0]?.data;
+      if (previous?.userId === userId && Number.isFinite(Date.parse(previous.completedAt))) {
+        nextAllowedAt = Math.max(nextAllowedAt, Date.parse(previous.completedAt) + 30 * DAY);
+        if (nextAllowedAt !== Date.parse(state.nextPromptAt)) {
+          state.nextPromptAt = new Date(nextAllowedAt).toISOString();
+          await client.query('UPDATE feedback_state SET data = $2 WHERE id = $1', [userId, JSON.stringify(state)]);
+        }
+      }
+    }
+    if (!input && nextAllowedAt > now) {
       await client.query('COMMIT');
       return { eligible: false, nextPromptAt: state.nextPromptAt };
     }
     if (input && (state.documentId !== documentId || !(Date.parse(state.nextPromptAt) > now))) {
       throw fail(409, 'This feedback invitation has expired.');
     }
-    const nextPromptAt = new Date(Math.max(Date.parse(state.nextPromptAt) || 0, now + (input ? 30 : 7) * DAY)).toISOString();
+    // Claim the monthly invitation when the person opens it, even if they
+    // choose not to submit a rating. A successful submission restarts it.
+    const nextPromptAt = new Date(Math.max(Date.parse(state.nextPromptAt) || 0, now + 30 * DAY)).toISOString();
     let feedback;
     if (input) {
       feedback = { id: documentId, userId, documentId, rating: input.rating, comment, mode: doc.mode,
         wordCount: doc.wordCount, duration: doc.duration, createdAt: new Date(now).toISOString() };
       await client.query('INSERT INTO session_feedback (id, data) VALUES ($1, $2)', [documentId, JSON.stringify(feedback)]);
     }
-    await client.query('UPDATE feedback_state SET data = $2 WHERE id = $1', [userId, JSON.stringify({ documentId, nextPromptAt })]);
+    await client.query('UPDATE feedback_state SET data = $2 WHERE id = $1', [userId, JSON.stringify({ documentId, nextPromptAt, lastPromptAt: new Date(now).toISOString() })]);
     await client.query('COMMIT');
     return { eligible: !input, nextPromptAt, feedback };
   } catch (err) {
