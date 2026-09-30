@@ -1,0 +1,33 @@
+/* Keep mode choices steady as the pointer crosses card boundaries. */
+.mode-selector .mode-option {
+  transition: border-color .2s ease, box-shadow .2s ease !important;
+}
+
+.mode-selector:not(.has-chosen) .mode-option:hover,
+.mode-selector:not(.has-chosen):hover .mode-option:not(:hover) {
+  filter: none !important;
+  transform: none !important;
+}
+
+.mode-selector:not(.has-chosen):hover .mode-option:not(:hover) .mode-card-scrim {
+  background: linear-gradient(180deg, transparent 38%, rgba(0,0,0,.6) 100%);
+}
+
+.mode-selector:not(.has-chosen):hover .mode-option:not(:hover) .mode-card-text {
+  opacity: 1;
+}
+
+.mode-selector.has-chosen .mode-option:not(.active):hover {
+  filter: grayscale(.65) brightness(.78) !important;
+  transform: none !important;
+}
+
+.mode-selector.has-chosen .mode-option.active:hover,
+#session-modal .claude-mode-selector .mode-option:hover {
+  transform: none !important;
+}
+
+/* The old redesign recolored the check glyph to match its green circle. */
+.upgrade-card-features li::before {
+  color: #fff !important;
+}
