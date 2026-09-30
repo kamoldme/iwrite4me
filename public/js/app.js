@@ -6048,14 +6048,6 @@ const App = {
     return Number((this._payCfg && this._payCfg.uzs && this._payCfg.uzs[duration]) || this._defaultLocalPrices[duration] || 0);
   },
 
-  _localValueLabel(duration) {
-    const d = this._stripePricing[duration] || {};
-    const local = this._localPrice(duration);
-    const delta = local && d.stripeUzs ? Math.max(0, d.stripeUzs - local) : 0;
-    if (!delta || delta < 100) return 'same value';
-    return `${this._formatSom(delta)} cheaper`;
-  },
-
   _paymentLogo(provider, extraClass = '') {
     if (provider === 'stripe') return `<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe ${extraClass}">`;
     if (provider === 'click') return `<img src="/img/click-logo.png?v=1" alt="Click" class="pay-logo pay-logo-click ${extraClass}" data-chip="click">`;
@@ -6085,15 +6077,11 @@ const App = {
           <span>${d.period}</span>
         </div>
         <div class="upgrade-price-option-payments">
-          <div class="upgrade-provider-price">
+          <div class="upgrade-payment-logos">
             ${this._paymentLogo('stripe')}
-            <span>${this._formatSom(d.stripeUzs)}</span>
-          </div>
-          <div class="upgrade-provider-price upgrade-provider-price-click">
             ${this._paymentLogo('click')}
-            <span>${this._formatSom(local)}</span>
-            <em>${this._localValueLabel(duration)}</em>
           </div>
+          <strong class="upgrade-price-som">${this._formatSom(local)}</strong>
         </div>
       </button>`;
     }).join('');
@@ -6324,7 +6312,6 @@ const App = {
             ${hasClick ? `<button type="button" class="payment-choice-method${selectedProvider === 'click' ? ' active' : ''}" data-provider="click">
               ${this._paymentLogo('click')}
               <span class="payment-choice-method-copy"><strong>Click</strong><small data-click-price></small></span>
-              <em data-click-value></em>
             </button>` : ''}
           </div>
         </div>
@@ -6337,10 +6324,8 @@ const App = {
       const local = this._localPrice(state.duration);
       const stripeLabel = modal.querySelector('[data-stripe-price]');
       const clickLabel = modal.querySelector('[data-click-price]');
-      const clickValue = modal.querySelector('[data-click-value]');
-      if (stripeLabel) stripeLabel.textContent = `${this._formatSom(stripe.stripeUzs)} equivalent`;
+      if (stripeLabel) stripeLabel.textContent = `$${stripe.price} ${stripe.period}`;
       if (clickLabel) clickLabel.textContent = `${this._formatSom(local)} in UZS`;
-      if (clickValue) clickValue.textContent = this._localValueLabel(state.duration);
     };
     updatePrices();
     this._bindPayLogoFallbacks(modal);

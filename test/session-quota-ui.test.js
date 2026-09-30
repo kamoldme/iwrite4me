@@ -51,7 +51,10 @@ test('the dashboard count follows the newest quota response and the picker keeps
 test('Click branding and checkout use the configured local payment route', async () => {
   const { app, sandbox } = loadApp(async () => ({ plan: 'free', remaining: 3 }));
   assert.match(app._paymentLogo('click'), /click-logo\.png/);
-  assert.match(app._renderUpgradePriceRows(), /alt="Click"/);
+  const priceRows = app._renderUpgradePriceRows();
+  assert.match(priceRows, /alt="Click"/);
+  assert.equal((priceRows.match(/upgrade-price-som/g) || []).length, 3);
+  assert.doesNotMatch(priceRows, /25,000 so'm|62,000 so'm|112,000 so'm|cheaper|same value/);
   const requests = [];
   sandbox.API.getToken = () => 'test-token';
   sandbox.fetch = async (url, options) => {
