@@ -27,6 +27,51 @@
   transform: none !important;
 }
 
+/* The image alone zooms, with the same timing on hover in and out. */
+.mode-selector .mode-option img,
+#session-modal .claude-mode-selector .mode-option img {
+  transform: scale(1.02);
+  transition: transform .42s cubic-bezier(.4,0,.2,1) !important;
+}
+
+.mode-selector .mode-option:hover img,
+#session-modal .claude-mode-selector .mode-option:hover img {
+  transform: scale(1.12) !important;
+}
+
+/* The picker itself zooms back out on close at the same pace as it enters. */
+#session-modal {
+  transition: opacity .42s ease, visibility .42s ease;
+}
+
+#session-modal .mp-shell {
+  opacity: .88;
+  transform: scale(.92);
+  transition: max-width .4s cubic-bezier(.4,0,.2,1),
+              transform .42s cubic-bezier(.4,0,.2,1), opacity .42s ease;
+}
+
+#session-modal.active .mp-shell {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.dashboard-start-btn,
+.claude-dashboard .dashboard-start-btn {
+  height: 46px !important;
+  min-height: 46px !important;
+  padding-inline: 28px !important;
+  font-size: 13px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #session-modal,
+  #session-modal .mp-shell,
+  .mode-selector .mode-option img {
+    transition: none !important;
+  }
+}
+
 /* The old redesign recolored the check glyph to match its green circle. */
 .upgrade-card-features li::before {
   color: #fff !important;
