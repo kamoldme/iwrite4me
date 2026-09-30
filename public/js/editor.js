@@ -802,7 +802,7 @@ const Editor = {
 
   startDangerMode() {
     this.dangerInterval = setInterval(() => {
-      if (!this.active) return;
+      if (!this.active || this._completing || this._isTimerExpired()) return;
       const elapsed = Date.now() - this.lastKeystroke;
       const total = this.dangerThreshold;
       const remaining = total - elapsed;
@@ -861,7 +861,7 @@ const Editor = {
   },
 
   handleChillExpire() {
-    if (this._chillExpiring) return;
+    if (this._chillExpiring || this._completing || this._isTimerExpired()) return;
     this._chillExpiring = true;
 
     // Out of hearts → classic fail
@@ -937,6 +937,7 @@ const Editor = {
   },
 
   async failDangerMode() {
+    if (!this.active || this._completing || this._isTimerExpired()) return;
     this.cleanup();
     this.abandoned = true;
 
@@ -1436,9 +1437,20 @@ const Editor = {
     // session resumed on page load awards XP many times over.
     if (this._completing) return;
     this._completing = true;
+    const sessionExpired = timerExpired || this._isTimerExpired();
+    if (sessionExpired) {
+      // The writing period has ended. Naming the document must never spend
+      // hearts, delete text, or trigger tab-abandonment while the prompt is open.
+      this.active = false;
+      clearInterval(this.timerInterval);
+      clearInterval(this.dangerInterval);
+      clearInterval(this.tabCountdown);
+      this.vignette.classList.remove('active');
+      this.vignette.style.opacity = 0;
+    }
     // An expired session is over: drop its saved state now so a refresh mid-prompt
     // can't resume-and-complete it again (the "every refresh gives XP" bug).
-    if (timerExpired) this._clearSessionState();
+    if (sessionExpired) this._clearSessionState();
 
     // Check early complete limit (only when user clicks Complete, not when timer expires)
     // Bypass during maintenance — unlimited saves/copies
@@ -1471,7 +1483,7 @@ const Editor = {
       const currentTitle = (this.titleInput.value || '').trim();
       if (!currentTitle) {
         const chosen = await App.promptTitle();
-        if (chosen === null) {
+        if (chosen === null && !sessionExpired) {
           // User cancelled the prompt — don't complete
           this._completing = false;
           return;
@@ -1485,7 +1497,9 @@ const Editor = {
     this.cleanup();
 
     const wordCount = this.getWordCount();
-    const duration = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
+    const duration = sessionExpired && this.duration > 0
+      ? this.duration * 60
+      : Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
 
     // If no words were written, silently discard — no XP, no streak, no stats
     if (wordCount === 0) {
