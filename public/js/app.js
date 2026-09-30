@@ -3663,7 +3663,7 @@ const App = {
   showDailyLimitModal(quota = this._sessionQuota) {
     this.closeSessionModal();
     const reset = document.getElementById('daily-limit-reset');
-    reset.textContent = quota?.resetAt ? `${this._sessionResetLabel(quota.resetAt)}. Your free sessions will be available again then.` : '';
+    reset.textContent = quota?.resetAt ? this._sessionResetLabel(quota.resetAt) : '';
     document.getElementById('daily-limit-stripe-price').textContent = `$${this._stripePricing['1m'].price}/month`;
     document.getElementById('daily-limit-payme-price').textContent = `${this._formatSom(this._paymePrice('1m'))}/month`;
     document.getElementById('daily-limit-modal').classList.add('active');

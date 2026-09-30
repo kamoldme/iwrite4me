@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/css/redesign.css?v=7">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="/css/feedback.css?v=5">
-  <link rel="stylesheet" href="/css/daily-limit.css?v=1">
+  <link rel="stylesheet" href="/css/daily-limit.css?v=2">
 </head>
 <body>
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
@@ -1478,12 +1478,12 @@
     <div class="modal-overlay" id="daily-limit-modal" role="dialog" aria-modal="true" aria-labelledby="daily-limit-title" aria-describedby="daily-limit-description">
       <div class="modal daily-limit-card">
         <p class="daily-limit-kicker">Daily free limit</p>
-        <h2 id="daily-limit-title">You've used all 3 free sessions today.</h2>
+        <h2 id="daily-limit-title">3 free sessions used</h2>
         <p id="daily-limit-reset" class="daily-limit-reset"></p>
-        <p id="daily-limit-description">Support iWrite's development and keep your writing momentum with unlimited Pro sessions.</p>
+        <p id="daily-limit-description">Go Pro for unlimited sessions and support iWrite's development.</p>
         <div class="daily-limit-prices">
-          <p><strong id="daily-limit-stripe-price">$1.99/month</strong><span>with Stripe</span></p>
-          <p><strong id="daily-limit-payme-price">24,990 so'm/month</strong><span>with Payme</span></p>
+          <p><strong id="daily-limit-stripe-price">$1.99/month</strong><img class="daily-limit-logo daily-limit-logo-stripe" src="/img/stripe.svg?v=1" alt="Stripe"></p>
+          <p><strong id="daily-limit-payme-price">24,990 so'm/month</strong><img class="daily-limit-logo daily-limit-logo-payme" src="https://cdn.payme.uz/logo/pb_color_logo_horizontal.svg" alt="Payme"></p>
         </div>
         <div class="daily-limit-actions">
           <button type="button" class="btn btn-primary" id="daily-limit-upgrade">Upgrade to Pro</button>
@@ -1808,7 +1808,7 @@
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/feedback.js?v=live-count-1"></script>
   <script src="/js/editor.js?v=live-count-1"></script>
-  <script src="/js/app.js?v=live-count-1"></script>
+  <script src="/js/app.js?v=daily-limit-polish-1"></script>
   <script src="/js/stories.js?v=21"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
