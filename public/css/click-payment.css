@@ -1,0 +1,41 @@
+.pay-logo-click,
+#daily-limit-modal .daily-limit-logo-click {
+  display: block;
+  width: 86px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 5px;
+  opacity: 1;
+}
+
+#daily-limit-modal .daily-limit-logo-click { width: 82px; height: 32px; }
+
+.upgrade-provider-price-click { color: var(--text-primary); }
+.upgrade-provider-price-click em {
+  color: var(--accent);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+  justify-self: end;
+}
+.upgrade-provider-price .pay-logo-click {
+  width: 60px;
+  height: 24px;
+  max-height: none;
+  object-fit: cover;
+}
+.payment-choice-method .pay-logo-click {
+  width: 74px;
+  height: 30px;
+  max-height: none;
+  object-fit: cover;
+}
+
+@media (max-width: 680px) {
+  .upgrade-provider-price-click em {
+    grid-column: 2;
+    justify-self: start;
+    white-space: normal;
+  }
+}

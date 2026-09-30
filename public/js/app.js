@@ -3665,7 +3665,7 @@ const App = {
     const reset = document.getElementById('daily-limit-reset');
     reset.textContent = quota?.resetAt ? this._sessionResetLabel(quota.resetAt) : '';
     document.getElementById('daily-limit-stripe-price').textContent = `$${this._stripePricing['1m'].price}/month`;
-    document.getElementById('daily-limit-payme-price').textContent = `${this._formatSom(this._paymePrice('1m'))}/month`;
+    document.getElementById('daily-limit-click-price').textContent = `${this._formatSom(this._localPrice('1m'))}/month`;
     document.getElementById('daily-limit-modal').classList.add('active');
     document.getElementById('daily-limit-upgrade').focus();
   },
@@ -6037,29 +6037,28 @@ const App = {
     '6m': { price: '8.99', period: '/6 months', label: '6 months', shortLabel: '6 Mo', stripeUzs: 112000, savings: 'Best value' }
   },
   _selectedDuration: '1m',
-  _defaultPaymePrices: { '1m': 24990, '3m': 59990, '6m': 99990 },
-  _paymeLogoUrl: 'https://cdn.payme.uz/logo/pb_color_logo_horizontal.svg',
+  _defaultLocalPrices: { '1m': 24990, '3m': 59990, '6m': 99990 },
 
   _formatSom(amount) {
     const n = Number(amount || 0);
     return n ? `${n.toLocaleString('en-US')} so'm` : 'Not available';
   },
 
-  _paymePrice(duration) {
-    return Number((this._payCfg && this._payCfg.uzs && this._payCfg.uzs[duration]) || this._defaultPaymePrices[duration] || 0);
+  _localPrice(duration) {
+    return Number((this._payCfg && this._payCfg.uzs && this._payCfg.uzs[duration]) || this._defaultLocalPrices[duration] || 0);
   },
 
-  _paymeValueLabel(duration) {
+  _localValueLabel(duration) {
     const d = this._stripePricing[duration] || {};
-    const payme = this._paymePrice(duration);
-    const delta = payme && d.stripeUzs ? Math.max(0, d.stripeUzs - payme) : 0;
+    const local = this._localPrice(duration);
+    const delta = local && d.stripeUzs ? Math.max(0, d.stripeUzs - local) : 0;
     if (!delta || delta < 100) return 'same value';
     return `${this._formatSom(delta)} cheaper`;
   },
 
   _paymentLogo(provider, extraClass = '') {
     if (provider === 'stripe') return `<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe ${extraClass}">`;
-    if (provider === 'payme') return `<img src="${this._paymeLogoUrl}" alt="Payme" class="pay-logo pay-logo-payme ${extraClass}" data-chip="payme">`;
+    if (provider === 'click') return `<img src="/img/click-logo.png?v=1" alt="Click" class="pay-logo pay-logo-click ${extraClass}" data-chip="click">`;
     return `<span class="pay-chip pay-chip-${provider} ${extraClass}">${provider}</span>`;
   },
 
@@ -6071,7 +6070,7 @@ const App = {
         const k = img.dataset.chip;
         const span = document.createElement('span');
         span.className = `pay-chip pay-chip-${k}`;
-        span.textContent = k === 'payme' ? 'Payme' : 'Click';
+        span.textContent = img.alt || k;
         img.replaceWith(span);
       });
     });
@@ -6079,7 +6078,7 @@ const App = {
 
   _renderUpgradePriceRows() {
     return Object.entries(this._stripePricing).map(([duration, d]) => {
-      const payme = this._paymePrice(duration);
+      const local = this._localPrice(duration);
       return `<button type="button" class="upgrade-price-option${duration === this._selectedDuration ? ' active' : ''}" data-upgrade-duration="${duration}">
         <div class="upgrade-price-option-main">
           <strong>$${d.price}</strong>
@@ -6090,10 +6089,10 @@ const App = {
             ${this._paymentLogo('stripe')}
             <span>${this._formatSom(d.stripeUzs)}</span>
           </div>
-          <div class="upgrade-provider-price upgrade-provider-price-payme">
-            ${this._paymentLogo('payme')}
-            <span>${this._formatSom(payme)}</span>
-            <em>${this._paymeValueLabel(duration)}</em>
+          <div class="upgrade-provider-price upgrade-provider-price-click">
+            ${this._paymentLogo('click')}
+            <span>${this._formatSom(local)}</span>
+            <em>${this._localValueLabel(duration)}</em>
           </div>
         </div>
       </button>`;
@@ -6274,8 +6273,7 @@ const App = {
     if (logosEl) {
       const logos = [];
       if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
-      if (p.payme) logos.push(this._paymentLogo('payme'));
-      if (p.click) logos.push('<img src="/img/click.svg?v=1" alt="Click" class="pay-logo pay-logo-click" data-chip="click">');
+      if (p.click) logos.push(this._paymentLogo('click'));
       logosEl.innerHTML = `<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
       this._bindPayLogoFallbacks(logosEl);
     }
@@ -6294,8 +6292,8 @@ const App = {
     const cfg = this._payCfg || { providers: {}, uzs: {} };
     const providers = cfg.providers || {};
     const hasStripe = providers.stripe !== false;
-    const hasPayme = !!providers.payme && !!cfg.localEnabled;
-    const selectedProvider = hasPayme ? 'payme' : 'stripe';
+    const hasClick = !!providers.click && !!cfg.localEnabled;
+    const selectedProvider = hasClick ? 'click' : 'stripe';
     const selectedDuration = this._selectedDuration || '1m';
 
     modal.innerHTML = `<div class="payment-choice-backdrop" data-close-payment-modal></div>
@@ -6304,7 +6302,7 @@ const App = {
         <div class="payment-choice-head">
           <span class="payment-choice-kicker">Choose your Pro plan</span>
           <h3 id="payment-choice-title">Select duration and payment method</h3>
-          <p>Choose Stripe for international cards or Payme for local UZS payment.</p>
+          <p>Choose Stripe for international cards or Click for local UZS payment.</p>
         </div>
         <div class="payment-choice-section">
           <label>Duration</label>
@@ -6323,10 +6321,10 @@ const App = {
               ${this._paymentLogo('stripe')}
               <span class="payment-choice-method-copy"><strong>Stripe</strong><small data-stripe-price></small></span>
             </button>` : ''}
-            ${hasPayme ? `<button type="button" class="payment-choice-method${selectedProvider === 'payme' ? ' active' : ''}" data-provider="payme">
-              ${this._paymentLogo('payme')}
-              <span class="payment-choice-method-copy"><strong>Payme</strong><small data-payme-price></small></span>
-              <em data-payme-value></em>
+            ${hasClick ? `<button type="button" class="payment-choice-method${selectedProvider === 'click' ? ' active' : ''}" data-provider="click">
+              ${this._paymentLogo('click')}
+              <span class="payment-choice-method-copy"><strong>Click</strong><small data-click-price></small></span>
+              <em data-click-value></em>
             </button>` : ''}
           </div>
         </div>
@@ -6336,13 +6334,13 @@ const App = {
     const state = { duration: selectedDuration, provider: selectedProvider };
     const updatePrices = () => {
       const stripe = this._stripePricing[state.duration];
-      const payme = this._paymePrice(state.duration);
+      const local = this._localPrice(state.duration);
       const stripeLabel = modal.querySelector('[data-stripe-price]');
-      const paymeLabel = modal.querySelector('[data-payme-price]');
-      const paymeValue = modal.querySelector('[data-payme-value]');
+      const clickLabel = modal.querySelector('[data-click-price]');
+      const clickValue = modal.querySelector('[data-click-value]');
       if (stripeLabel) stripeLabel.textContent = `${this._formatSom(stripe.stripeUzs)} equivalent`;
-      if (paymeLabel) paymeLabel.textContent = `${this._formatSom(payme)} in UZS`;
-      if (paymeValue) paymeValue.textContent = this._paymeValueLabel(state.duration);
+      if (clickLabel) clickLabel.textContent = `${this._formatSom(local)} in UZS`;
+      if (clickValue) clickValue.textContent = this._localValueLabel(state.duration);
     };
     updatePrices();
     this._bindPayLogoFallbacks(modal);
@@ -6366,7 +6364,7 @@ const App = {
     });
     modal.querySelector('[data-payment-continue]')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget;
-      if (state.provider === 'payme') await this._payWithProvider('payme', btn, state.duration);
+      if (state.provider === 'click') await this._payWithProvider('click', btn, state.duration);
       else await this._startCheckout(false, state.duration, btn);
     });
 
