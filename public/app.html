@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="/css/redesign.css?v=7">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="/css/feedback.css?v=5">
+  <link rel="stylesheet" href="/css/daily-limit.css?v=1">
 </head>
 <body>
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
@@ -1474,6 +1475,23 @@
       </div>
     </div>
 
+    <div class="modal-overlay" id="daily-limit-modal" role="dialog" aria-modal="true" aria-labelledby="daily-limit-title" aria-describedby="daily-limit-description">
+      <div class="modal daily-limit-card">
+        <p class="daily-limit-kicker">Daily free limit</p>
+        <h2 id="daily-limit-title">You've used all 3 free sessions today.</h2>
+        <p id="daily-limit-reset" class="daily-limit-reset"></p>
+        <p id="daily-limit-description">Support iWrite's development and keep your writing momentum with unlimited Pro sessions.</p>
+        <div class="daily-limit-prices">
+          <p><strong id="daily-limit-stripe-price">$1.99/month</strong><span>with Stripe</span></p>
+          <p><strong id="daily-limit-payme-price">24,990 so'm/month</strong><span>with Payme</span></p>
+        </div>
+        <div class="daily-limit-actions">
+          <button type="button" class="btn btn-primary" id="daily-limit-upgrade">Upgrade to Pro</button>
+          <button type="button" class="btn btn-ghost" id="daily-limit-dashboard">Go to Dashboard</button>
+        </div>
+      </div>
+    </div>
+
     <!-- DOCUMENT NAME MODAL -->
     <div class="modal-overlay" id="doc-name-modal">
       <div class="modal" style="max-width:400px">
@@ -1788,9 +1806,9 @@
   <script src="/js/api.js?v=24"></script>
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
-  <script src="/js/feedback.js?v=9"></script>
-  <script src="/js/editor.js?v=51"></script>
-  <script src="/js/app.js?v=freemium-daily-1"></script>
+  <script src="/js/feedback.js?v=live-count-1"></script>
+  <script src="/js/editor.js?v=live-count-1"></script>
+  <script src="/js/app.js?v=live-count-1"></script>
   <script src="/js/stories.js?v=21"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {

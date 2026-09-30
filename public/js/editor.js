@@ -110,6 +110,7 @@ const Editor = {
       this.documentId = doc.id;
       this._createRequestId = null;
       App._pendingDocumentTitle = '';
+      App.refreshSessionQuota();
     } catch (error) {
       if (error.code === 'SESSION_DAILY_LIMIT') {
         this._createRequestId = null;
@@ -1553,6 +1554,7 @@ const Editor = {
     }
 
     App._docsCacheDirty = true;
+    App.refreshSessionQuota();
     try { await App.loadDocuments(true); } catch {}
     this.showComplete(wordCount, duration, xpEarned, result.user);
     SessionFeedback.show(result.document?.id);

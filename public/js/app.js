@@ -1129,6 +1129,14 @@ const App = {
 
     document.getElementById('modal-cancel').addEventListener('click', () => this.closeSessionModal());
     document.getElementById('modal-start').addEventListener('click', () => this.startSession());
+    document.getElementById('daily-limit-upgrade').addEventListener('click', () => {
+      this.closeDailyLimitModal();
+      this.openPricing();
+    });
+    document.getElementById('daily-limit-dashboard').addEventListener('click', () => {
+      this.closeDailyLimitModal();
+      this.switchView('dashboard');
+    });
 
     // Document name modal
     const docNameInput = document.getElementById('doc-name-input');
@@ -2132,13 +2140,7 @@ const App = {
   },
 
   async loadDashboard() {
-    API.getSessionQuota().then(quota => {
-      const label = document.getElementById('dashboard-session-quota');
-      if (!label) return;
-      label.textContent = quota.plan === 'premium'
-        ? 'Pro · Unlimited sessions'
-        : `Free · ${quota.remaining}/3 sessions left today`;
-    }).catch(() => {});
+    this.refreshSessionQuota();
     // 1) Instant paint from the last-known cached user — avoids the "everything
     //    is 0 / blank visuals" flash while the network requests are in flight.
     try {
@@ -3594,6 +3596,10 @@ const App = {
   },
 
   _renderSessionQuota(quota) {
+    const dashboardLabel = document.getElementById('dashboard-session-quota');
+    if (dashboardLabel) dashboardLabel.textContent = !quota
+      ? 'Checking today\'s sessions…'
+      : quota.plan === 'premium' ? 'Pro · Unlimited sessions' : `Free · ${quota.remaining}/3 sessions left today`;
     const message = document.getElementById('session-quota-message');
     const reset = document.getElementById('session-quota-reset');
     const start = document.getElementById('modal-start');
@@ -3613,14 +3619,16 @@ const App = {
         : `${quota.remaining} of 3 free sessions left today`;
       reset.textContent = this._sessionResetLabel(quota.resetAt);
     }
-    start.textContent = quota.plan === 'free' && quota.remaining === 0 ? 'Upgrade to Pro' : 'Start Writing';
+    start.textContent = 'Start Writing';
   },
 
   async refreshSessionQuota() {
+    const requestId = this._sessionQuotaRequestId = (this._sessionQuotaRequestId || 0) + 1;
     this._sessionQuota = null;
     this._renderSessionQuota(null);
     try {
       const quota = await API.getSessionQuota();
+      if (requestId !== this._sessionQuotaRequestId) return;
       this._sessionQuota = quota;
       this._renderSessionQuota(quota);
       if (quota.plan === 'free' && this.user?.plan === 'premium') {
@@ -3632,7 +3640,10 @@ const App = {
         this._sessionQuotaTimer = setTimeout(() => this.refreshSessionQuota(), Math.max(1000, untilReset + 1000));
       }
     } catch {
+      if (requestId !== this._sessionQuotaRequestId) return;
       this._sessionQuota = null;
+      const dashboardLabel = document.getElementById('dashboard-session-quota');
+      if (dashboardLabel) dashboardLabel.textContent = 'Session allowance unavailable';
       document.getElementById('session-quota-message').textContent = 'Session allowance unavailable';
       document.getElementById('session-quota-reset').textContent = '';
       document.getElementById('modal-start').textContent = 'Start Writing';
@@ -3640,14 +3651,27 @@ const App = {
   },
 
   showSessionQuotaLimit(quota) {
+    this._sessionQuotaRequestId = (this._sessionQuotaRequestId || 0) + 1;
     this._sessionQuota = quota;
     if (quota?.plan === 'free' && this.user?.plan === 'premium') {
       this.user = { ...this.user, plan: 'free' };
     }
-    document.getElementById('session-modal').classList.add('active');
     this._renderSessionQuota(quota);
-    document.getElementById('session-quota-message').setAttribute('tabindex', '-1');
-    document.getElementById('session-quota-message').focus();
+    this.showDailyLimitModal(quota);
+  },
+
+  showDailyLimitModal(quota = this._sessionQuota) {
+    this.closeSessionModal();
+    const reset = document.getElementById('daily-limit-reset');
+    reset.textContent = quota?.resetAt ? `${this._sessionResetLabel(quota.resetAt)}. Your free sessions will be available again then.` : '';
+    document.getElementById('daily-limit-stripe-price').textContent = `$${this._stripePricing['1m'].price}/month`;
+    document.getElementById('daily-limit-payme-price').textContent = `${this._formatSom(this._paymePrice('1m'))}/month`;
+    document.getElementById('daily-limit-modal').classList.add('active');
+    document.getElementById('daily-limit-upgrade').focus();
+  },
+
+  closeDailyLimitModal() {
+    document.getElementById('daily-limit-modal').classList.remove('active');
   },
 
   closeSessionModal() {
@@ -3656,8 +3680,7 @@ const App = {
 
   startSession() {
     if (this._sessionQuota?.plan === 'free' && this._sessionQuota.remaining === 0) {
-      this.closeSessionModal();
-      this.openPricing();
+      this.showDailyLimitModal();
       return;
     }
     const targetInput = parseInt(document.getElementById('session-target-words').value) || 0;
