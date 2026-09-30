@@ -64,6 +64,13 @@
   font-size: 13px !important;
 }
 
+#session-modal #modal-start {
+  min-height: 52px;
+  padding-inline: 34px;
+  font-size: 14px;
+  letter-spacing: .04em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #session-modal,
   #session-modal .mp-shell,

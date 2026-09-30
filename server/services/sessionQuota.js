@@ -115,4 +115,32 @@ async function createSessionDocument(userId, buildDocument, requestId, maintenan
   }
 }
 
-module.exports = { FREE_DAILY_LIMIT, quotaDay, resetAt, effectivePlan, quotaPayload, getSessionQuota, createSessionDocument };
+async function recordBlockedSessionAttempt(userId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const now = new Date();
+    const day = quotaDay(now);
+    const used = await ensureUsageRow(client, userId, day);
+    const { rows } = await client.query('SELECT data FROM users WHERE id = $1', [userId]);
+    const user = rows[0]?.data;
+    if (!user || effectivePlan(user, now) !== 'free' || used < FREE_DAILY_LIMIT) {
+      await client.query('COMMIT');
+      return { blocked: false };
+    }
+    const claim = await client.query(`
+      UPDATE session_daily_usage SET limit_notified = true
+      WHERE user_id = $1 AND day = $2 AND limit_notified = false
+      RETURNING user_id
+    `, [userId, day]);
+    await client.query('COMMIT');
+    return { blocked: true, notifyUser: claim.rowCount ? user : null };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { FREE_DAILY_LIMIT, quotaDay, resetAt, effectivePlan, quotaPayload, getSessionQuota, createSessionDocument, recordBlockedSessionAttempt };

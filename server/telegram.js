@@ -580,7 +580,12 @@ function notifySessionFeedback(user, feedback) {
     `View feedback: https://iwrite4.me/admin#feedback`, { parse_mode: undefined });
 }
 
+function notifyFreeSessionLimitReached(user) {
+  send(`Writer: ${esc(user.name || 'Writer')} (@${esc(user.username || '?')}) hit the 3-session free limit today.`);
+}
+
 module.exports = {
+  notifyFreeSessionLimitReached,
   notifySessionFeedback,
   init,
   notifyUserRegistered,

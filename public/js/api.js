@@ -96,6 +96,10 @@ const API = {
     return this.request('/documents/session-quota');
   },
 
+  async recordBlockedSessionAttempt() {
+    return this.request('/documents/session-quota/blocked-attempt', { method: 'POST' });
+  },
+
   async createDocument(title, content, mode, prompt, dangerVariant, clientRequestId) {
     return this.request('/documents', {
       method: 'POST',

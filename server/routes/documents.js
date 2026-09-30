@@ -3,7 +3,7 @@ const { v4: uuid } = require('uuid');
 const { findOne, findMany, insertOne, updateOne, deleteOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
-const { getSessionQuota, createSessionDocument } = require('../services/sessionQuota');
+const { getSessionQuota, createSessionDocument, recordBlockedSessionAttempt } = require('../services/sessionQuota');
 
 // Streak → tree stage mapping (30 days = max)
 const TREE_STAGE_THRESHOLDS = [0, 1, 3, 5, 8, 11, 14, 17, 20, 23, 27, 30];
@@ -106,6 +106,22 @@ router.get('/session-quota', async (req, res) => {
   }
 });
 
+async function notifyBlockedAttempt(userId) {
+  const attempt = await recordBlockedSessionAttempt(userId);
+  if (attempt.notifyUser) require('../telegram').notifyFreeSessionLimitReached(attempt.notifyUser);
+  return attempt;
+}
+
+router.post('/session-quota/blocked-attempt', async (req, res) => {
+  try {
+    const attempt = await notifyBlockedAttempt(req.user.id);
+    res.json({ blocked: attempt.blocked });
+  } catch (error) {
+    console.error('Session limit notification error:', error);
+    res.status(500).json({ error: 'Could not record blocked session attempt' });
+  }
+});
+
 router.post('/', async (req, res) => {
   const { title, content, mode, prompt, dangerVariant, clientRequestId } = req.body;
   const requestId = typeof clientRequestId === 'string' && /^[a-f0-9-]{36}$/i.test(clientRequestId) ? clientRequestId : null;
@@ -134,6 +150,7 @@ router.post('/', async (req, res) => {
     }, requestId, maintenanceBypass);
     if (result.missingUser) return res.status(404).json({ error: 'User not found' });
     if (result.limited) {
+      notifyBlockedAttempt(req.user.id).catch(error => console.error('Session limit notification error:', error));
       return res.status(429).json({
         error: 'You have used all 3 free sessions today.',
         code: 'SESSION_DAILY_LIMIT',
