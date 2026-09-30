@@ -1,4 +1,4 @@
-/* Optional feedback lives inside the saved-session result, never in the editor. */
+/* Monthly feedback lives inside the saved-session result, never in the editor. */
 const SessionFeedback = {
   generation: 0,
   wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); },
@@ -77,6 +77,7 @@ const SessionFeedback = {
         document.getElementById('sc-dashboard').click();
         return;
       }
+      this.requiresComment = result.requiresComment === true;
       card.innerHTML = `<form id="session-feedback-form">
         <h3 id="feedback-question">How enjoyable was your writing session?</h3>
         <p class="feedback-intro">A quick rating helps us make iWrite better.</p>
@@ -85,8 +86,8 @@ const SessionFeedback = {
         </fieldset>
         <p id="feedback-rating-label" class="feedback-hint" aria-live="polite">Choose 1–5 stars</p>
         <div id="feedback-comment-wrap">
-          <label for="feedback-comment">Anything you’d like us to know? <span class="feedback-hint">(optional)</span></label>
-          <textarea id="feedback-comment" maxlength="1000" rows="2" placeholder="What felt good? What could be better?"></textarea>
+          <label for="feedback-comment">${this.requiresComment ? 'Tell us about your experience <span id="feedback-comment-help" class="feedback-hint">(35 characters minimum)</span>' : 'Anything you’d like us to know? <span class="feedback-hint">(optional)</span>'}</label>
+          <textarea id="feedback-comment" maxlength="1000" ${this.requiresComment ? 'minlength="35" required aria-describedby="feedback-comment-help"' : ''} rows="2" placeholder="What felt good? What could be better?"></textarea>
           <div class="feedback-meta feedback-hint"><span>Shared privately with the iWrite team</span><span>1,000 characters max</span></div>
         </div>
         <p id="feedback-error" role="alert"></p>
@@ -136,6 +137,13 @@ const SessionFeedback = {
     if (this.sending) return;
     const rating = Number(card.querySelector('input[name="rating"]:checked')?.value);
     const comment = card.querySelector('textarea')?.value || '';
+    if (this.requiresComment && (!rating || comment.trim().length < 35)) {
+      card.querySelector('#feedback-error').textContent = !rating
+        ? 'Choose a star rating and write at least 35 characters.'
+        : `Please write at least 35 characters (${comment.trim().length}/35).`;
+      if (rating) card.querySelector('textarea').focus();
+      return;
+    }
     if (!rating && comment.trim()) {
       card.querySelector('#feedback-error').textContent = 'Choose a star rating to send your thoughts, or clear the comment to skip.';
       return;
@@ -158,13 +166,16 @@ const SessionFeedback = {
       } catch {
         if (!this.isCurrent(generation)) return;
         const error = card.querySelector('#feedback-error');
-        error.textContent = 'Could not send. Try again, or ';
-        const skip = document.createElement('button');
-        skip.type = 'button';
-        skip.className = 'feedback-skip-error';
-        skip.textContent = 'continue without sending';
-        skip.onclick = () => this.navigate(button);
-        error.appendChild(skip);
+        error.textContent = 'Could not send. Please try again.';
+        if (!this.requiresComment) {
+          error.textContent = 'Could not send. Try again, or ';
+          const skip = document.createElement('button');
+          skip.type = 'button';
+          skip.className = 'feedback-skip-error';
+          skip.textContent = 'continue without sending';
+          skip.onclick = () => this.navigate(button);
+          error.appendChild(skip);
+        }
         return;
       } finally {
         clearTimeout(timeout);

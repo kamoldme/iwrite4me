@@ -46,18 +46,22 @@ async function recordFeedback(userId, documentId, input = null, now = Date.now()
     if (input && (state.documentId !== documentId || !(Date.parse(state.nextPromptAt) > now))) {
       throw fail(409, 'This feedback invitation has expired.');
     }
+    if (input && state.requiresComment && comment.length < 35) {
+      throw fail(400, 'Please write at least 35 characters about your experience.');
+    }
     // Claim the monthly invitation when the person opens it, even if they
     // choose not to submit a rating. A successful submission restarts it.
     const nextPromptAt = new Date(Math.max(Date.parse(state.nextPromptAt) || 0, now + 30 * DAY)).toISOString();
+    const requiresComment = input ? Boolean(state.requiresComment) : !state.documentId && !state.lastPromptAt;
     let feedback;
     if (input) {
       feedback = { id: documentId, userId, documentId, rating: input.rating, comment, mode: doc.mode,
         wordCount: doc.wordCount, duration: doc.duration, createdAt: new Date(now).toISOString() };
       await client.query('INSERT INTO session_feedback (id, data) VALUES ($1, $2)', [documentId, JSON.stringify(feedback)]);
     }
-    await client.query('UPDATE feedback_state SET data = $2 WHERE id = $1', [userId, JSON.stringify({ documentId, nextPromptAt, lastPromptAt: new Date(now).toISOString() })]);
+    await client.query('UPDATE feedback_state SET data = $2 WHERE id = $1', [userId, JSON.stringify({ documentId, nextPromptAt, lastPromptAt: new Date(now).toISOString(), requiresComment })]);
     await client.query('COMMIT');
-    return { eligible: !input, nextPromptAt, feedback };
+    return { eligible: !input, requiresComment, nextPromptAt, feedback };
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
