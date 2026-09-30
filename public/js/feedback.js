@@ -88,6 +88,7 @@ const SessionFeedback = {
         <div id="feedback-comment-wrap">
           <label for="feedback-comment">${this.requiresComment ? 'Tell us about your experience <span id="feedback-comment-help" class="feedback-hint">(35 characters minimum)</span>' : 'Anything you’d like us to know? <span class="feedback-hint">(optional)</span>'}</label>
           <textarea id="feedback-comment" maxlength="1000" ${this.requiresComment ? 'minlength="35" required aria-describedby="feedback-comment-help"' : ''} rows="2" placeholder="What felt good? What could be better?"></textarea>
+          ${this.requiresComment ? '<p id="feedback-comment-progress" class="feedback-hint" aria-live="polite"></p>' : ''}
           <div class="feedback-meta feedback-hint"><span>Shared privately with the iWrite team</span><span>1,000 characters max</span></div>
         </div>
         <p id="feedback-error" role="alert"></p>
@@ -95,11 +96,28 @@ const SessionFeedback = {
       screen.querySelector('.completion-summary').setAttribute('aria-hidden', 'true');
       card.hidden = false;
       screen.dataset.phase = 'feedback';
+      if (this.requiresComment) {
+        const textarea = card.querySelector('#feedback-comment');
+        const progress = card.querySelector('#feedback-comment-progress');
+        const updateProgress = () => {
+          const count = textarea.value.trim().length;
+          progress.textContent = count < 35 ? `Please write at least 35 characters (${count}/35).` : '';
+          progress.hidden = count >= 35;
+          if (count >= 35 && card.querySelector('#feedback-error').textContent.startsWith('Please write at least 35 characters')) {
+            card.querySelector('#feedback-error').textContent = '';
+          }
+        };
+        textarea.addEventListener('input', updateProgress);
+        updateProgress();
+      }
       const radios = card.querySelectorAll('input[name="rating"]');
       radios.forEach(input => input.addEventListener('change', () => {
         radios.forEach(radio => radio.parentElement.classList.toggle('selected', Number(radio.value) <= Number(input.value)));
         card.querySelector('#feedback-rating-label').textContent = input.getAttribute('aria-label');
         card.querySelector('#feedback-comment-wrap').hidden = false;
+        if (card.querySelector('#feedback-error').textContent.startsWith('Choose a star rating')) {
+          card.querySelector('#feedback-error').textContent = '';
+        }
 
       }));
       card.querySelector('form').onsubmit = event => event.preventDefault();
@@ -138,9 +156,7 @@ const SessionFeedback = {
     const rating = Number(card.querySelector('input[name="rating"]:checked')?.value);
     const comment = card.querySelector('textarea')?.value || '';
     if (this.requiresComment && (!rating || comment.trim().length < 35)) {
-      card.querySelector('#feedback-error').textContent = !rating
-        ? 'Choose a star rating and write at least 35 characters.'
-        : `Please write at least 35 characters (${comment.trim().length}/35).`;
+      card.querySelector('#feedback-error').textContent = !rating ? 'Choose a star rating.' : '';
       if (rating) card.querySelector('textarea').focus();
       return;
     }
