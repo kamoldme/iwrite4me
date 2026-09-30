@@ -2132,6 +2132,13 @@ const App = {
   },
 
   async loadDashboard() {
+    API.getSessionQuota().then(quota => {
+      const label = document.getElementById('dashboard-session-quota');
+      if (!label) return;
+      label.textContent = quota.plan === 'premium'
+        ? 'Pro · Unlimited sessions'
+        : `Free · ${quota.remaining}/3 sessions left today`;
+    }).catch(() => {});
     // 1) Instant paint from the last-known cached user — avoids the "everything
     //    is 0 / blank visuals" flash while the network requests are in flight.
     try {
@@ -2934,6 +2941,7 @@ const App = {
   },
 
   openSessionModal() {
+    this._pendingDocumentTitle = '';
     document.getElementById('session-modal').classList.add('active');
     document.getElementById('time-custom-row').style.display = 'none';
     const addBtn = document.getElementById('time-preset-add-btn');
@@ -2965,8 +2973,7 @@ const App = {
     if (pTopic) pTopic.style.height = '';
     // Apply plan-based timer restrictions
     this._applyTimerRestrictions();
-    // Session limits are invisible — enforced server-side only
-    this._showWeeklySessionInfo();
+    this.refreshSessionQuota();
   },
 
   // Show/hide mode-specific config sections based on data-for-mode attributes.
@@ -3581,11 +3588,66 @@ const App = {
     });
   },
 
-  _showWeeklySessionInfo() {
-    // Session limits are now invisible (200/month free, 300/month pro)
-    // Remove any old weekly-session-info element
-    const oldEl = document.getElementById('weekly-session-info');
-    if (oldEl) oldEl.style.display = 'none';
+  _sessionResetLabel(resetAt) {
+    if (!resetAt) return '';
+    return `Resets ${new Date(resetAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+  },
+
+  _renderSessionQuota(quota) {
+    const message = document.getElementById('session-quota-message');
+    const reset = document.getElementById('session-quota-reset');
+    const start = document.getElementById('modal-start');
+    if (!message || !reset || !start) return;
+    if (!quota) {
+      message.textContent = 'Checking today\'s sessions…';
+      reset.textContent = '';
+      start.textContent = 'Start Writing';
+      return;
+    }
+    if (quota.plan === 'premium') {
+      message.textContent = 'Pro · Unlimited sessions';
+      reset.textContent = '';
+    } else {
+      message.textContent = quota.remaining === 0
+        ? 'You have used all 3 free sessions today.'
+        : `${quota.remaining} of 3 free sessions left today`;
+      reset.textContent = this._sessionResetLabel(quota.resetAt);
+    }
+    start.textContent = quota.plan === 'free' && quota.remaining === 0 ? 'Upgrade to Pro' : 'Start Writing';
+  },
+
+  async refreshSessionQuota() {
+    this._sessionQuota = null;
+    this._renderSessionQuota(null);
+    try {
+      const quota = await API.getSessionQuota();
+      this._sessionQuota = quota;
+      this._renderSessionQuota(quota);
+      if (quota.plan === 'free' && this.user?.plan === 'premium') {
+        this.user = { ...this.user, plan: 'free' };
+      }
+      if (this._sessionQuotaTimer) clearTimeout(this._sessionQuotaTimer);
+      if (quota.plan === 'free') {
+        const untilReset = new Date(quota.resetAt).getTime() - Date.now();
+        this._sessionQuotaTimer = setTimeout(() => this.refreshSessionQuota(), Math.max(1000, untilReset + 1000));
+      }
+    } catch {
+      this._sessionQuota = null;
+      document.getElementById('session-quota-message').textContent = 'Session allowance unavailable';
+      document.getElementById('session-quota-reset').textContent = '';
+      document.getElementById('modal-start').textContent = 'Start Writing';
+    }
+  },
+
+  showSessionQuotaLimit(quota) {
+    this._sessionQuota = quota;
+    if (quota?.plan === 'free' && this.user?.plan === 'premium') {
+      this.user = { ...this.user, plan: 'free' };
+    }
+    document.getElementById('session-modal').classList.add('active');
+    this._renderSessionQuota(quota);
+    document.getElementById('session-quota-message').setAttribute('tabindex', '-1');
+    document.getElementById('session-quota-message').focus();
   },
 
   closeSessionModal() {
@@ -3593,7 +3655,11 @@ const App = {
   },
 
   startSession() {
-    // Monthly session limit is enforced server-side (invisible to user)
+    if (this._sessionQuota?.plan === 'free' && this._sessionQuota.remaining === 0) {
+      this.closeSessionModal();
+      this.openPricing();
+      return;
+    }
     const targetInput = parseInt(document.getElementById('session-target-words').value) || 0;
     if (targetInput > 0 && targetInput <= 50) {
       const jokes = [
@@ -3610,12 +3676,13 @@ const App = {
     // Show document name modal before starting
     this._pendingTopic = document.getElementById('session-topic-input').value.trim();
     this._pendingTargetWords = targetInput;
-    document.getElementById('doc-name-input').value = '';
+    document.getElementById('doc-name-input').value = this._pendingDocumentTitle || '';
     document.getElementById('doc-name-modal').classList.add('active');
   },
 
   _confirmDocName(name) {
     document.getElementById('doc-name-modal').classList.remove('active');
+    this._pendingDocumentTitle = name;
     const titleInput = document.getElementById('editor-title');
     titleInput.value = (!name || name === 'Untitled') ? '' : name;
     titleInput.placeholder = 'Write a title...';
@@ -6017,6 +6084,7 @@ const App = {
     const isStripe = this.user && (this.user.planSource === 'stripe' || this.user.planSource === 'trial');
 
     const freeFeatures = [
+      '3 writing sessions per day',
       'Timed sessions (30, 45 & 60 min)',
       'Dangerous mode (fixed timer)',
       'Streak tracking & tree growth',
@@ -6025,6 +6093,7 @@ const App = {
       'Document sharing'
     ];
     const proFeatures = [
+      'Unlimited writing sessions',
       'Everything in Free',
       'All timer options + custom',
       'Custom danger inactivity timer',
@@ -7603,6 +7672,7 @@ const App = {
   _planFeaturesHTML() {
     const isPro = this.user && this.user.plan === 'premium';
     const freeFeatures = [
+      { label: '3 writing sessions per day', yes: true },
       { label: 'Timed sessions (30, 45 & 60 min)', yes: true },
       { label: 'Dangerous mode (fixed timer)', yes: true },
       { label: 'Streak tracking & tree', yes: true },
@@ -7620,6 +7690,7 @@ const App = {
       { label: 'Pro badge on leaderboard', yes: false },
     ];
     const proFeatures = [
+      { label: 'Unlimited writing sessions', yes: true },
       { label: 'Everything in Free', yes: true },
       { label: 'All timer options + custom "+"', yes: true },
       { label: 'Custom danger inactivity timer', yes: true },

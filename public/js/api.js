@@ -27,6 +27,8 @@ const API = {
     if (!res.ok) {
       const err = new Error(data.error || 'Request failed');
       err.status = res.status;
+      err.code = data.code;
+      err.quota = data.quota;
       throw err;
     }
     return data;
@@ -90,10 +92,14 @@ const API = {
     return this.request('/documents');
   },
 
-  async createDocument(title, content, mode, prompt, dangerVariant) {
+  async getSessionQuota() {
+    return this.request('/documents/session-quota');
+  },
+
+  async createDocument(title, content, mode, prompt, dangerVariant, clientRequestId) {
     return this.request('/documents', {
       method: 'POST',
-      body: JSON.stringify({ title, content, mode, prompt: prompt || '', dangerVariant: dangerVariant || null })
+      body: JSON.stringify({ title, content, mode, prompt: prompt || '', dangerVariant: dangerVariant || null, clientRequestId })
     });
   },
 

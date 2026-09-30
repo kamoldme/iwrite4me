@@ -3,6 +3,7 @@ const { v4: uuid } = require('uuid');
 const { findOne, findMany, insertOne, updateOne, deleteOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
+const { getSessionQuota, createSessionDocument } = require('../services/sessionQuota');
 
 // Streak → tree stage mapping (30 days = max)
 const TREE_STAGE_THRESHOLDS = [0, 1, 3, 5, 8, 11, 14, 17, 20, 23, 27, 30];
@@ -94,60 +95,56 @@ router.get('/', async (req, res) => {
   res.json(docs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
 });
 
-router.post('/', async (req, res) => {
-  const { title, content, mode, prompt, dangerVariant } = req.body;
+router.get('/session-quota', async (req, res) => {
+  try {
+    const quota = await getSessionQuota(req.user.id);
+    if (!quota) return res.status(404).json({ error: 'User not found' });
+    res.json(quota);
+  } catch (error) {
+    console.error('Session quota error:', error);
+    res.status(500).json({ error: 'Could not load session allowance' });
+  }
+});
 
-  // Monthly session limit (invisible): free 200/month, pro 300/month
-  const user = await findOne('users.json', u => u.id === req.user.id);
-  if (user) {
-    const ms = req.app.get('maintenanceState');
-    const maintenanceBypass = ms && ms.active;
-    const isPro = user.plan === 'premium';
-    const monthLimit = isPro ? 300 : 200;
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-    const sessionsThisMonth = (user.monthlySessionsMonth === currentMonth) ? (user.monthlySessions || 0) : 0;
-    if (sessionsThisMonth >= monthLimit && !maintenanceBypass) {
-      return res.status(429).json({ error: 'Monthly session limit reached. Please try again next month.' });
-    }
-    // Don't count against limit during maintenance
-    if (!maintenanceBypass) {
-      await updateOne('users.json', u => u.id === req.user.id, {
-        monthlySessions: sessionsThisMonth + 1,
-        monthlySessionsMonth: currentMonth
+router.post('/', async (req, res) => {
+  const { title, content, mode, prompt, dangerVariant, clientRequestId } = req.body;
+  const requestId = typeof clientRequestId === 'string' && /^[a-f0-9-]{36}$/i.test(clientRequestId) ? clientRequestId : null;
+  const maintenanceBypass = !!req.app.get('maintenanceState')?.active;
+  try {
+    const result = await createSessionDocument(req.user.id, async (client, now) => {
+      let baseTitle = typeof title === 'string' ? title.trim() : '';
+      if (!baseTitle) baseTitle = 'Untitled';
+      const titles = await client.query(`SELECT data->>'title' AS title FROM documents WHERE data->>'userId' = $1 AND data->>'deleted' != 'true'`, [req.user.id]);
+      const existingTitles = new Set(titles.rows.map(row => row.title));
+      let finalTitle = baseTitle;
+      if (existingTitles.has(finalTitle)) {
+        let n = 1;
+        while (existingTitles.has(`${baseTitle} (${n})`)) n++;
+        finalTitle = `${baseTitle} (${n})`;
+      }
+      return {
+        id: uuid(), userId: req.user.id, title: finalTitle,
+        content: content || '', mode: mode || 'normal',
+        dangerVariant: mode === 'dangerous' ? (dangerVariant === 'chill' ? 'chill' : 'classic') : null,
+        prompt: prompt || '',
+        wordCount: (content || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length,
+        xpEarned: 0, duration: 0, shareLinks: [], deleted: false, deletedBySystem: false,
+        createdAt: now.toISOString(), updatedAt: now.toISOString()
+      };
+    }, requestId, maintenanceBypass);
+    if (result.missingUser) return res.status(404).json({ error: 'User not found' });
+    if (result.limited) {
+      return res.status(429).json({
+        error: 'You have used all 3 free sessions today.',
+        code: 'SESSION_DAILY_LIMIT',
+        quota: result.quota
       });
     }
+    res.status(201).json(result.document);
+  } catch (error) {
+    console.error('Create document error:', error);
+    res.status(500).json({ error: 'Could not start this session' });
   }
-
-  // Make title unique (Windows-style: "Title (1)", "Title (2)")
-  let baseTitle = (title || '').trim() || 'Untitled';
-  const userDocs = await findMany('documents.json', d => d.userId === req.user.id && !d.deleted);
-  const existingTitles = new Set(userDocs.map(d => d.title));
-  let finalTitle = baseTitle;
-  if (existingTitles.has(finalTitle)) {
-    let n = 1;
-    while (existingTitles.has(`${baseTitle} (${n})`)) n++;
-    finalTitle = `${baseTitle} (${n})`;
-  }
-
-  const doc = {
-    id: uuid(),
-    userId: req.user.id,
-    title: finalTitle,
-    content: content || '',
-    mode: mode || 'normal',
-    dangerVariant: (mode === 'dangerous') ? (dangerVariant === 'chill' ? 'chill' : 'classic') : null,
-    prompt: prompt || '',
-    wordCount: (content || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length,
-    xpEarned: 0,
-    duration: 0,
-    shareLinks: [],
-    deleted: false,
-    deletedBySystem: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  await insertOne('documents.json', doc);
-  res.status(201).json(doc);
 });
 
 router.get('/shared-with-me', async (req, res) => {
