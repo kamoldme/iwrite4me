@@ -27,7 +27,7 @@ function loadApp(getSessionQuota) {
   };
   const source = fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8');
   vm.runInNewContext(`${source}\n;globalThis.__app = App;`, sandbox);
-  return { app: sandbox.__app, element };
+  return { app: sandbox.__app, element, sandbox };
 }
 
 test('the dashboard count follows the newest quota response and the picker keeps Start Writing', async () => {
@@ -45,5 +45,21 @@ test('the dashboard count follows the newest quota response and the picker keeps
   assert.equal(element('daily-limit-modal').classList.active, true);
   assert.equal(element('session-modal').classList.active, false);
   assert.equal(element('daily-limit-stripe-price').textContent, '$1.99/month');
-  assert.equal(element('daily-limit-payme-price').textContent, '24,990 so\'m/month');
+  assert.equal(element('daily-limit-click-price').textContent, '24,990 so\'m/month');
+});
+
+test('Click branding and checkout use the configured local payment route', async () => {
+  const { app, sandbox } = loadApp(async () => ({ plan: 'free', remaining: 3 }));
+  assert.match(app._paymentLogo('click'), /click-logo\.png/);
+  assert.match(app._renderUpgradePriceRows(), /alt="Click"/);
+  const requests = [];
+  sandbox.API.getToken = () => 'test-token';
+  sandbox.fetch = async (url, options) => {
+    requests.push({ url, options });
+    return { json: async () => ({ error: 'not configured' }) };
+  };
+  app.toast = () => {};
+  await app._payWithProvider('click', null, '1m');
+  assert.equal(requests[0].url, '/api/click/create');
+  assert.equal(JSON.parse(requests[0].options.body).duration, '1m');
 });

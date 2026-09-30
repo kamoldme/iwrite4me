@@ -24,6 +24,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="/css/feedback.css?v=5">
   <link rel="stylesheet" href="/css/daily-limit.css?v=2">
+  <link rel="stylesheet" href="/css/click-payment.css?v=1">
 </head>
 <body>
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
@@ -1483,7 +1484,7 @@
         <p id="daily-limit-description">Go Pro for unlimited sessions and support iWrite's development.</p>
         <div class="daily-limit-prices">
           <p><strong id="daily-limit-stripe-price">$1.99/month</strong><img class="daily-limit-logo daily-limit-logo-stripe" src="/img/stripe.svg?v=1" alt="Stripe"></p>
-          <p><strong id="daily-limit-payme-price">24,990 so'm/month</strong><img class="daily-limit-logo daily-limit-logo-payme" src="https://cdn.payme.uz/logo/pb_color_logo_horizontal.svg" alt="Payme"></p>
+          <p><strong id="daily-limit-click-price">24,990 so'm/month</strong><img class="daily-limit-logo daily-limit-logo-click" src="/img/click-logo.png?v=1" alt="Click"></p>
         </div>
         <div class="daily-limit-actions">
           <button type="button" class="btn btn-primary" id="daily-limit-upgrade">Upgrade to Pro</button>
@@ -1808,7 +1809,7 @@
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/feedback.js?v=live-count-1"></script>
   <script src="/js/editor.js?v=live-count-1"></script>
-  <script src="/js/app.js?v=daily-limit-polish-1"></script>
+  <script src="/js/app.js?v=click-payment-1"></script>
   <script src="/js/stories.js?v=21"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
