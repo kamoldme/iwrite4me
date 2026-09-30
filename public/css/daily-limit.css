@@ -22,16 +22,19 @@
 #daily-limit-modal .daily-limit-prices { display: grid; gap: 8px; margin-bottom: 22px; }
 #daily-limit-modal .daily-limit-prices p {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin: 0;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--bg-elevated);
   color: var(--text-primary);
-  font-size: 13px;
 }
-#daily-limit-modal .daily-limit-prices span { color: var(--text-secondary); }
+#daily-limit-modal .daily-limit-prices strong { font-size: 17px; font-weight: 700; line-height: 1.2; }
+#daily-limit-modal .daily-limit-logo { display: block; width: auto; max-width: 82px; object-fit: contain; flex: none; }
+#daily-limit-modal .daily-limit-logo-stripe { height: 32px; }
+#daily-limit-modal .daily-limit-logo-payme { height: 28px; }
 #daily-limit-modal .daily-limit-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 #daily-limit-modal .daily-limit-actions .btn { flex: 1 1 170px; min-height: 44px; }
