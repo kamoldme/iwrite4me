@@ -6,6 +6,7 @@ const vm = require('node:vm');
 
 function loadApp(getSessionQuota) {
   const nodes = new Map();
+  let blockedAttempts = 0;
   const element = id => {
     if (!nodes.has(id)) nodes.set(id, {
       textContent: '',
@@ -16,7 +17,7 @@ function loadApp(getSessionQuota) {
   };
   const sandbox = {
     console,
-    API: { getSessionQuota },
+    API: { getSessionQuota, recordBlockedSessionAttempt: async () => { blockedAttempts++; return { blocked: true }; } },
     document: { getElementById: element, addEventListener() {} },
     window: { addEventListener() {} },
     localStorage: { getItem() { return null; }, setItem() {} },
@@ -27,12 +28,12 @@ function loadApp(getSessionQuota) {
   };
   const source = fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8');
   vm.runInNewContext(`${source}\n;globalThis.__app = App;`, sandbox);
-  return { app: sandbox.__app, element, sandbox };
+  return { app: sandbox.__app, element, sandbox, blockedAttempts: () => blockedAttempts };
 }
 
-test('the dashboard count follows the newest quota response and the picker keeps Start Writing', async () => {
+test('the dashboard count follows the newest quota response and the picker keeps START WRITING', async () => {
   const pending = [];
-  const { app, element } = loadApp(() => new Promise(resolve => pending.push(resolve)));
+  const { app, element, blockedAttempts } = loadApp(() => new Promise(resolve => pending.push(resolve)));
   const first = app.refreshSessionQuota();
   const second = app.refreshSessionQuota();
   pending[1]({ plan: 'free', remaining: 0, resetAt: new Date(Date.now() + 60000).toISOString() });
@@ -40,8 +41,9 @@ test('the dashboard count follows the newest quota response and the picker keeps
   pending[0]({ plan: 'free', remaining: 2, resetAt: new Date(Date.now() + 60000).toISOString() });
   await first;
   assert.equal(element('dashboard-session-quota').textContent, 'Free · 0/3 sessions left today');
-  assert.equal(element('modal-start').textContent, 'Start Writing');
+  assert.equal(element('modal-start').textContent, 'START WRITING');
   app.startSession();
+  assert.equal(blockedAttempts(), 1, 'clicking Start Writing at the limit records the blocked attempt');
   assert.equal(element('daily-limit-modal').classList.active, true);
   assert.equal(element('session-modal').classList.active, false);
   assert.equal(element('daily-limit-stripe-price').textContent, '$1.99/month');

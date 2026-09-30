@@ -3607,7 +3607,7 @@ const App = {
     if (!quota) {
       message.textContent = 'Checking today\'s sessions…';
       reset.textContent = '';
-      start.textContent = 'Start Writing';
+      start.textContent = 'START WRITING';
       return;
     }
     if (quota.plan === 'premium') {
@@ -3619,7 +3619,7 @@ const App = {
         : `${quota.remaining} of 3 free sessions left today`;
       reset.textContent = this._sessionResetLabel(quota.resetAt);
     }
-    start.textContent = 'Start Writing';
+    start.textContent = 'START WRITING';
   },
 
   async refreshSessionQuota() {
@@ -3646,7 +3646,7 @@ const App = {
       if (dashboardLabel) dashboardLabel.textContent = 'Session allowance unavailable';
       document.getElementById('session-quota-message').textContent = 'Session allowance unavailable';
       document.getElementById('session-quota-reset').textContent = '';
-      document.getElementById('modal-start').textContent = 'Start Writing';
+      document.getElementById('modal-start').textContent = 'START WRITING';
     }
   },
 
@@ -3680,6 +3680,7 @@ const App = {
 
   startSession() {
     if (this._sessionQuota?.plan === 'free' && this._sessionQuota.remaining === 0) {
+      API.recordBlockedSessionAttempt().catch(error => console.error('Could not record blocked session attempt:', error));
       this.showDailyLimitModal();
       return;
     }

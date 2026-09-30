@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { v4: uuid } = require('uuid');
 const {
-  quotaDay, resetAt, effectivePlan, quotaPayload, createSessionDocument, getSessionQuota
+  quotaDay, resetAt, effectivePlan, quotaPayload, createSessionDocument, getSessionQuota, recordBlockedSessionAttempt
 } = require('../server/services/sessionQuota');
 
 test('quota uses UTC calendar days and shows the next reset', () => {
@@ -34,6 +34,11 @@ test('a Free account cannot exceed three starts across concurrent requests', { s
     assert.equal(attempts.filter(result => result.document).length, 3);
     assert.equal(attempts.filter(result => result.limited).length, 2);
     assert.equal((await getSessionQuota(userId)).used, 3);
+    const firstBlockedAttempt = await recordBlockedSessionAttempt(userId);
+    assert.equal(firstBlockedAttempt.blocked, true);
+    assert.equal(firstBlockedAttempt.notifyUser.id, userId);
+    const repeatedBlockedAttempt = await recordBlockedSessionAttempt(userId);
+    assert.equal(repeatedBlockedAttempt.notifyUser, null, 'repeat fourth-session clicks do not notify twice');
     await pool.query('DELETE FROM documents WHERE id = $1', [attempts[0].document.id]);
     assert.equal((await getSessionQuota(userId)).remaining, 0, 'deleting an empty session does not refund a start');
     const exempt = await createSessionDocument(userId, async (_client, now) => ({
