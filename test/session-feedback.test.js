@@ -40,20 +40,33 @@ test('session feedback integration', { skip: !process.env.FEEDBACK_TEST_DATABASE
       assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY - 1)).eligible, false);
       assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY)).eligible, true);
     });
-    await t.test('validation, optional comment, duplicate retry and 30-day boundary', async () => {
+    await t.test('first invitation requires a rating and 35 trimmed characters', async () => {
       const doc = await fixture();
       await assert.rejects(recordFeedback(doc.userId, doc.id, { rating: 5 }, now), { status: 409 });
-      await recordFeedback(doc.userId, doc.id, null, now);
+      assert.equal((await recordFeedback(doc.userId, doc.id, null, now)).requiresComment, true);
       for (const rating of [0, 6, 1.5, '5', null]) await assert.rejects(recordFeedback(doc.userId, doc.id, { rating }, now), { status: 400 });
       for (const comment of ['x'.repeat(1001), {}, 42]) await assert.rejects(recordFeedback(doc.userId, doc.id, { rating: 4, comment }, now), { status: 400 });
-      const responses = await Promise.all([recordFeedback(doc.userId, doc.id, { rating: 4 }, now), recordFeedback(doc.userId, doc.id, { rating: 4 }, now)]);
+      for (const comment of ['', 'x'.repeat(34), `  ${'x'.repeat(34)}  `]) {
+        await assert.rejects(recordFeedback(doc.userId, doc.id, { rating: 4, comment }, now), { status: 400 });
+      }
+      const response = await recordFeedback(doc.userId, doc.id, { rating: 4, comment: 'x'.repeat(35) }, now);
+      assert.equal(response.feedback.comment.length, 35);
+      assert.equal((await pool.query('SELECT * FROM session_feedback WHERE id=$1', [doc.id])).rowCount, 1);
+      const next = await fixture({ completedAt: new Date(now + 30 * DAY).toISOString() }, doc.userId);
+      const second = await recordFeedback(doc.userId, next.id, null, now + 30 * DAY);
+      assert.equal(second.eligible, true);
+      assert.equal(second.requiresComment, false);
+      const responses = await Promise.all([recordFeedback(doc.userId, next.id, { rating: 4 }, now + 30 * DAY), recordFeedback(doc.userId, next.id, { rating: 4 }, now + 30 * DAY)]);
       assert.equal(responses.filter(r => r.feedback).length, 1);
       assert.equal(responses.find(r => r.feedback).feedback.comment, '');
-      assert.equal(Date.parse(responses[0].nextPromptAt), now + 30 * DAY);
-      assert.equal((await pool.query('SELECT * FROM session_feedback WHERE id=$1', [doc.id])).rowCount, 1);
-      const next = await fixture({ completedAt: new Date(now + 30 * DAY - 1).toISOString() }, doc.userId);
-      assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY - 1)).eligible, false);
-      assert.equal((await recordFeedback(doc.userId, next.id, null, now + 30 * DAY)).eligible, true);
+      assert.equal(Date.parse(responses[0].nextPromptAt), now + 60 * DAY);
+    });
+    await t.test('second invitation is optional even if the first was skipped', async () => {
+      const first = await fixture();
+      assert.equal((await recordFeedback(first.userId, first.id, null, now)).requiresComment, true);
+      const second = await fixture({ completedAt: new Date(now + 30 * DAY).toISOString() }, first.userId);
+      assert.equal((await recordFeedback(first.userId, second.id, null, now + 30 * DAY)).requiresComment, false);
+      assert.equal((await recordFeedback(first.userId, second.id, { rating: 3 }, now + 30 * DAY)).feedback.comment, '');
     });
     await t.test('NEXT cannot show feedback again within thirty days, even for a different session', async () => {
       const first = await fixture();
@@ -61,14 +74,14 @@ test('session feedback integration', { skip: !process.env.FEEDBACK_TEST_DATABASE
       const second = await fixture({}, first.userId);
       assert.equal((await recordFeedback(first.userId, second.id, null, now)).eligible, false);
       await assert.rejects(recordFeedback(first.userId, second.id, { rating: 3 }, now), { status: 409 });
-      await recordFeedback(first.userId, first.id, { rating: 3, comment: 'Monthly feedback' }, now);
+      await recordFeedback(first.userId, first.id, { rating: 3, comment: 'Monthly feedback after my writing session' }, now);
       const third = await fixture({}, first.userId);
       assert.equal((await recordFeedback(first.userId, third.id, null, now)).eligible, false);
       assert.equal(Date.parse((await recordFeedback(first.userId, third.id, null, now)).nextPromptAt), now + 30 * DAY);
       await assert.rejects(recordFeedback(randomUUID(), third.id, null, now), { status: 404 });
       const retry = await recordFeedback(first.userId, first.id, null, now);
       assert.equal(retry.duplicate, true);
-      assert.deepEqual(retry.previousFeedback, { rating: 3, comment: 'Monthly feedback' });
+      assert.deepEqual(retry.previousFeedback, { rating: 3, comment: 'Monthly feedback after my writing session' });
       await pool.query('DELETE FROM session_feedback WHERE id=$1', [first.id]);
     });
     await t.test('existing seven-day invitations are extended to the monthly interval', async () => {
@@ -108,7 +121,7 @@ test('session feedback integration', { skip: !process.env.FEEDBACK_TEST_DATABASE
         assert.equal(notifications.length, 1); assert.equal(notifications[0].comment, comment);
         const adminHeaders = { Authorization: `Bearer ${generateToken({ id: randomUUID(), role: 'admin' })}` };
         const summary = await (await fetch(base + '/admin/feedback?rating=5', { headers: adminHeaders })).json();
-        assert.equal(summary.total, 2); assert.equal(summary.average, 4.5); assert.equal(summary.positivePercent, 100);
+        assert.equal(summary.total, 4); assert.equal(summary.average, 4); assert.equal(summary.positivePercent, 75);
         assert.equal(summary.items.length, 1); assert.equal(summary.items[0].comment, comment);
       } finally { await new Promise(resolve => server.close(resolve)); }
     });
