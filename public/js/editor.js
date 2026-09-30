@@ -105,9 +105,17 @@ const Editor = {
     if (typeof CommentSystem !== 'undefined') CommentSystem.destroy();
 
     try {
-      const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic, this.dangerVariant);
+      this._createRequestId = this._createRequestId || (window.crypto?.randomUUID?.() || null);
+      const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic, this.dangerVariant, this._createRequestId);
       this.documentId = doc.id;
-    } catch {
+      this._createRequestId = null;
+      App._pendingDocumentTitle = '';
+    } catch (error) {
+      if (error.code === 'SESSION_DAILY_LIMIT') {
+        this._createRequestId = null;
+        App.showSessionQuotaLimit(error.quota);
+        return;
+      }
       App.toast('Failed to create document', 'error');
       return;
     }

@@ -47,6 +47,14 @@ async function initDB() {
       )
     `);
   }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS session_daily_usage (
+      user_id UUID NOT NULL,
+      day DATE NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, day)
+    )
+  `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users ((data->>'email'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_googleid ON users ((data->>'googleId'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_documents_userid ON documents ((data->>'userId'))`);
