@@ -296,6 +296,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const fallbackStats = { totalWords: 146000, totalHours: 115, totalWriters: 524, totalDocuments: 628, activeNow: 0 };
   let currentStats = { ...fallbackStats };
   let statsVisible = false;
+  let communityStatsVisible = false;
+  let communityStatsAnimated = false;
+
+  function renderCommunityStats(data) {
+    const values = [
+      ['landing-stat-writers', data.totalWriters],
+      ['landing-stat-words', data.totalWords],
+      ['landing-stat-documents', data.totalDocuments]
+    ];
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1100;
+    const animate = communityStatsVisible && !communityStatsAnimated && duration > 0;
+    if (communityStatsVisible) communityStatsAnimated = true;
+    if (!animate) {
+      values.forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = formatCompactNumber(value);
+      });
+      return;
+    }
+    const start = performance.now();
+    function frame(now) {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      values.forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = formatCompactNumber(Math.round(value * eased));
+      });
+      if (progress < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
 
   function renderPublicStats(data) {
     data = { ...fallbackStats, ...data };
@@ -303,13 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionEl = document.getElementById('stat-sessions');
     const writerEl = document.getElementById('stat-writers');
     const activeEl = document.getElementById('stat-active');
-    const landingWriterEl = document.getElementById('landing-stat-writers');
-    const landingWordEl = document.getElementById('landing-stat-words');
-    const landingDocumentEl = document.getElementById('landing-stat-documents');
-
-    if (landingWriterEl) landingWriterEl.textContent = formatCompactNumber(data.totalWriters);
-    if (landingWordEl) landingWordEl.textContent = formatCompactNumber(data.totalWords);
-    if (landingDocumentEl) landingDocumentEl.textContent = formatCompactNumber(data.totalDocuments);
+    renderCommunityStats(data);
 
     if (statsVisible) {
       if (wordEl) animateValue(wordEl, currentStats.totalWords, data.totalWords, 800);
@@ -350,6 +375,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, { threshold: 0.3 });
     statsObserver.observe(statsBar);
+  }
+
+  const communityStats = document.querySelector('.community-stats-section');
+  if (communityStats) {
+    const communityObserver = new IntersectionObserver(entries => {
+      if (!entries[0].isIntersecting) return;
+      communityStatsVisible = true;
+      renderCommunityStats(currentStats);
+      communityObserver.disconnect();
+    }, { threshold: 0.35 });
+    communityObserver.observe(communityStats);
   }
 
   fetchStats();

@@ -20089,20 +20089,7 @@ body.landing.dream-landing .community-stats-section {
   display: grid;
   place-items: center;
   padding: clamp(72px, 8vw, 118px) 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(247, 250, 252, 0.46)),
-    url('/media/community-map-background.png') center / cover no-repeat,
-    #ffffff;
-}
-
-body.landing.dream-landing .community-stats-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.42;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.72));
+  background: linear-gradient(180deg, #fff, #f8fafc);
 }
 
 body.landing.dream-landing .community-stats-inner {
@@ -20137,7 +20124,7 @@ body.landing.dream-landing .community-stats-line {
 
 body.landing.dream-landing .community-stats-inner h2 span {
   color: inherit;
-  font-weight: inherit;
+  font-weight: 700;
 }
 
 body.landing.dream-landing .community-stats-inner h2 .community-stats-line {
