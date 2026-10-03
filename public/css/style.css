@@ -20085,10 +20085,10 @@ body.landing.dream-landing .writer-note p {
 body.landing.dream-landing .community-stats-section {
   position: relative;
   overflow: hidden;
-  min-height: clamp(320px, 34vw, 430px);
+  min-height: clamp(220px, 25vw, 300px);
   display: grid;
   place-items: center;
-  padding: clamp(72px, 8vw, 118px) 24px;
+  padding: clamp(48px, 6vw, 70px) 24px clamp(32px, 4vw, 48px);
   background: linear-gradient(180deg, #fff, #f8fafc);
 }
 
@@ -20204,8 +20204,8 @@ body.landing.dream-landing .community-stats-inner h2 .community-stats-line {
   }
 
   body.landing.dream-landing .community-stats-section {
-    min-height: 330px;
-    padding: 72px 18px;
+    min-height: 230px;
+    padding: 48px 18px 32px;
   }
 
   body.landing.dream-landing .community-stats-inner p {
