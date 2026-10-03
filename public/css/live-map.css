@@ -1,6 +1,9 @@
+body.landing.dream-landing .community-stats-section {
+  background: #fff;
+}
 .world-map-section {
-  padding: clamp(22px, 3vw, 42px) 24px clamp(44px, 5vw, 70px);
-  background: linear-gradient(180deg, rgba(248, 250, 252, .96), rgba(240, 247, 252, .94));
+  padding: clamp(56px, 6vw, 84px) 24px clamp(44px, 5vw, 70px);
+  background: #edf4ef;
 }
 .world-map-inner { width: min(1114px, 100%); margin: 0 auto; }
 .world-map-heading { text-align: center; }
@@ -65,7 +68,7 @@
 }
 .world-map-detail:empty { display: none; }
 @media (max-width: 600px) {
-  .world-map-section { padding: 16px 12px 42px; }
+  .world-map-section { padding: 44px 12px 42px; }
   .world-map-canvas { min-height: 130px; }
 }
 @media (prefers-reduced-motion: reduce) {
