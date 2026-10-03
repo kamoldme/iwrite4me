@@ -2,12 +2,12 @@
   padding: clamp(22px, 3vw, 42px) 24px clamp(44px, 5vw, 70px);
   background: linear-gradient(180deg, rgba(248, 250, 252, .96), rgba(240, 247, 252, .94));
 }
-.world-map-inner { width: min(1392px, 100%); margin: 0 auto; }
+.world-map-inner { width: min(1114px, 100%); margin: 0 auto; }
 .world-map-heading { text-align: center; }
 .world-map-heading h2 {
   margin: 0;
-  color: #35445b;
-  font: 600 clamp(29px, 3.5vw, 46px)/1.15 "Instrument Sans", sans-serif;
+  color: #202020;
+  font: 700 clamp(38px, 5vw, 58px)/1.05 Georgia, "Times New Roman", serif;
 }
 .world-map-canvas { margin-top: clamp(20px, 3vw, 32px); min-height: 180px; }
 .world-map-canvas svg { display: block; width: 100%; height: auto; }
@@ -19,12 +19,42 @@
   vector-effect: non-scaling-stroke;
 }
 .world-map-canvas path.is-highlighted { fill: #438b74; stroke: #edf5f0; }
+.world-map-canvas.is-in-view path.is-highlighted {
+  animation: world-country-pulse 10s ease-in-out infinite;
+  animation-delay: calc(var(--flow-index, 0) * .5s);
+}
 .world-map-canvas path.is-highlighted:hover,
 .world-map-canvas path.is-highlighted:focus-visible {
+  animation: none;
   fill: #185d4b;
   stroke: #164d40;
   stroke-width: 1.2;
   outline: none;
+}
+.world-map-canvas .world-map-flows { pointer-events: none; }
+.world-map-canvas .world-map-flow {
+  fill: none;
+  stroke: #4f9b84;
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: .14 1;
+  stroke-dashoffset: 0;
+  opacity: 0;
+}
+.world-map-canvas.is-in-view .world-map-flow {
+  animation: world-map-route 10s linear infinite;
+  animation-delay: calc(var(--flow-index, 0) * .5s);
+}
+@keyframes world-country-pulse {
+  0%, 9%, 100% { fill: #438b74; }
+  3% { fill: #a8d5c4; }
+}
+@keyframes world-map-route {
+  0% { stroke-dashoffset: 0; opacity: 0; }
+  1%, 6% { opacity: .85; }
+  8% { stroke-dashoffset: -1; opacity: 0; }
+  100% { stroke-dashoffset: -1; opacity: 0; }
 }
 .world-map-detail {
   min-height: 20px;
@@ -37,4 +67,8 @@
 @media (max-width: 600px) {
   .world-map-section { padding: 16px 12px 42px; }
   .world-map-canvas { min-height: 130px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .world-map-canvas.is-in-view path.is-highlighted,
+  .world-map-canvas.is-in-view .world-map-flow { animation: none; }
 }
