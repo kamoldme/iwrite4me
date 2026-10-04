@@ -28,7 +28,7 @@
     .then(svg => {
       map.innerHTML = svg;
       const title = map.querySelector('#world-map-title');
-      if (title) title.textContent = 'Countries highlighted on the iWrite map';
+      if (title) title.remove();
 
       map.querySelectorAll('[data-country]').forEach(path => {
         const code = path.dataset.country;
