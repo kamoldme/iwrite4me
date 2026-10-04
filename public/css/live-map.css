@@ -3,14 +3,20 @@ body.landing.dream-landing .community-stats-section {
 }
 .world-map-section {
   padding: clamp(56px, 6vw, 84px) 24px clamp(44px, 5vw, 70px);
-  background: #151b2b;
+  background:
+    linear-gradient(90deg, rgba(18, 25, 43, 0.98) 0%, rgba(18, 25, 43, 0.95) 42%, rgba(18, 25, 43, 0.9) 100%),
+    url('/media/hero-classical-background.jpg') center center / cover no-repeat;
 }
 .world-map-inner { width: min(1114px, 100%); margin: 0 auto; }
 .world-map-heading { text-align: center; }
 .world-map-heading h2 {
   margin: 0;
-  color: #f5f7f4;
-  font: 700 clamp(38px, 5vw, 58px)/1.05 Georgia, "Times New Roman", serif;
+  color: #dfe7f5;
+  font-family: "Instrument Sans", "Inter", system-ui, sans-serif;
+  font-size: clamp(44px, 5vw, 68px);
+  font-weight: 360;
+  letter-spacing: 0;
+  line-height: 1.08;
 }
 .world-map-canvas { margin-top: clamp(20px, 3vw, 32px); min-height: 180px; }
 .world-map-canvas svg { display: block; width: 100%; height: auto; }
@@ -21,7 +27,7 @@ body.landing.dream-landing .community-stats-section {
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
-.world-map-canvas path.is-highlighted { fill: #58bca6; stroke: #23483f; }
+.world-map-canvas path.is-highlighted { fill: #fff; stroke: #77899b; }
 .world-map-canvas.is-in-view path.is-highlighted {
   animation: world-country-pulse 10s ease-in-out infinite;
   animation-delay: calc(var(--flow-index, 0) * .5s);
@@ -29,15 +35,16 @@ body.landing.dream-landing .community-stats-section {
 .world-map-canvas path.is-highlighted:hover,
 .world-map-canvas path.is-highlighted:focus-visible {
   animation: none;
-  fill: #a7ead9;
-  stroke: #d4fff0;
+  fill: #fff;
+  stroke: #fff;
   stroke-width: 1.2;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, .65));
   outline: none;
 }
 .world-map-canvas .world-map-flows { pointer-events: none; }
 .world-map-canvas .world-map-flow {
   fill: none;
-  stroke: #a2e8d6;
+  stroke: #fff;
   stroke-width: 2;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
@@ -50,8 +57,8 @@ body.landing.dream-landing .community-stats-section {
   animation-delay: calc(var(--flow-index, 0) * .5s);
 }
 @keyframes world-country-pulse {
-  0%, 9%, 100% { fill: #58bca6; }
-  3% { fill: #b9f4e5; }
+  0%, 9%, 100% { fill: #fff; }
+  3% { fill: #29384b; }
 }
 @keyframes world-map-route {
   0% { stroke-dashoffset: 0; opacity: 0; }
@@ -60,13 +67,13 @@ body.landing.dream-landing .community-stats-section {
   100% { stroke-dashoffset: -1; opacity: 0; }
 }
 .world-map-detail {
-  min-height: 20px;
+  height: 3em;
   margin: 12px 0 0;
   text-align: center;
   color: #b6c9c7;
   font: 500 13px/1.5 "Instrument Sans", sans-serif;
+  overflow: hidden;
 }
-.world-map-detail:empty { display: none; }
 @media (max-width: 600px) {
   .world-map-section { padding: 44px 12px 42px; }
   .world-map-canvas { min-height: 130px; }

@@ -8,11 +8,13 @@
   const observed = new Set(['UZ', 'AM', 'GB', 'NG', 'EG']);
   const selected = new Set([
     ...observed, 'US', 'ES', 'KZ', 'KG', 'TJ', 'TM',
-    'CA', 'DE', 'FR', 'IT', 'TR', 'AE', 'IN', 'PK', 'AU'
+    'CA', 'DE', 'FR', 'IT', 'TR', 'AE', 'IN', 'PK', 'AU',
+    'RU', 'CN', 'ID', 'JP', 'BR'
   ]);
   const routeOrder = [
     'US', 'CA', 'ES', 'GB', 'FR', 'DE', 'IT', 'NG', 'EG', 'TR',
-    'AE', 'IN', 'PK', 'AU', 'KZ', 'KG', 'TJ', 'TM', 'UZ'
+    'AE', 'IN', 'PK', 'AU', 'KZ', 'KG', 'TJ', 'TM', 'UZ',
+    'RU', 'CN', 'ID', 'JP', 'BR'
   ];
   const defaultDetail = detail.textContent;
 
@@ -38,7 +40,7 @@
         path.setAttribute('tabindex', '0');
         path.setAttribute('aria-label', description);
         const pathTitle = path.querySelector('title');
-        if (pathTitle) pathTitle.textContent = description;
+        if (pathTitle) pathTitle.remove();
         const show = () => { detail.textContent = description; };
         const reset = () => { detail.textContent = defaultDetail; };
         path.addEventListener('pointerenter', show);
