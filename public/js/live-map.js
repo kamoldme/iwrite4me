@@ -17,6 +17,8 @@
     'RU', 'CN', 'ID', 'JP', 'BR'
   ];
   const defaultDetail = detail.textContent;
+  const countryCount = document.getElementById('world-map-country-count');
+  if (countryCount) countryCount.textContent = selected.size.toLocaleString();
 
   fetch('/media/world-countries.svg?v=2')
     .then(response => {
@@ -32,9 +34,7 @@
         const code = path.dataset.country;
         if (!selected.has(code)) return;
         const name = path.dataset.name || code;
-        const description = observed.has(code)
-          ? `${name} · shown in the shared traffic snapshot`
-          : `${name} · selected for this map`;
+        const description = name;
         path.classList.add('is-highlighted');
         path.style.setProperty('--flow-index', routeOrder.indexOf(code) === -1 ? routeOrder.length : routeOrder.indexOf(code));
         path.setAttribute('tabindex', '0');
