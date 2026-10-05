@@ -18,7 +18,7 @@
   ];
   const defaultDetail = detail.textContent;
   const countryCount = document.getElementById('world-map-country-count');
-  if (countryCount) countryCount.textContent = selected.size.toLocaleString();
+  if (countryCount) countryCount.textContent = `${selected.size.toLocaleString()}+`;
 
   fetch('/media/world-countries.svg?v=3')
     .then(response => {
