@@ -2,18 +2,18 @@ body.landing.dream-landing .community-stats-section {
   background: #fff;
 }
 .world-map-section {
-  padding: clamp(56px, 6vw, 84px) 24px clamp(44px, 5vw, 70px);
+  padding: clamp(40px, 5vw, 62px) 24px clamp(42px, 5vw, 66px);
   background:
     linear-gradient(90deg, rgba(18, 25, 43, 0.98) 0%, rgba(18, 25, 43, 0.95) 42%, rgba(18, 25, 43, 0.9) 100%),
     url('/media/hero-classical-background.jpg') center center / cover no-repeat;
 }
-.world-map-inner { width: min(1168px, 100%); margin: 0 auto; }
+.world-map-inner { width: min(920px, 100%); margin: 0 auto; }
 .world-map-heading { text-align: center; }
 .world-map-heading h2 {
   margin: 0;
   color: #dfe7f5;
   font-family: "Instrument Sans", "Inter", system-ui, sans-serif;
-  font-size: clamp(44px, 5vw, 68px);
+  font-size: clamp(32px, 3.9vw, 46px);
   font-weight: 360;
   letter-spacing: 0;
   line-height: 1.08;
@@ -41,13 +41,13 @@ body.landing.dream-landing .community-stats-section {
 }
 .world-map-heading-line {
   width: min(525px, 76vw);
-  height: 7px;
-  margin: 22px auto 0;
+  height: 5px;
+  margin: 14px auto 0;
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(168, 216, 255, .94), rgba(143, 207, 199, .98));
   box-shadow: 0 0 18px rgba(143, 207, 199, .22);
 }
-.world-map-canvas { margin-top: clamp(20px, 3vw, 32px); min-height: 180px; }
+.world-map-canvas { margin-top: clamp(20px, 3vw, 28px); min-height: 180px; }
 .world-map-canvas svg { display: block; width: 100%; height: auto; }
 .world-map-canvas path {
   fill: #29384b;
