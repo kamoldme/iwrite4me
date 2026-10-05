@@ -333,8 +333,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const wordEl = document.getElementById('stat-words');
     const sessionEl = document.getElementById('stat-sessions');
     const writerEl = document.getElementById('stat-writers');
+    const writerNotesCount = document.getElementById('writer-notes-count');
     const activeEl = document.getElementById('stat-active');
     renderCommunityStats(data);
+    if (writerNotesCount) writerNotesCount.textContent = data.totalWriters.toLocaleString();
 
     if (statsVisible) {
       if (wordEl) animateValue(wordEl, currentStats.totalWords, data.totalWords, 800);
@@ -354,16 +356,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function fetchStats() {
     try {
-      const res = await fetch('/api/stats/public');
-      if (!res.ok) {
-        renderPublicStats(fallbackStats);
-        return;
-      }
+      const res = await fetch('/api/stats/public', { cache: 'no-store' });
+      if (!res.ok) return;
       const data = { ...fallbackStats, ...(await res.json()) };
       renderPublicStats(data);
-    } catch {
-      renderPublicStats(fallbackStats);
-    }
+    } catch { /* Keep the last known count until the next refresh. */ }
   }
 
   const statsBar = document.querySelector('.stats-bar');
@@ -390,6 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   fetchStats();
   setInterval(fetchStats, 30000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) fetchStats();
+  });
 
   // ── Releases Carousel ──
   const track = document.getElementById('releases-track');
