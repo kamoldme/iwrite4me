@@ -7,7 +7,7 @@ body.landing.dream-landing .community-stats-section {
     linear-gradient(90deg, rgba(18, 25, 43, 0.98) 0%, rgba(18, 25, 43, 0.95) 42%, rgba(18, 25, 43, 0.9) 100%),
     url('/media/hero-classical-background.jpg') center center / cover no-repeat;
 }
-.world-map-inner { width: min(1114px, 100%); margin: 0 auto; }
+.world-map-inner { width: min(1168px, 100%); margin: 0 auto; }
 .world-map-heading { text-align: center; }
 .world-map-heading h2 {
   margin: 0;
@@ -21,21 +21,21 @@ body.landing.dream-landing .community-stats-section {
 .world-map-country-count {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
-  margin: 18px 0 0;
-  padding: 7px 15px;
-  border: 1px solid rgba(168, 216, 255, .42);
+  gap: 5px;
+  margin: 13px 0 0;
+  padding: 5px 12px;
+  border: 1px solid rgba(168, 216, 255, .34);
   border-radius: 999px;
-  background: rgba(8, 13, 28, .34);
-  color: rgba(244, 250, 255, .92);
-  font: 700 clamp(15px, 1.8vw, 20px)/1.2 "Instrument Sans", "Inter", system-ui, sans-serif;
-  letter-spacing: .055em;
+  background: rgba(8, 13, 28, .28);
+  color: rgba(244, 250, 255, .84);
+  font: 700 clamp(12px, 1.35vw, 16px)/1.2 "Instrument Sans", "Inter", system-ui, sans-serif;
+  letter-spacing: .045em;
   text-transform: uppercase;
-  box-shadow: 0 12px 32px rgba(4, 8, 20, .22);
+  box-shadow: 0 10px 24px rgba(4, 8, 20, .16);
 }
 .world-map-country-count span {
   color: #ffffff;
-  font-size: 1.2em;
+  font-size: 1.14em;
   font-weight: 800;
   letter-spacing: .02em;
 }
