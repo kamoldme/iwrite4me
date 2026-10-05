@@ -20115,7 +20115,7 @@ body.landing.dream-landing .community-stats-inner h2 {
   font-size: clamp(28px, 3.2vw, 42px);
   font-weight: 360;
   letter-spacing: 0;
-  line-height: 1.3;
+  line-height: 1.38;
 }
 
 body.landing.dream-landing .community-stats-line {
@@ -20144,8 +20144,8 @@ body.landing.dream-landing .community-stat-mark::after {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -7px;
-  width: min(92%, 178px);
+  bottom: -5px;
+  width: 100%;
   height: 4px;
   border-radius: 999px;
   background: #a9d4ff;
