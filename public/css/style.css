@@ -10738,9 +10738,8 @@ body.editor-active .mobile-sidebar-toggle {
 .upgrade-cards {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
   gap: 18px;
-  max-width: 920px;
+  max-width: 782px;
   margin: 0 auto;
   padding: 0 24px 48px;
 }
