@@ -10737,7 +10737,8 @@ body.editor-active .mobile-sidebar-toggle {
 }
 .upgrade-cards {
   display: grid;
-  grid-template-columns: minmax(280px, .82fr) minmax(360px, 1.18fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 18px;
   max-width: 920px;
   margin: 0 auto;
@@ -20918,21 +20919,6 @@ body.landing.dream-landing .upgrade-card-features li.feature-unavailable::before
   content: '\00d7';
   color: #ffffff;
   background: #b7bfca;
-}
-
-@media (min-width: 769px) {
-  body.landing.dream-landing .upgrade-card-featured .upgrade-card-features ul {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 26px;
-    row-gap: 15px;
-  }
-
-  body.landing.dream-landing .upgrade-card-featured .upgrade-card-features li {
-    align-items: flex-start;
-    min-width: 0;
-    line-height: 1.25;
-  }
 }
 
 body.landing.dream-landing .footer {
