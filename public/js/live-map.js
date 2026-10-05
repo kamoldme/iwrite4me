@@ -20,7 +20,7 @@
   const countryCount = document.getElementById('world-map-country-count');
   if (countryCount) countryCount.textContent = selected.size.toLocaleString();
 
-  fetch('/media/world-countries.svg?v=2')
+  fetch('/media/world-countries.svg?v=3')
     .then(response => {
       if (!response.ok) throw new Error('Map unavailable');
       return response.text();
@@ -91,5 +91,5 @@
         map.classList.add('is-in-view');
       }
     })
-    .catch(() => { detail.textContent = 'The map is temporarily unavailable'; });
+    .catch(() => { detail.textContent = ''; });
 })();

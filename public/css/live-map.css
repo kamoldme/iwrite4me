@@ -19,11 +19,25 @@ body.landing.dream-landing .community-stats-section {
   line-height: 1.08;
 }
 .world-map-country-count {
-  margin: 12px 0 0;
-  color: rgba(226, 239, 245, .72);
-  font: 600 clamp(13px, 1.6vw, 16px)/1.35 "Instrument Sans", "Inter", system-ui, sans-serif;
-  letter-spacing: .04em;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 18px 0 0;
+  padding: 7px 15px;
+  border: 1px solid rgba(168, 216, 255, .42);
+  border-radius: 999px;
+  background: rgba(8, 13, 28, .34);
+  color: rgba(244, 250, 255, .92);
+  font: 700 clamp(15px, 1.8vw, 20px)/1.2 "Instrument Sans", "Inter", system-ui, sans-serif;
+  letter-spacing: .055em;
   text-transform: uppercase;
+  box-shadow: 0 12px 32px rgba(4, 8, 20, .22);
+}
+.world-map-country-count span {
+  color: #ffffff;
+  font-size: 1.2em;
+  font-weight: 800;
+  letter-spacing: .02em;
 }
 .world-map-heading-line {
   width: min(525px, 76vw);
