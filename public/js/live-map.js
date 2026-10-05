@@ -16,7 +16,8 @@
     'AE', 'IN', 'PK', 'AU', 'KZ', 'KG', 'TJ', 'TM', 'UZ',
     'RU', 'CN', 'ID', 'JP', 'BR'
   ];
-  const defaultDetail = detail.textContent;
+  const defaultDetail = '';
+  detail.textContent = defaultDetail;
   const countryCount = document.getElementById('world-map-country-count');
   if (countryCount) countryCount.textContent = `${selected.size.toLocaleString()}+`;
 
@@ -27,8 +28,12 @@
     })
     .then(svg => {
       map.innerHTML = svg;
-      const title = map.querySelector('#world-map-title');
-      if (title) title.remove();
+      map.querySelectorAll('title').forEach(title => title.remove());
+      const svgElement = map.querySelector('svg');
+      if (svgElement) {
+        svgElement.removeAttribute('aria-labelledby');
+        svgElement.setAttribute('aria-label', 'Highlighted countries');
+      }
 
       map.querySelectorAll('[data-country]').forEach(path => {
         const code = path.dataset.country;
@@ -39,8 +44,6 @@
         path.style.setProperty('--flow-index', routeOrder.indexOf(code) === -1 ? routeOrder.length : routeOrder.indexOf(code));
         path.setAttribute('tabindex', '0');
         path.setAttribute('aria-label', description);
-        const pathTitle = path.querySelector('title');
-        if (pathTitle) pathTitle.remove();
         const show = () => { detail.textContent = description; };
         const reset = () => { detail.textContent = defaultDetail; };
         path.addEventListener('pointerenter', show);
@@ -49,7 +52,6 @@
         path.addEventListener('blur', reset);
       });
 
-      const svgElement = map.querySelector('svg');
       const countryCenter = code => {
         const parts = [...map.querySelectorAll(`[data-country="${code}"]`)];
         const largest = parts.map(path => ({ path, box: path.getBBox() }))
