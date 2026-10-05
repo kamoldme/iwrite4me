@@ -2,12 +2,13 @@ body.landing.dream-landing .community-stats-section {
   background: #fff;
 }
 .world-map-section {
-  padding: clamp(48px, 6vw, 74px) 24px clamp(50px, 6vw, 80px);
+  padding: clamp(48px, 6vw, 74px) 24px clamp(26px, 3vw, 40px);
   background:
     linear-gradient(90deg, rgba(18, 25, 43, 0.98) 0%, rgba(18, 25, 43, 0.95) 42%, rgba(18, 25, 43, 0.9) 100%),
     url('/media/hero-classical-background.jpg') center center / cover no-repeat;
+  overflow: hidden;
 }
-.world-map-inner { width: min(1104px, 100%); margin: 0 auto; }
+.world-map-inner { width: min(1325px, 100%); margin: 0 auto; }
 .world-map-heading { text-align: center; }
 .world-map-heading h2 {
   margin: 0;
@@ -22,7 +23,7 @@ body.landing.dream-landing .community-stats-section {
   display: inline-flex;
   align-items: baseline;
   gap: 5px;
-  margin: 13px 0 0;
+  margin: 16px 0 0;
   padding: 5px 12px;
   border: 1px solid rgba(168, 216, 255, .34);
   border-radius: 999px;
@@ -42,13 +43,13 @@ body.landing.dream-landing .community-stats-section {
 .world-map-heading-line {
   width: min(630px, 82vw);
   height: 6px;
-  margin: 17px auto 0;
+  margin: 18px auto 0;
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(168, 216, 255, .94), rgba(143, 207, 199, .98));
   box-shadow: 0 0 18px rgba(143, 207, 199, .22);
 }
-.world-map-canvas { margin-top: clamp(24px, 3.6vw, 34px); min-height: 216px; }
-.world-map-canvas svg { display: block; width: 100%; height: auto; }
+.world-map-canvas { margin-top: clamp(20px, 3vw, 28px); min-height: 260px; }
+.world-map-canvas svg { display: block; width: 120%; max-width: none; height: auto; margin-left: -10%; }
 .world-map-canvas path {
   fill: #29384b;
   stroke: #77899b;
@@ -96,16 +97,16 @@ body.landing.dream-landing .community-stats-section {
   100% { stroke-dashoffset: -1; opacity: 0; }
 }
 .world-map-detail {
-  height: 3em;
-  margin: 12px 0 0;
+  height: 1.6em;
+  margin: 4px 0 0;
   text-align: center;
   color: #b6c9c7;
   font: 500 13px/1.5 "Instrument Sans", sans-serif;
   overflow: hidden;
 }
 @media (max-width: 600px) {
-  .world-map-section { padding: 53px 12px 50px; }
-  .world-map-canvas { min-height: 156px; }
+  .world-map-section { padding: 53px 12px 28px; }
+  .world-map-canvas { min-height: 188px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .world-map-canvas.is-in-view path.is-highlighted,
