@@ -20144,13 +20144,13 @@ body.landing.dream-landing .community-stat-mark::after {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -3px;
-  width: 100%;
-  height: 4px;
+  bottom: -7px;
+  width: calc(100% + 6px);
+  height: 5px;
   border-radius: 999px;
-  background: #a9d4ff;
+  background: linear-gradient(90deg, #a9d4ff, #8fcfc7);
   transform: translateX(-50%);
-  box-shadow: 0 0 14px rgba(169, 212, 255, .34);
+  box-shadow: 0 0 16px rgba(169, 212, 255, .42);
 }
 
 @media (max-width: 900px) {
