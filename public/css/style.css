@@ -20132,6 +20132,27 @@ body.landing.dream-landing .community-stats-inner h2 .community-stats-line {
   font-weight: 360;
 }
 
+body.landing.dream-landing .community-stat-mark {
+  position: relative;
+  display: inline-block;
+  color: #4f596d;
+  font-weight: 360;
+  white-space: nowrap;
+}
+
+body.landing.dream-landing .community-stat-mark::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: min(92%, 178px);
+  height: 4px;
+  border-radius: 999px;
+  background: #a9d4ff;
+  transform: translateX(-50%);
+  box-shadow: 0 0 14px rgba(169, 212, 255, .34);
+}
+
 @media (max-width: 900px) {
   body.landing.dream-landing .writer-owned-inner {
     grid-template-columns: 1fr;
