@@ -20920,6 +20920,21 @@ body.landing.dream-landing .upgrade-card-features li.feature-unavailable::before
   background: #b7bfca;
 }
 
+@media (min-width: 769px) {
+  body.landing.dream-landing .upgrade-card-featured .upgrade-card-features ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 26px;
+    row-gap: 15px;
+  }
+
+  body.landing.dream-landing .upgrade-card-featured .upgrade-card-features li {
+    align-items: flex-start;
+    min-width: 0;
+    line-height: 1.25;
+  }
+}
+
 body.landing.dream-landing .footer {
   position: relative;
   overflow: hidden;
