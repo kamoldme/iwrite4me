@@ -298,10 +298,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let statsVisible = false;
   let communityStatsVisible = false;
   let communityStatsAnimated = false;
+  let communityStatsFrame = 0;
 
   function renderCommunityStats(data) {
+    cancelAnimationFrame(communityStatsFrame);
     const values = [
       ['landing-stat-writers', data.totalWriters],
+      ['writer-notes-count', data.totalWriters],
       ['landing-stat-words', data.totalWords],
       ['landing-stat-documents', data.totalDocuments]
     ];
@@ -323,9 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const el = document.getElementById(id);
         if (el) el.textContent = formatCompactNumber(Math.round(value * eased));
       });
-      if (progress < 1) requestAnimationFrame(frame);
+      if (progress < 1) communityStatsFrame = requestAnimationFrame(frame);
     }
-    requestAnimationFrame(frame);
+    communityStatsFrame = requestAnimationFrame(frame);
   }
 
   function renderPublicStats(data) {
@@ -333,10 +336,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const wordEl = document.getElementById('stat-words');
     const sessionEl = document.getElementById('stat-sessions');
     const writerEl = document.getElementById('stat-writers');
-    const writerNotesCount = document.getElementById('writer-notes-count');
     const activeEl = document.getElementById('stat-active');
     renderCommunityStats(data);
-    if (writerNotesCount) writerNotesCount.textContent = data.totalWriters.toLocaleString();
 
     if (statsVisible) {
       if (wordEl) animateValue(wordEl, currentStats.totalWords, data.totalWords, 800);
