@@ -19987,7 +19987,6 @@ body.landing.dream-landing .writer-notes-rail {
   align-items: center;
   gap: clamp(12px, 1.6vw, 22px);
   width: max-content;
-  min-width: calc(100vw + 1580px);
   will-change: transform;
 }
 
@@ -20006,6 +20005,7 @@ body.landing.dream-landing .writer-notes-rail.rail-low {
 body.landing.dream-landing .writer-note {
   --tilt: 0deg;
   display: grid;
+  flex: 0 0 auto;
   grid-template-columns: 38px minmax(0, 1fr);
   gap: 12px;
   min-height: 92px;
