@@ -200,6 +200,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const writerVideoPlay = writerVideoPlayer.querySelector('.writer-video-play');
     const writerVideoProgress = writerVideoPlayer.querySelector('.writer-video-progress');
     const writerVideoProgressFill = writerVideoProgress?.querySelector('span');
+    const mobileVideoControls = window.matchMedia('(max-width: 768px)');
+    const mobilePoster = writerVideo?.dataset.mobilePoster || '';
+
+    const enableNativeWriterVideo = () => {
+      if (!writerVideo) return;
+      writerVideo.controls = true;
+      if (mobilePoster) writerVideo.setAttribute('poster', mobilePoster);
+      writerVideoPlayer.classList.add('uses-native-controls');
+    };
+
+    const syncWriterVideoControls = () => {
+      if (!writerVideo) return;
+      writerVideo.controls = false;
+      if (mobileVideoControls.matches && mobilePoster) {
+        writerVideo.setAttribute('poster', mobilePoster);
+      } else {
+        writerVideo.removeAttribute('poster');
+      }
+      writerVideoPlayer.classList.remove('uses-native-controls');
+    };
 
     const updateWriterVideoProgress = () => {
       if (!writerVideo || !writerVideoProgressFill || !Number.isFinite(writerVideo.duration) || writerVideo.duration <= 0) return;
@@ -207,17 +227,25 @@ document.addEventListener('DOMContentLoaded', () => {
       writerVideoProgressFill.style.width = `${progress}%`;
     };
 
-    const toggleWriterVideo = () => {
+    const toggleWriterVideo = async () => {
       if (!writerVideo) return;
       if (writerVideo.paused || writerVideo.ended) {
-        writerVideo.play().catch(() => {});
+        try {
+          await writerVideo.play();
+        } catch (error) {
+          if (mobileVideoControls.matches) enableNativeWriterVideo();
+        }
       } else {
         writerVideo.pause();
       }
     };
 
+    syncWriterVideoControls();
+    mobileVideoControls.addEventListener?.('change', syncWriterVideoControls);
     writerVideoPlay?.addEventListener('click', toggleWriterVideo);
-    writerVideo?.addEventListener('click', toggleWriterVideo);
+    writerVideo?.addEventListener('click', () => {
+      if (!writerVideo.controls) toggleWriterVideo();
+    });
     writerVideo?.addEventListener('play', () => {
       writerVideoPlayer.classList.add('has-played', 'is-playing');
     });
@@ -230,6 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     writerVideo?.addEventListener('timeupdate', updateWriterVideoProgress);
     writerVideo?.addEventListener('loadedmetadata', updateWriterVideoProgress);
+    writerVideo?.addEventListener('error', () => {
+      if (mobileVideoControls.matches) enableNativeWriterVideo();
+    });
     writerVideoProgress?.addEventListener('click', (event) => {
       if (!writerVideo || !Number.isFinite(writerVideo.duration) || writerVideo.duration <= 0) return;
       const rect = writerVideoProgress.getBoundingClientRect();
@@ -241,17 +272,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const writerNotesSection = document.querySelector('.writer-notes-section');
   if (writerNotesSection) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const rails = Array.from(writerNotesSection.querySelectorAll('.writer-notes-rail'));
+    const originalNotes = rails.map(rail => Array.from(rail.children));
+    let notesMotionFrame = 0;
+    let notesLayoutFrame = 0;
+
+    const maxNotesTravel = () => Math.min(420, Math.max(220, window.innerWidth * 0.38));
+
+    const fillWriterNotesRails = () => {
+      const requiredWidth = window.innerWidth + maxNotesTravel() * 2 + 48;
+      rails.forEach((rail, railIndex) => {
+        rail.querySelectorAll('[data-rail-clone]').forEach(note => note.remove());
+        const notes = originalNotes[railIndex];
+        if (!notes.length) return;
+        let next = 0;
+        while (rail.scrollWidth < requiredWidth && next < 100) {
+          const clone = notes[next % notes.length].cloneNode(true);
+          clone.dataset.railClone = '';
+          clone.setAttribute('aria-hidden', 'true');
+          rail.appendChild(clone);
+          next++;
+        }
+      });
+    };
+
     const updateWriterNotesMotion = () => {
+      notesMotionFrame = 0;
+      if (reducedMotion.matches) {
+        writerNotesSection.style.setProperty('--notes-scroll-shift', '0px');
+        writerNotesSection.style.setProperty('--notes-scroll-shift-low', '0px');
+        return;
+      }
+
       const rect = writerNotesSection.getBoundingClientRect();
       const viewport = window.innerHeight || 1;
       const progress = Math.min(1, Math.max(0, (viewport - rect.top) / (viewport + rect.height)));
-      const shift = Math.round((progress - 0.5) * 320);
+      const easedProgress = progress * progress * (3 - (2 * progress));
+      const maxTravel = maxNotesTravel();
+      const shift = Math.round((easedProgress - 0.5) * maxTravel * 2);
       writerNotesSection.style.setProperty('--notes-scroll-shift', `${shift}px`);
       writerNotesSection.style.setProperty('--notes-scroll-shift-low', `${Math.round(shift * 0.72)}px`);
     };
-    updateWriterNotesMotion();
-    window.addEventListener('scroll', updateWriterNotesMotion, { passive: true });
-    window.addEventListener('resize', updateWriterNotesMotion);
+
+    const scheduleWriterNotesMotion = () => {
+      if (!notesMotionFrame) notesMotionFrame = requestAnimationFrame(updateWriterNotesMotion);
+    };
+
+    const scheduleWriterNotesLayout = () => {
+      if (notesLayoutFrame) return;
+      notesLayoutFrame = requestAnimationFrame(() => {
+        notesLayoutFrame = 0;
+        fillWriterNotesRails();
+        scheduleWriterNotesMotion();
+      });
+    };
+
+    scheduleWriterNotesLayout();
+    window.addEventListener('scroll', scheduleWriterNotesMotion, { passive: true });
+    window.addEventListener('resize', scheduleWriterNotesLayout);
+    reducedMotion.addEventListener?.('change', scheduleWriterNotesMotion);
   }
 
   const mobileMenu = document.querySelector('.mobile-menu');
@@ -295,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const fallbackStats = { totalWords: 146000, totalHours: 115, totalWriters: 524, totalDocuments: 628, activeNow: 0 };
   let currentStats = { ...fallbackStats };
+  let hasLiveStats = false;
   let statsVisible = false;
   let communityStatsVisible = false;
   let communityStatsAnimated = false;
@@ -331,12 +412,17 @@ document.addEventListener('DOMContentLoaded', () => {
     communityStatsFrame = requestAnimationFrame(frame);
   }
 
+
   function renderPublicStats(data) {
     data = { ...fallbackStats, ...data };
     const wordEl = document.getElementById('stat-words');
     const sessionEl = document.getElementById('stat-sessions');
     const writerEl = document.getElementById('stat-writers');
     const activeEl = document.getElementById('stat-active');
+    const landingWriterEl = document.getElementById('landing-stat-writers');
+    const landingWordEl = document.getElementById('landing-stat-words');
+    const landingDocumentEl = document.getElementById('landing-stat-documents');
+
     renderCommunityStats(data);
 
     if (statsVisible) {
@@ -360,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/stats/public', { cache: 'no-store' });
       if (!res.ok) return;
       const data = { ...fallbackStats, ...(await res.json()) };
+      hasLiveStats = true;
       renderPublicStats(data);
     } catch { /* Keep the last known count until the next refresh. */ }
   }
@@ -380,7 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const communityObserver = new IntersectionObserver(entries => {
       if (!entries[0].isIntersecting) return;
       communityStatsVisible = true;
-      renderCommunityStats(currentStats);
+      if (hasLiveStats) renderCommunityStats(currentStats);
       communityObserver.disconnect();
     }, { threshold: 0.35 });
     communityObserver.observe(communityStats);
