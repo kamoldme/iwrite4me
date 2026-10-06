@@ -68,6 +68,68 @@ const App = {
     return `<a href="/app/profile/${encodeURIComponent(username)}" class="${cls}" data-username="${esc(username)}">${displayText || ('@' + esc(username))}</a>`;
   },
 
+  initialsForName(name) {
+    return (name || '?')
+      .split(' ')
+      .filter(Boolean)
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?';
+  },
+
+  avatarSrc(avatar, updatedAt) {
+    if (!avatar || typeof avatar !== 'string') return '';
+    const cleanAvatar = avatar.trim();
+    if (!cleanAvatar) return '';
+    return `${cleanAvatar}?t=${updatedAt || 0}`;
+  },
+
+  renderAvatarCircle(circleEl, { name, avatar, avatarUpdatedAt, alt = '' } = {}) {
+    if (!circleEl) return;
+    const showFallback = () => {
+      circleEl.innerHTML = '';
+      const span = document.createElement('span');
+      span.textContent = this.initialsForName(name);
+      circleEl.appendChild(span);
+    };
+
+    const src = this.avatarSrc(avatar, avatarUpdatedAt);
+    if (!src) {
+      showFallback();
+      return;
+    }
+
+    const existingImg = circleEl.querySelector('img');
+    if (existingImg && existingImg.src.endsWith(src)) return;
+
+    circleEl.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = alt || name || 'Profile photo';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '50%';
+    img.onerror = showFallback;
+    circleEl.appendChild(img);
+  },
+
+  renderWrappedAvatar(containerEl, profile = {}) {
+    if (!containerEl) return;
+    let circleEl = containerEl.querySelector('.up-avatar-circle');
+    if (!circleEl) {
+      containerEl.innerHTML = '<div class="up-avatar-circle"></div>';
+      circleEl = containerEl.querySelector('.up-avatar-circle');
+    }
+    this.renderAvatarCircle(circleEl, {
+      name: profile.name,
+      avatar: profile.avatar,
+      avatarUpdatedAt: profile.avatarUpdatedAt,
+      alt: profile.name ? `${profile.name}'s photo` : ''
+    });
+  },
+
   calcXPLevel(xp) {
     let level = 0;
     let xpUsed = 0;
@@ -2054,19 +2116,7 @@ const App = {
     const userLevelEl = document.getElementById('user-level');
     if (userLevelEl) userLevelEl.textContent = `Level ${level}`;
     const avatarEl = document.getElementById('user-avatar');
-    if (avatarEl) {
-      if (this.user.avatar) {
-        const t = this.user.avatarUpdatedAt || 0;
-        const newSrc = `${this.user.avatar}?t=${t}`;
-        const existing = avatarEl.querySelector('img');
-        if (!existing || !existing.src.endsWith(newSrc)) {
-          avatarEl.innerHTML = `<img src="${newSrc}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-        }
-      } else {
-        avatarEl.innerHTML = '';
-        avatarEl.textContent = this.user.name.charAt(0).toUpperCase();
-      }
-    }
+    if (avatarEl) this.renderAvatarCircle(avatarEl, this.user);
 
     // Update sidebar profile nav label
     const profileNavLabel = document.getElementById('my-profile-nav-label');
@@ -5300,7 +5350,7 @@ const App = {
     });
 
     // Avatar
-    const letter = this.user.name.charAt(0).toUpperCase();
+    const letter = this.initialsForName(this.user.name);
     const letterEl = document.getElementById('profile-avatar-letter');
     const imgEl = document.getElementById('profile-avatar-img');
     const nameEl = document.getElementById('profile-avatar-name');
@@ -5326,17 +5376,23 @@ const App = {
       }
     }
 
-    if (this.user.avatar && imgEl && letterEl) {
-      const t = this.user.avatarUpdatedAt || 0;
-      const newSrc = `${this.user.avatar}?t=${t}`;
-      if (imgEl.src !== newSrc && !imgEl.src.endsWith(newSrc)) imgEl.src = newSrc;
+    const showSettingsAvatarFallback = () => {
+      if (imgEl) {
+        imgEl.removeAttribute('src');
+        imgEl.style.display = 'none';
+      }
+      if (letterEl) { letterEl.style.display = ''; letterEl.textContent = letter; }
+      if (removeBtn) removeBtn.style.display = 'none';
+    };
+    const settingsAvatarSrc = this.avatarSrc(this.user.avatar, this.user.avatarUpdatedAt);
+    if (settingsAvatarSrc && imgEl && letterEl) {
+      imgEl.onerror = showSettingsAvatarFallback;
+      if (imgEl.src !== settingsAvatarSrc && !imgEl.src.endsWith(settingsAvatarSrc)) imgEl.src = settingsAvatarSrc;
       imgEl.style.display = 'block';
       if (letterEl) letterEl.style.display = 'none';
       if (removeBtn) removeBtn.style.display = '';
     } else {
-      if (imgEl) imgEl.style.display = 'none';
-      if (letterEl) { letterEl.style.display = ''; letterEl.textContent = letter; }
-      if (removeBtn) removeBtn.style.display = 'none';
+      showSettingsAvatarFallback();
     }
 
     // Avatar file input
@@ -5441,17 +5497,9 @@ const App = {
       }
       bannerEl.className = 'up-banner';
 
-      // Avatar (skip re-render if src unchanged)
+      // Avatar (skip re-render if src unchanged; fall back if image is missing)
       const avatarEl = document.getElementById('mp-avatar');
-      if (p.avatar) {
-        const avatarSrc = `${esc(p.avatar)}?t=${p.avatarUpdatedAt || 0}`;
-        const existingImg = avatarEl.querySelector('img');
-        if (!existingImg || !existingImg.src.endsWith(avatarSrc)) {
-          avatarEl.innerHTML = `<div class="up-avatar-circle"><img src="${avatarSrc}" alt="${esc(p.name)}'s photo"></div>`;
-        }
-      } else {
-        avatarEl.innerHTML = `<div class="up-avatar-circle"><span>${esc(initialsFor(p.name))}</span></div>`;
-      }
+      this.renderWrappedAvatar(avatarEl, p);
 
       // Name + badge
       document.getElementById('mp-name').textContent = p.name;
@@ -5552,17 +5600,9 @@ const App = {
       bannerEl.innerHTML = '<span class="up-banner-placeholder">No banner yet</span>';
     }
 
-    // Avatar (skip re-render if src unchanged)
+    // Avatar (skip re-render if src unchanged; fall back if image is missing)
     const avatarEl = document.getElementById('up-avatar');
-    if (p.avatar) {
-      const avatarSrc = `${esc(p.avatar)}?t=${p.avatarUpdatedAt || 0}`;
-      const existingImg = avatarEl.querySelector('img');
-      if (!existingImg || !existingImg.src.endsWith(avatarSrc)) {
-        avatarEl.innerHTML = `<div class="up-avatar-circle"><img src="${avatarSrc}" alt="${esc(p.name)}'s photo"></div>`;
-      }
-    } else {
-      avatarEl.innerHTML = `<div class="up-avatar-circle"><span>${esc(initialsFor(p.name))}</span></div>`;
-    }
+    this.renderWrappedAvatar(avatarEl, p);
 
     // Name + badge
     document.getElementById('up-name').textContent = p.name;
