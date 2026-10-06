@@ -19977,6 +19977,7 @@ body.landing.dream-landing .writer-notes-heading h2 {
 
 body.landing.dream-landing .writer-notes-rails {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
 }
 
