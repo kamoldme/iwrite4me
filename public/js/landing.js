@@ -387,7 +387,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ['landing-stat-writers', data.totalWriters],
       ['writer-notes-count', data.totalWriters],
       ['landing-stat-words', data.totalWords],
-      ['landing-stat-documents', data.totalDocuments]
+      ['landing-stat-documents', data.totalDocuments],
+      ['landing-stat-hours', data.totalHours]
     ];
     const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1100;
     const animate = communityStatsVisible && !communityStatsAnimated && duration > 0;
