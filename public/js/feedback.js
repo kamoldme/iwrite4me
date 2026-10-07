@@ -139,10 +139,6 @@ const SessionFeedback = {
     if (this.sending) return;
     const rating = Number(card.querySelector('input[name="rating"]:checked')?.value);
     const comment = card.querySelector('textarea')?.value || '';
-    if (!rating && comment.trim()) {
-      card.querySelector('#feedback-error').textContent = 'Choose a star rating to send your thoughts, or clear the comment to skip.';
-      return;
-    }
     if (rating) {
       this.sending = true;
       const generation = this.generation;
