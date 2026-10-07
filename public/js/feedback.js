@@ -27,7 +27,7 @@ const SessionFeedback = {
     screen.classList.add('completion-sequence');
     screen.dataset.phase = 'title';
     document.getElementById('sc-new-session').textContent = 'START AGAIN';
-    document.getElementById('sc-dashboard').textContent = 'SUBMIT';
+    document.getElementById('sc-dashboard').textContent = 'GO TO DASHBOARD';
     document.getElementById('sc-dashboard').classList.replace('btn-ghost', 'btn-primary');
     this.setNavigation(false);
     document.getElementById('completion-next').hidden = true;
@@ -77,18 +77,16 @@ const SessionFeedback = {
         document.getElementById('sc-dashboard').click();
         return;
       }
-      this.requiresComment = result.requiresComment === true;
       card.innerHTML = `<form id="session-feedback-form">
         <h3 id="feedback-question">How enjoyable was your writing session?</h3>
         <p class="feedback-intro">A quick rating helps us make iWrite better.</p>
         <fieldset class="feedback-stars"><legend class="feedback-sr-only">Rate your experience from 1 to 5 stars</legend>
-          ${['Not enjoyable', 'Could be better', 'Okay', 'Enjoyable', 'Loved it'].map((label, i) => `<label><input type="radio" name="rating" value="${i + 1}" required aria-label="${i + 1} ${i ? 'stars' : 'star'} — ${label}"><span aria-hidden="true">★</span></label>`).join('')}
+          ${['Not enjoyable', 'Could be better', 'Okay', 'Enjoyable', 'Loved it'].map((label, i) => `<label><input type="radio" name="rating" value="${i + 1}" aria-label="${i + 1} ${i ? 'stars' : 'star'} — ${label}"><span aria-hidden="true">★</span></label>`).join('')}
         </fieldset>
-        <p id="feedback-rating-label" class="feedback-hint" aria-live="polite">Choose 1–5 stars</p>
+        <p id="feedback-rating-label" class="feedback-hint" aria-live="polite">Choose 1–5 stars (optional)</p>
         <div id="feedback-comment-wrap">
-          <label for="feedback-comment">${this.requiresComment ? 'Tell us about your experience <span id="feedback-comment-help" class="feedback-hint">(35 characters minimum)</span>' : 'Anything you’d like us to know? <span class="feedback-hint">(optional)</span>'}</label>
-          <textarea id="feedback-comment" maxlength="1000" ${this.requiresComment ? 'minlength="35" required aria-describedby="feedback-comment-help"' : ''} rows="2" placeholder="What felt good? What could be better?"></textarea>
-          ${this.requiresComment ? '<p id="feedback-comment-progress" class="feedback-hint" aria-live="polite"></p>' : ''}
+          <label for="feedback-comment">Anything you’d like us to know? <span class="feedback-hint">(optional)</span></label>
+          <textarea id="feedback-comment" maxlength="1000" rows="2" placeholder="What felt good? What could be better?"></textarea>
           <div class="feedback-meta feedback-hint"><span>Shared privately with the iWrite team</span><span>1,000 characters max</span></div>
         </div>
         <p id="feedback-error" role="alert"></p>
@@ -96,20 +94,6 @@ const SessionFeedback = {
       screen.querySelector('.completion-summary').setAttribute('aria-hidden', 'true');
       card.hidden = false;
       screen.dataset.phase = 'feedback';
-      if (this.requiresComment) {
-        const textarea = card.querySelector('#feedback-comment');
-        const progress = card.querySelector('#feedback-comment-progress');
-        const updateProgress = () => {
-          const count = textarea.value.trim().length;
-          progress.textContent = count < 35 ? `Please write at least 35 characters (${count}/35).` : '';
-          progress.hidden = count >= 35;
-          if (count >= 35 && card.querySelector('#feedback-error').textContent.startsWith('Please write at least 35 characters')) {
-            card.querySelector('#feedback-error').textContent = '';
-          }
-        };
-        textarea.addEventListener('input', updateProgress);
-        updateProgress();
-      }
       const radios = card.querySelectorAll('input[name="rating"]');
       radios.forEach(input => input.addEventListener('change', () => {
         radios.forEach(radio => radio.parentElement.classList.toggle('selected', Number(radio.value) <= Number(input.value)));
@@ -155,11 +139,6 @@ const SessionFeedback = {
     if (this.sending) return;
     const rating = Number(card.querySelector('input[name="rating"]:checked')?.value);
     const comment = card.querySelector('textarea')?.value || '';
-    if (this.requiresComment && (!rating || comment.trim().length < 35)) {
-      card.querySelector('#feedback-error').textContent = !rating ? 'Choose a star rating.' : '';
-      if (rating) card.querySelector('textarea').focus();
-      return;
-    }
     if (!rating && comment.trim()) {
       card.querySelector('#feedback-error').textContent = 'Choose a star rating to send your thoughts, or clear the comment to skip.';
       return;
@@ -183,15 +162,13 @@ const SessionFeedback = {
         if (!this.isCurrent(generation)) return;
         const error = card.querySelector('#feedback-error');
         error.textContent = 'Could not send. Please try again.';
-        if (!this.requiresComment) {
-          error.textContent = 'Could not send. Try again, or ';
-          const skip = document.createElement('button');
-          skip.type = 'button';
-          skip.className = 'feedback-skip-error';
-          skip.textContent = 'continue without sending';
-          skip.onclick = () => this.navigate(button);
-          error.appendChild(skip);
-        }
+        error.textContent = 'Could not send. Try again, or ';
+        const skip = document.createElement('button');
+        skip.type = 'button';
+        skip.className = 'feedback-skip-error';
+        skip.textContent = 'continue without sending';
+        skip.onclick = () => this.navigate(button);
+        error.appendChild(skip);
         return;
       } finally {
         clearTimeout(timeout);
