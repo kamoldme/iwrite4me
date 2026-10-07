@@ -20116,7 +20116,7 @@ body.landing.dream-landing .community-stats-inner h2 {
   font-size: clamp(28px, 3.2vw, 42px);
   font-weight: 360;
   letter-spacing: 0;
-  line-height: 1.48;
+  line-height: 1.68;
 }
 
 body.landing.dream-landing .community-stats-line {
@@ -20145,7 +20145,7 @@ body.landing.dream-landing .community-stat-mark::after {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -7px;
+  bottom: -2px;
   width: calc(100% + 6px);
   height: 5px;
   border-radius: 999px;
@@ -20237,7 +20237,7 @@ body.landing.dream-landing .community-stat-mark::after {
   body.landing.dream-landing .community-stats-inner h2 {
     max-width: 292px;
     font-size: 25px;
-    line-height: 1.24;
+    line-height: 1.46;
   }
 
   body.landing.dream-landing .writer-owned-section {
