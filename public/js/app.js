@@ -1062,17 +1062,17 @@ const App = {
       mobileSidebarToggle.classList.remove('open');
       mobileSidebarOverlay.style.display = 'none';
     };
-    const collapseSidebar = () => { document.body.classList.add('sidebar-collapsed'); localStorage.setItem('iwrite_sidebar_collapsed', '1'); };
-    const expandSidebar = () => { document.body.classList.remove('sidebar-collapsed'); localStorage.setItem('iwrite_sidebar_collapsed', '0'); };
+    const collapseSidebar = () => { this._applySidebarCollapsed(true); localStorage.setItem('iwrite_sidebar_rail_collapsed', '1'); };
+    const expandSidebar = () => { this._applySidebarCollapsed(false); localStorage.setItem('iwrite_sidebar_rail_collapsed', '0'); };
 
-    // Restore desktop collapsed state
-    if (localStorage.getItem('iwrite_sidebar_collapsed') === '1') document.body.classList.add('sidebar-collapsed');
+    // The desktop rail owns collapse state; remove the obsolete full-hide state.
+    document.body.classList.remove('sidebar-collapsed');
 
     mobileSidebarToggle.addEventListener('click', () => {
       // When in story-back-mode, the stories.js handler takes over via onclick
       if (mobileSidebarToggle.classList.contains('story-back-mode')) return;
       if (isDesktop()) {
-        document.body.classList.contains('sidebar-collapsed') ? expandSidebar() : collapseSidebar();
+        document.querySelector('.app-container').classList.contains('sidebar-collapsed') ? expandSidebar() : collapseSidebar();
         return;
       }
       sidebar.classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
@@ -1097,8 +1097,7 @@ const App = {
     });
 
     // Sidebar collapse (desktop rail, 248px <-> 68px) — logo click or chevron toggles.
-    // Uses its own key — the old full-hide collapseSidebar()/expandSidebar() above
-    // (bound to the now-hidden-on-desktop sidebar-close-btn) shares no state with this.
+    // Every desktop collapse control shares the same rail state and preference.
     this._applySidebarCollapsed(localStorage.getItem('iwrite_sidebar_rail_collapsed') === '1');
     const collapseToggle = () => {
       const collapsed = !document.querySelector('.app-container').classList.contains('sidebar-collapsed');
@@ -8491,8 +8490,8 @@ const App = {
     const container = document.querySelector('.app-container');
     if (!container) return;
     container.classList.toggle('sidebar-collapsed', !!collapsed);
-    const chevron = document.getElementById('sidebar-collapse-chevron');
-    if (chevron) chevron.style.display = collapsed ? 'none' : '';
+    // Visibility and label transitions are owned by the shell stylesheet.
+    // Keep the DOM mounted so rapid reversals can retarget smoothly.
   },
 
   _cycleTheme() {
