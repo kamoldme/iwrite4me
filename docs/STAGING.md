@@ -64,3 +64,6 @@ Browser checks passed in both themes for sidebar/menu/dialog/picker colors, head
 
 ### Sidebar structure redesign (2026-10-29)
 The sidebar was rebuilt around Workspace/Connect groups, a writing shortcut, new consistent SVG icons, a distinct subscription row, and an anchored account/streak area. All original sidebar IDs, destinations, badges, conditional entries and handlers remain. The expanded width is now 264px; the compact rail remains 68px. Design and feature verification are recorded in docs/SIDEBAR-DESIGN.md.
+
+### Destination-page formats (2026-10-29)
+Sessions, Community, Leaderboard, Friends, own/public Profile, Settings, Support and Privacy now have distinct page structures. Existing controls are moved rather than replaced, preserving IDs and handlers. The provided up-right image replaces font-glyph arrows through a theme-aware mask. Feature inventory, scope and verification are recorded in docs/WORKSPACE-FORMATS.md.
