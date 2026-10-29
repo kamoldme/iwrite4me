@@ -17,6 +17,8 @@ const TABLE_MAP = {
   'activities.json': 'activities',
   'logs.json': 'logs',
   'support.json': 'support',
+  'session-feedback.json': 'session_feedback',
+  'feedback-state.json': 'feedback_state',
   'stories.json': 'stories',
   'story-comments.json': 'story_comments',
   'story-likes.json': 'story_likes',
@@ -45,6 +47,15 @@ async function initDB() {
       )
     `);
   }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS session_daily_usage (
+      user_id UUID NOT NULL,
+      day DATE NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, day)
+    )
+  `);
+  await pool.query('ALTER TABLE session_daily_usage ADD COLUMN IF NOT EXISTS limit_notified BOOLEAN NOT NULL DEFAULT FALSE');
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users ((data->>'email'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_googleid ON users ((data->>'googleId'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_documents_userid ON documents ((data->>'userId'))`);

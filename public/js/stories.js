@@ -25,13 +25,7 @@
 
   function formatStoryDate(value) {
     if (!value) return 'Unscheduled';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Unscheduled';
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return App.formatDateFull ? App.formatDateFull(value) : 'Unscheduled';
   }
 
   function initialsFor(name) {
@@ -261,9 +255,11 @@
       const list = this.storyTab === 'feed' ? this.storyList : this.getMineStories();
 
       if (!list.length) {
-        const emptyTitle = this.storyTab === 'feed' ? 'No stories yet' : 'Nothing in this section yet';
+        const emptyTitle = this.storyTab === 'feed'
+          ? (this.storySort === 'following' ? 'Not following anyone yet' : 'No stories yet')
+          : 'Nothing in this section yet';
         const emptyText = this.storyTab === 'feed'
-          ? 'Approved stories appear here.'
+          ? (this.storySort === 'following' ? 'Follow writers from their profile or the Most followed list to see their stories here.' : 'Approved stories appear here.')
           : this.storyMineFilter === 'drafts'
           ? 'Start a new story or publish one of your sessions.'
           : this.storyMineFilter === 'review'
@@ -384,7 +380,7 @@
       }
       // Show the loading card only on the first attempt (don't flash it on retries).
       if (attempt === 0 && !el.querySelector('.stories-popular-item')) {
-        el.innerHTML = `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3><div style="padding:8px 0;color:var(--text-muted);font-size:12px">Loading…</div></div>`;
+        el.innerHTML = `<div class="stories-popular-card"><h3>Most followed</h3><div class="stories-popular-empty">Loading…</div></div>`;
       }
       try {
         const list = await API.request('/follow/popular');
@@ -405,7 +401,11 @@
 
     _renderPopularWriters(list) {
       const el = document.getElementById('stories-popular');
-      if (!list || !list.length) { if (el) el.innerHTML = ''; return ''; }
+      if (!list || !list.length) {
+        const empty = `<div class="stories-popular-card"><h3>Most followed</h3><div class="stories-popular-empty">No writers to show yet — check back once more people join.</div></div>`;
+        if (el) el.innerHTML = empty;
+        return empty;
+      }
       const rows = list.map(u => {
         const initial = esc((u.name || u.username || '?').charAt(0).toUpperCase());
         const avatar = u.avatar
@@ -421,13 +421,32 @@
           <div class="stories-popular-followers">${followers}</div>
         </a>`;
       }).join('');
-      return `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3>${rows}</div>`;
+      return `<div class="stories-popular-card"><h3>Most followed</h3>${rows}</div>`;
+    },
+
+    async loadTopWeek() {
+      const el = document.getElementById('stories-top-week');
+      if (!el) return;
+      try {
+        const items = await API.getTopWeekStories();
+        if (!items || !items.length) { el.innerHTML = ''; return; }
+        const rows = items.map(t => `
+          <div class="stories-topweek-item">
+            <div class="stories-topweek-kind">${esc(t.kind)}</div>
+            <div class="stories-topweek-title">${esc(t.title)}</div>
+            <div class="stories-topweek-by">${esc(t.authorName)} &middot; ${esc(t.metric)}</div>
+          </div>`).join('');
+        el.innerHTML = `<div class="stories-popular-card"><h3>Top this week</h3>${rows}</div>`;
+      } catch {
+        el.innerHTML = '';
+      }
     },
 
     async loadStories() {
       App._storiesLoaded = true;
       App._storiesDirty = false;
-      this.loadPopularWriters(); // populate the right-side "Popular writers" sidebar (cached)
+      this.loadPopularWriters(); // populate the right-side "Most followed" sidebar (cached)
+      this.loadTopWeek();
       const feedEl = document.getElementById('stories-feed');
       if (feedEl) {
         const skeletonCard = `<div class="story-skeleton-card"><div class="story-skeleton-line skeleton-author"></div><div class="story-skeleton-line skeleton-title"></div><div class="story-skeleton-line skeleton-excerpt"></div><div class="story-skeleton-line skeleton-excerpt-short"></div><div class="story-skeleton-line skeleton-meta"></div></div>`;
@@ -1547,7 +1566,7 @@
     if (hrs < 24) return hrs + 'h ago';
     const days = Math.floor(hrs / 24);
     if (days < 7) return days + 'd ago';
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return App.formatDateFull ? App.formatDateFull(dateStr) : new Date(dateStr).toDateString();
   }
 
   function notifIcon(type) {
@@ -1571,15 +1590,17 @@
   }
 
   function renderNotifDropdown(notifs) {
-    const list = document.getElementById('stories-notif-list');
-    if (!list) return;
+    const lists = document.querySelectorAll('.stories-notif-list');
+    if (!lists.length) return;
     if (!notifs.length) {
-      list.innerHTML = '<div class="stories-notif-empty">No notifications yet</div>';
+      lists.forEach(list => {
+        list.innerHTML = '<div class="stories-notif-empty">No notifications yet</div>';
+      });
       return;
     }
     // Show last 10 (newest first, includes both read and unread)
     const shown = notifs.slice(0, 10);
-    list.innerHTML = shown.map(n => `
+    const html = shown.map(n => `
       <div class="stories-notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}" data-story-id="${n.storyId || ''}">
         ${notifIcon(n.type)}
         <div class="stories-notif-body">
@@ -1589,30 +1610,32 @@
         ${n.read ? '' : '<div class="stories-notif-unread-dot"></div>'}
       </div>
     `).join('');
+    lists.forEach(list => { list.innerHTML = html; });
 
     // Click a notification → mark read, navigate to story
-    list.querySelectorAll('.stories-notif-item').forEach(el => {
+    lists.forEach(list => list.querySelectorAll('.stories-notif-item').forEach(el => {
       el.addEventListener('click', async () => {
         const nid = el.dataset.notifId;
         const storyId = el.dataset.storyId;
         if (nid) {
           try { await API.markNotifsRead([nid]); } catch {}
-          el.classList.remove('unread');
-          const dot = el.querySelector('.stories-notif-unread-dot');
-          if (dot) dot.remove();
+          document.querySelectorAll('.stories-notif-item').forEach(item => {
+            if (item.dataset.notifId !== nid) return;
+            item.classList.remove('unread');
+            item.querySelector('.stories-notif-unread-dot')?.remove();
+          });
         }
         if (storyId) {
           closeNotifDropdown();
-          App.storySelectedId = storyId;
-          App.loadStoryDetail(storyId);
+          App.switchView('stories');
+          await App.selectStory(storyId);
         }
         syncNotifBadges();
       });
-    });
+    }));
   }
 
-  async function openNotifDropdown() {
-    const dropdown = document.getElementById('stories-notif-dropdown');
+  async function openNotifDropdown(dropdown) {
     if (!dropdown) { console.error('[Notif] dropdown element not found'); return; }
     try {
       console.log('[Notif] fetching notifications...');
@@ -1623,13 +1646,17 @@
       _cachedNotifs = [];
     }
     renderNotifDropdown(_cachedNotifs);
+    document.querySelectorAll('.stories-notif-dropdown').forEach(el => {
+      if (el !== dropdown) el.style.display = 'none';
+    });
     dropdown.style.display = 'block';
     _notifDropdownOpen = true;
   }
 
   function closeNotifDropdown() {
-    const dropdown = document.getElementById('stories-notif-dropdown');
-    if (dropdown) dropdown.style.display = 'none';
+    document.querySelectorAll('.stories-notif-dropdown').forEach(dropdown => {
+      dropdown.style.display = 'none';
+    });
     _notifDropdownOpen = false;
   }
 
@@ -1652,19 +1679,18 @@
     } catch {}
   }
 
-  // Bind bell button
-  const notifBtn = document.getElementById('stories-notif-btn');
-  if (notifBtn) {
+  // Bind notification buttons
+  document.querySelectorAll('#stories-notif-btn').forEach(notifBtn => {
     notifBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      const dropdown = notifBtn.closest('.stories-notif-wrapper')?.querySelector('.stories-notif-dropdown');
       if (_notifDropdownOpen) closeNotifDropdown();
-      else openNotifDropdown();
+      else openNotifDropdown(dropdown);
     });
-  }
+  });
 
   // Mark all read button
-  const markAllBtn = document.getElementById('stories-notif-mark-all');
-  if (markAllBtn) {
+  document.querySelectorAll('#stories-notif-mark-all').forEach(markAllBtn => {
     markAllBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       try { await API.markNotifsRead([]); } catch {}
@@ -1672,7 +1698,7 @@
       renderNotifDropdown(_cachedNotifs);
       syncNotifBadges();
     });
-  }
+  });
 
   // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
@@ -1682,7 +1708,8 @@
   });
 
   // Stop propagation inside dropdown so it doesn't close
-  const dropdown = document.getElementById('stories-notif-dropdown');
-  if (dropdown) dropdown.addEventListener('click', (e) => e.stopPropagation());
+  document.querySelectorAll('.stories-notif-dropdown').forEach(dropdown => {
+    dropdown.addEventListener('click', (e) => e.stopPropagation());
+  });
 
 })();

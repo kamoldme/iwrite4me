@@ -570,7 +570,23 @@ function notifyStorySubmitted(user, story) {
   );
 }
 
+function notifySessionFeedback(user, feedback) {
+  // Plain text keeps the entire comment within Telegram's limit even when it
+  // contains many HTML-special characters, and never interprets user markup.
+  send(`⭐ Session feedback: ${feedback.rating}/5\n\n` +
+    `From: ${String(user.name || 'Writer').slice(0, 120)} (@${String(user.username || '?').slice(0, 80)})\n` +
+    `Mode: ${String(feedback.mode || 'standard').slice(0, 40)} · ${feedback.wordCount} words\n` +
+    `Thoughts: ${feedback.comment || 'No comment'}\n\n` +
+    `View feedback: https://iwrite4.me/admin#feedback`, { parse_mode: undefined });
+}
+
+function notifyFreeSessionLimitReached(user) {
+  send(`Writer: ${esc(user.name || 'Writer')} (@${esc(user.username || '?')}) hit the 3-session free limit today.`);
+}
+
 module.exports = {
+  notifyFreeSessionLimitReached,
+  notifySessionFeedback,
   init,
   notifyUserRegistered,
   notifySessionCompleted,

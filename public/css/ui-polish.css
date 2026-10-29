@@ -1,0 +1,85 @@
+/* Keep mode choices steady as the pointer crosses card boundaries. */
+.mode-selector .mode-option {
+  transition: border-color .2s ease, box-shadow .2s ease !important;
+}
+
+.mode-selector:not(.has-chosen) .mode-option:hover,
+.mode-selector:not(.has-chosen):hover .mode-option:not(:hover) {
+  filter: none !important;
+  transform: none !important;
+}
+
+.mode-selector:not(.has-chosen):hover .mode-option:not(:hover) .mode-card-scrim {
+  background: linear-gradient(180deg, transparent 38%, rgba(0,0,0,.6) 100%);
+}
+
+.mode-selector:not(.has-chosen):hover .mode-option:not(:hover) .mode-card-text {
+  opacity: 1;
+}
+
+.mode-selector.has-chosen .mode-option:not(.active):hover {
+  filter: grayscale(.65) brightness(.78) !important;
+  transform: none !important;
+}
+
+.mode-selector.has-chosen .mode-option.active:hover,
+#session-modal .claude-mode-selector .mode-option:hover {
+  transform: none !important;
+}
+
+/* The image alone zooms, with the same timing on hover in and out. */
+.mode-selector .mode-option img,
+#session-modal .claude-mode-selector .mode-option img {
+  transform: scale(1.02);
+  transition: transform .42s cubic-bezier(.4,0,.2,1) !important;
+}
+
+.mode-selector .mode-option:hover img,
+#session-modal .claude-mode-selector .mode-option:hover img {
+  transform: scale(1.12) !important;
+}
+
+/* The picker itself zooms back out on close at the same pace as it enters. */
+#session-modal {
+  transition: opacity .42s ease, visibility .42s ease;
+}
+
+#session-modal .mp-shell {
+  opacity: .88;
+  transform: scale(.92);
+  transition: max-width .4s cubic-bezier(.4,0,.2,1),
+              transform .42s cubic-bezier(.4,0,.2,1), opacity .42s ease;
+}
+
+#session-modal.active .mp-shell {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.dashboard-start-btn,
+.claude-dashboard .dashboard-start-btn {
+  height: 46px !important;
+  min-height: 46px !important;
+  padding-inline: 28px !important;
+  font-size: 13px !important;
+}
+
+#session-modal #modal-start {
+  min-height: 52px;
+  padding-inline: 34px;
+  font-size: 14px;
+  letter-spacing: .04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #session-modal,
+  #session-modal .mp-shell,
+  .mode-selector .mode-option img {
+    transition: none !important;
+  }
+}
+
+/* The old redesign recolored the check glyph to match its green circle. */
+.upgrade-card-features li::before {
+  color: #fff !important;
+}

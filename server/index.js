@@ -89,7 +89,7 @@ const allowedOrigins = [
   'https://iwrite.up.railway.app'
 ];
 if (process.env.NODE_ENV !== 'production') {
-  allowedOrigins.push('http://localhost:3000', 'http://localhost:5173');
+  allowedOrigins.push('http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173');
 }
 // Add Railway staging/public domain
 if (process.env.RAILWAY_PUBLIC_DOMAIN) {
@@ -103,8 +103,9 @@ app.use(cors({
   origin(origin, callback) {
     // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    // Allow any Railway-assigned domain
     if (allowedOrigins.includes(origin) || /\.up\.railway\.app$/.test(origin)) return callback(null, true);
+    if (/^https?:\/\/[a-z0-9-]+\.169\.58\.74\.77\.sslip\.io$/i.test(origin)) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production' && /\.trycloudflare\.com$/.test(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
@@ -173,26 +174,32 @@ app.use('/api/auth/google', authLimiter);
 app.use('/api/auth/change-password', authLimiter);
 app.use('/api/auth/request-password-reset', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
+app.use('/api/live-map', require('./routes/live-map'));
 app.use('/api', apiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 
-// Avatar uploads directory (still file-based)
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-const avatarsDir = path.join(dataDir, 'avatars');
-if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
+const { getProfileMedia } = require('./utils/profile-media');
 
-// Serve avatars dynamically to bypass all caching layers
-app.get('/uploads/avatars/:file', (req, res) => {
-  const filepath = path.join(avatarsDir, path.basename(req.params.file));
-  if (!fs.existsSync(filepath)) return res.status(404).end();
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.setHeader('Content-Type', 'image/jpeg');
-  res.send(fs.readFileSync(filepath));
-});
+function serveProfileMedia(kind) {
+  return async (req, res) => {
+    try {
+      const content = await getProfileMedia(kind, path.basename(req.params.file));
+      if (!content) return res.status(404).end();
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.type('image/jpeg').send(content);
+    } catch (err) {
+      console.error(`Failed to load ${kind}:`, err);
+      res.status(500).end();
+    }
+  };
+}
+
+app.get('/uploads/avatars/:file', serveProfileMedia('avatar'));
 
 // Serve announcement images (long-cache since filenames are uuid-stable)
 const announcementsDir = path.join(__dirname, 'data/announcements');
@@ -204,18 +211,7 @@ app.get('/uploads/announcements/:file', (req, res) => {
   res.setHeader('Content-Type', 'image/jpeg');
   res.send(fs.readFileSync(filepath));
 });
-const bannersDir = path.join(dataDir, 'banners');
-if (!fs.existsSync(bannersDir)) fs.mkdirSync(bannersDir, { recursive: true });
-// Serve banners dynamically to bypass all caching layers
-app.get('/uploads/banners/:file', (req, res) => {
-  const filepath = path.join(bannersDir, path.basename(req.params.file));
-  if (!fs.existsSync(filepath)) return res.status(404).end();
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.setHeader('Content-Type', 'image/jpeg');
-  res.send(fs.readFileSync(filepath));
-});
+app.get('/uploads/banners/:file', serveProfileMedia('banner'));
 // Force no-cache on HTML/CSS/JS so deployments are instant
 app.use((req, res, next) => {
   const url = req.url.split('?')[0];
@@ -227,6 +223,22 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Link-preview crawlers need absolute OG image URLs. Serve the landing page
+// with the current host for preview domains, while regular browsers use the
+// static file below.
+app.get('/', (req, res, next) => {
+  const ua = (req.headers['user-agent'] || '').toLowerCase();
+  if (!/bot|crawler|spider|preview|telegram|whatsapp|slack|discord|facebook|twitter|linkedin|embedly|quora|pinterest/i.test(ua)) return next();
+  const origin = `https://${req.get('host') || 'iwrite4.me'}`;
+  const indexPath = path.join(__dirname, '..', 'public', 'index.html');
+  let html = fs.readFileSync(indexPath, 'utf8');
+  html = html
+    .replace(/https:\/\/iwrite4\.me\/og-image\.png\?v=20260730-landing/g, `${origin}/og-image.png?v=20260730-landing`)
+    .replace(/<meta property="og:url" content="https:\/\/iwrite4\.me">/, `<meta property="og:url" content="${origin}">`);
+  res.type('html').send(html);
+});
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Active users tracker (in-memory, 5-minute window)
@@ -429,13 +441,13 @@ app.get('/join/:code', async (req, res) => {
     <title>${name} invited you to iWrite4.me</title>
     <meta property="og:title" content="${name} invited you to iWrite4.me">
     <meta property="og:description" content="${desc}">
-    <meta property="og:image" content="${origin}/og-image.png">
+    <meta property="og:image" content="${origin}/og-image.png?v=20260730-landing">
     <meta property="og:url" content="${origin}/join/${req.params.code}">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${name} invited you to iWrite4.me">
     <meta name="twitter:description" content="${desc}">
-    <meta name="twitter:image" content="${origin}/og-image.png">
+    <meta name="twitter:image" content="${origin}/og-image.png?v=20260730-landing">
     <meta http-equiv="refresh" content="0;url=/app?ref=${encodeURIComponent(req.params.code)}">
   </head><body></body></html>`);
 });
@@ -447,6 +459,7 @@ app.use('/api/friends', require('./routes/friends'));
 app.use('/api/stories', require('./routes/stories'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/share', require('./routes/share'));
+app.use('/api/feedback', require('./routes/feedback'));
 app.use('/api/support', require('./routes/support'));
 app.use('/api/duels', require('./routes/duels'));
 app.use('/api/stripe', require('./routes/stripe').router);
@@ -496,6 +509,10 @@ app.get('/api/leaderboard', async (req, res) => {
   try {
     const users = await findMany('users.json');
     const docs = await findMany('documents.json');
+    const allowedTabs = new Set(['overall', 'streaks', 'time', 'referrals']);
+    const tab = allowedTabs.has(req.query.tab) ? req.query.tab : 'overall';
+    const page = Math.max(1, parseInt(req.query.page || '1', 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || '10', 10) || 10));
 
     // Anti-gaming: cap credited time per session by words written
     // If someone writes 2 words in 30 min, they get ~0.7 min credit, not 30 min
@@ -528,28 +545,58 @@ app.get('/api/leaderboard', async (req, res) => {
         };
       });
 
-    // Top 10 by streak
-    const byStreak = [...all].sort((a, b) => b.streak - a.streak || b.totalWords - a.totalWords).slice(0, 10);
-    // Top 10 by time written
-    const byTime = [...all].sort((a, b) => b.minutesWritten - a.minutesWritten || b.totalWords - a.totalWords).slice(0, 10);
-    // Top 10 by referrals
-    const byReferrals = [...all].filter(u => (u.referralCount || 0) > 0).sort((a, b) => b.referralCount - a.referralCount || b.totalWords - a.totalWords).slice(0, 10);
+    const sorters = {
+      overall: (a, b) => (b.xp || 0) - (a.xp || 0) || (b.totalWords || 0) - (a.totalWords || 0),
+      streaks: (a, b) => (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0),
+      time: (a, b) => (b.minutesWritten || 0) - (a.minutesWritten || 0) || (b.totalWords || 0) - (a.totalWords || 0),
+      referrals: (a, b) => (b.referralCount || 0) - (a.referralCount || 0) || (b.totalWords || 0) - (a.totalWords || 0)
+    };
+    const rankList = (key) => [...all].sort(sorters[key]).map((entry, i) => ({ rank: i + 1, ...entry }));
+    const ranked = rankList(tab);
+    const total = ranked.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const safePage = Math.min(page, totalPages);
+    const offset = (safePage - 1) * limit;
+    const entries = ranked.slice(offset, offset + limit);
 
-    // Merge all lists (deduplicate by id)
-    const seen = new Set();
-    const merged = [];
-    for (const entry of [...byStreak, ...byTime, ...byReferrals]) {
-      if (!seen.has(entry.id)) {
-        seen.add(entry.id);
-        merged.push(entry);
-      }
+    let userId = null;
+    const auth = req.headers.authorization || '';
+    if (auth.startsWith('Bearer ')) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(auth.split(' ')[1], process.env.JWT_SECRET || 'iwrite-dev-secret-change-in-production');
+        userId = decoded.id || null;
+      } catch {}
     }
 
-    // Sort merged by streak (default), frontend re-sorts per tab
-    merged.sort((a, b) => b.streak - a.streak || b.totalWords - a.totalWords);
-    const leaderboard = merged.map((entry, i) => ({ rank: i + 1, ...entry }));
+    const summaryFor = (key) => {
+      if (!userId) return null;
+      const list = rankList(key);
+      const entry = list.find(e => e.id === userId);
+      if (!entry) return null;
+      return {
+        rank: entry.rank,
+        total: list.length,
+        xp: entry.xp || 0,
+        streak: entry.streak || 0,
+        minutesWritten: entry.minutesWritten || 0,
+        referralCount: entry.referralCount || 0
+      };
+    };
 
-    res.json(leaderboard);
+    res.json({
+      entries,
+      page: safePage,
+      limit,
+      total,
+      totalPages,
+      summary: {
+        overall: summaryFor('overall'),
+        streaks: summaryFor('streaks'),
+        time: summaryFor('time'),
+        referrals: summaryFor('referrals')
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to load leaderboard' });
   }
@@ -744,7 +791,7 @@ async function renderProfileOG(username, host) {
   const rawDesc = bio || `${user ? (user.name || username) : username}${isPro ? ' (PRO)' : ''} on iWrite4.me — ${words > 0 ? `${words.toLocaleString()} words written · Level ${level}${streak > 0 ? ` · ${streak}-day streak` : ''} · ${sessions} sessions.` : 'Writer on iWrite4.me'}`;
   const desc = escapeOG(rawDesc);
   const origin = `https://${host || 'iwrite4.me'}`;
-  const ogImage = user ? `${origin}/api/profiles/${encodeURIComponent(username)}/og-image` : `${origin}/og-image.png`;
+  const ogImage = user ? `${origin}/api/profiles/${encodeURIComponent(username)}/og-image` : `${origin}/og-image.png?v=20260730-landing`;
   const canonicalUrl = `${origin}/app/profile/${encodeURIComponent(username)}`;
 
   return `<!DOCTYPE html><html><head>
@@ -817,13 +864,13 @@ app.get('/invite/:username', async (req, res) => {
     <title>Write with ${name} on iWrite4.me</title>
     <meta property="og:title" content="Write with ${name} on iWrite4.me">
     <meta property="og:description" content="${desc}">
-    <meta property="og:image" content="${origin}/og-image.png">
+    <meta property="og:image" content="${origin}/og-image.png?v=20260730-landing">
     <meta property="og:url" content="${origin}/invite/${encodeURIComponent(username)}">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Write with ${name} on iWrite4.me">
     <meta name="twitter:description" content="${desc}">
-    <meta name="twitter:image" content="${origin}/og-image.png">
+    <meta name="twitter:image" content="${origin}/og-image.png?v=20260730-landing">
     <meta http-equiv="refresh" content="0;url=/app?invite=${encodeURIComponent(username)}&view=friends">
   </head><body></body></html>`);
 });
