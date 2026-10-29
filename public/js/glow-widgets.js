@@ -124,6 +124,7 @@
     setText('td-words-today', completed.toLocaleString()); setText('td-words-goal', goal.toLocaleString());
     setText('td-progress-head', completed >= goal ? 'Goal reached. Keep the momentum.' : completed > 0 ? 'Every word moves you forward.' : 'One sentence is a start.');
     setText('glow-goal-percent', Math.round(progress * 100));
+    $('glow-dial').closest('.td-progress-card').style.setProperty('--goal-progress', `${progress * 100}%`);
     $('glow-dial').querySelector('.glow-dial-knob').style.transform = `rotate(${-135 + 270 * progress}deg)`;
     $('glow-dial').querySelectorAll('.glow-dial-tick').forEach((tick, i) => tick.classList.toggle('lit', completed > 0 && i / 48 <= progress));
   }

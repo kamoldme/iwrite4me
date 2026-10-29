@@ -67,3 +67,6 @@ The sidebar was rebuilt around Workspace/Connect groups, a writing shortcut, new
 
 ### Destination-page formats (2026-10-29)
 Sessions, Community, Leaderboard, Friends, own/public Profile, Settings, Support and Privacy now have distinct page structures. Existing controls are moved rather than replaced, preserving IDs and handlers. The provided up-right image replaces font-glyph arrows through a theme-aware mask. Feature inventory, scope and verification are recorded in docs/WORKSPACE-FORMATS.md.
+
+### Editorial light-mode refinement (2026-10-29)
+This supersedes the earlier pale-green/glowing light palette and 264px sidebar specification above. Light mode now uses neutral paper surfaces, solid chart fills, a compact daily-goal bar, and a 240px expanded sidebar. Community uses an article-first list with discovery in a supporting margin. The pass also tightens task-page layouts, control alignment, empty states, typography and non-editor windows; closed history drawers are fully hidden. Dark dashboard glow remains available. See `docs/EDITORIAL-APP-DESIGN.md` for design references, scope and the functional/responsive checks. Production, landing and the writing space are unchanged.

@@ -62,7 +62,34 @@
     const view = $('view-stories'); view.classList.add('workspace-v2');
     view.querySelector('.community-hero h1').textContent = 'A community of writers';
     view.querySelector('.community-hero-actions').append($('new-story-btn'));
-    const panel = view.querySelector('.stories-feed-panel'); panel.prepend(view.querySelector('.stories-rail'));
+    const panel = view.querySelector('.stories-feed-panel'); panel.append(view.querySelector('.stories-rail'));
+    // Articles remain the first reading and keyboard destination.
+    const feed = $('stories-feed');
+    const enhanceArticles = () => feed.querySelectorAll('.story-feed-item,.story-hero-card').forEach(card => {
+      card.tabIndex = 0; card.setAttribute('role', 'link');
+      card.setAttribute('aria-label', `Read ${card.querySelector('h3')?.textContent || 'story'}`);
+    });
+    feed.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.matches('.story-feed-item,.story-hero-card')) { e.preventDefault(); e.target.click(); }
+    });
+    new MutationObserver(enhanceArticles).observe(feed, { childList: true, subtree: true }); enhanceArticles();
+    // Missing stored photos get a local presentation fallback; profile data stays intact.
+    const boundAvatars = new WeakSet();
+    const enhanceAvatars = () => view.querySelectorAll('img.stories-popular-avatar,img.story-author-avatar-img').forEach(img => {
+      if (boundAvatars.has(img)) return;
+      boundAvatars.add(img);
+      const fallback = () => {
+        if (!img.isConnected) return;
+        const name = img.closest('.stories-popular-item')?.querySelector('.stories-popular-name')?.textContent || img.alt || 'Writer';
+        const initials = name.trim().split(/\s+/u).slice(0, 2).map(part => [...part][0] || '').join('').toUpperCase();
+        const replacement = make('span', img.matches('.stories-popular-avatar') ? 'stories-popular-avatar community-avatar-fallback' : 'story-author-avatar-fallback', initials);
+        replacement.setAttribute('aria-hidden', 'true');
+        img.replaceWith(replacement);
+      };
+      img.addEventListener('error', fallback, { once: true });
+      if (img.complete && !img.naturalWidth) fallback();
+    });
+    new MutationObserver(enhanceAvatars).observe(view, { childList: true, subtree: true }); enhanceAvatars();
     const sort = $('stories-feed-sort-row');
     const syncTab = () => { view.dataset.communityTab = sort.style.display === 'none' ? 'mine' : 'feed'; };
     new MutationObserver(syncTab).observe(sort, { attributes: true, attributeFilter: ['style'] }); syncTab();
@@ -140,6 +167,9 @@
     });
     article.append(box('workspace-policy-layout', [nav, body]));
   }
+  // Replace the subscription-history emoji with the existing history icon style.
+  const historyIcon = $('sub-history-btn')?.querySelector('span');
+  if (historyIcon) { historyIcon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'; }
   const originals = new Map([...document.querySelectorAll('.app-container [id]')].map(node => [node.id, node]));
   for (const transform of [library, community, leaderboard, friends, () => profile('view-my-profile', 'mp'), () => profile('view-user-profile', 'up'), settings, support, privacy]) {
     try { transform(); } catch (e) { console.error('Workspace layout enhancement failed:', e); }
