@@ -2141,6 +2141,7 @@ const App = {
     const totalEl = document.getElementById('heatmap-total');
     if (!grid) return;
 
+    const dayKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -2150,7 +2151,7 @@ const App = {
     for (let i = totalDays - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const key = dayKey(d);
       dayMap[key] = 0;
     }
 
@@ -2159,7 +2160,7 @@ const App = {
     let totalWords = 0;
     allDocs.forEach(doc => {
       if (!doc.updatedAt || !doc.wordCount || doc.deletedBySystem) return;
-      const key = new Date(doc.updatedAt).toISOString().slice(0, 10);
+      const key = dayKey(new Date(doc.updatedAt));
       if (key in dayMap) {
         dayMap[key] += doc.wordCount;
         totalWords += doc.wordCount;
@@ -2188,7 +2189,7 @@ const App = {
     while (d <= today) {
       const week = [];
       for (let dow = 0; dow < 7; dow++) {
-        const key = d.toISOString().slice(0, 10);
+        const key = dayKey(d);
         const words = dayMap[key] || 0;
         const isFuture = d > today;
         const isInRange = key in dayMap;
@@ -2203,7 +2204,7 @@ const App = {
         week.push({
           key, words, level,
           hide: isFuture || !isInRange,
-          isToday: key === today.toISOString().slice(0, 10),
+          isToday: key === dayKey(today),
           month: d.getDate() <= 7 && dow === 0 ? months[d.getMonth()] : null
         });
         d.setDate(d.getDate() + 1);

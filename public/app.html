@@ -22,10 +22,10 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="stylesheet" href="/css/style.css?v=152">
-  <link rel="stylesheet" href="/css/dashboard-experiment.css?v=1">
+  <link rel="stylesheet" href="/css/workspace-design.css?v=1">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body class="dashboard-experiment">
+<body class="workspace-design">
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
   <div id="mobile-gate" aria-hidden="true">
     <div class="mobile-gate-inner">
@@ -310,13 +310,14 @@
       <main class="main-content">
         <!-- DASHBOARD VIEW -->
         <div id="view-dashboard" class="view">
-          <div class="experiment-breadcrumb"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Overview <span>Staging preview</span></div>
-          <h1 class="experiment-month" id="experiment-month">Your writing overview</h1>
+          <div class="experiment-breadcrumb"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Overview <span class="workspace-date" id="workspace-date"></span></div>
+          <h1 class="workspace-heading">A little writing, every day.</h1>
+          <p class="workspace-heading-sub" id="experiment-month">Your writing overview</p>
           <div class="dashboard-hero-row">
             <div class="dashboard-hero">
               <div class="dashboard-hero-text">
-                <h2 id="greeting-text">Ready to write?</h2>
-                <p class="dashboard-hero-sub">Your writing journey continues. Pick up where you left off.</p>
+                <h2 id="greeting-text">Make room for your next idea.</h2>
+                <p class="dashboard-hero-sub">Start a focused session. Leave with a little more on the page.</p>
                 <div class="online-indicator" id="online-indicator" style="display:none">
                   <span class="online-dot"></span>
                   <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
@@ -349,23 +350,23 @@
             <div class="dash-stat-card dash-stat-words">
               <div class="dash-stat-emoji">&#x1F4DD;</div>
               <div class="dash-stat-value" id="total-words">0</div>
-              <div class="dash-stat-label">Session Words</div>
+              <div class="dash-stat-label">Words written</div>
             </div>
             <div class="dash-stat-card dash-stat-sessions" style="cursor:pointer" onclick="App.switchView('documents')" title="View all sessions">
               <div class="dash-stat-emoji">&#x1F3AF;</div>
               <div class="dash-stat-value" id="total-sessions">0</div>
-              <div class="dash-stat-label">Sessions Done</div>
+              <div class="dash-stat-label">Sessions completed</div>
             </div>
             <div class="dash-stat-card dash-stat-streak" style="cursor:pointer" onclick="App.openStreakPopup()">
               <div class="dash-stat-emoji">&#x1F525;</div>
               <div class="dash-stat-value" id="current-streak">0</div>
-              <div class="dash-stat-label">Day Streak</div>
+              <div class="dash-stat-label">Day streak</div>
               <div class="dash-stat-sub" id="longest-streak-text">Best: 0</div>
             </div>
             <div class="dash-stat-card dash-stat-xp">
               <div class="dash-stat-emoji">&#x2B50;</div>
               <div class="dash-stat-value" id="total-xp">0</div>
-              <div class="dash-stat-label">Total XP</div>
+              <div class="dash-stat-label">Writing XP</div>
             </div>
             <!-- Test Mode only: level progress lives inline at the end of the stat bar -->
             <div class="dash-level-segment test-only">
@@ -390,11 +391,12 @@
           <div class="dashboard-grid">
             <div class="heatmap-section">
               <div class="heatmap-header">
-                <h3 class="heatmap-title">Writing Activity</h3>
-                <span class="heatmap-total" id="heatmap-total"></span>
+                <h3 class="heatmap-title">Writing activity</h3>
+                <label class="workspace-period">Range <select id="workspace-chart-period" aria-label="Writing chart range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></label>
               </div>
-              <div class="experiment-chart-summary"><strong id="experiment-week-words">0</strong><span>words in the last 7 days</span></div>
+              <div class="experiment-chart-summary"><strong id="experiment-week-words">0</strong><span id="experiment-chart-caption">words in the last 7 days</span></div>
               <div id="experiment-chart" class="experiment-chart" aria-label="Words written over the last seven days"></div>
+              <div class="workspace-history-label">Your writing calendar <span class="heatmap-total" id="heatmap-total"></span></div>
               <div class="heatmap-scroll">
                 <div class="heatmap-grid" id="heatmap-grid"></div>
               </div>
@@ -419,21 +421,21 @@
                       <circle class="td-ring-track" cx="60" cy="60" r="52"></circle>
                       <circle class="td-ring-fill" id="td-ring-fill" cx="60" cy="60" r="52"></circle>
                     </svg>
-                    <span class="td-ring-emoji">&#x1F331;</span>
+                    <span class="td-ring-emoji" aria-hidden="true">✦</span>
                   </div>
                   <div class="td-progress-text">
-                    <div class="td-progress-head" id="td-progress-head">Keep going!</div>
-                    <p class="td-progress-sub">You&rsquo;re building something great.</p>
+                    <h3 class="td-progress-head" id="td-progress-head">Your daily goal</h3>
+                    <p class="td-progress-sub">One session at a time.</p>
                     <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span></div>
-                    <div class="td-progress-goal-label">Daily Word Goal</div>
-                    <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">&#x270E; Edit Goal</button>
+                    <div class="td-progress-goal-label">words today</div>
+                    <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">Edit goal</button>
                   </div>
                 </div>
               </div>
               <div class="td-reflection-card">
                 <div class="td-card-head">
-                  <h3>&#x275D; Reflection Prompt</h3>
-                  <button class="td-newprompt-btn" id="td-new-prompt-btn">&#x21BB; New Prompt</button>
+                  <h3>A thought to write with</h3>
+                  <button class="td-newprompt-btn" id="td-new-prompt-btn">New prompt</button>
                 </div>
                 <div class="td-sticky">
                   <p id="td-prompt-text">&ldquo;What&rsquo;s one small truth you discovered while writing recently?&rdquo;</p>
@@ -442,14 +444,14 @@
               </div>
             </div>
             <div class="tree-container">
-              <h3>&#x1F333; Your Writing Tree</h3>
+              <h3>Your writing tree</h3>
               <canvas id="tree-canvas" width="280" height="300"></canvas>
               <p class="tree-info">Stage: <span class="tree-stage-label" id="tree-stage-text">Seed</span></p>
             </div>
             <div class="dashboard-recent">
               <div class="docs-header">
-                <h2>&#x1F4C4; Recent Sessions</h2>
-                <button class="btn btn-primary btn-small" id="new-doc-btn-2">New Session</button>
+                <h2>Recent sessions</h2>
+                <button class="btn btn-ghost btn-small" id="new-doc-btn-2">New session</button>
               </div>
               <div id="recent-docs"></div>
             </div>
@@ -487,7 +489,7 @@
         <!-- SESSIONS VIEW -->
         <div id="view-documents" class="view" style="display:none">
           <div class="docs-header">
-            <h1 style="font-size: 40px;">📚 All Sessions</h1>
+            <h1 style="font-size: 40px;">Your sessions</h1>
             <div style="display:flex;gap:8px;align-items:center">
               <button class="doc-action-btn" id="create-folder-btn" title="Create Folder" style="width:40px;height:40px">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
@@ -579,7 +581,7 @@
         <!-- LEADERBOARD VIEW -->
         <div id="view-leaderboard" class="view" style="display:none">
           <div class="dashboard-header">
-            <h1>&#x1F3C6; Leaderboard</h1>
+            <h1>Leaderboard</h1>
             <p>See who's writing the most. Climb the ranks!</p>
           </div>
           <div class="lb-tabs" id="lb-tabs">
@@ -684,7 +686,7 @@
         <div id="view-friends" class="view" style="display:none">
           <div class="dashboard-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div>
-              <h1>&#x1F46B; Friends</h1>
+              <h1>Friends</h1>
               <p>Add friends by their email to challenge them to writing duels.</p>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
@@ -797,7 +799,8 @@
         <!-- SETTINGS (old Profile tab content) -->
         <div id="view-settings" class="view" style="display:none">
           <div class="dashboard-header">
-            <h1>&#x2699;&#xFE0F; Settings</h1>
+            <h1>Settings</h1>
+            <p>Make this space your own.</p>
           </div>
           <div class="profile-layout settings-layout">
             <!-- Column 1: Avatar, Banner, Referral -->
@@ -1524,7 +1527,7 @@
     <!-- DAILY WORD GOAL MODAL (Test Mode) -->
     <div class="modal-overlay" id="goal-modal">
       <div class="modal" style="max-width:400px">
-        <h2>Daily Word Goal</h2>
+        <h2>words today</h2>
         <p>How many words would you like to write each day?</p>
         <div class="modal-field">
           <input type="number" id="goal-input" class="session-target-input" min="50" max="100000" step="50" placeholder="1000" style="font-size:14px">
@@ -1802,9 +1805,9 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/editor.js?v=49"></script>
-  <script src="/js/app.js?v=140"></script>
+  <script src="/js/app.js?v=141"></script>
   <script src="/js/stories.js?v=20"></script>
-  <script src="/js/dashboard-experiment.js?v=1"></script>
+  <script src="/js/dashboard-experiment.js?v=2"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
       const el = document.getElementById('version-tag');
