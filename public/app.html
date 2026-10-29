@@ -28,8 +28,9 @@
   <link rel="stylesheet" href="/css/daily-limit.css?v=2">
   <link rel="stylesheet" href="/css/click-payment.css?v=2">
   <link rel="stylesheet" href="/css/ui-polish.css?v=3">
+  <link rel="stylesheet" href="/css/glow-widgets.css?v=1">
 </head>
-<body>
+<body class="glow-dashboard">
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
   <div id="mobile-gate" aria-hidden="true">
     <div class="mobile-gate-inner">
@@ -378,26 +379,26 @@
           </div>
 
           <div class="dashboard-grid">
+            <section class="glow-activity" aria-labelledby="glow-activity-title">
+              <div class="glow-activity-heading"><div><h2 id="glow-activity-title">Writing activity</h2><p class="glow-reading"><strong id="glow-week-words">0</strong> <span>words</span></p></div><label class="glow-range"><span class="glow-status-dot" aria-hidden="true"></span><select id="glow-range" aria-label="Writing activity period"><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></label></div>
+              <div class="glow-chart" id="glow-chart"></div>
+              <p class="glow-empty" id="glow-empty" hidden>Your next saved session will appear here.</p>
+            </section>
             <div class="dash-row-top">
               <div class="td-mid-stack">
-                <div class="td-progress-card">
+                <section class="td-progress-card" aria-label="Daily writing goal">
+                  <div class="glow-dial" id="glow-dial" aria-hidden="true"></div>
                   <div class="td-progress-body">
-                    <div class="td-ring">
-                      <svg viewBox="0 0 120 120" width="120" height="120">
-                        <circle class="td-ring-track" cx="60" cy="60" r="52"></circle>
-                        <circle class="td-ring-fill" id="td-ring-fill" cx="60" cy="60" r="52"></circle>
-                      </svg>
-                      <span class="td-ring-emoji">&#x1F331;</span>
-                    </div>
+                    <div class="td-ring" hidden><svg viewBox="0 0 120 120"><circle id="td-ring-fill" cx="60" cy="60" r="52"/></svg></div>
                     <div class="td-progress-text">
-                      <div class="td-progress-head" id="td-progress-head">Keep going!</div>
-                      <p class="td-progress-sub">You&rsquo;re building something great.</p>
-                      <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span></div>
-                      <div class="td-progress-goal-label">Daily Word Goal</div>
-                      <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">Edit Goal</button>
+                      <p class="glow-goal-label">Daily word goal</p>
+                      <div class="td-progress-head" id="td-progress-head">Start your day</div>
+                      <p class="glow-goal-percent"><strong id="glow-goal-percent">0</strong><span>%</span></p>
+                      <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span> words</div>
+                      <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">Edit goal</button>
                     </div>
                   </div>
-                </div>
+                </section>
                 <div class="td-reflection-card">
                   <div class="td-card-head">
                     <h3>Reflection</h3>
@@ -410,6 +411,8 @@
                 </div>
               </div>
               <div class="dash-panel-tabs">
+                <div class="glow-rhythm-heading"><span class="glow-rhythm-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8v8M8 4v16M12 7v10M16 2v20M20 8v8"/></svg></span><div><h2>Writing rhythm</h2><p id="glow-rhythm-caption">Your saved sessions</p></div></div>
+                <div class="glow-rhythm-bars" id="glow-rhythm-bars" role="img" aria-label="Words in recent saved sessions"></div>
                 <div class="dash-panel-pane" id="dash-pane-achievements">
                   <div class="td-card-head">
                     <h2 class="dash-panel-pane-title">Achievements</h2>
@@ -1894,8 +1897,9 @@
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/feedback.js?v=optional-feedback-2"></script>
   <script src="/js/editor.js?v=danger-finish-1"></script>
-  <script src="/js/app.js?v=picker-start-label-1"></script>
+  <script src="/js/app.js?v=staging-glow-1"></script>
   <script src="/js/stories.js?v=21"></script>
+  <script src="/js/glow-widgets.js?v=1"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
       const el = document.getElementById('version-tag');

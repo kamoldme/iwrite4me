@@ -9,6 +9,18 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// An isolated staging copy must never trigger real checkout or email actions.
+if (process.env.STAGING_MODE === '1') {
+  app.use((req, res, next) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    const disabled = /^\/api\/(stripe|payme|atmos|click)(?:\/|$)/.test(req.path)
+      || /^\/api\/auth\/(register|google|request-password-reset|reset-password|resend-verification)(?:\/|$)/.test(req.path);
+    if (disabled) return res.status(403).json({ error: 'Staging preview: payments and outbound email are disabled. Sign in with an existing account.' });
+    next();
+  });
+}
+
+
 // Don't advertise the framework
 app.disable('x-powered-by');
 
@@ -906,7 +918,7 @@ async function start() {
         createdAt: new Date().toISOString()
       });
       console.log('Admin account seeded');
-    } else {
+    } else if (process.env.STAGING_MODE !== '1') {
       // Always sync admin password with env/default on startup
       const hash = await bcrypt.hash(adminPass, 12);
       await updateOne('users.json', u => u.email === 'admin@iwrite4.me', { password: hash, role: 'admin' });

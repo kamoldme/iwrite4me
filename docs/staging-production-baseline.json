@@ -2,7 +2,7 @@
   "captured": "2026-10-29",
   "source": "running production container iwrite4me-map-hover-scale-20261005",
   "image": "iwrite4me:staging-production-baseline-20261029",
-  "protectedHashes": {
+  "sourceHashes": {
     "public/index.html": "f89652e319649176d7a345725e0e0c348471444fe4bf0cc0d9b19163201947a6",
     "public/js/landing.js": "c62862c5cc5b9e1852abf4a267c6871c2f7593f3eb3cc075a2a67fd3b0fd77e1",
     "public/css/style.css": "972a6851f5f29f98c59312de35a78cfc5363bd1b9e6f11cc48fe45dec0f6c4a4",
@@ -10,5 +10,12 @@
     "public/js/editor.js": "0635b7d1d98a1886d169750efa066e787cfafc0aae26b9b1497e95d5aa619822",
     "public/app.html": "ca15305ea0e92997f0c8ccb99f972eca7b2e1fb4cd0754fa72054829f3b287c4",
     "public/js/app.js": "02c6297978a6982365ea1de1ed41fef404f3a26d93578509204b1220ff493ea1"
-  }
+  },
+  "protectedFiles": [
+    "public/index.html",
+    "public/js/landing.js",
+    "public/css/style.css",
+    "public/css/redesign.css",
+    "public/js/editor.js"
+  ]
 }

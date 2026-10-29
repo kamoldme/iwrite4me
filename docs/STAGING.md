@@ -1,31 +1,42 @@
-# Staging Workflow
+# Isolated iWrite staging
 
-This branch uses GitHub's `staging` environment name through `.github/workflows/staging.yml`.
+URL: https://iwrite-staging.169.58.74.77.sslip.io/app
+Branch: staging/new-features
 
-## Current State
+## Baseline and isolation
+On 2026-10-29, staging was reset to a source snapshot of the **running production container**, not an older Git branch. Commit `4643c666` records that source baseline. The captured root filesystem image is `iwrite4me:staging-production-baseline-20261029`. Its imported configuration does not inherit production secrets or Traefik labels.
 
-- Local staging branch: `staging/soft-writing-space`
-- GitHub auth on this machine is currently invalid, so the branch and workflow cannot be pushed yet.
-- The workflow runs checks only. It does not deploy to production.
+The PostgreSQL 18 database was copied with a read-only pg_dump and restored into a new PostgreSQL container. Images in profile_media were included. Existing account password records were compared after restoration: all 667 matched production. Staging startup skips production's admin-password reset so copied credentials stay intact.
 
-## To Enable On GitHub
+- App container: iwrite-staging-20261029
+- Database container: iwrite-staging-db-20261029
+- Database: iwrite_staging
+- Database network: iwrite-staging-private (no published database port)
+- Database volume: iwrite-staging-db-data
+- Proxy network: coolify, with hostname-specific staging labels only
+- Root-only deployment files and dump: /srv/iwrite-staging-20261029 (700 directory, 600 secret files)
 
-1. Re-authenticate GitHub locally:
+The app has its own JWT secret and database credentials. Production API keys are not copied. STAGING_MODE=1 blocks payment and outbound-email auth actions and adds X-Robots-Tag: noindex, nofollow, noarchive. Telegram and Stripe reconciliation are disabled by missing credentials. Google sign-in is disabled; email/password login uses the copied account hashes.
 
-   ```bash
-   gh auth login -h github.com
-   ```
+A staging-only preview account contains seven labeled sample sessions for visual review. Its credentials are supplied privately to the requester and are not in the repository. Those sample rows do not exist in production.
 
-2. Push the branch:
+## Visual experiment
+Only the dashboard gets the glowing widget treatment. New CSS and JavaScript are loaded by app.html and scoped to #view-dashboard and its app-container. The editor is a sibling of the app-container and retains production markup, styles and editor.js. The landing page retains the exact production source.
 
-   ```bash
-   git push -u origin staging/soft-writing-space
-   ```
+The reference's SVG glow, rounded outlines and dial geometry are adapted to real saved-session counts and goal progress. No simulated live data, music controls, autonomous chart scroll or thermostat values are shipped. The preview account's sample data is explicitly labeled.
 
-3. In GitHub, go to `Settings -> Environments` and create `staging` if GitHub has not auto-created it from the workflow.
+The calendar's local-day keys and the header's loaded daily-word count are aligned with the dashboard data. No session timer, editor, quota or payment logic is changed.
 
-4. Use `staging/**` branches for landing experiments while production is in maintenance.
+## Deployment and recovery
+Do not copy production env files or routing labels. Do not point staging at the production database. Do not refresh the data snapshot without an explicit request, since that replaces staging experiments.
 
-## Optional Railway Staging
+The current hosted deployment is a separate snapshot container with only the staging source changes overlaid. A saved image of the staged result is retained on the host. Restarting this container does not touch production, and its database volume survives app-container replacement.
 
-If we want this GitHub environment to deploy a separate Railway staging app, create a separate Railway service/environment first, then add those deployment credentials to the GitHub `staging` environment secrets. Keep production secrets out of staging.
+To deploy new staging source, build from staging/new-features or overlay the reviewed staging files on the staging container only. Keep STAGING_MODE=1 and the root-only staging env file. Confirm the target container name before copying files. A new app container must connect to iwrite-staging-private and coolify, use the dedicated staging hostname labels, and use the staging database env file.
+
+## Verification
+- HTTPS verified in browser; actual email/password login succeeded using the staging preview account.
+- Populated and empty dashboard rendering inspected; 7/30-day selector tested, goal percentage checked, and no tile overlap/horizontal page overflow at 1440px and 1024px.
+- Payment POST returned 403 and noindex response header was verified.
+- Production's protected landing/editor/style file hashes compared against the captured baseline.
+- Production original banner check: 29 of 30 referenced banner URLs returned valid images; @akb's original file was absent from filesystem, migration archives and available deployment containers. It was not replaced with another image.
