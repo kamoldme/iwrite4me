@@ -1,0 +1,63 @@
+/* Staging-only dashboard composition inspired by the supplied reference. */
+body.dashboard-experiment .app-container{--bg-primary:#151515;--bg-secondary:#1b1b1b;--bg-card:#1c1c1c;--text-primary:#eee;--text-secondary:#aaa;--text-muted:#777;--border:#303030;--accent:#50c7a2;--accent-soft:rgba(80,199,162,.1);background:#151515;color:#eee;font-family:'Instrument Sans',sans-serif}
+body.dashboard-experiment .sidebar{width:264px;background:#101010;border-right:1px solid #292929;padding:0;box-shadow:none}
+body.dashboard-experiment .sidebar-header{padding:30px 24px 24px;border:0}
+body.dashboard-experiment .sidebar .logo{font-family:inherit;font-size:25px;font-weight:650;color:#f2f2f2;letter-spacing:-1px}
+body.dashboard-experiment .version-tag{display:none}
+body.dashboard-experiment .experiment-search{display:flex;align-items:center;gap:12px;margin:0 18px 26px;width:calc(100% - 36px);padding:13px;border:1px solid #303030;border-radius:12px;background:#1a1a1a;color:#999;font:inherit;font-size:14px;text-align:left;cursor:pointer}
+body.dashboard-experiment .experiment-search kbd{margin-left:auto;background:#272727;border:1px solid #3a3a3a;border-radius:5px;padding:2px 5px;font-size:11px;white-space:nowrap}
+body.dashboard-experiment .experiment-nav-label{padding:22px 26px 12px;border-top:1px solid #252525;color:#666;font:11px 'DM Mono',monospace;letter-spacing:.04em;text-transform:uppercase}
+body.dashboard-experiment .sidebar-nav{padding:0 16px;gap:4px}
+body.dashboard-experiment .sidebar-nav-item{min-height:43px;padding:11px 14px;border:1px solid transparent;border-radius:10px;color:#999;font-size:14px;font-weight:400;gap:13px;background:none}
+body.dashboard-experiment .sidebar-nav-item svg{width:18px;height:18px;opacity:.8}
+body.dashboard-experiment .sidebar-nav-item.active{color:#f5f5f5;background:linear-gradient(#292929,#202020);border-color:#424242;box-shadow:inset 0 1px #ffffff0a,0 2px 4px #0003}
+body.dashboard-experiment .sidebar-nav-item:hover{background-color:#202020;color:white}
+body.dashboard-experiment .sidebar-footer{padding:20px;border-top:1px solid #252525;background:#101010}
+body.dashboard-experiment .main-content{margin-left:264px;padding:32px 40px 48px;max-width:none;background:#151515;min-width:0}
+body.dashboard-experiment #view-dashboard{max-width:1360px;margin:auto}
+.experiment-breadcrumb{display:flex;align-items:center;gap:12px;color:#bbb;font-size:14px;margin-bottom:32px}
+.experiment-breadcrumb>span{margin-left:auto;font:10px 'DM Mono',monospace;color:#777;border:1px solid #333;border-radius:20px;padding:5px 9px}
+body.dashboard-experiment .experiment-month{font:400 clamp(30px,3.5vw,48px)/1.15 'Instrument Sans',sans-serif;letter-spacing:-1.5px;color:#eee;margin:0 0 24px}
+.experiment-month span{color:#606060}
+body.dashboard-experiment .dashboard-hero-row{display:block;margin-bottom:24px}
+body.dashboard-experiment .dashboard-hero{background:none;border:0;box-shadow:none;border-radius:0;padding:0;min-height:0;display:flex;align-items:center;justify-content:space-between;gap:24px}
+body.dashboard-experiment #greeting-text{font:400 16px/1.4 'Instrument Sans',sans-serif;color:#aaa;letter-spacing:0;margin:0 0 3px}
+body.dashboard-experiment .dashboard-hero-sub{font-size:13px;color:#666;margin:0}
+body.dashboard-experiment .dashboard-start-btn{background:#ededed;color:#141414;border:1px solid #fff;border-radius:10px;padding:12px 20px;font-size:13px;box-shadow:0 2px 8px #0003;white-space:nowrap}
+body.dashboard-experiment .dashboard-start-btn>span{display:none}
+body.dashboard-experiment .td-hero-aside,body.dashboard-experiment #view-dashboard .test-only{display:none!important}
+body.dashboard-experiment .dashboard-stats-row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:16px;margin:0 0 20px}
+body.dashboard-experiment .dash-stat-card{background:linear-gradient(120deg,#202020,#191919);border:1px solid #343434;border-radius:16px;box-shadow:0 2px 5px #0003,inset 0 1px #ffffff05;padding:22px;text-align:left;min-height:158px;display:flex;flex-direction:column;align-items:flex-start;position:relative;overflow:hidden}
+body.dashboard-experiment .dash-stat-emoji{display:none}
+body.dashboard-experiment .dash-stat-label{order:-1;color:#999;font-size:13px;letter-spacing:0;text-transform:none;margin-bottom:14px}
+body.dashboard-experiment .dash-stat-value{font:500 clamp(26px,3vw,40px)/1.1 'Instrument Sans',sans-serif;letter-spacing:-1px;color:#f2f2f2}
+body.dashboard-experiment .dash-stat-sub{color:#50c7a2;font:11px 'DM Mono',monospace;margin-top:12px}
+body.dashboard-experiment .xp-bar-container{border:0;background:none;box-shadow:none;padding:0 2px;margin:0 0 28px}
+body.dashboard-experiment .xp-bar-header{font-size:11px;color:#777;margin-bottom:8px}
+body.dashboard-experiment .xp-bar{height:3px;background:#292929}.dashboard-experiment .xp-bar-fill{background:#50c7a2}
+body.dashboard-experiment .dashboard-grid{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(220px,1fr);gap:20px;align-items:start}
+body.dashboard-experiment .heatmap-section,body.dashboard-experiment .tree-container,body.dashboard-experiment .dashboard-recent{margin:0;padding:24px;background:#1b1b1b;border:1px solid #333;border-radius:16px;box-shadow:0 2px 5px #0002;min-width:0}
+body.dashboard-experiment .heatmap-section{grid-column:1;grid-row:1}
+body.dashboard-experiment .tree-container{grid-column:2;grid-row:1;height:auto;min-height:400px;text-align:center;display:flex;flex-direction:column;align-items:center}
+body.dashboard-experiment .dashboard-recent{grid-column:1}
+body.dashboard-experiment .heatmap-title,body.dashboard-experiment .tree-container h3,body.dashboard-experiment .docs-header h2{font:400 15px 'Instrument Sans',sans-serif;letter-spacing:0;color:#bbb;margin:0;text-transform:none}
+body.dashboard-experiment .heatmap-header{margin-bottom:20px}.experiment-chart-summary{display:flex;flex-direction:column;gap:6px;margin-bottom:22px}.experiment-chart-summary strong{font-size:36px;font-weight:500;letter-spacing:-1px;color:#eee}.experiment-chart-summary span{font:11px 'DM Mono',monospace;color:#777}
+.experiment-chart{width:100%;min-height:180px;margin-bottom:24px}.experiment-chart svg{width:100%;height:auto;display:block;overflow:visible}.experiment-chart text{font:10px 'DM Mono',monospace;fill:#777}
+body.dashboard-experiment .heatmap-scroll{border-top:1px solid #303030;padding-top:20px;overflow:auto}
+body.dashboard-experiment .heatmap-cell[data-level="0"]{background:#292929}
+body.dashboard-experiment .heatmap-footer{margin-top:12px}.dashboard-experiment .tree-info{color:#888;font-size:12px}
+body.dashboard-experiment .btn-small{font-size:11px;border-radius:7px}
+body.dashboard-experiment .dashboard-recent .doc-item{background:none;border-color:#303030}
+@media(min-width:769px){body.dashboard-experiment .sidebar{position:fixed;top:0;bottom:0;overflow-y:auto}body.dashboard-experiment .sidebar-footer{margin-top:auto}}
+@media(max-width:1100px){body.dashboard-experiment .main-content{padding:28px 24px}body.dashboard-experiment .dashboard-stats-row{grid-template-columns:repeat(2,minmax(0,1fr))}body.dashboard-experiment .dashboard-grid{grid-template-columns:minmax(0,1fr)}body.dashboard-experiment .tree-container{grid-column:1;grid-row:auto;height:auto}body.dashboard-experiment .tree-container canvas{max-height:220px;width:auto}}
+@media(max-width:768px){body.dashboard-experiment .main-content{margin-left:0;padding:68px 18px 28px}body.dashboard-experiment .sidebar{width:264px}body.dashboard-experiment .dashboard-hero{align-items:flex-start;flex-direction:column;gap:16px}body.dashboard-experiment .dash-stat-card{padding:18px;min-height:132px}body.dashboard-experiment .dashboard-stats-row{gap:12px}body.dashboard-experiment .heatmap-section,body.dashboard-experiment .dashboard-recent{padding:18px}.experiment-breadcrumb{margin-bottom:24px}.experiment-chart-summary strong{font-size:30px}}
+body.dashboard-experiment .app-container{display:block}
+body.dashboard-experiment .sidebar{position:fixed}
+body.dashboard-experiment .heatmap-grid{justify-content:flex-start}
+body.dashboard-experiment .heatmap-cell{width:10px;height:10px;min-width:10px;flex:none;aspect-ratio:1;border-radius:2px}
+body.dashboard-experiment .heatmap-row{gap:3px}
+body.dashboard-experiment .heatmap-weeks{flex:none}
+body.dashboard-experiment .heatmap-day-labels{gap:3px}
+body.dashboard-experiment .heatmap-day-label{height:10px;line-height:10px}
+.experiment-chart svg{max-height:260px}
+body.dashboard-experiment #experiment-search:focus-visible{outline:2px solid #50c7a2;outline-offset:3px}

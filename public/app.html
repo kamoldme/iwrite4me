@@ -22,9 +22,10 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="stylesheet" href="/css/style.css?v=152">
+  <link rel="stylesheet" href="/css/dashboard-experiment.css?v=1">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body>
+<body class="dashboard-experiment">
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
   <div id="mobile-gate" aria-hidden="true">
     <div class="mobile-gate-inner">
@@ -227,6 +228,8 @@
             </button>
           </div>
         </div>
+        <button class="experiment-search" id="experiment-search" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="m15 15 5 5"/></svg><span>Search sessions</span><kbd>⌘ K</kbd></button>
+        <div class="experiment-nav-label">Workspace</div>
         <nav class="sidebar-nav">
           <button class="sidebar-nav-item active" data-view="dashboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -307,10 +310,12 @@
       <main class="main-content">
         <!-- DASHBOARD VIEW -->
         <div id="view-dashboard" class="view">
+          <div class="experiment-breadcrumb"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Overview <span>Staging preview</span></div>
+          <h1 class="experiment-month" id="experiment-month">Your writing overview</h1>
           <div class="dashboard-hero-row">
             <div class="dashboard-hero">
               <div class="dashboard-hero-text">
-                <h1 id="greeting-text">Ready to write?</h1>
+                <h2 id="greeting-text">Ready to write?</h2>
                 <p class="dashboard-hero-sub">Your writing journey continues. Pick up where you left off.</p>
                 <div class="online-indicator" id="online-indicator" style="display:none">
                   <span class="online-dot"></span>
@@ -388,6 +393,8 @@
                 <h3 class="heatmap-title">Writing Activity</h3>
                 <span class="heatmap-total" id="heatmap-total"></span>
               </div>
+              <div class="experiment-chart-summary"><strong id="experiment-week-words">0</strong><span>words in the last 7 days</span></div>
+              <div id="experiment-chart" class="experiment-chart" aria-label="Words written over the last seven days"></div>
               <div class="heatmap-scroll">
                 <div class="heatmap-grid" id="heatmap-grid"></div>
               </div>
@@ -1797,6 +1804,7 @@
   <script src="/js/editor.js?v=49"></script>
   <script src="/js/app.js?v=140"></script>
   <script src="/js/stories.js?v=20"></script>
+  <script src="/js/dashboard-experiment.js?v=1"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
       const el = document.getElementById('version-tag');
