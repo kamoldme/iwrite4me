@@ -45,3 +45,10 @@ To deploy new staging source, build from staging/new-features or overlay the rev
 The follow-up dashboard refinement is documented in `docs/DASHBOARD-DESIGN.md`. Browser checks passed for the 7/30-day selector/data table, goal editing, local-midnight totals, deleted-document exclusion, safe document titles, empty states, keyboard session readouts, navigation and opening a recent document. Desktop layouts were inspected at 1440, 1024 and 800px without horizontal overflow. The existing phone gate is retained.
 
 The seven staging preview documents were completed with empty `shareLinks` arrays, which the existing document-view route requires. This sample-only data repair did not change copied user documents or production.
+
+### Sidebar and session picker (2026-10-29)
+The staged app shell now uses one dark navigation surface across app views. Icons keep a fixed horizontal position, labels fade, and sidebar width/content margin share a 240ms transition. The obsolete body-level full-hide state was removed from desktop controls; all desktop toggles share the rail preference. Restoration does not animate until the first user toggle. Reduced motion disables transitions.
+
+The pre-session picker retains all existing mode, timer, quota and start actions. Native mode buttons expose pressed states. Hover uses image scale and an outline, with no sibling blur/dimming. The dialog supports Escape, focus containment/return and an animated exit. Laptop-height layouts keep the start action visible while the detail panel can scroll.
+
+Browser verification: 19 sampled collapse frames, zero pixels of icon travel, content/sidebar alignment within one pixel, rapid reversal, saved preference, all four modes, keyboard focus and animated exit passed. No writing session was started by these checks. Visual checks at 1280x720 and 1024x768 kept the start button inside the viewport and showed no page overflow. Landing/shared style/editor hashes and the editor HTML region remain identical to the production baseline.
