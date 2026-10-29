@@ -40,3 +40,8 @@ To deploy new staging source, build from staging/new-features or overlay the rev
 - Payment POST returned 403 and noindex response header was verified.
 - Production's protected landing/editor/style file hashes compared against the captured baseline.
 - Production original banner check: 29 of 30 referenced banner URLs returned valid images; @akb's original file was absent from filesystem, migration archives and available deployment containers. It was not replaced with another image.
+
+### Dashboard refinement (2026-10-29)
+The follow-up dashboard refinement is documented in `docs/DASHBOARD-DESIGN.md`. Browser checks passed for the 7/30-day selector/data table, goal editing, local-midnight totals, deleted-document exclusion, safe document titles, empty states, keyboard session readouts, navigation and opening a recent document. Desktop layouts were inspected at 1440, 1024 and 800px without horizontal overflow. The existing phone gate is retained.
+
+The seven staging preview documents were completed with empty `shareLinks` arrays, which the existing document-view route requires. This sample-only data repair did not change copied user documents or production.
