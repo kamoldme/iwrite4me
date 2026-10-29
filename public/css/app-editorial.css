@@ -253,5 +253,8 @@ body.glow-dashboard #view-upgrade .upgrade-price-som{font-size:15px;color:var(--
 body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-followers{flex:0 0 52px;white-space:normal;line-height:1.4;overflow-wrap:anywhere;}
 body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-avatar{flex:0 0 32px;width:32px;height:32px;}
 body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-handle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+body.glow-dashboard #view-stories.workspace-v2 .community-avatar-fallback{display:grid;place-items:center;background:var(--ui-selected);color:var(--ui-accent);font:600 11px/1 'Instrument Sans',sans-serif;}
+/* The legacy badge palette uses important declarations; keep contrast within app chrome. */
+body.glow-dashboard .app-container :is(.pro-badge-inline,.pro-nav-badge,.lb-pro-badge,.pro-inline-badge,.profile-plan-badge.pro,.plan-badge.pro .plan-badge-pill){background:var(--ui-primary)!important;color:var(--ui-on-primary)!important;}
 @media(max-width:1100px){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-feed-panel{grid-template-columns:1fr;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-rail{grid-column:1;grid-row:2;position:static;display:grid;grid-template-columns:1fr 1fr;border-left:0;border-top:1px solid var(--ui-edge);padding:24px 0 0;}}
 @media(max-width:960px){body.glow-dashboard #view-upgrade .upgrade-cards{grid-template-columns:1fr!important;}body.glow-dashboard #view-upgrade .upgrade-hero{padding-right:0;padding-top:56px;}}

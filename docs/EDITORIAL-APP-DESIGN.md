@@ -29,6 +29,8 @@ Installed UI Skills routing, Interface Design, Better UI and Impeccable informed
 
 `app-editorial.css` is a final app-only layer. The light dashboard rules do not affect its dark treatment. Changes to `workspace-pages.js` move the existing discovery rail after the feed, provide keyboard activation for article cards, and replace the subscription-history emoji with a small SVG. The daily-goal renderer supplies one CSS progress value.
 
+Community photos that fail to load use name initials locally; working photos and stored profile data are unchanged. Pro badges use the action/background contrast pair in each theme.
+
 No backend, authentication, payment, timer, quota or persistence logic changed. Landing files, shared production styles, editor.js and the editor HTML region match the protected baseline. No database migration or production deployment is part of this change.
 
 ## Verified on isolated staging

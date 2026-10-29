@@ -73,6 +73,23 @@
       if (e.key === 'Enter' && e.target.matches('.story-feed-item,.story-hero-card')) { e.preventDefault(); e.target.click(); }
     });
     new MutationObserver(enhanceArticles).observe(feed, { childList: true, subtree: true }); enhanceArticles();
+    // Missing stored photos get a local presentation fallback; profile data stays intact.
+    const boundAvatars = new WeakSet();
+    const enhanceAvatars = () => view.querySelectorAll('img.stories-popular-avatar,img.story-author-avatar-img').forEach(img => {
+      if (boundAvatars.has(img)) return;
+      boundAvatars.add(img);
+      const fallback = () => {
+        if (!img.isConnected) return;
+        const name = img.closest('.stories-popular-item')?.querySelector('.stories-popular-name')?.textContent || img.alt || 'Writer';
+        const initials = name.trim().split(/\s+/u).slice(0, 2).map(part => [...part][0] || '').join('').toUpperCase();
+        const replacement = make('span', img.matches('.stories-popular-avatar') ? 'stories-popular-avatar community-avatar-fallback' : 'story-author-avatar-fallback', initials);
+        replacement.setAttribute('aria-hidden', 'true');
+        img.replaceWith(replacement);
+      };
+      img.addEventListener('error', fallback, { once: true });
+      if (img.complete && !img.naturalWidth) fallback();
+    });
+    new MutationObserver(enhanceAvatars).observe(view, { childList: true, subtree: true }); enhanceAvatars();
     const sort = $('stories-feed-sort-row');
     const syncTab = () => { view.dataset.communityTab = sort.style.display === 'none' ? 'mine' : 'feed'; };
     new MutationObserver(syncTab).observe(sort, { attributes: true, attributeFilter: ['style'] }); syncTab();
