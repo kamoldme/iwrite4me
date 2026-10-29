@@ -4,6 +4,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 const { findOne, findMany } = require('../utils/storage');
+const { getProfileMedia } = require('../utils/profile-media');
 const { hydrateStories } = require('./stories');
 
 const router = express.Router();
@@ -162,11 +163,12 @@ router.get('/:username/og-image', async (req, res) => {
       <text x="1120" y="540" font-family="sans-serif" font-size="16" fill="rgba(255,255,255,0.3)" text-anchor="end">Writer Profile</text>
     </svg>`;
 
-    // Composite avatar if exists
+    // Composite the durable avatar when available.
     let image = sharp(Buffer.from(svg));
-    const avatarPath = path.join(__dirname, '../data/avatars', `${user.id}.jpg`);
-    if (fs.existsSync(avatarPath)) {
-      const avatarBuf = await sharp(avatarPath).resize(120, 120).png().toBuffer();
+    const avatarFile = user.avatar ? path.basename(user.avatar) : null;
+    const avatarImage = avatarFile ? await getProfileMedia('avatar', avatarFile) : null;
+    if (avatarImage) {
+      const avatarBuf = await sharp(avatarImage).resize(120, 120).png().toBuffer();
       // Create circular mask
       const circleMask = Buffer.from(`<svg width="120" height="120"><circle cx="60" cy="60" r="60" fill="white"/></svg>`);
       const maskedAvatar = await sharp(avatarBuf).composite([{ input: circleMask, blend: 'dest-in' }]).png().toBuffer();

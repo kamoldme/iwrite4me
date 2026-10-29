@@ -58,7 +58,7 @@ const Editor = {
         mode: this.mode,
         lastKeystroke: this.lastKeystroke,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content: this._serializeTabs()
       }));
     } catch {}
   },
@@ -85,6 +85,122 @@ const Editor = {
     }
   },
 
+  // ===== Tabs — multiple drafts/notes living inside the one session doc.
+  // Persisted in the single `content` field via an invisible HTML-comment
+  // marker between tabs, so no server schema change is needed and older
+  // single-tab documents load back in unchanged (no marker = one tab).
+  _tabMarkerRe: /<!--iwrite-tab:([^>]*?)-->/g,
+
+  _initTabs(html) {
+    const re = new RegExp(this._tabMarkerRe.source, 'g');
+    const parts = (html || '').split(re);
+    if (parts.length <= 1) {
+      this._tabs = [{ name: 'Draft', html: html || '' }];
+    } else {
+      this._tabs = [];
+      // parts[0] is whatever preceded the first marker (should be empty for
+      // documents we wrote ourselves, but keep it if a legacy doc has it).
+      if (parts[0]) this._tabs.push({ name: 'Draft', html: parts[0] });
+      for (let i = 1; i < parts.length; i += 2) {
+        this._tabs.push({ name: parts[i] || 'Draft', html: parts[i + 1] || '' });
+      }
+    }
+    this._activeTabIdx = 0;
+    this.textarea.innerHTML = this._tabs[0].html;
+    this._renderTabsList();
+  },
+
+  _serializeTabs() {
+    if (this._tabs && this._tabs[this._activeTabIdx]) this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    if (!this._tabs || this._tabs.length <= 1) return (this._tabs && this._tabs[0] && this._tabs[0].html) || this.textarea.innerHTML;
+    return this._tabs.map(t => `<!--iwrite-tab:${t.name}-->${t.html}`).join('');
+  },
+
+  _tabWordCount(html) {
+    const text = (html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ');
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  },
+
+  _renderTabsList() {
+    const list = document.getElementById('editor-tabs-list');
+    if (!list || !this._tabs) return;
+    const canDelete = this._tabs.length > 1;
+    list.innerHTML = this._tabs.map((t, i) => {
+      const words = i === this._activeTabIdx ? this.getWordCount() : this._tabWordCount(t.html);
+      return `<button class="editor-tab-row${i === this._activeTabIdx ? ' active' : ''}" data-tab-idx="${i}">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        <span class="editor-tab-name">${App.escapeHtml(t.name)}</span>
+        <span class="editor-tab-words">${words}</span>
+        ${canDelete ? `<span class="editor-tab-delete" role="button" data-tab-delete-idx="${i}" title="Delete tab"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>` : ''}
+      </button>`;
+    }).join('');
+  },
+
+  async _deleteTab(idx) {
+    if (!this._tabs || this._tabs.length <= 1 || !this._tabs[idx]) return;
+    const ok = await App.showConfirm(`Delete "${this._tabs[idx].name}"? This can't be undone.`);
+    if (!ok) return;
+    this._tabs.splice(idx, 1);
+    if (this._activeTabIdx >= this._tabs.length) this._activeTabIdx = this._tabs.length - 1;
+    else if (this._activeTabIdx > idx) this._activeTabIdx -= 1;
+    this.textarea.innerHTML = this._tabs[this._activeTabIdx].html;
+    this._renderTabsList();
+    this.updateWordCount();
+  },
+
+  _switchTab(idx) {
+    if (!this._tabs || idx === this._activeTabIdx || !this._tabs[idx]) return;
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    this._activeTabIdx = idx;
+    this.textarea.innerHTML = this._tabs[idx].html;
+    this._renderTabsList();
+    this.updateWordCount();
+    this.textarea.focus();
+  },
+
+  _addTab() {
+    if (!this._tabs) return;
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    this._tabs.push({ name: `Draft ${this._tabs.length + 1}`, html: '' });
+    this._activeTabIdx = this._tabs.length - 1;
+    this.textarea.innerHTML = '';
+    this._renderTabsList();
+    this.updateWordCount();
+    this.textarea.focus();
+  },
+
+  _syncTabName() {
+    if (!this._tabs || !this._tabs[this._activeTabIdx]) return;
+    if (this._tabs.length === 1) this._tabs[0].name = (this.titleInput.value || '').trim() || 'Draft';
+    this._renderTabsList();
+  },
+
+  _renameTab(idx) {
+    if (!this._tabs || !this._tabs[idx]) return;
+    const row = document.querySelector(`.editor-tab-row[data-tab-idx="${idx}"]`);
+    const nameEl = row && row.querySelector('.editor-tab-name');
+    if (!nameEl || row.querySelector('.editor-tab-rename-input')) return;
+    const current = this._tabs[idx].name;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'editor-tab-rename-input';
+    input.value = current;
+    input.maxLength = 40;
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+    const commit = () => {
+      this._tabs[idx].name = input.value.trim() || current;
+      this._renderTabsList();
+    };
+    input.addEventListener('blur', commit, { once: true });
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') input.blur();
+      else if (e.key === 'Escape') { input.value = current; input.blur(); }
+    });
+  },
+
   async start(duration, mode, opts = {}) {
     this.duration = duration;
     this.mode = mode;
@@ -94,6 +210,8 @@ const Editor = {
     this.isEditing = false;
     this.isDirty = false;
     this.targetWords = opts.targetWords || 0;
+    const targetWordsInput = document.getElementById('editor-target-words');
+    if (targetWordsInput) targetWordsInput.value = this.targetWords || '';
     this.sessionTopic = opts.topic || '';
     // Custom danger threshold (Pro feature)
     if (opts.dangerThreshold) this.dangerThreshold = opts.dangerThreshold;
@@ -105,9 +223,18 @@ const Editor = {
     if (typeof CommentSystem !== 'undefined') CommentSystem.destroy();
 
     try {
-      const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic, this.dangerVariant);
+      this._createRequestId = this._createRequestId || (window.crypto?.randomUUID?.() || null);
+      const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic, this.dangerVariant, this._createRequestId);
       this.documentId = doc.id;
-    } catch {
+      this._createRequestId = null;
+      App._pendingDocumentTitle = '';
+      App.refreshSessionQuota();
+    } catch (error) {
+      if (error.code === 'SESSION_DAILY_LIMIT') {
+        this._createRequestId = null;
+        App.showSessionQuotaLimit(error.quota);
+        return;
+      }
       App.toast('Failed to create document', 'error');
       return;
     }
@@ -139,9 +266,17 @@ const Editor = {
     this.textarea.innerHTML = '';
     this.textarea.contentEditable = 'true';
     this.textarea.focus();
+    this._baseWordCount = 0;
+    this._lastSavedAt = null;
+    this._tabs = [{ name: 'Draft', html: '' }];
+    this._activeTabIdx = 0;
+    this._renderTabsList();
+    this._lastMove = Date.now();
+    this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
     this.active = true;
     if (this._originalTabTitle == null) this._originalTabTitle = document.title;
-    document.title = '✍️ Writing in progress…';
+    document.title = 'Writing in progress…';
 
     // Show correct buttons for active session
     // In dangerous mode or duel mode, hide the Complete button — session ends only when time runs out
@@ -181,7 +316,7 @@ const Editor = {
     document.getElementById('status-bar').style.display = 'flex';
     this.titleInput.readOnly = false;
 
-    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous' : mode === 'zen' ? 'Zen' : mode === 'research' ? 'Research' : 'Time';
+    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous Mode' : mode === 'zen' ? 'Zen Mode' : mode === 'research' ? 'Research Mode' : mode === 'duel' ? 'Duel Mode' : 'Time Mode';
     this.modeBadge.className = `editor-mode-badge ${mode}`;
     // Show session controls (swap add-time buttons for duel mode)
     document.getElementById('editor-timer').style.display = '';
@@ -196,10 +331,11 @@ const Editor = {
 
     if (mode === 'dangerous') {
       this.container.classList.add('dangerous-active');
-      this.dangerProgress.style.display = 'none';
+      this.dangerProgress.style.display = '';
       this._renderHearts();
       this.startDangerMode();
     } else {
+      this.dangerProgress.style.display = 'none';
       const h = document.getElementById('editor-hearts');
       if (h) h.style.display = 'none';
     }
@@ -246,14 +382,10 @@ const Editor = {
     this._heartbeatInterval = setInterval(() => this._sendHeartbeat(), 5000);
     this._sendHeartbeat();
 
-    // Show topic bar if set
-    const topicBar = document.getElementById('editor-topic-bar');
-    const topicText = document.getElementById('editor-topic-text');
-    topicText.value = this.sessionTopic || '';
-    topicBar.style.display = 'block';
-
     // Show target word count in status bar
     this._updateWordsRemaining();
+    this._syncTabName();
+    this.updateWordCount();
 
     // Duel mode: start polling opponent word count, sync timer from server
     this._duelInfo = null;
@@ -416,7 +548,7 @@ const Editor = {
   onKeydown: (e) => {
     // Typewriter sound — fire on character keys, space, enter, backspace
     if (Editor._typewriterSound && e.key && (e.key.length === 1 || e.key === 'Enter' || e.key === 'Backspace')) {
-      Editor._playTypeClick();
+      Editor._playTypeClick(e.key);
     }
     // Block new words at word limit (allow delete, backspace, arrows, shortcuts)
     if ((Editor.active || Editor.isEditing) && App.user) {
@@ -655,12 +787,12 @@ const Editor = {
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
     this.tabWarningTimer.textContent = this.tabGracePeriod;
-    document.title = `🔴 ${this.tabGracePeriod}s left. Come back!`;
+    document.title = `${this.tabGracePeriod}s left. Come back!`;
     this.tabCountdown = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = Math.max(0, this.tabGracePeriod - elapsed);
       this.tabWarningTimer.textContent = remaining;
-      document.title = `🔴 ${remaining}s left. Come back!`;
+      document.title = `${remaining}s left. Come back!`;
       if (remaining <= 0) {
         this.abandonSession();
       }
@@ -703,7 +835,7 @@ const Editor = {
     this._lastTabReturn = Date.now();
     // Tab countdown ended but session is still active — restore the session title
     if (this.active && !this.abandoned) {
-      document.title = '✍️ Writing in progress…';
+      document.title = 'Writing in progress…';
     }
     this.tabWarning.classList.remove('active');
     this.tabLeftTime = null;
@@ -736,7 +868,7 @@ const Editor = {
       localStorage.setItem(cacheKey, JSON.stringify({
         documentId: this.documentId,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         reason: 'tab_left',
         failedAt: new Date().toISOString()
       }));
@@ -793,7 +925,7 @@ const Editor = {
 
   startDangerMode() {
     this.dangerInterval = setInterval(() => {
-      if (!this.active) return;
+      if (!this.active || this._completing || this._isTimerExpired()) return;
       const elapsed = Date.now() - this.lastKeystroke;
       const total = this.dangerThreshold;
       const remaining = total - elapsed;
@@ -829,12 +961,11 @@ const Editor = {
         this.vignette.style.opacity = 0;
       }
 
+      const idleRatio = Math.min(elapsed / total, 1);
+      if (this.dangerProgressBar) this.dangerProgressBar.style.width = (idleRatio * 100) + '%';
+
       if (elapsed >= total) {
-        if (this.dangerVariant === 'chill') {
-          this.handleChillExpire();
-        } else {
-          this.failDangerMode();
-        }
+        this.handleDangerExpire();
       }
     }, 50);
   },
@@ -842,7 +973,6 @@ const Editor = {
   _renderHearts() {
     const wrap = document.getElementById('editor-hearts');
     if (!wrap) return;
-    if (this.dangerVariant !== 'chill') { wrap.style.display = 'none'; return; }
     wrap.style.display = '';
     const hearts = wrap.querySelectorAll('.heart');
     hearts.forEach((h, i) => {
@@ -851,8 +981,8 @@ const Editor = {
     });
   },
 
-  handleChillExpire() {
-    if (this._chillExpiring) return;
+  handleDangerExpire() {
+    if (this._chillExpiring || this._completing || this._isTimerExpired()) return;
     this._chillExpiring = true;
 
     // Out of hearts → classic fail
@@ -928,6 +1058,7 @@ const Editor = {
   },
 
   async failDangerMode() {
+    if (!this.active || this._completing || this._isTimerExpired()) return;
     this.cleanup();
     this.abandoned = true;
 
@@ -937,7 +1068,7 @@ const Editor = {
       localStorage.setItem(cacheKey, JSON.stringify({
         documentId: this.documentId,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         reason: 'typing_stopped',
         failedAt: new Date().toISOString()
       }));
@@ -990,7 +1121,43 @@ const Editor = {
 
   _timerMasked: false,
 
+  // Session-elapsed hairline at the very top of the viewport — one tone per
+  // mode, matching the mode picker/detail-panel colors.
+  _elapsedTone() {
+    return this.mode === 'dangerous' ? 'tone-danger' : this.mode === 'zen' ? 'tone-info' : this.mode === 'duel' ? 'tone-warning' : '';
+  },
+  _updateElapsedBar(pct) {
+    const fill = document.getElementById('editor-elapsed-fill');
+    if (!fill) return;
+    fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    fill.className = `editor-elapsed-fill ${this._elapsedTone()}`;
+  },
+
+  _updatePaceAndSaved() {
+    const paceEl = document.getElementById('editor-pace');
+    if (paceEl) {
+      if (this.mode === 'zen') {
+        paceEl.textContent = 'nothing measured';
+      } else {
+        const elapsedSec = (Date.now() - this.startTime - this._effectivePaused()) / 1000;
+        paceEl.textContent = elapsedSec < 45 ? '— wpm' : `${Math.round(((this.getWordCount() - (this._baseWordCount || 0)) / elapsedSec) * 60)} wpm`;
+      }
+    }
+    const savedEl = document.getElementById('editor-saved-line');
+    if (savedEl) {
+      if (this.mode === 'zen') {
+        savedEl.textContent = 'not saved to stats';
+      } else if (!this._lastSavedAt) {
+        savedEl.textContent = 'not saved yet';
+      } else {
+        const secsAgo = Math.floor((Date.now() - this._lastSavedAt) / 1000);
+        savedEl.textContent = secsAgo < 15 ? 'saved just now' : `saved ${secsAgo}s ago`;
+      }
+    }
+  },
+
   updateTimer() {
+    this._updatePaceAndSaved();
     if (this.duration === 0) {
       const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       const min = Math.floor(elapsed / 60);
@@ -998,15 +1165,17 @@ const Editor = {
       this.timerEl.textContent = this._timerMasked ? '**:**' : `${min}:${String(sec).padStart(2, '0')}`;
       this.timerEl.className = 'editor-timer';
       this._applyTimerVisibility();
+      this._updateElapsedBar(0);
       return;
     }
 
     // In duel mode, use server-synced endAt for timer (both sides see same clock)
-    let remaining;
+    let remaining, totalSeconds;
     if (this._duelEndAt) {
       remaining = Math.max(0, Math.ceil((this._duelEndAt - Date.now()) / 1000));
+      totalSeconds = this.duration * 60;
     } else {
-      const totalSeconds = this.duration * 60;
+      totalSeconds = this.duration * 60;
       const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       remaining = Math.max(0, totalSeconds - elapsed);
     }
@@ -1017,6 +1186,7 @@ const Editor = {
     this._applyTimerVisibility();
 
     this.timerEl.textContent = this._timerMasked ? '**:**' : `${min}:${String(sec).padStart(2, '0')}`;
+    this._updateElapsedBar(((totalSeconds - remaining) / totalSeconds) * 100);
 
     if (remaining <= 60) {
       this.timerEl.className = 'editor-timer danger';
@@ -1046,6 +1216,7 @@ const Editor = {
     const words = this.getWordCount();
     const el = document.getElementById('editor-word-count');
     if (el) el.textContent = `${words} word${words !== 1 ? 's' : ''}`;
+    this._renderTabsList();
 
     // Word limit for all users
     if ((this.active || this.isEditing) && App.user) {
@@ -1090,6 +1261,14 @@ const Editor = {
 
   getWordCount() {
     return (this.textarea.innerText || '').trim().split(/\s+/).filter(Boolean).length;
+  },
+
+  // Words across every tab, not just the one currently open — used wherever
+  // the whole session's output matters (XP, word limit, completion checks).
+  _totalWordCount() {
+    if (!this._tabs || this._tabs.length <= 1) return this.getWordCount();
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    return this._tabs.reduce((sum, t, i) => sum + (i === this._activeTabIdx ? this.getWordCount() : this._tabWordCount(t.html)), 0);
   },
 
   // Ensure forfeit is sent even if user closes tab/browser
@@ -1318,8 +1497,9 @@ const Editor = {
     try {
       await API.updateDocument(this.documentId, {
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content: this._serializeTabs()
       });
+      this._lastSavedAt = Date.now();
       // Also save session state on each auto-save
       this._saveSessionState();
     } catch {}
@@ -1350,10 +1530,14 @@ const Editor = {
       // Show editor
       this.container.classList.add('active');
       this.titleInput.value = state.title;
-      this.textarea.innerHTML = state.content;
+      this._initTabs(state.content);
       this.textarea.contentEditable = 'true';
       this.textarea.focus();
       this.active = true;
+      this._baseWordCount = 0;
+      this._lastMove = Date.now();
+      this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
 
       // Show correct buttons and badges
       document.getElementById('editor-save-btn').style.display = this.mode === 'dangerous' ? 'none' : 'inline-flex';
@@ -1366,13 +1550,14 @@ const Editor = {
       if (addTimeEl) addTimeEl.style.display = this.mode === 'zen' ? 'none' : '';
       this.titleInput.readOnly = false;
 
-      this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous' : 'Normal';
+      this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous Mode' : this.mode === 'zen' ? 'Zen Mode' : this.mode === 'research' ? 'Research Mode' : this.mode === 'duel' ? 'Duel Mode' : 'Time Mode';
       this.modeBadge.className = `editor-mode-badge ${this.mode}`;
 
       // Setup mode-specific UI
       if (this.mode === 'dangerous') {
         this.container.classList.add('dangerous-active');
-        this.dangerProgress.style.display = 'none';
+        this.dangerProgress.style.display = '';
+        this._renderHearts();
         this.startDangerMode();
       }
 
@@ -1393,6 +1578,7 @@ const Editor = {
       this._startFocusCheck();
       if (this.mode !== 'dangerous') this.bindFormatting();
       this.updateWordCount();
+      this._syncTabName();
 
       this._fullscreenActive = false;
       this._blurCooldown = false;
@@ -1427,15 +1613,25 @@ const Editor = {
     // session resumed on page load awards XP many times over.
     if (this._completing) return;
     this._completing = true;
+    const sessionExpired = timerExpired || this._isTimerExpired();
+    if (sessionExpired) {
+      // Naming the finished document must never spend hearts or erase text.
+      this.active = false;
+      clearInterval(this.timerInterval);
+      clearInterval(this.dangerInterval);
+      clearInterval(this.tabCountdown);
+      this.vignette.classList.remove('active');
+      this.vignette.style.opacity = 0;
+    }
     // An expired session is over: drop its saved state now so a refresh mid-prompt
     // can't resume-and-complete it again (the "every refresh gives XP" bug).
-    if (timerExpired) this._clearSessionState();
+    if (sessionExpired) this._clearSessionState();
 
     // Check early complete limit (only when user clicks Complete, not when timer expires)
     // Bypass during maintenance — unlimited saves/copies
     // Bypass when word limit is reached — user can't write more, don't punish them
     const maintenanceActive = App._maintActive;
-    const atWordLimit = this.getWordCount() >= this.getWordLimit();
+    const atWordLimit = this._totalWordCount() >= this.getWordLimit();
     const isUnlimited = this.duration === 0;
     const isEarly = !timerExpired && !this._isTimerExpired() && !atWordLimit && !isUnlimited;
     if (isEarly && !maintenanceActive && this.mode !== 'zen') {
@@ -1458,11 +1654,11 @@ const Editor = {
     }
 
     // Task 10: If title is empty, prompt user to name it or keep as Untitled
-    if (this.getWordCount() > 0) {
+    if (this._totalWordCount() > 0) {
       const currentTitle = (this.titleInput.value || '').trim();
       if (!currentTitle) {
         const chosen = await App.promptTitle();
-        if (chosen === null) {
+        if (chosen === null && !sessionExpired) {
           // User cancelled the prompt — don't complete
           this._completing = false;
           return;
@@ -1475,8 +1671,10 @@ const Editor = {
     this._earlyComplete = (this.mode === 'zen' || isUnlimited) ? false : isEarly;
     this.cleanup();
 
-    const wordCount = this.getWordCount();
-    const duration = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
+    const wordCount = this._totalWordCount();
+    const duration = sessionExpired && this.duration > 0
+      ? this.duration * 60
+      : Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
 
     // If no words were written, silently discard — no XP, no streak, no stats
     if (wordCount === 0) {
@@ -1502,7 +1700,7 @@ const Editor = {
         wordCount, duration, xpEarned,
         earlyComplete: !!this._earlyComplete,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         activeWritingSeconds: Math.round(this._activeWritingSeconds)
       });
     } catch {
@@ -1545,8 +1743,10 @@ const Editor = {
     }
 
     App._docsCacheDirty = true;
+    App.refreshSessionQuota();
     try { await App.loadDocuments(true); } catch {}
     this.showComplete(wordCount, duration, xpEarned, result.user);
+    SessionFeedback.show(result.document?.id);
     // Show admin-awarded PRO congrats after session wraps up
     setTimeout(() => App.checkPendingProCongrats(), 1200);
   },
@@ -1684,8 +1884,13 @@ const Editor = {
   // --- Words remaining / target ---
   _updateWordsRemaining() {
     const el = document.getElementById('editor-words-remaining');
+    const sep = document.getElementById('editor-words-remaining-sep');
     if (!el) return;
-    if (!this.targetWords) { el.style.display = 'none'; return; }
+    if (!this.targetWords) {
+      el.style.display = 'none';
+      if (sep) sep.style.display = 'none';
+      return;
+    }
     const words = this.getWordCount();
     const remaining = Math.max(0, this.targetWords - words);
     if (remaining > 0) {
@@ -1696,6 +1901,7 @@ const Editor = {
       el.style.color = 'var(--success)';
     }
     el.style.display = '';
+    if (sep) sep.style.display = '';
   },
 
   // --- Motivating notifications ---
@@ -1868,18 +2074,51 @@ const Editor = {
   // --- Writing preferences: focus mode, typewriter sounds, smart punctuation ---
   _focusMode: false,
   _typewriterSound: false,
+  _typewriterPack: 'synth',
   _smartPunct: true, // on by default — curly quotes/ellipsis are nice for prose
   _typeAudioCtx: null,
+  _typePackBuffers: {},
+  _typeSpriteElement: null,
+  _typeSpriteStopTimer: null,
+  _typePackDefs: {
+    'nk-cream': {
+      type: 'multi',
+      base: '/media/typewriter/nk-cream/',
+      files: {
+        Backspace: 'backspace.wav',
+        Enter: 'enter.wav',
+        ' ': 'space.wav',
+        default: ['a.wav', 'e.wav', 'i.wav', 'o.wav', 's.wav', 't.wav', 'n.wav', 'r.wav']
+      }
+    },
+    'cherrymx-black-pbt': {
+      type: 'sprite',
+      src: '/media/typewriter/cherrymx-black-pbt/sound.ogg',
+      slices: [[2078, 176], [9291, 164], [16515, 150], [22850, 160], [30598, 140], [33678, 163]]
+    },
+    'eg-oreo': {
+      type: 'sprite',
+      src: '/media/typewriter/eg-oreo/oreo.ogg',
+      slices: [[971, 142], [1276, 115], [6515, 120], [11171, 109], [14603, 116], [20804, 118]]
+    },
+    'cherrymx-black-abs': {
+      type: 'sprite',
+      src: '/media/typewriter/cherrymx-black-abs/sound.ogg',
+      slices: [[2894, 226], [12946, 191], [22245, 190], [31542, 170], [36902, 234], [45327, 165]]
+    }
+  },
 
   // Read persisted prefs and apply them. Called whenever the editor opens.
   loadWritingPrefs() {
-    let focus = false, typer = false, punct = true;
+    let focus = false, typer = false, punct = true, typePack = 'synth';
     try {
       focus = localStorage.getItem('iwrite_focus_mode') === '1';
       typer = localStorage.getItem('iwrite_typewriter_sound') === '1';
+      typePack = localStorage.getItem('iwrite_typewriter_pack') || 'synth';
       const sp = localStorage.getItem('iwrite_smart_punct');
       punct = sp === null ? true : sp === '1';
     } catch {}
+    this.setTypewriterPack(typePack);
     this.setFocusMode(focus);
     this.setTypewriterSound(typer);
     this.setSmartPunct(punct);
@@ -1913,6 +2152,7 @@ const Editor = {
       if (lbl) lbl.textContent = on ? 'On' : 'Off';
     }
     try { localStorage.setItem('iwrite_focus_mode', on ? '1' : '0'); } catch {}
+    App._syncToolsToggles?.();
     if (on) { this._playFocusActivateAnim(); this._updateFocusLine(); }
     else this._clearFocusLine();
   },
@@ -1972,10 +2212,82 @@ const Editor = {
     const cb = document.getElementById('pref-typewriter');
     if (cb) cb.checked = on;
     try { localStorage.setItem('iwrite_typewriter_sound', on ? '1' : '0'); } catch {}
+    this._syncTypewriterSwitchUI();
   },
-  // Synthesize a short typewriter-ish click via WebAudio (no asset / CSP needed).
-  _playTypeClick() {
+
+  setTypewriterPack(pack) {
+    this._typewriterPack = this._typePackDefs[pack] ? pack : 'synth';
+    try { localStorage.setItem('iwrite_typewriter_pack', this._typewriterPack); } catch {}
+    this._syncTypewriterSwitchUI();
+  },
+
+  setTypewriterSwitch(pack) {
+    if (pack === 'off') {
+      this.setTypewriterSound(false);
+      return;
+    }
+    this.setTypewriterPack(pack);
+    this.setTypewriterSound(true);
+  },
+
+  _syncTypewriterSwitchUI() {
+    const activePack = this._typewriterSound ? this._typewriterPack : 'off';
+    const select = document.getElementById('typewriter-pack-select');
+    if (select) select.value = activePack;
+    document.querySelectorAll('.typewriter-pack').forEach(btn => {
+      const active = btn.dataset.typePack === activePack;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+  },
+
+  _typeKeyFile(key) {
+    const pack = this._typePackDefs[this._typewriterPack];
+    if (!pack || pack.type !== 'multi') return null;
+    if (pack.files[key]) return pack.base + pack.files[key];
+    const normalized = (key || '').toLowerCase();
+    if (/^[a-z]$/.test(normalized)) return pack.base + normalized + '.wav';
+    const fallback = pack.files.default[Math.floor(Math.random() * pack.files.default.length)];
+    return pack.base + fallback;
+  },
+
+  _playTypeAsset(key) {
+    const pack = this._typePackDefs[this._typewriterPack];
+    if (!pack) return false;
+    try {
+      if (pack.type === 'multi') {
+        const src = this._typeKeyFile(key);
+        if (!src) return false;
+        const audio = this._typePackBuffers[src] || new Audio(src);
+        this._typePackBuffers[src] = audio;
+        audio.currentTime = 0;
+        audio.volume = 0.46;
+        audio.play().catch(() => {});
+        return true;
+      }
+      if (pack.type === 'sprite') {
+        const expectedSrc = new URL(pack.src, window.location.href).href;
+        const audio = this._typeSpriteElement?.src === expectedSrc ? this._typeSpriteElement : new Audio(pack.src);
+        this._typeSpriteElement = audio;
+        const slice = pack.slices[Math.floor(Math.random() * pack.slices.length)];
+        audio.pause();
+        audio.currentTime = slice[0] / 1000;
+        audio.volume = 0.45;
+        audio.play().catch(() => {});
+        clearTimeout(this._typeSpriteStopTimer);
+        this._typeSpriteStopTimer = setTimeout(() => {
+          try { audio.pause(); } catch {}
+        }, Math.max(45, slice[1] - 8));
+        return true;
+      }
+    } catch {}
+    return false;
+  },
+
+  // Synthesize a short typewriter-ish click when no switch pack is selected.
+  _playTypeClick(key) {
     if (!this._typewriterSound) return;
+    if (this._typewriterPack !== 'synth' && this._playTypeAsset(key)) return;
     try {
       let ctx = this._typeAudioCtx;
       if (!ctx) { ctx = this._typeAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -2280,8 +2592,9 @@ const Editor = {
     clearInterval(this._focusCheckInterval);
     document.removeEventListener('selectionchange', this._onSelectionChange);
     document.getElementById('formatting-toolbar').style.display = 'none';
-    document.getElementById('editor-topic-bar').style.display = 'none';
     document.getElementById('selection-popup').style.display = 'none';
+    this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
     const limitEl = document.getElementById('word-limit-indicator');
     if (limitEl) limitEl.style.display = 'none';
     this.stopAudio();
@@ -2346,9 +2659,11 @@ const Editor = {
     document.getElementById('status-bar').style.display = 'none';
   },
 
-  // ── Copy blocking during active sessions ──
+  // ── Copy blocking during active sessions ── copying is fully disabled
+  // during a live session, no Pro exception; only maintenance mode (an
+  // operational, not a plan-tier, concern) bypasses it.
   _copyAllowed() {
-    return App._maintActive || (App.user && App.user.plan === 'premium');
+    return App._maintActive;
   },
 
   _onCopyBlock(e) {

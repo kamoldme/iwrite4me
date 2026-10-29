@@ -27,6 +27,8 @@ const API = {
     if (!res.ok) {
       const err = new Error(data.error || 'Request failed');
       err.status = res.status;
+      err.code = data.code;
+      err.quota = data.quota;
       throw err;
     }
     return data;
@@ -90,10 +92,18 @@ const API = {
     return this.request('/documents');
   },
 
-  async createDocument(title, content, mode, prompt, dangerVariant) {
+  async getSessionQuota() {
+    return this.request('/documents/session-quota');
+  },
+
+  async recordBlockedSessionAttempt() {
+    return this.request('/documents/session-quota/blocked-attempt', { method: 'POST' });
+  },
+
+  async createDocument(title, content, mode, prompt, dangerVariant, clientRequestId) {
     return this.request('/documents', {
       method: 'POST',
-      body: JSON.stringify({ title, content, mode, prompt: prompt || '', dangerVariant: dangerVariant || null })
+      body: JSON.stringify({ title, content, mode, prompt: prompt || '', dangerVariant: dangerVariant || null, clientRequestId })
     });
   },
 
@@ -312,8 +322,12 @@ const API = {
     });
   },
 
-  async getLeaderboard() {
-    return this.request('/leaderboard');
+  async getLeaderboard(params = {}) {
+    const query = new URLSearchParams();
+    if (params.tab) query.set('tab', params.tab);
+    if (params.page) query.set('page', params.page);
+    if (params.limit) query.set('limit', params.limit);
+    return this.request('/leaderboard' + (query.toString() ? `?${query}` : ''));
   },
 
   async getFolders() {
@@ -405,6 +419,10 @@ const API = {
   async getLatestPublished(since) {
     const q = since ? `?since=${encodeURIComponent(since)}` : '';
     return this.request(`/stories/latest-published${q}`);
+  },
+
+  async getTopWeekStories() {
+    return this.request('/stories/top-week');
   },
 
   async getStory(id) {

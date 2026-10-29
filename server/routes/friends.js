@@ -14,7 +14,6 @@ router.get('/', async (req, res) => {
     const sort = req.query.sort || 'added'; // streak, xp, added_newest, added_oldest
 
     const friendIds = user.friends || [];
-    const total = friendIds.length;
 
     // Fetch all friends for sorting (friendIds order = added order)
     const friendsList = [];
@@ -25,6 +24,9 @@ router.get('/', async (req, res) => {
       safe._addedIndex = i; // preserve add-order
       friendsList.push(safe);
     }
+    const total = friendsList.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const safePage = Math.min(page, totalPages);
 
     // Sort
     if (sort === 'streak') friendsList.sort((a, b) => (b.streak || 0) - (a.streak || 0));
@@ -36,10 +38,10 @@ router.get('/', async (req, res) => {
     friendsList.forEach(f => delete f._addedIndex);
 
     // Paginate
-    const start = (page - 1) * limit;
+    const start = (safePage - 1) * limit;
     const paginated = friendsList.slice(start, start + limit);
 
-    res.json({ friends: paginated, total, page, limit, totalPages: Math.ceil(total / limit) });
+    res.json({ friends: paginated, total, page: safePage, limit, totalPages });
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
@@ -185,7 +187,7 @@ router.get('/feed', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     const friendIds = new Set(user.friends || []);
     if (friendIds.size === 0) return res.json([]);
-    const allActivities = await findMany('activities.json', a => friendIds.has(a.userId));
+    const allActivities = await findMany('activities.json', a => friendIds.has(a.userId) && a.type !== 'duel_won');
     const sorted = allActivities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
     // Enrich with user plan for PRO badges
     const enriched = [];
