@@ -6,10 +6,10 @@ Scope: dashboard only, on the isolated production-copy staging deployment. Landi
 
 A writer arrives to start a session or return to a saved document, then checks progress. Start Writing remains the primary action. Recent documents are directly below activity; habit and achievement widgets follow.
 
-The supplied dark widget reference pins the visual direction: near-black canvas, a mint activity curve, amber goal dial and iris session rhythm. These are real saved-session values rather than simulated smart-home values or continuous decorative animation. The preview account is visibly labeled as sample data.
+The supplied dark widget reference pins the visual direction (with a matching pale-surface light mode): near-black canvas, a mint activity curve, amber goal dial and iris session rhythm. These are real saved-session values rather than simulated smart-home values or continuous decorative animation. The preview account is visibly labeled as sample data.
 
 - Palette: canvas #050809, surface #0b100f, primary #f7faf9, secondary #a3aeaa, mint #8cffd4, amber #fb9b52, iris #a78bfa.
-- Type: existing Instrument Sans, 13–14px controls/content, 20px section titles, 27px overview values, 36px maximum page heading. Numeric values use tabular figures.
+- Type: Archivo headings, Instrument Sans interface text, DM Mono compact dates/data. Controls/content use 13–14px, section titles 20px, overview values 27px and the page heading a 36px maximum. Numeric values use tabular figures. All three faces were already loaded by the app.
 - Spacing: 4px base; 12px within control groups, 24px between sections, 28–32px widget padding. Rounded widgets preserve the reference; document rows use smaller 18px corners.
 - Structure: compact header, overview strip, activity, recent documents, goal/rhythm, reflection, calendar/tree. The sidebar retains existing navigation.
 - Motion: 150ms control feedback; 240ms arc rotation and achievement paging. No autonomous bobbing, fake data or chart scrolling. Reduced motion disables transitions.

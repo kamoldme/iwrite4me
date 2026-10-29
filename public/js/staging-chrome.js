@@ -4,6 +4,19 @@
   const sidebar = document.getElementById('sidebar');
   const picker = document.getElementById('session-modal');
   if (!container || !sidebar || !picker) return;
+  const editor = document.getElementById('editor-container');
+  const syncSurfaceScope = () => document.body.classList.toggle('app-chrome-visible', !editor?.classList.contains('active'));
+  if (editor) new MutationObserver(syncSurfaceScope).observe(editor, { attributes: true, attributeFilter: ['class'] });
+  syncSurfaceScope();
+  let themeVersion = 0;
+  new MutationObserver(() => {
+    const version = ++themeVersion;
+    document.body.classList.add('ui-theme-switch');
+    void container.offsetWidth;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (version === themeVersion) document.body.classList.remove('ui-theme-switch');
+    }));
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   const logo = document.getElementById('sidebar-logo-btn');
   const chevron = document.getElementById('sidebar-collapse-chevron');
   const controls = [logo, chevron, document.getElementById('appearance-collapse-toggle'), document.getElementById('mobile-sidebar-toggle')].filter(Boolean);

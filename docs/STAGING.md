@@ -52,3 +52,12 @@ The staged app shell now uses one dark navigation surface across app views. Icon
 The pre-session picker retains all existing mode, timer, quota and start actions. Native mode buttons expose pressed states. Hover uses image scale and an outline, with no sibling blur/dimming. The dialog supports Escape, focus containment/return and an animated exit. Laptop-height layouts keep the start action visible while the detail panel can scroll.
 
 Browser verification: 19 sampled collapse frames, zero pixels of icon travel, content/sidebar alignment within one pixel, rapid reversal, saved preference, all four modes, keyboard focus and animated exit passed. No writing session was started by these checks. Visual checks at 1280x720 and 1024x768 kept the start button inside the viewport and showed no page overflow. Landing/shared style/editor hashes and the editor HTML region remain identical to the production baseline.
+
+### Shared app surfaces, light mode and typography (2026-10-29)
+App chrome now has namespaced dark/light tokens. The existing theme toggle and saved preference select the palette. Light mode uses pale green-white surfaces, deep green actions, amber goal and iris rhythm widgets, with theme-specific text/border colors. Theme switches suppress app-only transitions for two frames to prevent color smearing.
+
+The shared treatment covers document/folder/export context menus, dashboard/community notifications, the lobby popover, goal/share/friend/profile/follow/daily-limit dialogs, pricing/payment-choice windows, announcements, help and streak windows. Native selects keep platform keyboard/popup behavior. Dynamic context menus use the same surface and control tokens.
+
+Fonts: Archivo for app headings, Instrument Sans for interface text and controls, DM Mono for compact dates/data. Existing font assets are reused. Brand marks and author-formatted content are not replaced. The app-container owns typography variables; the editor is its sibling. Body-mounted non-editor window styles are additionally gated off whenever the editor is active. Completion/title, editor tools, focus/audio menus, research and writing controls are excluded.
+
+Browser checks passed in both themes for sidebar/menu/dialog/picker colors, heading/control font roles, mode selection, existing theme-toggle persistence, and editor font/style isolation when opening a saved document. Earlier sidebar motion/keyboard checks remain applicable. Existing Google-config and YouTube CSP errors come from the unchanged production baseline; they are not new UI errors.
