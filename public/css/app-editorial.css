@@ -1,0 +1,257 @@
+/* Staging editorial pass. App chrome only; no landing, editor or authored story typography. */
+html:not(.dark) body.glow-dashboard {
+  --ui-page:#fafaf8; --ui-sidebar:#f6f6f3; --ui-surface:#fff; --ui-raised:#f1f2ee; --ui-field:#fafbf9;
+  --ui-ink:#242923; --ui-muted:#60675e; --ui-edge:#dcded7; --ui-edge-soft:#e9ebe5; --ui-field-edge:#90998e;
+  --ui-accent:#246244; --ui-primary:#246244; --ui-primary-hover:#194b33; --ui-on-primary:#fff;
+  --ui-selected:#e9f0e8; --ui-selected-edge:#bccfba; --ui-hover:#ecefe8; --ui-backdrop:rgb(22 29 24 / .38);
+}
+body.glow-dashboard .app-container { --sidebar-w:240px; -webkit-font-smoothing:antialiased; }
+body.glow-dashboard .app-container .main-content {background:var(--ui-page);}
+body.glow-dashboard.app-chrome-visible {background:var(--ui-page);}
+body.glow-dashboard .app-container :is(.btn,.doc-action-btn) {display:inline-flex;align-items:center;justify-content:center;gap:8px;vertical-align:middle;line-height:1.4;white-space:normal;text-transform:none;letter-spacing:0;}
+body.glow-dashboard .app-container :is(.btn,.doc-action-btn)>svg {flex:none;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) :is(.btn,.doc-action-btn) {font-size:14px;min-height:40px;padding:9px 14px;border-radius:8px;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) h1 {font:600 30px/1.2 'Archivo',sans-serif;letter-spacing:-.025em;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) :is(input:not([type=file]),textarea,select) {font-size:15px;border-radius:8px;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) :is(.auth-field>label,.settings-section-title) {letter-spacing:0;text-transform:none;font-size:13px;font-weight:550;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) .empty-state {min-height:0;padding:24px;text-align:left;background:var(--ui-raised);border:0;border-radius:10px;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) .empty-state :is(svg,.empty-icon) {width:24px;height:24px;margin:0 0 10px;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) .empty-state h3 {font-size:17px;margin:0 0 6px;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) .empty-state p {margin:0;font-size:14px;line-height:1.6;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) .workspace-tab {font-size:14px;padding:10px 12px;border-radius:7px;}
+body.glow-dashboard .workspace-v2 :is(.workspace-page-intro,.sessions-kicker,.friends-kicker) {font-size:14px;}
+/* Fixed icon column and flexible label column: long names never push the icon or badge. */
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-nav {padding:0 12px 12px;gap:14px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-group {min-width:0;width:100%;}
+body.glow-dashboard .app-container .sidebar-v2 :is(.sidebar-compose,.sidebar-nav-item) {box-sizing:border-box;width:100%;min-width:0;flex:none;gap:10px;padding:9px 10px;border-radius:8px;min-height:40px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-nav-item {font-size:14px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-label {flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:14px;line-height:20px;}
+body.glow-dashboard .app-container .sidebar-v2 :is(.sidebar-compose-detail,.sidebar-plan-arrow) {flex:0 0 18px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-compose {min-height:42px;box-shadow:none;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-plan-link {min-height:50px;border-radius:10px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-plan-copy {flex:1;min-width:0;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-plan-copy .sidebar-label {font-size:13px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-plan-copy small {font-size:11px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-nav-item.active::after {display:none;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-group-label {font-size:11px;letter-spacing:0;font-weight:500;opacity:1;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-utilities .sidebar-label {font-size:13px;}
+body.glow-dashboard .app-container .sidebar-v2 .user-info {border:0;border-radius:8px;background:none;}
+body.glow-dashboard .app-container .sidebar-v2 .user-details {width:calc(100% - 54px);}
+body.glow-dashboard .app-container .sidebar-v2 #user-name {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-footer .sidebar-nav-item:is(#theme-toggle-btn,#logout-btn) {min-height:34px;border-radius:8px;}
+body.glow-dashboard .app-container.sidebar-collapsed .sidebar-v2 :is(.sidebar-nav-item,.sidebar-compose) {padding:9px 10px;width:44px;min-width:44px;gap:0;}
+body.glow-dashboard .app-container.sidebar-collapsed .sidebar-v2 :is(.sidebar-label,.sidebar-plan-copy,.sidebar-plan-arrow,.sidebar-compose-detail) {width:0;max-width:0;min-width:0;flex:0 0 0;overflow:hidden;}
+body.glow-dashboard .app-container.sidebar-collapsed .sidebar-v2 .sidebar-plan-link {min-height:50px;}
+body.glow-dashboard .app-container.sidebar-collapsed .sidebar-v2 .sidebar-nav-item :is(.nav-badge,.notif-badge) {position:absolute;margin:0;}
+/* Light dashboard: ink on paper, no ambient halos. Preserve the real chart and goal data. */
+html:not(.dark) body.glow-dashboard .app-container[data-glow-dashboard=true] {--glow-page:var(--ui-page);--glow-ink:var(--ui-ink);--glow-dim:var(--ui-muted);--glow-edge:var(--ui-edge);--glow-green:#246244;--glow-emerald:#4e8265;}
+html:not(.dark) body.glow-dashboard .app-container[data-glow-dashboard=true] .main-content {background:var(--ui-page);color:var(--ui-ink);}
+html:not(.dark) body.glow-dashboard #view-dashboard {--text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-activity,.td-progress-card,.dash-panel-tabs,.td-reflection-card,.tree-container,.heatmap-section) {background:var(--ui-surface);box-shadow:none;border-radius:12px;border-color:var(--ui-edge);}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-activity,.td-progress-card,.dash-panel-tabs)::before,
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-activity,.td-progress-card,.dash-panel-tabs)::after {display:none;}
+html:not(.dark) body.glow-dashboard #view-dashboard #glow-chart path[filter] {display:none;}
+html:not(.dark) body.glow-dashboard #view-dashboard #glow-chart path[fill^="url"] {fill:#e8f0e9;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-status-dot {box-shadow:none;background:#246244;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-activity {height:276px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-activity-heading {inset:24px 26px auto;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-reading strong {font-size:42px;letter-spacing:-.035em;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-range {border-radius:7px;background:var(--ui-field);border-color:var(--ui-edge);}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-range select {font-size:13px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-chart-footer {inset:auto 24px 18px;font-size:12px;color:var(--ui-muted);}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-chart-date {font-size:12px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-hero {min-height:0;padding:0 0 22px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-hero-kicker {font-size:14px;color:var(--ui-muted);}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.dash-stat-label,.dash-stat-sub) {font-size:13px;color:var(--ui-muted);}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.dashboard-start-btn,#glow-all-docs) {border-radius:8px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-start-btn {font-size:14px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-document {border-radius:10px;min-height:76px;padding:16px;background:var(--ui-surface);}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-doc-copy>span {font-size:12px;color:var(--ui-muted);}
+html:not(.dark) body.glow-dashboard #view-dashboard .dash-row-top {grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:start;gap:20px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-card {min-height:0;height:238px;aspect-ratio:auto;padding:24px;}
+html:not(.dark) body.glow-dashboard #view-dashboard #glow-dial {inset:auto 24px 74px;height:7px;background:var(--ui-raised);border-radius:4px;overflow:hidden;}
+html:not(.dark) body.glow-dashboard #view-dashboard #glow-dial svg {display:none;}
+html:not(.dark) body.glow-dashboard #view-dashboard #glow-dial::after {content:'';display:block;height:100%;width:var(--goal-progress,0%);background:var(--ui-accent);border-radius:inherit;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-text {padding:24px;align-items:flex-start;text-align:left;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-goal-label {font:600 17px/1.4 'Archivo',sans-serif;color:var(--ui-ink);}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-goal-percent {top:68px;left:24px;right:auto;font-size:38px;font-weight:500;letter-spacing:-.03em;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-goal-percent>span {color:var(--ui-muted);}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-count {top:117px;left:24px;right:auto;color:var(--ui-muted);font-size:13px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-head {bottom:24px;left:24px;right:110px;color:var(--ui-muted);font-size:12px;line-height:1.5;}
+html:not(.dark) body.glow-dashboard #view-dashboard #td-edit-goal-btn {bottom:17px;right:18px;min-height:36px;border-radius:7px;padding:8px 12px;background:none;border-color:var(--ui-edge);color:var(--ui-ink);font-size:13px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-reflection-card {grid-column:1;grid-row:2;padding:22px 24px;margin:0;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky {background:none;box-shadow:none;transform:none;padding:12px 0 0;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky p {font:400 19px/1.55 Georgia,serif;color:var(--ui-ink);}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky-feather {display:none;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dash-panel-tabs {grid-column:2;grid-row:1/3;min-height:100%;padding:24px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-rhythm-mark {width:32px;height:32px;border-radius:0;background:none;box-shadow:none;color:var(--ui-accent);}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-rhythm-heading h2 {font-size:17px;}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-rhythm-heading p,.glow-rhythm-readout,.dash-panel-pane-title,.td-ach-desc,.td-ach-count) {color:var(--ui-muted);font-family:'Instrument Sans',sans-serif;font-size:12px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-rhythm-bar {background:#91b29b;border-radius:3px;max-width:22px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-rhythm-bar[aria-pressed=true] {background:#246244;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-ring-fill {stroke:var(--ui-accent);}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-ring-track {stroke:var(--ui-edge);}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-ring-icon {color:var(--ui-accent);}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-dot.active {background:var(--ui-accent);}
+/* Community: article rows and a supporting discovery margin, never a card gallery. */
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed {max-width:1200px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .community-hero {margin-bottom:16px;padding-bottom:24px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .community-hero h1 {font:600 30px/1.2 'Archivo',sans-serif;letter-spacing:-.025em;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .community-hero-actions {flex-direction:row;align-items:center;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .community-hero-actions .btn {min-width:0;font-size:13px;padding:10px 14px;white-space:nowrap;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-header-row {border:0;border-bottom:1px solid var(--ui-edge);border-radius:0;background:none;padding:0 0 14px;margin-bottom:0;gap:12px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed :is(.stories-navbar,.stories-topbar) {flex:0 1 auto;width:auto;gap:8px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-tab {border:0;background:none;border-radius:0;padding:10px 12px;font:500 14px/1.4 'Instrument Sans',sans-serif;color:var(--ui-muted);min-width:0;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-tab.active {color:var(--ui-ink);box-shadow:inset 0 -2px var(--ui-accent);}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-filter-btn {border-radius:6px;padding:8px 10px;font-size:13px;background:none;border-color:transparent;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-filter-btn.active {background:var(--ui-selected);color:var(--ui-accent);}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-feed-panel {display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:36px;align-items:start;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed #stories-feed {grid-column:1;grid-row:1;min-width:0;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-rail {grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:28px;position:sticky;top:24px;padding:26px 0 0 24px;border-left:1px solid var(--ui-edge);width:auto;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed[data-community-tab=mine] .stories-feed-panel {grid-template-columns:1fr;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed[data-community-tab=mine] .stories-rail {display:none;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-card {height:auto;max-height:none;overflow:visible;padding:0;background:none;border:0;border-radius:0;box-shadow:none;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-card h3 {font:600 15px/1.4 'Archivo',sans-serif;text-transform:none;letter-spacing:0;margin-bottom:16px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-item {padding:10px 0;gap:9px;align-items:center;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-meta {min-width:0;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-name {font-size:13px;overflow:hidden;text-overflow:ellipsis;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-followers {font-size:11px;max-width:52px;text-align:right;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-handle {font-size:11px;color:var(--ui-muted);}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-list {display:flex;flex-direction:column;gap:0;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed :is(.story-hero-card,.story-feed-item) {padding:28px 0;margin:0;background:none;border:0;border-bottom:1px solid var(--ui-edge);border-radius:0;box-shadow:none;transform:none;cursor:pointer;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed :is(.story-hero-card,.story-feed-item) h3 {font:650 25px/1.25 'Archivo',sans-serif;letter-spacing:-.025em;max-width:38ch;margin:14px 0 10px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-feed-excerpt {font:400 16px/1.65 Georgia,serif;color:var(--ui-muted);-webkit-line-clamp:2;margin:0;max-width:70ch;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-author {gap:8px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-author-avatar {width:26px;height:26px;font-size:10px;flex:0 0 26px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-author-copy {display:flex;flex-direction:row;align-items:baseline;gap:8px;min-width:0;flex-wrap:wrap;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-author-copy strong {font:500 13px/1.4 'Instrument Sans',sans-serif;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-author-copy>span {font-size:12px;color:var(--ui-muted);}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-feed-footer {border:0;padding:0;margin-top:18px;gap:10px;font:400 12px/1.5 'Instrument Sans',sans-serif;color:var(--ui-muted);display:flex;align-items:center;flex-wrap:wrap;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-metric {gap:4px;font-size:12px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-metric svg {width:14px;height:14px;}
+/* Sessions and task pages: tighter controls, less boxed empty space. */
+body.glow-dashboard #view-documents[data-library-layout=grid] .doc-card {min-height:138px;padding:18px;gap:16px;border-radius:10px;}
+body.glow-dashboard #view-documents[data-library-layout=grid] .doc-card-info {flex-direction:row;align-items:center;gap:12px;}
+body.glow-dashboard #view-documents[data-library-layout=grid] .doc-card-meta {font:400 12px/1.5 'Instrument Sans',sans-serif;}
+body.glow-dashboard #view-documents .workspace-library-tools {flex-direction:row;align-items:center;flex-wrap:wrap;gap:12px;}
+body.glow-dashboard #view-documents .session-search-wrap {flex:1 1 220px;min-width:160px;}
+body.glow-dashboard #view-documents .workspace-library-tools-actions {flex:0 0 auto;}
+body.glow-dashboard #view-documents .workspace-library-rail {background:none;border:0;padding:0 16px 0 0;border-right:1px solid var(--ui-edge);border-radius:0;}
+body.glow-dashboard #view-documents .docs-filter-pill {font-size:14px;min-height:40px;}
+body.glow-dashboard #view-friends .workspace-friends-layout {grid-template-columns:1fr;gap:22px;}
+body.glow-dashboard #view-friends .workspace-friend-finder {position:static;display:flex;align-items:center;flex-wrap:wrap;gap:12px 20px;padding:18px 20px;border-radius:10px;background:var(--ui-surface);border-color:var(--ui-edge);}
+body.glow-dashboard #view-friends .workspace-friend-finder h2 {font-size:17px;margin:0;}
+body.glow-dashboard #view-friends .workspace-friend-finder p {flex:1;margin:0;font-size:14px;}
+body.glow-dashboard #view-friends #friends-add-toggle-btn {width:auto;margin:0;flex:none;}
+body.glow-dashboard #view-friends #friends-add-row {flex-basis:100%;margin:0;}
+body.glow-dashboard #view-friends .friend-row {border-radius:10px;}
+body.glow-dashboard #view-leaderboard.workspace-v2 .lb-rail-card {padding:20px 24px;border-radius:10px;gap:24px;background:var(--ui-surface);border-color:var(--ui-edge);}
+body.glow-dashboard #view-leaderboard.workspace-v2 .lb-rail-rank-num {font-size:34px;}
+body.glow-dashboard #view-leaderboard.workspace-v2 .lb-board-card {border-radius:10px;}
+body.glow-dashboard #view-leaderboard.workspace-v2 :is(.lb-board-head,.lb-row) {padding:14px 20px;}
+body.glow-dashboard .workspace-profile .workspace-profile-identity {border-radius:10px;background:var(--ui-surface);padding:24px;}
+body.glow-dashboard .workspace-profile :is(.up-section,.up-stat) {border-radius:8px;}
+body.glow-dashboard #view-settings .workspace-settings-profile {grid-template-columns:1fr;}
+body.glow-dashboard #view-settings .workspace-settings-media {display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-section {border-radius:10px;padding:22px;background:var(--ui-surface);}
+body.glow-dashboard #view-settings.workspace-v2 .profile-avatar-section {padding:22px;gap:14px;border-radius:10px;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-banner-preview {height:90px;min-height:0;border-radius:6px;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-avatar {width:56px;height:56px;border-radius:50%;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-section-title {font-size:17px;margin-bottom:20px;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-input-group label {font-size:13px;letter-spacing:0;text-transform:none;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-input-group {margin-bottom:18px;}
+body.glow-dashboard #view-settings.workspace-v2 .workspace-settings-profile>.profile-section {max-width:none;}
+body.glow-dashboard .workspace-support-layout {grid-template-columns:minmax(200px,.65fr) minmax(0,1.35fr);gap:28px;}
+body.glow-dashboard .workspace-support-inbox {background:none;border:0;border-radius:0;padding:0 24px 0 0;border-right:1px solid var(--ui-edge);}
+body.glow-dashboard #view-support.workspace-v2 .support-form {padding:24px;border-radius:10px;}
+body.glow-dashboard #view-support.workspace-v2 .auth-field {margin-bottom:18px;}
+body.glow-dashboard #view-support.workspace-v2 .support-image-drop {padding:16px;border-radius:8px;}
+body.glow-dashboard #view-help .workspace-policy-nav {background:none;border:0;border-radius:0;padding:0 16px 0 0;border-right:1px solid var(--ui-edge);}
+body.glow-dashboard #view-help .workspace-policy-nav button {font-size:13px;}
+@media(hover:hover){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed :is(.story-hero-card,.story-feed-item):hover{background:none;border-color:var(--ui-edge);box-shadow:none;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed :is(.story-hero-card,.story-feed-item):hover h3{color:var(--ui-accent);}body.glow-dashboard .app-container .sidebar-collapse-chevron:hover{color:var(--ui-ink);}}
+@media(max-width:1150px){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-feed-panel{grid-template-columns:minmax(0,1fr) 220px;gap:24px;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-rail{padding-left:18px;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .community-hero-text{grid-template-columns:1fr;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .community-hero-actions{grid-column:1;grid-row:auto;}body.glow-dashboard #view-settings .workspace-settings-media{grid-template-columns:1fr;}}
+@media(max-width:960px){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-feed-panel{grid-template-columns:1fr;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-rail{grid-column:1;grid-row:2;position:static;display:grid;grid-template-columns:1fr 1fr;border-left:0;border-top:1px solid var(--ui-edge);padding:24px 0 0;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-header-row{align-items:flex-start;}body.glow-dashboard .workspace-support-layout{grid-template-columns:1fr;}body.glow-dashboard .workspace-support-inbox{border-right:0;padding:0;}html:not(.dark) body.glow-dashboard #view-dashboard .dash-row-top{grid-template-columns:1fr;}html:not(.dark) body.glow-dashboard #view-dashboard :is(.td-progress-card,.td-reflection-card,.dash-panel-tabs){grid-column:1;grid-row:auto;}html:not(.dark) body.glow-dashboard #view-dashboard .dash-panel-tabs{min-height:0;}}
+
+/* Explicit non-writing windows. The editor's title/completion/research tools are excluded. */
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) {
+ --bg-primary:var(--ui-page);--bg-secondary:var(--ui-raised);--bg-card:var(--ui-surface);--bg-elevated:var(--ui-raised);--surface:var(--ui-surface);
+ --text:var(--ui-ink);--text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);--border:var(--ui-edge);--border-light:var(--ui-edge-soft);--accent:var(--ui-accent);
+ --font-sans:'Instrument Sans',sans-serif;--font-display:'Archivo',sans-serif;color:var(--ui-ink);font-family:'Instrument Sans',sans-serif;
+}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) :is(.btn,.payment-choice-submit) {display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:10px 16px;border-radius:8px;font:550 14px/1.4 'Instrument Sans',sans-serif;letter-spacing:0;text-transform:none;box-shadow:none;}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) :is(.btn-ghost,.btn-secondary) {background:var(--ui-surface);color:var(--ui-ink);border:1px solid var(--ui-edge);}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) .btn-primary {background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent;}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {background:var(--ui-field);border:1px solid var(--ui-field-edge);border-radius:8px;padding:10px 12px;color:var(--ui-ink);font:400 15px/1.5 'Instrument Sans',sans-serif;min-height:42px;}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) :is(h2,h3,.pricing-title) {font:600 23px/1.3 'Archivo',sans-serif;letter-spacing:-.02em;text-align:left;}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) :is(p,label,.modal-field) {font:400 14px/1.65 'Instrument Sans',sans-serif;}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) :is(button,a,input,textarea,select,[tabindex]):focus-visible {outline:2px solid var(--ui-accent);outline-offset:3px;}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) :is(.modal,.pricing-modal,.payment-choice-dialog,.right-sidebar-body) {overscroll-behavior:contain;}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,.modal-overlay:not([id]))>.modal,
+body.glow-dashboard.app-chrome-visible :is(.pricing-modal,.payment-choice-dialog,.confirm-dialog,.streak-popup,#ann-modal,#help-popup),
+body.glow-dashboard.app-chrome-visible #delete-account-modal>div {background:var(--ui-surface)!important;border:1px solid var(--ui-edge)!important;border-radius:14px!important;padding:28px;box-shadow:0 16px 48px rgb(0 0 0 / .16);text-align:left;max-height:calc(100dvh - 48px);overflow:auto;overscroll-behavior:contain;}
+body.glow-dashboard.app-chrome-visible :is(#confirm-overlay,#delete-account-modal,#history-sidebar-overlay,#sub-history-sidebar-overlay,#ann-modal-overlay,#help-popup-overlay) {background:var(--ui-backdrop)!important;backdrop-filter:none;}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal) {width:min(440px,100vw);background:var(--ui-surface);border-left:1px solid var(--ui-edge);box-shadow:-12px 0 36px rgb(0 0 0 / .08);}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal) .right-sidebar-header {padding:24px;align-items:center;border-color:var(--ui-edge);}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal) .right-sidebar-header h3 {font-size:21px;margin:0;}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal) .right-sidebar-body {padding:24px;}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal) .history-stats-grid {gap:8px;}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal) .history-stat {padding:12px;background:var(--ui-raised);border:0;border-radius:8px;}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal) .history-stat-val {font:600 22px/1.3 'Instrument Sans',sans-serif;color:var(--ui-ink);}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal) .history-stat-label {font:400 12px/1.5 'Instrument Sans',sans-serif;letter-spacing:0;text-transform:none;color:var(--ui-muted);}
+body.glow-dashboard.app-chrome-visible :is(.right-sidebar-close,.pricing-close,.ann-modal-close,.streak-popup-close) {display:flex;align-items:center;justify-content:center;width:36px;height:36px;min-width:36px;border:1px solid var(--ui-edge);border-radius:8px;background:var(--ui-field);color:var(--ui-ink);font-size:23px;line-height:1;}
+body.glow-dashboard.app-chrome-visible .confirm-dialog {width:min(440px,calc(100vw - 32px));}
+body.glow-dashboard.app-chrome-visible .confirm-message {font-size:16px;line-height:1.6;margin-bottom:24px;}
+body.glow-dashboard.app-chrome-visible .confirm-actions {display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
+body.glow-dashboard.app-chrome-visible #delete-account-modal h2 {color:var(--ui-danger)!important;}
+body.glow-dashboard.app-chrome-visible #delete-account-submit-btn {background:var(--ui-danger)!important;color:var(--ui-surface)!important;}
+body.glow-dashboard.app-chrome-visible #daily-limit-modal :is(.daily-limit-prices,.daily-limit-actions) {gap:12px;}
+body.glow-dashboard.app-chrome-visible .streak-popup {text-align:center;max-width:360px;}
+body.glow-dashboard.app-chrome-visible .streak-popup-fire {display:none;}
+body.glow-dashboard.app-chrome-visible .streak-popup-count {font:600 56px/1.2 'Archivo',sans-serif;color:var(--ui-accent);margin-top:18px;}
+body.glow-dashboard.app-chrome-visible .streak-popup-label {font:600 18px/1.5 'Instrument Sans',sans-serif;}
+body.glow-dashboard.app-chrome-visible .streak-popup-message {font:400 14px/1.6 'Instrument Sans',sans-serif;margin:12px 0;color:var(--ui-muted);}
+body.glow-dashboard.app-chrome-visible .streak-popup-best {font:500 13px/1.5 'Instrument Sans',sans-serif;background:var(--ui-raised);border:0;border-radius:7px;color:var(--ui-ink);}
+body.glow-dashboard.app-chrome-visible :is(.folder-context-menu,.doc-export-submenu,#dashboard-notif-dropdown,#stories-notif-dropdown) {border-radius:10px;box-shadow:0 8px 28px rgb(0 0 0 / .12);}
+body.glow-dashboard.app-chrome-visible :is(.folder-context-menu,.doc-export-submenu) :is(button,.folder-context-item) {border-radius:6px;font-size:14px;min-height:38px;}
+body.glow-dashboard.app-chrome-visible #session-modal .mp-shell {border-radius:16px;box-shadow:0 16px 48px rgb(0 0 0 / .16);}
+body.glow-dashboard.app-chrome-visible #session-modal :is(.mode-option,.mp-start-btn) {border-radius:10px;}
+body.glow-dashboard.app-chrome-visible #session-modal .mp-title {font-size:25px;}
+body.glow-dashboard.app-chrome-visible #session-modal :is(.time-preset,.mp-close-btn) {border-radius:7px;}
+body.glow-dashboard.app-chrome-visible #session-modal :is(.mode-detail-blurb,.mode-detail-rule) {font-size:14px;}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,#history-modal,#sub-history-modal,#confirm-overlay,#delete-account-modal,.modal-overlay:not([id])) *{scroll-behavior:auto!important;}}
+/* Keep closed drawers fully off canvas at every width, including their shadow. */
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal){right:0;padding:0;transform:translateX(calc(100% + 40px));visibility:hidden;transition:transform 200ms cubic-bezier(.2,0,0,1),visibility 200ms;}
+body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal).active{transform:translateX(0);visibility:visible;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-card .glow-goal-label{color:var(--ui-ink);}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-card .td-progress-head{color:var(--ui-muted);}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-card .td-progress-count{color:var(--ui-muted);}
+html:not(.dark) body.glow-dashboard #view-dashboard #hero-kicker{color:var(--ui-muted);font-size:14px;opacity:1;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-notif-btn{box-shadow:none;}
+html:not(.dark) body.glow-dashboard #view-dashboard .online-dot{box-shadow:none;animation:none;}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal){transition:none;}}
+/* Subscription choices follow the same task-page grid; prices and actions are unchanged. */
+body.glow-dashboard #view-upgrade{max-width:1120px;margin-inline:auto;}
+body.glow-dashboard #view-upgrade .upgrade-hero{text-align:left;padding:0 150px 24px 0;margin-bottom:24px;border-bottom:1px solid var(--ui-edge);}
+body.glow-dashboard #view-upgrade .upgrade-title{font:600 30px/1.2 'Archivo',sans-serif;letter-spacing:-.025em;color:var(--ui-ink);margin:0 0 12px;}
+body.glow-dashboard #view-upgrade .upgrade-subtitle{font:400 15px/1.6 'Instrument Sans',sans-serif;color:var(--ui-muted);margin:0;max-width:64ch;}
+body.glow-dashboard #view-upgrade .upgrade-pay-logos .pricing-payments{align-items:flex-start;}
+body.glow-dashboard #view-upgrade .upgrade-pay-logos:has(.pricing-payments-logos:empty){display:none;}
+/* Override the legacy redesign's important two-column grid only on this app page. */
+body.glow-dashboard #view-upgrade .upgrade-cards{max-width:none;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)!important;gap:24px;align-items:start;padding:0 0 32px;}
+body.glow-dashboard #view-upgrade .upgrade-card{background:var(--ui-surface);border:1px solid var(--ui-edge);border-radius:12px;box-shadow:none;padding:24px;animation:none;transform:none;}
+body.glow-dashboard #view-upgrade .upgrade-card-featured{border-color:var(--ui-selected-edge);}
+body.glow-dashboard #view-upgrade .upgrade-card-name{font-size:21px;color:var(--ui-ink);}
+body.glow-dashboard #view-upgrade .upgrade-card-desc{font-size:14px;line-height:1.6;color:var(--ui-muted);}
+body.glow-dashboard #view-upgrade .upgrade-card-features li{font-size:14px;line-height:1.6;margin-bottom:10px;}
+body.glow-dashboard #view-upgrade :is(.upgrade-card-btn,.sub-history-btn){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;border-radius:8px;font:550 14px/1.4 'Instrument Sans',sans-serif;box-shadow:none;}
+body.glow-dashboard #view-upgrade .sub-history-btn{top:0;right:0;padding:9px 14px;background:var(--ui-surface);color:var(--ui-ink);border:1px solid var(--ui-edge);}
+body.glow-dashboard #view-upgrade .upgrade-price-option{border-radius:8px;min-width:0;padding:14px;background:var(--ui-field);border-color:var(--ui-edge);}
+body.glow-dashboard #view-upgrade .upgrade-price-option.active{background:var(--ui-selected);border-color:var(--ui-accent);}
+body.glow-dashboard #view-upgrade .upgrade-price-option-main strong{font:600 26px/1.2 'Instrument Sans',sans-serif;}
+body.glow-dashboard #view-upgrade .upgrade-price-option-main span{font-size:13px;color:var(--ui-muted);}
+body.glow-dashboard #view-upgrade .upgrade-price-som{font-size:15px;color:var(--ui-ink);}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-followers{flex:0 0 52px;white-space:normal;line-height:1.4;overflow-wrap:anywhere;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-avatar{flex:0 0 32px;width:32px;height:32px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-popular-handle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+@media(max-width:1100px){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-feed-panel{grid-template-columns:1fr;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-rail{grid-column:1;grid-row:2;position:static;display:grid;grid-template-columns:1fr 1fr;border-left:0;border-top:1px solid var(--ui-edge);padding:24px 0 0;}}
+@media(max-width:960px){body.glow-dashboard #view-upgrade .upgrade-cards{grid-template-columns:1fr!important;}body.glow-dashboard #view-upgrade .upgrade-hero{padding-right:0;padding-top:56px;}}
