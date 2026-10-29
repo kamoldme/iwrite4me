@@ -39,11 +39,18 @@
     sidebar.querySelectorAll('.sidebar-nav-item').forEach(button => {
       const label = button.querySelector('.sidebar-label')?.textContent.trim();
       if (label) { button.title = label; button.setAttribute('aria-label', label); }
+      if (button.dataset.view) button.setAttribute('aria-current', button.classList.contains('active') ? 'page' : 'false');
     });
   }
   new MutationObserver(syncRail).observe(container, { attributes: true, attributeFilter: ['class'] });
-  new MutationObserver(syncRail).observe(sidebar, { childList: true, subtree: true, characterData: true });
+  new MutationObserver(syncRail).observe(sidebar, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] });
   syncRail();
+  document.getElementById('sidebar-new-session')?.addEventListener('click', () => App.openSessionModal());
+  document.getElementById('user-info-btn')?.addEventListener('keydown', event => {
+    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault(); event.currentTarget.click();
+    }
+  });
   const cards = [...picker.querySelectorAll('.mode-option')];
   const syncSelected = () => cards.forEach(card => card.setAttribute('aria-pressed', String(card.classList.contains('active'))));
   cards.forEach(card => new MutationObserver(syncSelected).observe(card, { attributes: true, attributeFilter: ['class'] }));
