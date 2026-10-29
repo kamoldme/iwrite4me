@@ -183,22 +183,27 @@ app.use('/api', apiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 
-// Avatar uploads directory (still file-based)
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-const avatarsDir = path.join(dataDir, 'avatars');
-if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
+const { getProfileMedia } = require('./utils/profile-media');
 
-// Serve avatars dynamically to bypass all caching layers
-app.get('/uploads/avatars/:file', (req, res) => {
-  const filepath = path.join(avatarsDir, path.basename(req.params.file));
-  if (!fs.existsSync(filepath)) return res.status(404).end();
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.setHeader('Content-Type', 'image/jpeg');
-  res.send(fs.readFileSync(filepath));
-});
+function serveProfileMedia(kind) {
+  return async (req, res) => {
+    try {
+      const content = await getProfileMedia(kind, path.basename(req.params.file));
+      if (!content) return res.status(404).end();
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.type('image/jpeg').send(content);
+    } catch (err) {
+      console.error(`Failed to load ${kind}:`, err);
+      res.status(500).end();
+    }
+  };
+}
+
+app.get('/uploads/avatars/:file', serveProfileMedia('avatar'));
 
 // Serve announcement images (long-cache since filenames are uuid-stable)
 const announcementsDir = path.join(__dirname, 'data/announcements');
@@ -210,18 +215,7 @@ app.get('/uploads/announcements/:file', (req, res) => {
   res.setHeader('Content-Type', 'image/jpeg');
   res.send(fs.readFileSync(filepath));
 });
-const bannersDir = path.join(dataDir, 'banners');
-if (!fs.existsSync(bannersDir)) fs.mkdirSync(bannersDir, { recursive: true });
-// Serve banners dynamically to bypass all caching layers
-app.get('/uploads/banners/:file', (req, res) => {
-  const filepath = path.join(bannersDir, path.basename(req.params.file));
-  if (!fs.existsSync(filepath)) return res.status(404).end();
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.setHeader('Content-Type', 'image/jpeg');
-  res.send(fs.readFileSync(filepath));
-});
+app.get('/uploads/banners/:file', serveProfileMedia('banner'));
 // Force no-cache on HTML/CSS/JS so deployments are instant
 app.use((req, res, next) => {
   const url = req.url.split('?')[0];
