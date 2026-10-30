@@ -30,10 +30,11 @@
       const centerX = (desk.scrollLeft + desk.clientWidth / 2 - stage.offsetLeft) / old;
       zoom = next; render();
       desk.scrollLeft = stage.offsetLeft + centerX * zoom / 100 - desk.clientWidth / 2;
-      // Start at the paper's top edge, below any visible formatting controls.
+      // Keep the paper's normal top gap below any visible formatting controls.
       const formatting = desk.querySelector('#formatting-toolbar');
       const inset = formatting?.getClientRects().length ? formatting.offsetHeight : 0;
-      desk.scrollTop = Math.max(0, stage.offsetTop - inset);
+      const gap = parseFloat(getComputedStyle(stage).marginTop) || 0;
+      desk.scrollTop = Math.max(0, stage.offsetTop - inset - gap);
     };
     document.getElementById('paper-zoom-out').onclick = () => App.setPaperZoom(zoom - 10);
     document.getElementById('paper-zoom-in').onclick = () => App.setPaperZoom(zoom + 10);

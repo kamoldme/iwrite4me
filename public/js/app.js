@@ -8736,10 +8736,6 @@ const App = {
       this._requestedTheme = null;
       return;
     }
-    const bounds = trigger?.getBoundingClientRect();
-    const x = bounds ? bounds.left + bounds.width / 2 : innerWidth / 2;
-    const y = bounds ? bounds.top + bounds.height / 2 : innerHeight / 2;
-    const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
     root.classList.add('theme-wave');
     try {
       const transition = this._themeWave = document.startViewTransition(() => {
@@ -8747,10 +8743,11 @@ const App = {
       });
       await transition.ready;
       if (token !== this._themeWaveToken) return;
+      // Fade composited snapshots instead of animating a full-screen clip mask.
       const animation = this._themeWaveAnimation = root.animate([
-        { clipPath: `circle(0px at ${x}px ${y}px)` },
-        { clipPath: `circle(${radius}px at ${x}px ${y}px)` }
-      ], { duration: 1400, easing: 'cubic-bezier(.2,0,0,1)', pseudoElement: '::view-transition-new(root)' });
+        { opacity: 0 },
+        { opacity: 1 }
+      ], { duration: 280, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' });
       await animation.finished.catch(() => {});
       await transition.finished.catch(() => {});
     } catch {

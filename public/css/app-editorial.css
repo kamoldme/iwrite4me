@@ -546,6 +546,7 @@ body.glow-dashboard #view-friends .empty-state strong{font-size:17px;line-height
 /* Session search uses the workspace's sage/forest palette in both themes. */
 body.glow-dashboard #view-documents .session-search{appearance:none;-webkit-appearance:none;box-sizing:border-box;min-height:44px;border:1px solid var(--ui-field-edge);border-radius:12px;background:var(--ui-selected);color:var(--ui-ink);box-shadow:none;font:400 14px/1.5 'Instrument Sans',sans-serif;}
 body.glow-dashboard #view-documents .session-search::placeholder{color:var(--ui-muted);opacity:1;}
+html:not(.dark) body.glow-dashboard #view-documents .session-search{background:var(--ui-surface);}
 body.glow-dashboard #view-documents .session-search-wrap>svg{color:var(--ui-accent);width:18px;height:18px;}
 body.glow-dashboard #view-documents .session-search:focus{border-color:var(--ui-accent);background:var(--ui-surface);box-shadow:none;outline:2px solid var(--ui-accent);outline-offset:2px;}
 body.glow-dashboard #view-documents .session-search-wrap{background:none;border:0;border-radius:12px;}
@@ -658,7 +659,7 @@ body.glow-dashboard .app-container .sidebar{contain:layout paint;}
 html.theme-wave::view-transition-old(root),html.theme-wave::view-transition-new(root){animation:none;mix-blend-mode:normal;}
 html.theme-wave::view-transition-old(root){z-index:0;}
 html.theme-wave::view-transition-new(root){z-index:1;}
-html.theme-wave::view-transition-group(root){animation-duration:1.4s;}
+html.theme-wave::view-transition-group(root){animation:none;}
 html.theme-wave *,html.theme-wave *::before,html.theme-wave *::after{transition:none!important;}
 @media(max-width:600px){body.glow-dashboard #view-leaderboard #lb-your-note{margin-inline-start:0;}}
 @media(prefers-reduced-motion:reduce){body.glow-dashboard.app-chrome-visible #dashboard-notif-dropdown{transition:none!important;transform:none;}}
