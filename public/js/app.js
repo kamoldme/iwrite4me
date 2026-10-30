@@ -3022,14 +3022,14 @@ const App = {
       const minutes = this.sessionDuration || 0;
       summaryEl.textContent = mode === 'duel' ? modeLabel : minutes === 0 ? `${modeLabel} · UNLIMITED` : `${modeLabel} · ${minutes} MIN`;
     }
-    // Duel has no duration options and no goal line — hide that whole side
-    // and let the bottom bar collapse to just the summary/start button.
-    const durationLabel = document.getElementById('mp-duration-label');
+    // Duel has no duration controls or goal line; keep quota and start visible.
     const bottomLeft = document.getElementById('mp-bottom-left');
     const bottomBar = document.getElementById('mp-bottom');
-    if (durationLabel) durationLabel.style.display = (mode === 'zen' || mode === 'duel') ? 'none' : '';
     if (bottomLeft) bottomLeft.style.display = mode === 'duel' ? 'none' : '';
-    if (bottomBar) bottomBar.classList.toggle('mp-bottom-solo', mode === 'duel');
+    if (bottomBar) {
+      bottomBar.classList.toggle('mp-bottom-solo', mode === 'duel');
+      bottomBar.dataset.mode = mode;
+    }
   },
 
   _tabsRailDefaultWidth: 196,
@@ -5515,6 +5515,7 @@ const App = {
     const bannerPreview = document.getElementById('profile-banner-preview');
     const removeBannerBtn = document.getElementById('remove-banner-btn');
     if (bannerPreview) {
+      bannerPreview.classList.toggle('profile-banner-empty', !this.user.banner);
       const bannerPlaceholder = document.getElementById('profile-banner-placeholder');
       if (this.user.banner) {
         const bannerUrl = `url(${this.user.banner}?t=${this.user.bannerUpdatedAt || 0})`;

@@ -297,10 +297,7 @@ body.glow-dashboard #view-dashboard .dash-stat-card .dash-stat-label{grid-column
 body.glow-dashboard #view-dashboard .dash-stat-card .dash-stat-sub{grid-column:1/-1;grid-row:3;font-size:12px;color:var(--stat-color);}
 @media(max-width:1100px){body.glow-dashboard #view-dashboard .dashboard-stats-row{grid-template-columns:repeat(2,minmax(0,1fr));}}
 
-/* Keep allowance beside the duration heading and reserve one row for all tab timers. */
-body.glow-dashboard #session-modal .mp-bottom{row-gap:14px;}
-body.glow-dashboard #session-modal .mp-duration-heading{grid-column:1/-1;justify-self:stretch;display:flex;align-items:center;flex-wrap:wrap;gap:8px 24px;}
-body.glow-dashboard #session-modal .mp-duration-heading .mp-config-label{margin:0;}
+/* Reserve one row for all tab timers. */
 body.glow-dashboard #session-modal .session-quota{margin:0;min-height:0;align-items:flex-start;text-align:left;gap:1px;}
 body.glow-dashboard #session-modal #tab-timer-presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding-top:8px;}
 body.glow-dashboard #session-modal #tab-timer-presets .time-preset{min-width:0;width:100%;min-height:38px;padding:8px 3px;font-size:12px;white-space:nowrap;}
@@ -368,3 +365,62 @@ body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-con
 body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-footnote{font-size:12px;color:var(--ui-muted);text-align:center;margin:12px 0 0;}
 body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-close{width:44px;height:44px;color:var(--ui-muted);}
 body.glow-dashboard.app-chrome-visible #payment-choice-modal :is(.payment-choice-duration,.payment-choice-method):hover{transform:none;}
+
+/* Content density: separate reading blocks without inflating entire panels. */
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) .empty-state h3{margin-bottom:10px;line-height:1.35;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) .empty-state p{max-width:58ch;}
+body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-compose) .empty-state :is(p+.btn,p+button,p+a){margin-top:18px;}
+body.glow-dashboard .workspace-profile .up-about-stats{padding:20px;gap:16px 24px;}
+body.glow-dashboard .workspace-profile .up-about-detail{display:flex;flex-direction:column;gap:6px;padding:0;background:none;border-radius:0;font-size:14px;line-height:1.45;}
+body.glow-dashboard .workspace-profile .up-about-detail strong{font-size:12px;font-weight:500;color:var(--ui-muted);}
+body.glow-dashboard .workspace-profile-main{container-type:inline-size;}
+body.glow-dashboard .workspace-profile .up-activity-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+body.glow-dashboard .workspace-profile .up-stat-card{display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:6px 12px;text-align:left;padding:20px;min-height:0;align-content:start;}
+body.glow-dashboard .workspace-profile .up-stat-icon{grid-column:2;grid-row:1/3;width:32px;height:32px;margin:0;align-self:center;background-size:contain;}
+body.glow-dashboard .workspace-profile .up-stat-value{grid-column:1;grid-row:1;font:500 28px/1.2 'Instrument Sans',sans-serif;font-variant-numeric:tabular-nums;}
+body.glow-dashboard .workspace-profile .up-stat-label{grid-column:1;grid-row:2;margin:0;font-size:12px;line-height:1.5;}
+body.glow-dashboard .workspace-profile .up-about-achievements{margin-top:24px;}
+@container(min-width:680px){body.glow-dashboard .workspace-profile .up-activity-stats{grid-template-columns:repeat(4,minmax(0,1fr));}}
+body.glow-dashboard #view-settings .workspace-settings-media{align-items:start;}
+body.glow-dashboard #view-settings .workspace-settings-media>.profile-section{align-self:start;}
+body.glow-dashboard #view-settings .profile-section:has(#profile-banner-preview){padding:20px;}
+body.glow-dashboard #view-settings .profile-section:has(#profile-banner-preview) .profile-section-title{margin:0 0 12px;padding:0;border:0;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-banner-preview.profile-banner-empty{height:44px!important;background:transparent!important;justify-content:flex-start!important;margin-bottom:12px!important;}
+body.glow-dashboard #view-settings .profile-banner-placeholder{font-weight:400!important;color:var(--ui-muted)!important;}
+/* Landing's single-line mark and wordmark, adapted to the sidebar width. */
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-logo-btn{top:26px;gap:10px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-logo-btn .logo{font:900 20px/32px 'Nunito',sans-serif;letter-spacing:-.025em;color:var(--ui-ink);}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-brand-copy{gap:0;}
+
+/* Picker footer: equal row alignment, wrapping only when space requires it. */
+body.glow-dashboard #session-modal .mp-bottom{max-width:none;width:100%;grid-template-columns:minmax(0,1fr) 180px 200px;gap:12px 20px;align-items:center;}
+body.glow-dashboard #session-modal :is(.mp-bottom-left,.mp-bottom-right){display:contents;}
+body.glow-dashboard #session-modal .mp-bottom .time-presets{grid-column:1;grid-row:1;margin:0;gap:6px;align-items:center;}
+body.glow-dashboard #session-modal .mp-bottom .time-preset{padding:10px 11px;min-height:44px;min-width:0;}
+body.glow-dashboard #session-modal .mp-bottom>.session-quota{grid-column:2;grid-row:1;max-width:none;font-size:12px;line-height:1.5;}
+body.glow-dashboard #session-modal .mp-start-btn{grid-column:3;grid-row:1;width:100%;height:auto;min-height:48px;padding:12px 16px;}
+body.glow-dashboard #session-modal .mp-summary{grid-column:3;grid-row:2;text-align:center;}
+body.glow-dashboard #session-modal .mp-goal-line{grid-column:1/3;grid-row:2;margin:0;}
+body.glow-dashboard #session-modal .time-custom-row{grid-column:1;grid-row:3;}
+body.glow-dashboard #session-modal .mp-bottom:is([data-mode=zen],[data-mode=duel])>.session-quota{grid-column:1/3;justify-self:start;}
+@media(max-width:1200px){
+ body.glow-dashboard #session-modal .mp-bottom{grid-template-columns:minmax(0,1fr) 200px;}
+ body.glow-dashboard #session-modal .mp-bottom .time-presets{grid-column:1/-1;grid-row:1;}
+ body.glow-dashboard #session-modal .mp-bottom>.session-quota{grid-column:1;grid-row:2;}
+ body.glow-dashboard #session-modal .mp-start-btn{grid-column:2;grid-row:2;}
+ body.glow-dashboard #session-modal .mp-summary{grid-column:2;grid-row:3;}
+ body.glow-dashboard #session-modal .mp-goal-line{grid-column:1;grid-row:3;}
+ body.glow-dashboard #session-modal .time-custom-row{grid-column:1/-1;grid-row:4;}
+ body.glow-dashboard #session-modal .mp-bottom:is([data-mode=zen],[data-mode=duel])>.session-quota{grid-column:1;grid-row:2;}
+}
+
+@container(min-width:680px){body.glow-dashboard .workspace-profile .up-about-stats{grid-template-columns:repeat(4,minmax(0,1fr));}}
+body.glow-dashboard .workspace-profile .up-achievements-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;}
+body.glow-dashboard .workspace-profile .achievement-card{padding:16px;min-width:0;}
+body.glow-dashboard .workspace-profile .achievement-card h3{font-size:13px;line-height:1.4;margin:8px 0 5px;}
+body.glow-dashboard .workspace-profile .achievement-card p{font-size:12px;line-height:1.5;}
+body.glow-dashboard .workspace-profile .achievement-card{opacity:1;aspect-ratio:auto;min-height:150px;border:1px solid var(--ui-edge);box-shadow:none;}
+body.glow-dashboard .workspace-profile .achievement-card.earned{border-color:var(--ui-selected-edge);background:var(--ui-selected);}
+body.glow-dashboard .workspace-profile .achievement-card:not(.earned) .achievement-icon{filter:grayscale(1);opacity:.6;}
+body.glow-dashboard .workspace-profile .achievement-card h3{white-space:normal;color:var(--ui-ink);}
+body.glow-dashboard .workspace-profile .achievement-card p{display:block;-webkit-line-clamp:unset;overflow:visible;color:var(--ui-muted);font-weight:400;}
