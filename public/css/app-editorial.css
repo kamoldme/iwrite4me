@@ -144,7 +144,7 @@ body.glow-dashboard #view-friends .workspace-friend-finder h2 {font-size:17px;ma
 body.glow-dashboard #view-friends .workspace-friend-finder p {flex:1;margin:0;font-size:14px;}
 body.glow-dashboard #view-friends #friends-add-toggle-btn {width:auto;margin:0;flex:none;}
 body.glow-dashboard #view-friends #friends-add-row {flex-basis:100%;margin:0;}
-body.glow-dashboard #view-friends .friend-row {border-radius:10px;}
+body.glow-dashboard #view-friends .friend-row {border-radius:0;}
 body.glow-dashboard #view-leaderboard.workspace-v2 .lb-rail-card {padding:20px 24px;border-radius:10px;gap:24px;background:var(--ui-surface);border-color:var(--ui-edge);}
 body.glow-dashboard #view-leaderboard.workspace-v2 .lb-rail-rank-num {font-size:34px;}
 body.glow-dashboard #view-leaderboard.workspace-v2 .lb-board-card {border-radius:10px;}
@@ -503,7 +503,7 @@ body.glow-dashboard #view-settings .profile-section:has(#profile-banner-preview)
 body.glow-dashboard #view-settings .profile-section:has(#profile-banner-preview)>div:last-child{margin-top:auto;padding-top:16px;}
 body.glow-dashboard #view-upgrade .sub-history-btn{line-height:1;}
 body.glow-dashboard #view-upgrade .sub-history-btn :is(svg,span){display:inline-flex;align-items:center;justify-content:center;flex:none;vertical-align:middle;line-height:1;}
-/* One green folder family, with a mode glyph instead of colour-coded labels. */
+/* Session colors follow the mode picker and retain distinct mode glyphs. */
 body.glow-dashboard #view-documents .session-folder-mark{position:relative;display:block;width:34px;height:30px;color:var(--ui-accent);flex:none;}
 body.glow-dashboard #view-documents .session-folder-mark .doc-folder-glyph-back{fill:var(--ui-accent);}
 body.glow-dashboard #view-documents .session-folder-mark .doc-folder-glyph-front{fill:var(--ui-selected-edge);}
@@ -511,6 +511,18 @@ body.glow-dashboard #view-documents .session-folder-mode{position:absolute;botto
 body.glow-dashboard #view-documents .session-folder-mode svg{width:14px;height:14px;}
 body.glow-dashboard #view-documents :is(.doc-mode-badge,.doc-mode-badge.doc-mode-time,.doc-mode-badge.doc-mode-dangerous,.doc-mode-badge.doc-mode-zen,.doc-mode-badge.doc-mode-duel){display:grid;place-items:center;width:28px;height:28px;padding:5px;border-radius:8px;background:var(--ui-selected);color:var(--ui-accent);border:0;}
 body.glow-dashboard #view-documents .doc-mode-badge svg{width:18px;height:18px;}
+body.glow-dashboard #view-documents .doc-card[data-session-mode=timed]{--session-color:#3478a8;--session-soft:#e3f1fa;--session-front:#b9dced;}
+body.glow-dashboard #view-documents .doc-card[data-session-mode=dangerous]{--session-color:#b54e42;--session-soft:#fbe9e5;--session-front:#edbcb2;}
+body.glow-dashboard #view-documents .doc-card[data-session-mode=zen]{--session-color:#347b55;--session-soft:#e4f3e8;--session-front:#badfc3;}
+body.glow-dashboard #view-documents .doc-card[data-session-mode=duel]{--session-color:#9b6b13;--session-soft:#f9f0d7;--session-front:#ebd19a;}
+body.glow-dashboard #view-documents .doc-card[data-session-mode=legacy]{--session-color:#687580;--session-soft:#ebeff1;--session-front:#cbd4da;}
+body.glow-dashboard #view-documents .doc-card[data-session-mode] .session-folder-mark{color:var(--session-color);}
+body.glow-dashboard #view-documents .doc-card[data-session-mode] .session-folder-mark .doc-folder-glyph-back{fill:var(--session-color);}
+body.glow-dashboard #view-documents .doc-card[data-session-mode] .session-folder-mark .doc-folder-glyph-front{fill:var(--session-front);}
+body.glow-dashboard #view-documents .doc-card[data-session-mode] .session-folder-mode{color:var(--session-color);}
+body.glow-dashboard #view-documents .doc-card[data-session-mode] .doc-mode-badge{background:var(--session-soft);color:var(--session-color);}
+body.glow-dashboard #view-documents #all-docs .doc-card[data-session-mode]{background:color-mix(in srgb,var(--session-soft) 30%,var(--ui-surface));border-color:color-mix(in srgb,var(--session-color) 18%,var(--ui-edge));}
+html.dark body.glow-dashboard #view-documents #all-docs .doc-card[data-session-mode]{background:color-mix(in srgb,var(--session-color) 10%,var(--ui-surface));}
 body.glow-dashboard #view-documents:is([data-library-layout=grid],[data-library-layout=list]) #all-docs .doc-card{display:grid;grid-template-columns:34px minmax(0,1fr) 28px 24px;grid-template-rows:auto auto;align-content:center;align-items:center;gap:8px 12px;min-height:98px;height:auto;padding:18px;}
 body.glow-dashboard #view-documents #all-docs :is(.doc-card-info,.doc-card-text,.doc-card-right){display:contents;}
 body.glow-dashboard #view-documents #all-docs .session-folder-mark{grid-column:1;grid-row:1/3;}
@@ -537,7 +549,7 @@ body.glow-dashboard #session-modal .mp-bottom[data-mode=duel] #modal-start{min-h
 @media(max-width:1000px){body.glow-dashboard #view-friends .friends-split-layout{grid-template-columns:1fr;}body.glow-dashboard #view-friends #workspace-friends-activity{padding:24px 0 0;border-left:0;border-top:1px solid var(--ui-edge);}}
 @media(max-width:900px){body.glow-dashboard #view-settings .workspace-settings-media{grid-template-columns:1fr;}}
 body.glow-dashboard #view-documents .doc-pin-inline{display:inline-block;width:14px;height:14px;vertical-align:middle;margin-right:5px;color:var(--ui-accent);}
-body.glow-dashboard #view-friends :is(#workspace-friends-directory,#workspace-friends-activity){display:flex;flex-direction:column;padding:24px;border:1px solid var(--ui-edge);border-radius:28px;background:var(--ui-surface);}
+body.glow-dashboard #view-friends :is(#workspace-friends-directory,#workspace-friends-activity){display:flex;flex-direction:column;padding:24px;border:1px solid var(--ui-edge);border-radius:12px;background:var(--ui-surface);}
 body.glow-dashboard #view-friends #workspace-friends-directory .friends-table-card{flex:1;}
 body.glow-dashboard #view-friends #activity-feed:has(.empty-state){flex:1;min-height:240px;}
 body.glow-dashboard #view-friends #activity-feed>.empty-state{border:0;border-radius:0;box-shadow:none;}
@@ -656,6 +668,7 @@ body.glow-dashboard #dashboard-notif-dropdown .dashboard-notif-empty{display:gri
 /* The page takes its final layout once; only its visual offset animates. */
 body.glow-dashboard .app-container .main-content{transition:none!important;}
 body.glow-dashboard .app-container .sidebar{contain:layout paint;}
+@media(prefers-reduced-motion:no-preference){body.glow-dashboard .app-container.shell-motion-ready .sidebar{min-width:0;transition:width 200ms cubic-bezier(.2,0,0,1);}}
 html.theme-wave::view-transition-old(root),html.theme-wave::view-transition-new(root){animation:none;mix-blend-mode:normal;}
 html.theme-wave::view-transition-old(root){z-index:0;}
 html.theme-wave::view-transition-new(root){z-index:1;}

@@ -32,11 +32,11 @@
   <link rel="stylesheet" href="/css/staging-chrome.css?v=3">
   <link rel="stylesheet" href="/css/staging-surfaces.css?v=3">
   <link rel="stylesheet" href="/css/sidebar-redesign.css?v=2">
-  <link rel="stylesheet" href="/css/workspace-pages.css?v=3">
-  <link rel="stylesheet" href="/css/app-editorial.css?v=27">
+  <link rel="stylesheet" href="/css/workspace-pages.css?v=4">
+  <link rel="stylesheet" href="/css/app-editorial.css?v=28">
   <link rel="stylesheet" href="/css/app-surfaces.css?v=2">
   <link rel="stylesheet" href="/css/session-workspace.css?v=9">
-  <link rel="stylesheet" href="/css/auth-editorial.css?v=1">
+  <link rel="stylesheet" href="/css/auth-editorial.css?v=2">
 </head>
 <body class="glow-dashboard">
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
@@ -50,11 +50,12 @@
   </div>
   <div id="auth-view" class="auth-container" style="display:none">
     <aside class="auth-intro" aria-label="About iWrite">
-      <div class="auth-intro-content">
-        <p class="auth-intro-brand">iWrite4.me</p>
-        <h1>A place to write,<br>and keep writing.</h1>
-        <p>Make space for your words, one session at a time.</p>
+      <div class="auth-illustrations" aria-hidden="true">
+        <span class="auth-illustration" style="background-image:url('/media/auth-writing-background.jpeg')"></span>
+        <span class="auth-illustration" style="background-image:url('/media/auth-slide-2.jpg')"></span>
+        <span class="auth-illustration" style="background-image:url('/media/auth-slide-3-desk.jpg')"></span>
       </div>
+      <a href="/" class="auth-intro-logo" aria-label="iWrite4.me home"><img src="/media/iwrite-logo.png" alt=""><span>iWrite4.me</span></a>
     </aside>
     <div class="auth-form-panel">
       <a href="/" class="auth-back-btn" id="auth-back-global">&#8592; Back</a>
@@ -1884,7 +1885,7 @@
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/feedback.js?v=optional-feedback-2"></script>
   <script src="/js/editor.js?v=session-sound-6"></script>
-  <script src="/js/app.js?v=release-auth-2"></script>
+  <script src="/js/app.js?v=release-auth-3"></script>
   <script src="/js/stories.js?v=24"></script>
   <script src="/js/paper-zoom.js?v=5"></script>
   <script src="/js/glow-widgets.js?v=5"></script>
