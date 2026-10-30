@@ -2198,14 +2198,15 @@ const App = {
     const totalWords = u.totalWords || 0;
     const totalSessions = u.totalSessions || 0;
     const bestStreak = Math.max(u.streak || 0, u.longestStreak || 0);
+    const achievementIcon = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
     const defs = [
-      { icon: '&#x1F3AF;', name: 'Consistent', desc: 'Write a 7-day streak', cur: bestStreak, max: 7 },
-      { icon: '&#x26A1;', name: 'Speed Writer', desc: 'Write 500 total words', cur: totalWords, max: 500 },
-      { icon: '&#x1F4D6;', name: 'Storyteller', desc: 'Write 2,500 total words', cur: totalWords, max: 2500 },
-      { icon: '&#x1F4DA;', name: 'Novelist', desc: 'Write 10,000 total words', cur: totalWords, max: 10000 },
-      { icon: '&#x1F525;', name: 'On Fire', desc: 'Reach a 30-day streak', cur: bestStreak, max: 30 },
-      { icon: '&#x1F3C3;', name: 'Marathoner', desc: 'Complete 50 sessions', cur: totalSessions, max: 50 },
-      { icon: '&#x2B50;', name: 'Rising Star', desc: 'Reach Level 5', cur: level, max: 5 },
+      { icon: achievementIcon('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>'), name: 'Consistent', desc: 'Write a 7-day streak', cur: bestStreak, max: 7 },
+      { icon: achievementIcon('<path d="m13 3-8 10h6l-1 8 9-12h-7z"/>'), name: 'Speed Writer', desc: 'Write 500 total words', cur: totalWords, max: 500 },
+      { icon: achievementIcon('<path d="M12 6c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1v15"/>'), name: 'Storyteller', desc: 'Write 2,500 total words', cur: totalWords, max: 2500 },
+      { icon: achievementIcon('<path d="M4 3h5v18H4zM9 5h5v16H9zM16 4l4-1 4 17-4 1z"/>'), name: 'Novelist', desc: 'Write 10,000 total words', cur: totalWords, max: 10000 },
+      { icon: achievementIcon('<path d="M13 3c1 5-4 6-4 10-2-1-3-3-3-3-4 7 0 11 6 11s9-5 6-10c-1-2-3-4-5-8z"/>'), name: 'On Fire', desc: 'Reach a 30-day streak', cur: bestStreak, max: 30 },
+      { icon: achievementIcon('<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 10h16m-12 5 3 3 5-5"/>'), name: 'Marathoner', desc: 'Complete 50 sessions', cur: totalSessions, max: 50 },
+      { icon: achievementIcon('<path d="m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>'), name: 'Rising Star', desc: 'Reach Level 5', cur: level, max: 5 },
     ];
     // group: 0 = in progress, 1 = not started, 2 = done; then by progress ratio
     const groupOf = (a) => (a.cur >= a.max ? 2 : a.cur > 0 ? 0 : 1);
@@ -2219,15 +2220,15 @@ const App = {
     for (let i = 0; i < sorted.length; i += PER_PAGE) pages.push(sorted.slice(i, i + PER_PAGE));
     this._achPages = pages.length;
 
-    // Small circular progress indicator (check when done, clock while pending)
+    // Progress rings retain the measured fraction; a line icon identifies each milestone.
     const ringHTML = (a) => {
       const r = 18, C = 2 * Math.PI * r;
       const off = C * (1 - Math.min(1, a.cur / a.max));
       const done = a.cur >= a.max;
       const inner = done
-        ? '<span class="td-ach-ring-icon done">&#x2713;</span>'
-        : '<span class="td-ach-ring-icon pending">&#x1F551;</span>';
-      return `<div class="td-ach-ring"><svg viewBox="0 0 44 44" width="44" height="44">
+        ? `<span class="td-ach-ring-icon done">${achievementIcon('<path d="m5 12 4 4L19 6"/>')}</span>`
+        : `<span class="td-ach-ring-icon pending">${a.icon}</span>`;
+      return `<div class="td-ach-ring" aria-hidden="true"><svg viewBox="0 0 44 44" width="44" height="44">
         <circle class="td-ach-ring-track" cx="22" cy="22" r="${r}"></circle>
         <circle class="td-ach-ring-fill" cx="22" cy="22" r="${r}" style="stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${off.toFixed(1)}"></circle>
       </svg>${inner}</div>`;
@@ -2239,7 +2240,7 @@ const App = {
         page.map(a => {
           const cur = Math.min(a.cur, a.max);
           return `<div class="td-ach-item">
-            <div class="td-ach-icon">${a.icon}</div>
+            <div class="td-ach-icon" aria-hidden="true">${a.icon}</div>
             <div class="td-ach-meta">
               <div class="td-ach-name">${a.name}</div>
               <div class="td-ach-desc">${a.desc}</div>
