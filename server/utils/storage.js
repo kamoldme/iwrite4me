@@ -60,6 +60,10 @@ async function initDB() {
     invoice_id TEXT PRIMARY KEY,
     processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS stripe_failure_events (
+    event_key TEXT PRIMARY KEY,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users ((data->>'email'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_googleid ON users ((data->>'googleId'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_documents_userid ON documents ((data->>'userId'))`);
