@@ -6449,6 +6449,11 @@ const App = {
       'Priority support'
     ];
 
+    const freeExcludedFeatures = proFeatures.filter(feature => ![
+      'Everything in Free', 'Larger word & editing limits',
+      'Username change 3x/month', 'Pro badge on leaderboard'
+    ].includes(feature));
+
     const expiryInfo = isPro && this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite'
       ? ` · expires ${this.formatDateFull(this.user.planExpiresAt)}`
       : (isPro && this.user.planExpiresAt === 'infinite' ? ' · Lifetime' : '');
@@ -6473,6 +6478,8 @@ const App = {
         <div class="upgrade-card-features">
           <h4>Features</h4>
           <ul>${freeFeatures.map(f => `<li>${f}</li>`).join('')}</ul>
+          <h4 class="upgrade-excluded-heading">Not included in Free</h4>
+          <ul aria-label="Pro-only features">${freeExcludedFeatures.map(f => `<li class="feature-unavailable">${f}</li>`).join('')}</ul>
         </div>
       </div>
 
