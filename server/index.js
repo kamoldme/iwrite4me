@@ -904,9 +904,12 @@ async function start() {
   try {
     await initDB();
     await seedPromptsIfEmpty();
-    const adminPass = process.env.ADMIN_PASSWORD || 'Admin1234';
+    const adminPass = process.env.ADMIN_PASSWORD;
+    if (!adminPass) console.warn('ADMIN_PASSWORD is not configured; existing admin credentials will be preserved and no admin will be seeded.');
     const admin = await findOne('users.json', u => u.email === 'admin@iwrite4.me');
-    if (!admin) {
+    const { adminBootstrapAction } = require('./utils/admin-bootstrap');
+    const adminAction = adminBootstrapAction({ exists: !!admin, password: adminPass, staging: process.env.STAGING_MODE === '1' });
+    if (adminAction === 'seed') {
       const hash = await bcrypt.hash(adminPass, 12);
       await insertOne('users.json', {
         id: uuid(),
@@ -921,8 +924,8 @@ async function start() {
         createdAt: new Date().toISOString()
       });
       console.log('Admin account seeded');
-    } else if (process.env.STAGING_MODE !== '1') {
-      // Always sync admin password with env/default on startup
+    } else if (adminAction === 'sync') {
+      // Only sync when an explicit administrator password is configured.
       const hash = await bcrypt.hash(adminPass, 12);
       await updateOne('users.json', u => u.email === 'admin@iwrite4.me', { password: hash, role: 'admin' });
       console.log('Admin password synced');

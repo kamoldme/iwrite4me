@@ -43,5 +43,5 @@ jobs:
           node --check public/js/paper-zoom.js
           node --check public/js/api.js
 
-      - name: Check audio and notification policy
-        run: node --test tests/editor-audio.test.js tests/notification-policy.test.js
+      - name: Run regression tests
+        run: node --test tests/*.test.js
