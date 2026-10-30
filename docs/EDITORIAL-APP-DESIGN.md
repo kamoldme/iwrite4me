@@ -2,7 +2,7 @@
 
 ## Direction
 
-The light interface is a writing workspace: neutral paper, dark ink, restrained forest-green actions. The activity chart retains its dark glow; light mode uses restrained chart fills. Both themes show the circular daily-goal dial: amber on dark, sage on white with a centered, subtle gradient. All are driven by existing saved-document data.
+The light interface is a writing workspace: neutral paper, dark ink, restrained forest-green actions. Activity and session charts use a consistent moss accent with restrained fills in both themes. Both themes show the circular daily-goal dial: amber on dark, sage on white with a centered, subtle gradient. All are driven by existing saved-document data.
 
 Community prioritizes reading. One article column presents byline, title, serif excerpt and metadata; discovery sits in a quieter right margin. At 1100px and below discovery follows the articles, preserving reading width. Feed and reader continue to use the original story actions and data.
 
@@ -65,3 +65,20 @@ The dashboard uses a real flex stack for goal/reflection opposite the session pa
 The sidebar and phone-gate mark use `/media/iwrite-logo.png`, matching the live landing page. The sidebar no longer inverts the asset in dark mode.
 
 Verified in both themes at 1440, 1024 and 800px: shared dashboard radii, matching desktop column edges, long-reflection expansion, stacked narrow layout, goal/picker window corners, no horizontal overflow and an unfiltered loaded logo. A surface inventory covered the ten main app destinations. Protected landing/editor assets and editor markup remain unchanged.
+
+
+## Reference-video refinement — October 30
+
+The supplied Tobi before/after clip is a silent visual demonstration, not a narrated specification. Its explicit annotations show irregular gaps being normalized, gradient palettes replaced by ink/moss/semantic accents, emoji replaced by simple marks, and heavier typography replaced by larger, lighter numerals with quieter labels. The final view adds factual context to its charts.
+
+Applied to the existing iWrite dashboard:
+
+- Remove the blurred duplicate activity-chart stroke and page-level ambient gradient. Keep the real dated series, readable points, range selector and accessible daily-value table. Point and guide colors now work in both themes.
+- Use the same moss accent for activity, session momentum and achievement progress. Reserve amber for goals/streaks; remove the unrelated blue/purple metric accents. Keep subtle chart fills and the specifically requested sage/amber goal dial.
+- Keep Instrument Sans/Archivo and the existing serif reflection rather than importing a new font solely to copy the example. Use lighter-weight primary numerals and quieter chart headings, with consistent secondary text colors.
+- Replace achievement clock emoji with milestone-specific line icons and completed checkmarks. Preserve measured progress, labels, paging and milestone criteria. Recent-document arrows retain the existing shared icon treatment.
+- Preserve the approved 28px surfaces and aligned column structure. Suppress an empty notification banner without hiding real messages.
+
+This is a focused refinement of the current design, not a layout reset. No new metrics, simulated activity, dependencies or backend behavior were introduced. Production, landing and the writing editor remain outside the change.
+
+Verified on staging: both themes at 1440, 1024 and 800px; shared corners and column alignment including long reflection text; chart empty/single/20-session data, pointer/keyboard inspection; goal states/editing and picker controls; achievement paging and completed/incomplete SVG states; blank versus populated notification visibility. Updated secondary text measures 5.83:1 against the light session panel and 10.14:1 against the dark panel. JavaScript syntax, whitespace, protected asset hashes and editor-markup isolation checks pass. This is a scoped dashboard verification, not a full-platform accessibility certification.
