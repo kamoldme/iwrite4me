@@ -33,9 +33,9 @@
   <link rel="stylesheet" href="/css/staging-surfaces.css?v=3">
   <link rel="stylesheet" href="/css/sidebar-redesign.css?v=2">
   <link rel="stylesheet" href="/css/workspace-pages.css?v=3">
-  <link rel="stylesheet" href="/css/app-editorial.css?v=19">
+  <link rel="stylesheet" href="/css/app-editorial.css?v=20">
   <link rel="stylesheet" href="/css/app-surfaces.css?v=2">
-  <link rel="stylesheet" href="/css/session-workspace.css?v=1">
+  <link rel="stylesheet" href="/css/session-workspace.css?v=5">
 </head>
 <body class="glow-dashboard">
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
@@ -1119,10 +1119,11 @@
         </div>
         <div class="editor-toolbar-right">
           <div class="tools-menu-wrap chrome-el">
-            <button class="tool" id="editor-tools-btn" title="Session tools">
+            <button class="tool" id="editor-tools-btn" title="Session tools" aria-label="Session tools" aria-expanded="false" aria-controls="editor-tools-menu">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
             </button>
-            <div class="tools-menu" id="editor-tools-menu" style="display:none">
+            <div class="tools-menu" id="editor-tools-menu" aria-label="Session tools" style="display:none">
+              <div class="session-menu-heading">Your workspace</div>
               <button class="menu-row" id="tools-theme-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                 <span class="menu-row-label" id="tools-theme-label">Dark mode</span>
@@ -1140,7 +1141,7 @@
               </button>
               <button class="menu-row" id="tools-research-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                <span class="menu-row-label">AI Research Assistant</span>
+                <span class="menu-row-label">Research assistant</span>
               </button>
               <button class="menu-row" id="tools-audio-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
@@ -1153,7 +1154,7 @@
               <div class="menu-row menu-row-static" id="tools-target-words-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
                 <span class="menu-row-label">Target words</span>
-                <input type="number" id="editor-target-words" class="menu-row-input" min="0" max="50000" placeholder="e.g. 500">
+                <input type="number" id="editor-target-words" class="menu-row-input" min="0" max="50000" placeholder="##">
               </div>
               <button class="menu-row" id="tools-comment-history-row" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
@@ -1189,7 +1190,8 @@
           <button class="doc-action-btn" id="editor-audio-btn" title="Background audio" style="width:30px;height:30px;flex-shrink:0;display:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
           </button>
-          <div class="editor-audio-dropdown" id="editor-audio-dropdown" style="display:none">
+          <div class="editor-audio-dropdown" id="editor-audio-dropdown" aria-label="Sound studio" style="display:none">
+            <div class="session-menu-heading">Sound studio<span>Set the atmosphere for your writing.</span></div>
             <div class="audio-section">
               <div class="audio-section-label">Writing feel</div>
               <label class="typewriter-select-wrap" for="typewriter-pack-select">
@@ -1292,49 +1294,6 @@
         <button class="duel-extra-time-accept" onclick="Editor.acceptExtraTime()">✓</button>
         <button class="duel-extra-time-decline" onclick="Editor.declineExtraTime()">✗</button>
       </div>
-      <!-- Row 2: Formatting toolbar (hidden in danger mode) -->
-      <div class="editor-format-bar chrome-el" id="formatting-toolbar" style="display:none">
-        <button class="fmt-close-btn" id="formatting-toolbar-close" title="Hide formatting toolbar">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-        <!-- Font selector -->
-        <div class="fmt-font-wrap">
-          <select class="fmt-font-select" id="fmt-font-select">
-            <option value="sans">Sans Serif</option>
-            <option value="serif">Serif</option>
-            <option value="mono">Monospace</option>
-            <option value="georgia">Georgia</option>
-            <option value="garamond">Garamond</option>
-            <option value="courier">Courier</option>
-            <option value="dyslexic">OpenDyslexic</option>
-          </select>
-        </div>
-        <div class="fmt-separator"></div>
-        <button class="fmt-btn" data-command="bold" title="Bold (Ctrl+B)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
-        </button>
-        <button class="fmt-btn" data-command="italic" title="Italic (Ctrl+I)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
-        </button>
-        <button class="fmt-btn" data-command="underline" title="Underline (Ctrl+U)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
-        </button>
-        <div class="fmt-separator"></div>
-        <button class="fmt-btn fmt-size-btn" id="fmt-size-down" title="Decrease size">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11h14v2H5z"/></svg>
-        </button>
-        <span class="fmt-size-label" id="fmt-size-label">3</span>
-        <button class="fmt-btn fmt-size-btn" id="fmt-size-up" title="Increase size">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-        </button>
-        <div class="fmt-separator"></div>
-        <button class="fmt-btn fmt-color-btn" data-color="#111111" title="Black" style="color:#111111; -webkit-text-stroke: 0.5px #555">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#ffffff" title="White" style="color:#ffffff; -webkit-text-stroke: 0.5px #aaa">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#ef4444" title="Red" style="color:#ef4444">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#22c55e" title="Green" style="color:#22c55e">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#6c5ce7" title="Purple" style="color:#6c5ce7">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#f59e0b" title="Yellow" style="color:#f59e0b">A</button>
-      </div>
       <div class="danger-progress" id="danger-progress" style="display:none">
         <div class="danger-progress-track"><div class="danger-progress-bar" id="danger-progress-bar"></div></div>
         <div class="editor-hearts" id="editor-hearts">
@@ -1356,9 +1315,101 @@
           <div class="editor-tabs-note">Tabs keep one session's notes and drafts side by side.</div>
         </aside>
         <div class="editor-tabs-resizer" id="editor-tabs-resizer" role="separator" aria-orientation="vertical" aria-label="Resize tabs column"></div>
+        <div class="editor-writing-desk">
+          <!-- Row 2: Formatting toolbar (hidden in danger mode) -->
+          <div class="editor-format-bar chrome-el" id="formatting-toolbar" style="display:none">
+            <button class="fmt-close-btn" id="formatting-toolbar-close" title="Hide formatting toolbar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <!-- Font selector -->
+            <div class="fmt-font-wrap">
+              <select class="fmt-font-select" id="fmt-font-select">
+                <option value="sans">Sans Serif</option>
+                <option value="serif">Serif</option>
+                <option value="mono">Monospace</option>
+                <option value="georgia">Georgia</option>
+                <option value="garamond">Garamond</option>
+                <option value="courier">Courier</option>
+                <option value="dyslexic">OpenDyslexic</option>
+              </select>
+            </div>
+            <div class="fmt-separator"></div>
+            <button class="fmt-btn" data-command="bold" title="Bold (Ctrl+B)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
+            </button>
+            <button class="fmt-btn" data-command="italic" title="Italic (Ctrl+I)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
+            </button>
+            <button class="fmt-btn" data-command="underline" title="Underline (Ctrl+U)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
+            </button>
+            <div class="fmt-separator"></div>
+            <button class="fmt-btn fmt-size-btn" id="fmt-size-down" title="Decrease size">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11h14v2H5z"/></svg>
+            </button>
+            <span class="fmt-size-label" id="fmt-size-label">3</span>
+            <button class="fmt-btn fmt-size-btn" id="fmt-size-up" title="Increase size">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </button>
+            <div class="fmt-separator"></div>
+            <button class="fmt-btn fmt-color-btn" data-color="#111111" title="Black" style="color:#111111; -webkit-text-stroke: 0.5px #555">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#ffffff" title="White" style="color:#ffffff; -webkit-text-stroke: 0.5px #aaa">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#ef4444" title="Red" style="color:#ef4444">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#22c55e" title="Green" style="color:#22c55e">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#6c5ce7" title="Purple" style="color:#6c5ce7">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#f59e0b" title="Yellow" style="color:#f59e0b">A</button>
+          </div>
         <div class="editor-area">
           <div class="editor-textarea" id="editor-textarea" contenteditable="true" data-placeholder="Start writing your thoughts..."></div>
         </div>
+        </div>
+        <!-- RESEARCH DRAWER -->
+        <aside class="research-drawer" id="research-drawer" aria-label="Research" inert>
+          <div class="research-drawer-header">
+            <span class="research-drawer-title">Research</span>
+            <button class="research-drawer-close" id="research-drawer-close" title="Close" aria-label="Close research">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="research-tabs">
+            <button class="research-tab active" data-rtab="wiki">Search</button>
+            <button class="research-tab" data-rtab="ai">Ask AI</button>
+          </div>
+          <div class="research-quota" id="research-quota"></div>
+
+          <!-- Ask AI composer — lives at the top right after the tabs so it's always visible -->
+          <div id="gem-box">
+            <textarea id="gem-input" placeholder="Ask a question about your writing..." rows="1"></textarea>
+            <button id="gem-send" type="button" aria-label="Send">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+
+          <!-- WIKI TAB -->
+          <div class="research-pane" data-rpane="wiki">
+            <div class="research-input-row">
+              <input type="text" class="research-input" id="research-wiki-input" placeholder="Search a topic..." maxlength="120">
+              <button class="research-submit-btn" id="research-wiki-btn">Search</button>
+            </div>
+            <div class="research-hint">Free and unlimited. Click any Wikipedia result for the full article.</div>
+            <div class="research-results" id="research-wiki-results">
+              <div class="research-empty-state"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><strong>A little context for your next idea</strong><p>Look up a topic, explore a source, then return to your draft.</p></div>
+            </div>
+            <div class="research-detail" id="research-wiki-detail" style="display:none">
+              <button class="research-back-btn" id="research-wiki-back" title="Back to results">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Back to results</span>
+              </button>
+              <div class="research-detail-body" id="research-wiki-detail-body"></div>
+            </div>
+          </div>
+
+          <!-- AI TAB -->
+          <div class="research-pane research-pane-ai" data-rpane="ai" style="display:none">
+            <div class="research-chat" id="research-ai-chat"></div>
+          </div>
+        </aside>
+
       </div>
     </div>
 
@@ -1390,56 +1441,11 @@
     <!-- YouTube iframe container (hidden) -->
     <div id="yt-player-container" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden"></div>
 
-    <!-- RESEARCH DRAWER -->
-    <div class="research-drawer" id="research-drawer">
-      <div class="research-drawer-header">
-        <span class="research-drawer-title">Research</span>
-        <button class="research-drawer-close" id="research-drawer-close" title="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="research-tabs">
-        <button class="research-tab active" data-rtab="wiki">Search</button>
-        <button class="research-tab" data-rtab="ai">Ask AI</button>
-      </div>
-      <div class="research-quota" id="research-quota"></div>
-
-      <!-- Ask AI composer — lives at the top right after the tabs so it's always visible -->
-      <div id="gem-box">
-        <textarea id="gem-input" placeholder="Message Gemini..." rows="1"></textarea>
-        <button id="gem-send" type="button" aria-label="Send">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
-
-      <!-- WIKI TAB -->
-      <div class="research-pane" data-rpane="wiki">
-        <div class="research-input-row">
-          <input type="text" class="research-input" id="research-wiki-input" placeholder="Search Wikipedia + DuckDuckGo..." maxlength="120">
-          <button class="research-submit-btn" id="research-wiki-btn">Search</button>
-        </div>
-        <div class="research-hint">Free and unlimited. Click any Wikipedia result for the full article.</div>
-        <div class="research-results" id="research-wiki-results"></div>
-        <div class="research-detail" id="research-wiki-detail" style="display:none">
-          <button class="research-back-btn" id="research-wiki-back" title="Back to results">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            <span>Back to results</span>
-          </button>
-          <div class="research-detail-body" id="research-wiki-detail-body"></div>
-        </div>
-      </div>
-
-      <!-- AI TAB -->
-      <div class="research-pane research-pane-ai" data-rpane="ai" style="display:none">
-        <div class="research-chat" id="research-ai-chat"></div>
-      </div>
-    </div>
-
     <!-- TAB WARNING -->
-    <div class="tab-warning" id="tab-warning">
-      <h2>Come back!</h2>
-      <p>Your writing is being deleted...</p>
-      <div class="tab-warning-timer" id="tab-warning-timer">10</div>
+    <div class="tab-warning" id="tab-warning" role="alert">
+      <div class="session-notice-card" aria-label="Time left to return before this session ends and unsaved writing is deleted">
+        <div class="session-countdown-value"><span class="tab-warning-timer" id="tab-warning-timer">10</span><span>seconds</span></div>
+      </div>
     </div>
 
     <!-- SESSION START MODAL — 1:1 with Writing Session.dc.html's picker screen -->
@@ -1843,9 +1849,10 @@
   <!-- DANGEROUS MODE COUNTDOWN -->
   <div class="danger-countdown" id="danger-countdown">
     <div class="danger-countdown-inner">
-      <p class="danger-countdown-label">&#x26A1; Dangerous Mode</p>
+      <p class="danger-countdown-label">Leonidas · Dangerous mode</p>
       <div class="danger-countdown-num" id="danger-countdown-num">5</div>
-      <p class="danger-countdown-sub">Stop typing and your work disappears</p>
+      <span class="session-notice-eyebrow">Your session starts shortly</span>
+      <p class="danger-countdown-sub">Keep typing to protect your draft. Inactivity costs hearts and can delete your writing.</p>
     </div>
   </div>
 
@@ -1897,12 +1904,12 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/feedback.js?v=optional-feedback-2"></script>
-  <script src="/js/editor.js?v=danger-finish-1"></script>
-  <script src="/js/app.js?v=staging-chrome-12"></script>
+  <script src="/js/editor.js?v=session-notices-4"></script>
+  <script src="/js/app.js?v=staging-chrome-16"></script>
   <script src="/js/stories.js?v=22"></script>
   <script src="/js/glow-widgets.js?v=5"></script>
   <script src="/js/staging-chrome.js?v=6"></script>
-  <script src="/js/workspace-pages.js?v=6"></script>
+  <script src="/js/workspace-pages.js?v=7"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
       const el = document.getElementById('version-tag');

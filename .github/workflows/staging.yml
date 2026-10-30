@@ -32,3 +32,12 @@ jobs:
       - name: Validate server entrypoint
         run: node --check server/index.js
 
+
+      - name: Validate session JavaScript
+        run: |
+          node --check public/js/app.js
+          node --check public/js/editor.js
+          node --check public/js/workspace-pages.js
+
+      - name: Check audio playback lifecycle
+        run: node --test tests/editor-audio.test.js

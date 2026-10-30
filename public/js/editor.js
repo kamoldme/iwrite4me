@@ -799,19 +799,6 @@ const Editor = {
     }, 200);
   },
 
-  _tabReturnMessages: [
-    "\u{1F62D} Please don't do that again... I almost died",
-    "\u{1F631} I was this close to erasing everything!",
-    "\u{1F62B} You nearly killed your words. They're still shaking.",
-    "\u{1F494} My heart can't take this. Don't leave me again.",
-    "\u{1F300} Your writing almost vanished into the void.",
-    "\u{1F9F5} I held on by a thread. Please stay.",
-    "\u{1F62E}\u200D\u{1F4A8} That was way too close. Your words need you here.",
-    "\u{1F630} Don't leave me please... I'm scared of the dark.",
-    "\u{1F622} I thought you abandoned me forever.",
-    "\u{1F47B} Your words were about to become ghosts.",
-  ],
-
   onTabReturn() {
     // Accumulate paused time (zen mode)
     if (this._pauseStart) {
@@ -821,10 +808,8 @@ const Editor = {
     if (this.tabCountdown && this.tabLeftTime) {
       const awaySeconds = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = this.tabGracePeriod - awaySeconds;
-      if (remaining > 0 && remaining <= this.tabGracePeriod) {
-        const msg = this._tabReturnMessages[Math.floor(Math.random() * this._tabReturnMessages.length)];
-        const color = remaining > 7 ? cssVar('--success') : remaining >= 4 ? '#facc15' : '#f87171';
-        App.toast(`<span style="font-weight:800;color:${color}">${remaining}s</span> left before deletion. ${msg}`, remaining <= 3 ? 'error' : 'warning');
+      if (this.active && !this.abandoned && remaining > 0 && remaining <= this.tabGracePeriod) {
+        App.toast('You’re back. Your writing is safe. Keep this tab open to continue.', 'success');
       }
     }
     if (this.tabCountdown) {
@@ -2332,7 +2317,8 @@ const Editor = {
   },
 
   // --- Audio system ---
-  // Built-in tracks use direct MP3 files (instant playback, no iframe)
+  // Original recordings are retained; reuse and warm media elements to avoid
+  // restarting remote redirects and buffering on each selection.
   _audioSources: {
     lofi1: 'https://archive.org/download/chill-lofi-music-relax-study/Leavv%20-%20Cloud%20Shapes.mp3',
     lofi2: 'https://archive.org/download/chill-lofi-music-relax-study/Tom%20Doolie%20-%20Land%20of%20Calm.mp3',
@@ -2348,36 +2334,61 @@ const Editor = {
   _ytAPIReady: false,
   _ytSeekInterval: null,
 
-  playAudio(key) {
-    // If same track, toggle pause/resume
-    if (this._activeAudioKey === key && this._audioElement) {
-      if (this._audioElement.paused) {
-        this._audioElement.play().catch(() => {});
-        this._audioPlaying = true;
-      } else {
-        this._audioElement.pause();
-        this._audioPlaying = false;
+  _audioPool: null,
+  _audioRequest: 0,
+  _audioLoading: false,
+
+  warmAudio(key) {
+    this._audioPool ||= new Map();
+    const keys = key ? [key] : Object.keys(this._audioSources);
+    keys.forEach(trackKey => {
+      if (!this._audioSources[trackKey]) return;
+      let audio = this._audioPool.get(trackKey);
+      if (!audio) {
+        audio = new Audio();
+        audio.preload = 'metadata';
+        audio.loop = true;
+        audio.src = this._audioSources[trackKey];
+        this._audioPool.set(trackKey, audio);
       }
+      // Fetch ahead only for the hovered/focused track, not six multi-hour files.
+      if (key) audio.preload = 'auto';
+    });
+  },
+
+  playAudio(key) {
+    this.warmAudio(key);
+    const next = this._audioPool.get(key);
+    if (!next) return;
+    if (this._activeAudioKey === key && (this._audioLoading || !next.paused)) {
+      ++this._audioRequest;
+      next.pause();
+      this._audioLoading = false;
+      this._audioPlaying = false;
       this._updateTrackUI();
       return;
     }
-    this.stopAudio();
-    const src = this._audioSources[key];
-    if (!src) return;
+    if (this._activeAudioKey !== key) this.stopAudio();
+    const request = ++this._audioRequest;
     const track = document.querySelector(`.audio-track[data-audio="${key}"]`);
-    const vol = track ? track.querySelector('.audio-track-vol').value : 50;
-    this._audioElement = new Audio(src);
-    this._audioElement.loop = true;
-    this._audioElement.volume = vol / 100;
-    // No crossOrigin: plain cross-origin playback needs no CORS, and setting it would
-    // require CORS on every redirect hop. (No Web Audio analyser here that would need it.)
-    this._audioElement.play().catch((err) => {
-      App.toast('Could not play audio — try again', 'error');
-      console.warn('[audio] play failed', err);
-    });
-    this._audioPlaying = true;
+    next.volume = Number(track?.querySelector('.audio-track-vol')?.value ?? 50) / 100;
+    this._audioElement = next;
     this._activeAudioKey = key;
+    this._audioLoading = true;
+    this._audioPlaying = false;
     this._updateTrackUI();
+    next.play().then(() => {
+      if (request !== this._audioRequest) return;
+      this._audioLoading = false;
+      this._audioPlaying = true;
+      this._updateTrackUI();
+    }).catch(error => {
+      if (request !== this._audioRequest) return;
+      this._audioLoading = false;
+      this._audioPlaying = false;
+      this._updateTrackUI();
+      if (error.name !== 'AbortError') App.toast('Audio could not start. Please try again.', 'error');
+    });
   },
 
   // --- YouTube (custom links only) ---
@@ -2470,10 +2481,13 @@ const Editor = {
   },
 
   stopAudio() {
-    // Stop MP3 audio
+    // Keep buffered recordings for instant replay and invalidate pending starts.
+    ++this._audioRequest;
+    this._audioLoading = false;
     if (this._audioElement) {
       this._audioElement.pause();
-      this._audioElement.src = '';
+      this._audioElement.preload = 'metadata';
+      try { this._audioElement.currentTime = 0; } catch {}
       this._audioElement = null;
     }
     // Stop YouTube
@@ -2496,7 +2510,15 @@ const Editor = {
     document.querySelectorAll('.audio-track').forEach(track => {
       const key = track.dataset.audio;
       const btn = track.querySelector('.audio-play-btn');
-      if (key === this._activeAudioKey && this._audioPlaying) {
+      const loading = key === this._activeAudioKey && this._audioLoading;
+      track.classList.toggle('loading', loading);
+      track.setAttribute('aria-busy', String(loading));
+      btn.title = loading ? 'Loading — click to cancel' : key === this._activeAudioKey && this._audioPlaying ? 'Pause' : 'Play';
+      btn.setAttribute('aria-label', `${btn.title} ${track.querySelector('.audio-track-name').textContent.trim()}`);
+      if (loading) {
+        track.classList.add('active');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 1-9 9"/></svg>';
+      } else if (key === this._activeAudioKey && this._audioPlaying) {
         track.classList.add('active');
         btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
       } else if (key === this._activeAudioKey && !this._audioPlaying) {
@@ -2511,11 +2533,17 @@ const Editor = {
 
   initAudio() {
     this._loadYTAPI();
+    // Resolve headers/redirects while the app is idle, before a writer opens sound.
+    const prepareAudio = () => this.warmAudio();
+    if ('requestIdleCallback' in window) requestIdleCallback(prepareAudio, { timeout: 2000 });
+    else setTimeout(prepareAudio, 1000);
     document.querySelectorAll('.audio-track').forEach(track => {
       const key = track.dataset.audio;
       const playBtn = track.querySelector('.audio-play-btn');
       const volSlider = track.querySelector('.audio-track-vol');
       playBtn.addEventListener('click', () => Editor.playAudio(key));
+      track.addEventListener('pointerenter', () => Editor.warmAudio(key));
+      track.addEventListener('focusin', () => Editor.warmAudio(key));
       volSlider.addEventListener('input', () => {
         if (Editor._activeAudioKey === key && Editor._audioElement) {
           Editor._audioElement.volume = volSlider.value / 100;
@@ -2555,6 +2583,7 @@ const Editor = {
   },
 
   cleanup() {
+    App._closeSessionPopovers?.();
     this.active = false;
     this._completing = false;
     if (this._originalTabTitle != null) {

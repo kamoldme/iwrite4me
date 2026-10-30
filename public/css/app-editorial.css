@@ -638,3 +638,6 @@ body.glow-dashboard.app-chrome-visible #streak-popup-overlay .streak-popup-count
 body.glow-dashboard #view-upgrade .upgrade-card-features .upgrade-excluded-heading{margin:24px 0 14px;padding-top:20px;border-top:1px solid var(--ui-edge);font:500 12px/1.5 'Instrument Sans',sans-serif;color:var(--ui-muted);}
 body.glow-dashboard #view-upgrade .upgrade-card-features li.feature-unavailable{color:var(--ui-muted);}
 body.glow-dashboard #view-upgrade .upgrade-card-features li.feature-unavailable::before{content:'×';background:var(--ui-raised);color:var(--ui-muted)!important;font:600 14px/1 'Instrument Sans',sans-serif;}
+body.glow-dashboard #view-documents .workspace-library-rail>h2{display:flex;align-items:center;gap:10px;}
+body.glow-dashboard #view-documents .workspace-library-rail>h2 svg{width:20px;height:20px;flex:none;color:var(--ui-accent);}
+body.glow-dashboard #view-documents[data-library-layout=list] #all-docs .doc-card{min-height:76px;padding:14px 18px;row-gap:4px;}
