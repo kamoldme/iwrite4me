@@ -1,0 +1,205 @@
+/* First session design pass: shared colors and chrome, with authored type,
+   timing, danger feedback, progress, focus and visibility behavior retained. */
+body.glow-dashboard #editor-container{
+ --bg-primary:var(--ui-page);--bg-secondary:var(--ui-surface);--bg-card:var(--ui-surface);--bg-elevated:var(--ui-raised);--hover-bg:var(--ui-hover);
+ --text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);--border:var(--ui-edge);--accent:var(--ui-accent);--accent-soft:var(--ui-selected);
+ background:var(--ui-page);color:var(--ui-ink);
+}
+body.glow-dashboard #editor-container .editor-toolbar{background:var(--ui-surface);border-color:var(--ui-edge);padding:12px 24px;color:var(--ui-ink);font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container .editor-title-input{color:var(--ui-ink);font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container :is(.editor-title-input,.editor-textarea)::placeholder{color:var(--ui-muted);}
+body.glow-dashboard #editor-container .editor-textarea:empty:before{color:var(--ui-muted);}
+body.glow-dashboard #editor-container .editor-timer{font-family:'DM Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+body.glow-dashboard #editor-container :is(.editor-back-btn,.tool,.editor-add-time-btn,.editor-timer-toggle){min-height:36px;border-radius:10px;border:1px solid var(--ui-edge);background:var(--ui-surface);color:var(--ui-muted);box-shadow:none;}
+body.glow-dashboard #editor-container :is(.editor-mode-badge.normal,.editor-mode-badge.zen,.editor-mode-badge.duel){color:var(--ui-accent);border-color:var(--ui-selected-edge);background:var(--ui-selected)!important;letter-spacing:.03em;font:500 11px/1.4 'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container .editor-tabs-rail{background:var(--ui-surface);border-color:var(--ui-edge);font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container .editor-tab-row{border-radius:10px;color:var(--ui-muted);}
+body.glow-dashboard #editor-container .editor-tab-row.active{background:var(--ui-selected);color:var(--ui-accent);border-color:var(--ui-selected-edge);}
+body.glow-dashboard #editor-container .editor-area{margin:24px;border:1px solid var(--ui-edge);border-radius:28px;background:var(--ui-surface);color:var(--ui-ink);padding:40px 32px 96px;}
+body.glow-dashboard #editor-container .editor-textarea{color:var(--ui-ink);}
+body.glow-dashboard #editor-container :is(.tools-menu,.editor-focus-dropdown,.editor-font-menu,.editor-prefs-menu,.editor-tab-menu,.add-time-confirm){border:1px solid var(--ui-edge);border-radius:16px;background:var(--ui-surface);color:var(--ui-ink);box-shadow:0 12px 32px rgb(0 0 0/.12);font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container :is(.menu-row,.editor-pref-row){color:var(--ui-ink);}
+body.glow-dashboard #editor-container :is(button,input,select):focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px;}
+body.glow-dashboard #editor-container #status-bar{color:var(--ui-muted);background:var(--ui-surface);border-color:var(--ui-edge);font-family:'Instrument Sans',sans-serif;}
+@media(hover:hover){body.glow-dashboard #editor-container :is(.tool,.editor-back-btn,.editor-add-time-btn,.menu-row):hover{background:var(--ui-hover);color:var(--ui-ink);}}
+@media(max-width:900px){body.glow-dashboard #editor-container .editor-area{margin:16px;padding:28px 24px 80px;}body.glow-dashboard #editor-container .editor-toolbar{padding:12px 16px;}}
+body.glow-dashboard #editor-container :is(#editor-edit-btn,#editor-save-edit-btn,#editor-save-btn){min-height:36px;padding:8px 16px;border:1px solid transparent;border-radius:12px;background:var(--ui-primary);color:var(--ui-on-primary);box-shadow:none;font:600 13px/1.4 'Instrument Sans',sans-serif;}
+body.glow-dashboard:has(#editor-container.active) #status-bar{background:var(--ui-surface);color:var(--ui-muted);border-color:var(--ui-edge);font-family:'DM Mono',monospace;}
+
+/* A continuous pair of rails around a paper desk. Formatting belongs to the
+   writing column, so its idle fade never leaves a gap above Tabs or Research. */
+body.glow-dashboard #editor-container{--research-width:clamp(320px,28vw,420px);}
+body.glow-dashboard #editor-container .editor-toolbar{flex:none;z-index:30;margin-right:0;min-height:64px;}
+body.glow-dashboard #editor-container .editor-body{position:relative;overflow:hidden;transition:padding-right 220ms ease;}
+body.glow-dashboard #editor-container.has-docked-research{right:0;}
+body.glow-dashboard #editor-container.has-docked-research .editor-toolbar{margin-right:0;}
+body.glow-dashboard #editor-container.has-docked-research .editor-body{padding-right:var(--research-width);}
+body.glow-dashboard #editor-container .editor-writing-desk{flex:1;min-width:0;min-height:0;overflow:auto;scrollbar-gutter:stable;display:flex;flex-direction:column;align-items:center;position:relative;background:var(--ui-page);}
+body.glow-dashboard #editor-container .editor-format-bar{position:sticky;top:0;left:0;z-index:10;flex:none;align-self:stretch;box-sizing:border-box;width:100%;min-width:0;min-height:46px;padding:6px 16px;background:var(--ui-surface);border-color:var(--ui-edge);flex-wrap:wrap;}
+body.glow-dashboard #editor-container .editor-area{flex:none;box-sizing:border-box;width:calc(100% - 48px);max-width:794px;min-height:1123px;margin:28px auto 64px;border-radius:0;padding:72px clamp(24px,5vw,72px) 96px;overflow:visible;box-shadow:0 2px 4px rgb(0 0 0/.03),0 12px 36px rgb(0 0 0/.04);background-color:var(--ui-surface);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888477' opacity='.035' filter='url(%23n)' d='M0 0h140v140H0z'/%3E%3C/svg%3E");}
+body.glow-dashboard #editor-container .editor-textarea{min-height:950px;}
+body.glow-dashboard #editor-container .editor-tabs-rail{z-index:11;padding-top:24px;}
+body.glow-dashboard #editor-container .editor-tabs-label{font:600 11px/1.4 'Instrument Sans',sans-serif;letter-spacing:.06em;padding-bottom:12px;}
+body.glow-dashboard #editor-container :is(.editor-tabs-note,.editor-tab-pro-badge){color:var(--ui-muted);}
+body.glow-dashboard #editor-container :is(.fmt-font-select,.fmt-size-label){font-family:'Instrument Sans',sans-serif;color:var(--ui-ink);background:var(--ui-surface);}
+body.glow-dashboard #editor-container .fmt-btn:not(.fmt-color-btn){color:var(--ui-muted);}
+body.glow-dashboard #editor-container .fmt-btn.active{background:var(--ui-selected);color:var(--ui-accent);}
+
+/* Portalled menus use the same semantic colors as the workspace. */
+body.glow-dashboard :is(#editor-tools-menu,#editor-audio-dropdown,#editor-focus-dropdown,#selection-popup){--text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);--bg-card:var(--ui-surface);--bg-elevated:var(--ui-raised);--accent:var(--ui-accent);--accent-soft:var(--ui-selected);--border:var(--ui-edge);--hover-bg:var(--ui-hover);font-family:'Instrument Sans',sans-serif;background:var(--ui-surface)!important;color:var(--ui-ink)!important;border:1px solid var(--ui-edge)!important;border-radius:16px!important;box-shadow:0 12px 36px rgb(0 0 0/.15)!important;backdrop-filter:none;-webkit-backdrop-filter:none;overflow-y:auto;overscroll-behavior:contain;max-width:calc(100vw - 24px);}
+body.glow-dashboard #editor-tools-menu{width:292px;padding:8px;}
+body.glow-dashboard .session-menu-heading{padding:12px 12px 10px;font:600 12px/1.5 'Instrument Sans',sans-serif;letter-spacing:.04em;color:var(--ui-muted);}
+body.glow-dashboard .session-menu-heading span{display:block;margin-top:4px;font-size:12px;font-weight:400;letter-spacing:0;}
+body.glow-dashboard #editor-tools-menu .menu-row{min-height:44px;gap:12px;padding:10px 12px;font:500 14px/1.4 'Instrument Sans',sans-serif;color:var(--ui-ink);}
+body.glow-dashboard #editor-tools-menu .menu-row svg{width:18px;height:18px;color:var(--ui-accent);}
+body.glow-dashboard #editor-tools-menu :is(#tools-research-row,#tools-fullscreen-row){border-top:1px solid var(--ui-edge-soft);border-radius:0;margin-top:6px;padding-top:14px;}
+body.glow-dashboard #editor-tools-menu .menu-row-input{height:32px;background:var(--ui-field);border-color:var(--ui-edge);color:var(--ui-ink);}
+body.glow-dashboard #editor-tools-menu .menu-row-toggle{background:var(--ui-field-edge);}
+body.glow-dashboard #editor-tools-menu .menu-row-toggle.on{background:var(--ui-primary);}
+body.glow-dashboard #editor-tools-menu .menu-row-toggle.on .menu-row-toggle-thumb{background:var(--ui-on-primary);}
+body.glow-dashboard :is(#editor-tools-menu,#editor-audio-dropdown,#editor-focus-dropdown) :is(button,input,select):focus-visible{outline:2px solid var(--ui-accent);outline-offset:-2px;}
+body.glow-dashboard #editor-audio-dropdown{width:350px;padding:8px;}
+body.glow-dashboard #editor-audio-dropdown .audio-section{padding:12px;border-top:1px solid var(--ui-edge-soft);}
+body.glow-dashboard #editor-audio-dropdown .audio-section-label{font:600 11px/1.4 'Instrument Sans',sans-serif;color:var(--ui-muted);letter-spacing:.06em;margin-bottom:12px;}
+body.glow-dashboard #editor-audio-dropdown .typewriter-select-wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+body.glow-dashboard #editor-audio-dropdown .typewriter-select-label{font-size:13px;color:var(--ui-ink);}
+body.glow-dashboard #editor-audio-dropdown .typewriter-pack-select{min-width:116px;max-width:150px;min-height:36px;padding:6px;border:1px solid var(--ui-edge);border-radius:8px;background:var(--ui-field);color:var(--ui-ink);font:500 12px 'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-audio-dropdown .audio-track{display:grid;grid-template-columns:32px minmax(0,1fr) 80px;align-items:center;gap:12px;box-sizing:border-box;min-height:52px;padding:10px 12px;margin-block:4px;border-radius:10px;}
+body.glow-dashboard #editor-audio-dropdown .audio-track-name{font-size:13px;color:var(--ui-ink);}
+body.glow-dashboard #editor-audio-dropdown :is(.audio-play-btn,.audio-ctrl-btn){display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--ui-edge);border-radius:9px;background:var(--ui-raised);color:var(--ui-accent);}
+body.glow-dashboard #editor-audio-dropdown .audio-play-btn.playing{background:var(--ui-primary);color:var(--ui-on-primary);}
+body.glow-dashboard #editor-audio-dropdown input[type=range]{width:100%;accent-color:var(--ui-accent);}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-input{min-width:0;min-height:36px;background:var(--ui-field);border-color:var(--ui-edge);color:var(--ui-ink);}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-status{margin:12px 0 0;font:400 12px/1.5 'Instrument Sans',sans-serif;color:var(--ui-muted);overflow-wrap:anywhere;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-player{margin-top:12px;width:100%;min-height:200px;background:#000;border-radius:8px;overflow:hidden;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-player iframe{display:block;width:100%;height:200px;border:0;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-player[hidden]{display:none;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-controls{align-items:center;gap:10px;min-width:0;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-controls .audio-play-btn{flex:0 0 32px;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-seek{flex:1 1 0;min-width:0;width:0;accent-color:var(--ui-accent);}
+body.glow-dashboard #editor-audio-dropdown #audio-yt-vol{flex:0 0 72px;width:72px;min-width:0;}
+body.glow-dashboard #editor-focus-dropdown .focus-drop-header{color:var(--ui-accent);border-color:var(--ui-selected-edge);background:var(--ui-selected);}
+body.glow-dashboard #editor-focus-dropdown .focus-drop-desc{color:var(--ui-muted)!important;}
+body.glow-dashboard #editor-focus-dropdown .focus-big-toggle{background:var(--ui-raised)!important;border-color:var(--ui-edge)!important;color:var(--ui-ink);}
+
+/* Research is part of the editor body, below the full-width navigation. */
+body.glow-dashboard #editor-container #research-drawer{position:absolute;inset:0 0 0 auto!important;height:auto!important;width:var(--research-width);max-width:100%;z-index:20;background:var(--ui-surface);color:var(--ui-ink);border-color:var(--ui-edge);border-radius:0;box-shadow:none;padding:24px 20px 64px;overflow:hidden;font:400 14px/1.6 'Instrument Sans',sans-serif;transition:transform 220ms cubic-bezier(.2,.8,.2,1),visibility 220ms;visibility:hidden;}
+body.glow-dashboard #editor-container #research-drawer.open{visibility:visible;transform:translateX(0);}
+body.glow-dashboard #research-drawer .research-drawer-header{margin-bottom:20px;}
+body.glow-dashboard #research-drawer .research-drawer-title{font:600 18px/1.4 'Archivo',sans-serif;color:var(--ui-ink);}
+body.glow-dashboard #research-drawer .research-drawer-close{width:32px;height:32px;align-items:center;justify-content:center;background:var(--ui-raised);color:var(--ui-muted);}
+body.glow-dashboard #research-drawer .research-tabs{padding:4px;background:var(--ui-raised);border-color:var(--ui-edge);}
+body.glow-dashboard #research-drawer .research-tab{min-height:36px;font:500 13px 'Instrument Sans',sans-serif;color:var(--ui-muted);}
+body.glow-dashboard #research-drawer .research-tab.active{background:var(--ui-surface);color:var(--ui-accent);box-shadow:0 1px 3px rgb(0 0 0/.08);}
+body.glow-dashboard #research-drawer :is(.research-input,#gem-input){min-width:0;min-height:40px;background:var(--ui-field);border-color:var(--ui-edge);color:var(--ui-ink);font:400 14px/1.5 'Instrument Sans',sans-serif;}
+body.glow-dashboard #research-drawer :is(.research-submit-btn,#gem-send){background:var(--ui-primary);color:var(--ui-on-primary);border-radius:8px;}
+body.glow-dashboard #research-drawer :is(.research-quota,.research-hint){color:var(--ui-muted);font-size:12px;line-height:1.5;}
+body.glow-dashboard #research-drawer #gem-box{background:var(--ui-field);border-color:var(--ui-edge);box-shadow:none;border-radius:12px;margin:8px 0 16px;}
+body.glow-dashboard #research-drawer :is(.research-result-card,.research-alt-card,.research-chat-bubble){background:var(--ui-raised);border-color:var(--ui-edge);border-radius:12px;color:var(--ui-ink);}
+body.glow-dashboard #research-drawer :is(.research-result-title,.research-alt-title,.research-detail-body){color:var(--ui-ink);}
+body.glow-dashboard #research-drawer :is(.research-back-btn,.research-expand-btn){min-height:32px;color:var(--ui-accent);border-color:var(--ui-edge);}
+body.glow-dashboard #research-drawer :is(.research-result-extract,.research-alt-snippet){color:var(--ui-muted);}
+body.glow-dashboard #research-drawer .research-detail{min-height:0;overflow:auto;}
+
+/* Clear, calm countdowns: no flashing, shake, or pulsing danger numerals. */
+body.glow-dashboard :is(#tab-warning,#danger-countdown,#duel-countdown-overlay){background:var(--ui-backdrop,rgb(16 28 20/.46));backdrop-filter:none;-webkit-backdrop-filter:none;padding:24px;transition:opacity 180ms ease,visibility 180ms ease;font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #danger-countdown::before{display:none;}
+body.glow-dashboard :is(.session-notice-card,.danger-countdown-inner,.duel-countdown-content){box-sizing:border-box;width:min(100%,460px);max-width:460px;padding:32px;border:1px solid var(--ui-edge);border-radius:28px;background:var(--ui-surface);color:var(--ui-ink);box-shadow:0 20px 64px rgb(0 0 0/.15);text-align:left;}
+body.glow-dashboard .session-notice-eyebrow{display:block;font:600 11px/1.5 'Instrument Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ui-muted);}
+body.glow-dashboard #tab-warning h2{font:600 26px/1.2 'Archivo',sans-serif;color:var(--ui-ink);margin:12px 0;}
+body.glow-dashboard #tab-warning p{font:400 14px/1.6 'Instrument Sans',sans-serif;color:var(--ui-muted);margin:0;}
+body.glow-dashboard .session-countdown-value{display:flex;align-items:baseline;gap:12px;margin:24px 0;padding:20px 0;border-block:1px solid var(--ui-edge);color:var(--ui-muted);font-size:12px;}
+body.glow-dashboard :is(#tab-warning-timer,#danger-countdown-num,#duel-countdown-timer){display:block;font:500 72px/1 'DM Mono',monospace;letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:var(--ui-accent);animation:none!important;text-shadow:none;}
+body.glow-dashboard .session-notice-footnote{font-size:12px;color:var(--ui-muted);}
+body.glow-dashboard #danger-countdown .danger-countdown-label{font:600 14px/1.5 'Instrument Sans',sans-serif;letter-spacing:0;color:var(--ui-accent);margin:0 0 24px;opacity:1;}
+body.glow-dashboard #danger-countdown-num{margin:20px 0 16px;}
+body.glow-dashboard #danger-countdown .danger-countdown-sub{font:400 14px/1.6 'Instrument Sans',sans-serif;color:var(--ui-muted);margin:16px 0 0;}
+body.glow-dashboard #duel-countdown-overlay h2{font:600 22px/1.3 'Archivo',sans-serif;letter-spacing:0;color:var(--ui-ink);}
+body.glow-dashboard #duel-countdown-overlay :is(.duel-countdown-vs,.duel-countdown-duration){color:var(--ui-muted);font-size:14px;}
+body.glow-dashboard #duel-countdown-overlay .duel-countdown-rules{background:var(--ui-raised);border-color:var(--ui-edge);border-radius:12px;padding:16px;margin:20px 0;font-size:13px;color:var(--ui-ink);}
+@media(max-width:1100px){body.glow-dashboard #editor-container{--research-width:280px;}body.glow-dashboard #editor-container.has-docked-research .editor-body{padding-right:var(--research-width);}body.glow-dashboard #editor-container #research-drawer{box-shadow:none;}}
+@media(max-width:600px){body.glow-dashboard #editor-container .editor-area{width:calc(100% - 24px);margin:16px auto 40px;min-height:calc((100vw - 24px)*1.414);padding:36px 24px 64px;}body.glow-dashboard #editor-container .editor-textarea{min-height:500px;}body.glow-dashboard #editor-container .editor-toolbar{padding:10px 12px;}body.glow-dashboard #editor-container .editor-format-bar{padding:6px 8px;gap:2px;}body.glow-dashboard :is(.session-notice-card,.danger-countdown-inner,.duel-countdown-content){padding:24px;}}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard #editor-container :is(.editor-body,#research-drawer,.chrome-el),body.glow-dashboard :is(#tab-warning,#danger-countdown,#duel-countdown-overlay){transition:none!important;animation:none!important;}}
+body.glow-dashboard #title-prompt-modal{background:var(--ui-backdrop,rgb(16 28 20/.46));backdrop-filter:none;}
+body.glow-dashboard #title-prompt-modal>.modal{max-width:440px!important;padding:32px;border-radius:28px;background:var(--ui-surface);color:var(--ui-ink);border:1px solid var(--ui-edge);box-shadow:0 20px 64px rgb(0 0 0/.15);font-family:'Instrument Sans',sans-serif;text-align:left;}
+body.glow-dashboard #title-prompt-modal h2{font:600 26px/1.25 'Archivo',sans-serif;letter-spacing:-.02em;color:var(--ui-ink);margin-bottom:12px;}
+body.glow-dashboard #title-prompt-modal p{font:400 14px/1.6 'Instrument Sans',sans-serif;color:var(--ui-muted);margin-bottom:24px;}
+body.glow-dashboard #title-prompt-input{background:var(--ui-field);color:var(--ui-ink);border-color:var(--ui-field-edge);border-radius:10px;min-height:44px;}
+body.glow-dashboard :is(#title-prompt-modal,#session-complete,#session-failed,#duel-countdown-overlay) .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border:1px solid var(--ui-edge);border-radius:12px;background:var(--ui-surface);color:var(--ui-ink);font:600 14px/1.4 'Instrument Sans',sans-serif;box-shadow:none;}
+body.glow-dashboard :is(#title-prompt-modal,#session-complete,#session-failed,#duel-countdown-overlay) .btn-primary{background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent;}
+body.glow-dashboard :is(#session-complete,#session-failed){background:var(--ui-page);color:var(--ui-ink);padding:24px;overflow-y:auto;font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard :is(#session-complete,#session-failed)::before{display:none;}
+body.glow-dashboard :is(#session-complete,#session-failed) h2{font:600 clamp(26px,4vw,36px)/1.2 'Archivo',sans-serif;letter-spacing:-.03em;color:var(--ui-ink);text-shadow:none;}
+body.glow-dashboard #session-failed .session-failed-icon{width:48px;height:48px;object-fit:contain;margin-bottom:20px;filter:grayscale(1);}
+body.glow-dashboard #session-failed p{max-width:420px;color:var(--ui-muted);text-align:center;font-size:15px;line-height:1.6;}
+body.glow-dashboard #session-complete .session-stats{gap:32px;padding:24px;background:var(--ui-surface);border:1px solid var(--ui-edge);border-radius:16px;}
+body.glow-dashboard #session-complete .session-stat-value{font:500 clamp(24px,5vw,36px)/1.3 'DM Mono',monospace;color:var(--ui-accent);letter-spacing:-.04em;}
+body.glow-dashboard #session-complete .session-stat-label{font-size:12px;letter-spacing:0;color:var(--ui-muted);text-transform:none;margin-top:6px;}
+@media(max-width:600px){body.glow-dashboard #session-complete .session-stats{gap:20px;padding:20px;}body.glow-dashboard #session-complete>div:last-child{flex-wrap:wrap;justify-content:center;}body.glow-dashboard #title-prompt-modal>.modal{padding:24px;}}
+body.glow-dashboard #research-drawer .research-empty-state{padding:28px 4px;color:var(--ui-muted);font-size:13px;line-height:1.65;}
+body.glow-dashboard #research-drawer .research-empty-state svg{display:block;color:var(--ui-accent);margin-bottom:16px;}
+body.glow-dashboard #research-drawer .research-empty-state strong{display:block;font-weight:600;color:var(--ui-ink);margin-bottom:8px;}
+body.glow-dashboard #research-drawer .research-chat-empty{padding:20px 4px;font:400 13px/1.65 'Instrument Sans',sans-serif;color:var(--ui-muted);}
+body.glow-dashboard #research-drawer .research-chat-user{background:var(--ui-selected);color:var(--ui-ink);border-color:var(--ui-selected-edge);}
+body.glow-dashboard #research-drawer .research-chat-err{color:var(--ui-danger);border-color:var(--ui-danger);background:var(--ui-surface);}
+body.glow-dashboard #research-drawer :is(input,textarea,button):focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px;}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard #research-drawer .research-chat-loading span{animation:none;}}
+/* Neutral switch tracks and persistent portal colors, including outcome screens. */
+body.glow-dashboard #editor-focus-dropdown .focus-big-toggle{min-height:44px!important;padding:10px 12px!important;gap:12px;font:500 14px/1.4 'Instrument Sans',sans-serif;border-color:var(--ui-edge)!important;background:var(--ui-field)!important;color:var(--ui-ink)!important;}
+body.glow-dashboard #editor-focus-dropdown .focus-toggle-track{box-sizing:border-box;flex:0 0 38px;width:38px;height:24px;border-radius:12px;border:1px solid var(--ui-edge);background:var(--ui-edge)!important;}
+body.glow-dashboard #editor-focus-dropdown .focus-toggle-thumb{top:2px;left:2px;width:18px;height:18px;box-shadow:0 1px 3px rgb(0 0 0/.14);background:var(--ui-surface);}
+body.glow-dashboard #editor-focus-dropdown .focus-big-toggle.on{border-color:var(--ui-selected-edge)!important;background:var(--ui-selected)!important;}
+body.glow-dashboard #editor-focus-dropdown .focus-big-toggle.on .focus-toggle-track{border-color:var(--ui-primary);background:var(--ui-primary)!important;}
+body.glow-dashboard #editor-focus-dropdown .focus-big-toggle.on .focus-toggle-thumb{transform:translateX(14px);background:var(--ui-on-primary);}
+body.glow-dashboard #editor-focus-dropdown .focus-toggle-label{font-weight:500;color:var(--ui-ink);}
+body.glow-dashboard #toast{background:var(--ui-surface);color:var(--ui-ink);border:1px solid var(--ui-edge);border-radius:14px;box-shadow:0 8px 24px rgb(0 0 0/.1);font:500 14px/1.5 'Instrument Sans',sans-serif;max-width:calc(100vw - 48px);}
+body.glow-dashboard #toast.success{border-color:var(--ui-selected-edge);background:var(--ui-surface);box-shadow:0 8px 24px rgb(0 0 0/.1);}
+body.glow-dashboard #toast.error{border-color:var(--ui-danger);background:var(--ui-surface);color:var(--ui-danger);}
+body.glow-dashboard #toast.warning{border-color:var(--ui-warning);color:var(--ui-ink);}
+body.glow-dashboard #tab-warning .session-notice-card{width:240px;padding:32px;text-align:center;}
+body.glow-dashboard #tab-warning .session-countdown-value{display:flex;flex-direction:column;align-items:center;gap:10px;border:0;padding:0;margin:0;font-size:14px;}
+body.glow-dashboard #editor-audio-dropdown .audio-separator{display:none;}
+body.glow-dashboard #editor-audio-dropdown .audio-track.active .audio-play-btn{background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent;}
+body.glow-dashboard #editor-audio-dropdown .audio-track.loading .audio-play-btn{background:var(--ui-raised);color:var(--ui-accent);}
+@media(prefers-reduced-motion:no-preference){body.glow-dashboard #editor-audio-dropdown .audio-track.loading .audio-play-btn svg{animation:session-audio-loading 800ms linear infinite;}@keyframes session-audio-loading{to{transform:rotate(360deg);}}}
+/* Paper viewport zoom: only the page is transformed; its stage owns scrolling. */
+body.glow-dashboard #editor-container .editor-writing-desk{align-items:stretch;}
+body.glow-dashboard #editor-container .editor-paper-stage{position:relative;flex:none;align-self:flex-start;margin:28px auto 64px;}
+body.glow-dashboard #editor-container .editor-paper-stage .editor-area{max-width:none;margin:0;transform-origin:top left;}
+body.glow-dashboard #editor-container .editor-paper-zoom{display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--ui-edge);border-radius:10px;transition:opacity 180ms ease;}
+body.glow-dashboard #editor-container .editor-paper-zoom button{display:grid;place-items:center;min-width:28px;height:28px;padding:0 6px;border:0;border-radius:7px;background:none;color:var(--ui-muted);font:500 13px/1 'DM Mono',monospace;cursor:pointer;}
+body.glow-dashboard #editor-container .editor-paper-zoom button:disabled{opacity:.35;cursor:default;}
+body.glow-dashboard #editor-container .editor-paper-zoom button:not(:disabled):hover{color:var(--ui-accent);background:var(--ui-selected);}
+body.glow-dashboard #editor-container.chrome-hidden .editor-paper-zoom{opacity:0;pointer-events:none;}
+body.glow-dashboard #danger-countdown{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+body.glow-dashboard #danger-countdown .danger-countdown-label{padding:0;border:0;border-radius:0;background:none;}
+/* Danger feedback belongs to the navigation edge, with hearts in the toolbar. */
+body.glow-dashboard #editor-container .danger-progress{position:relative;top:auto;left:auto;right:auto;flex:none;height:3px;min-height:3px;padding:0;margin:0;gap:0;background:var(--ui-edge-soft);z-index:31;}
+body.glow-dashboard #editor-container.dangerous-active .danger-progress{padding:0;margin:0;}
+body.glow-dashboard #editor-container .danger-progress-track{height:3px;border:0;border-radius:0;background:var(--ui-edge-soft);}
+body.glow-dashboard #editor-container .danger-progress-bar{border-radius:0;background:var(--ui-danger);}
+body.glow-dashboard #editor-container .editor-toolbar .editor-hearts{display:flex;gap:5px;padding:0 8px;margin:0;border:0;background:none;}
+@media(max-width:600px){body.glow-dashboard #editor-container .editor-paper-stage{margin:16px auto 40px;}body.glow-dashboard #editor-container .editor-paper-zoom{gap:0;}body.glow-dashboard #editor-container .editor-paper-zoom button{min-width:24px;padding:0 4px;}}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard #editor-container .editor-paper-zoom{transition:none;}}
+/* Add-time confirmation is a message followed by compact, aligned actions. */
+body.glow-dashboard #editor-container #add-time-confirm{box-sizing:border-box;flex-direction:column;align-items:stretch;gap:0;top:calc(100% + 8px);width:280px;max-width:calc(100vw - 32px);padding:16px;}
+body.glow-dashboard #editor-container #add-time-confirm .add-time-confirm-text{width:100%;margin:0;color:var(--ui-ink);font:400 14px/1.5 'Instrument Sans',sans-serif;white-space:normal;}
+body.glow-dashboard #editor-container #add-time-confirm .add-time-confirm-actions{display:flex;align-items:center;gap:8px;width:100%;margin:16px 0 0;}
+body.glow-dashboard #editor-container #add-time-confirm .btn{display:inline-flex;align-items:center;justify-content:center;flex:1 1 0;box-sizing:border-box;width:auto;min-width:0;height:36px;min-height:36px;max-height:36px;aspect-ratio:auto;padding:8px 12px;border:1px solid var(--ui-edge);border-radius:9px!important;background:var(--ui-field);color:var(--ui-ink);box-shadow:none!important;font:600 13px/1.4 'Instrument Sans',sans-serif;white-space:nowrap;letter-spacing:0;text-transform:none;}
+body.glow-dashboard #editor-container #add-time-confirm .btn-primary{background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent;}
+body.glow-dashboard #editor-container .editor-timer-toggle{justify-content:center;width:44px;min-width:44px;height:36px;padding:6px 10px;flex:none;}
+body.glow-dashboard #editor-container .editor-add-time-btn{min-width:48px;height:36px;padding:6px 10px;font:600 13px/1 'DM Mono',monospace;white-space:nowrap;}
+@media(hover:hover){body.glow-dashboard #editor-container #add-time-confirm .btn-primary:hover{background:var(--ui-primary-hover);}body.glow-dashboard #editor-container #add-time-confirm .btn-ghost:hover{background:var(--ui-hover);}}
+/* Confirmations are also used during a session, when app chrome is hidden. */
+body.glow-dashboard #confirm-overlay{background:var(--ui-backdrop)!important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+body.glow-dashboard #confirm-overlay .confirm-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 32px));max-width:440px;padding:24px;border:1px solid var(--ui-edge);border-radius:14px!important;background:var(--ui-surface);color:var(--ui-ink);box-shadow:0 16px 48px rgb(0 0 0/.16);text-align:left;}
+body.glow-dashboard #confirm-overlay .confirm-message{margin:0 0 24px;color:var(--ui-ink);font:500 16px/1.6 'Instrument Sans',sans-serif;overflow-wrap:anywhere;}
+body.glow-dashboard #confirm-overlay .confirm-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;}
+body.glow-dashboard #confirm-overlay .btn{display:inline-flex;align-items:center;justify-content:center;min-width:88px;min-height:40px;padding:10px 16px;border:1px solid var(--ui-edge);border-radius:9px!important;box-shadow:none;font:600 14px/1.4 'Instrument Sans',sans-serif;letter-spacing:0;text-transform:none;}
+body.glow-dashboard #confirm-overlay .btn-ghost{background:var(--ui-field);color:var(--ui-ink);}
+body.glow-dashboard #confirm-overlay .btn-primary{background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent;}
+body.glow-dashboard #confirm-overlay button:focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px;}
+/* A continuous writing surface, without page edges or an A4 minimum height. */
+body.glow-dashboard #editor-container.pageless-mode .editor-paper-stage{margin-block:20px;}
+body.glow-dashboard #editor-container.pageless-mode .editor-area{min-height:var(--pageless-height,400px);padding:32px clamp(24px,5vw,72px);background-color:transparent;background-image:none;box-shadow:none;border:0;}
+body.glow-dashboard #editor-container.pageless-mode .editor-textarea{min-height:calc(var(--pageless-height,400px) - 64px);}

@@ -15,73 +15,47 @@
   <title>iWrite4.me — Dashboard</title>
   
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,900&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Space+Grotesk:wght@500;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
   <!-- Fraunces (serif) + Caveat (handwriting): used by the "Test Mode" (Writer's Desk) theme -->
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Story+Script&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1">
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
-  <link rel="stylesheet" href="/css/style.css?v=143">
+  <link rel="stylesheet" href="/css/style.css?v=147">
+  <link rel="stylesheet" href="/css/redesign.css?v=27">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="stylesheet" href="/css/feedback.css?v=5">
+  <link rel="stylesheet" href="/css/daily-limit.css?v=2">
+  <link rel="stylesheet" href="/css/click-payment.css?v=2">
+  <link rel="stylesheet" href="/css/ui-polish.css?v=3">
+  <link rel="stylesheet" href="/css/glow-widgets.css?v=2">
+  <link rel="stylesheet" href="/css/staging-chrome.css?v=3">
+  <link rel="stylesheet" href="/css/staging-surfaces.css?v=3">
+  <link rel="stylesheet" href="/css/sidebar-redesign.css?v=2">
+  <link rel="stylesheet" href="/css/workspace-pages.css?v=3">
+  <link rel="stylesheet" href="/css/app-editorial.css?v=27">
+  <link rel="stylesheet" href="/css/app-surfaces.css?v=2">
+  <link rel="stylesheet" href="/css/session-workspace.css?v=9">
+  <link rel="stylesheet" href="/css/auth-editorial.css?v=1">
 </head>
-<body>
+<body class="glow-dashboard">
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
   <div id="mobile-gate" aria-hidden="true">
     <div class="mobile-gate-inner">
-      <div class="mobile-gate-emoji">&#x1F4BB;</div>
+      <img class="mobile-gate-mark" src="/media/iwrite-logo.png" alt="">
       <div class="mobile-gate-logo">iWrite4.me</div>
       <h1>Best on a bigger screen</h1>
       <p>Focused writing needs a keyboard and room to think. Please open iWrite4.me on a laptop or PC to start writing.</p>
     </div>
   </div>
   <div id="auth-view" class="auth-container" style="display:none">
-    <div class="auth-monsters-panel auth-visual-panel">
-      <div class="auth-visual-bg" aria-hidden="true">
-        <span class="auth-visual-bg-layer active" style="background-image: url('/media/auth-writing-background.jpeg')"></span>
-        <span class="auth-visual-bg-layer" style="background-image: url('/media/auth-slide-2.jpg')"></span>
-        <span class="auth-visual-bg-layer" style="background-image: url('/media/auth-slide-3-desk.jpg')"></span>
+    <aside class="auth-intro" aria-label="About iWrite">
+      <div class="auth-intro-content">
+        <p class="auth-intro-brand">iWrite4.me</p>
+        <h1>A place to write,<br>and keep writing.</h1>
+        <p>Make space for your words, one session at a time.</p>
       </div>
-      <div class="auth-visual-content">
-        <div class="auth-visual-slides" aria-live="polite">
-          <article class="auth-visual-slide active">
-            <div class="auth-visual-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M5 19.5c4.5-2.1 9.1-2.1 14 0V6.2c-4.9-2.2-9.5-2.2-14 0v13.3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                <path d="M8 8.6c2.6-.7 5.2-.7 8 0M8 12c2.6-.7 5.2-.7 8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <h1>First step to a finished draft</h1>
-            <p>Write in a calmer room, then keep the streak going with sessions, goals, and real progress.</p>
-          </article>
-          <article class="auth-visual-slide">
-            <div class="auth-visual-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 4v16M5 12h14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
-                <path d="M7.5 6.5c3-2 6-2 9 0M7.5 17.5c3 2 6 2 9 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <h1>Keep the page alive</h1>
-            <p>Focused writing works best when the room is soft, but the session still asks you to stay.</p>
-          </article>
-          <article class="auth-visual-slide">
-            <div class="auth-visual-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path d="M7 5h10v14H7z" stroke="currentColor" stroke-width="1.8"/>
-                <path d="M9.5 8h5M9.5 11h5M9.5 14h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <h1>Return before it fades</h1>
-            <p>Drafts grow through repeated returns: one session, one streak, one page saved before it is lost.</p>
-          </article>
-        </div>
-        <div class="auth-visual-dots" aria-label="Auth welcome slides">
-          <button type="button" class="active" data-auth-slide="0" aria-label="Show first slide"></button>
-          <button type="button" data-auth-slide="1" aria-label="Show second slide"></button>
-          <button type="button" data-auth-slide="2" aria-label="Show third slide"></button>
-        </div>
-      </div>
-      <div id="auth-monsters"></div>
-    </div>
+    </aside>
     <div class="auth-form-panel">
       <a href="/" class="auth-back-btn" id="auth-back-global">&#8592; Back</a>
       <div class="auth-card">
@@ -211,78 +185,78 @@
     <div class="app-container">
       <!-- Mobile sidebar backdrop — must be inside app-container so z-index is in the same stacking context as .sidebar -->
       <div class="mobile-sidebar-overlay" id="mobile-sidebar-overlay"></div>
-      <aside class="sidebar" id="sidebar">
+      <aside class="sidebar sidebar-v2" id="sidebar">
         <div class="sidebar-header">
-          <div style="display:flex;flex-direction:column">
-            <a href="/" class="logo">iWrite4.me</a>
-            <span class="version-tag" id="version-tag">v...</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="streak-indicator" id="streak-badge" style="display:none;cursor:pointer" onclick="App.openStreakPopup()">
-              <span class="streak-fire">&#x1F525;</span>
-              <span id="streak-count">0</span>
-            </div>
-            <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close sidebar">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+          <button class="sidebar-logo-btn" id="sidebar-logo-btn" title="Collapse sidebar">
+            <img class="logo-mark" src="/media/iwrite-logo.png" alt="">
+            <span class="sidebar-brand-copy"><span class="logo">iWrite4.me</span></span>
+          </button>
+          <div class="sidebar-header-controls">
+            <button class="sidebar-collapse-chevron" id="sidebar-collapse-chevron" title="Collapse sidebar" aria-label="Collapse sidebar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
+            <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close sidebar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M6 18L18 6"/></svg></button>
           </div>
         </div>
-        <nav class="sidebar-nav">
-          <button class="sidebar-nav-item active" data-view="dashboard">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            Dashboard
+        <div class="sidebar-compose-wrap"><button type="button" class="sidebar-compose" id="sidebar-new-session" aria-label="Start writing" title="Start writing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="sidebar-label">Start writing</span><span class="sidebar-compose-detail" aria-hidden="true">↗</span></button></div>
+        <nav class="sidebar-nav" aria-label="Main navigation">
+          <div class="sidebar-group" role="group" aria-label="Workspace"><div class="sidebar-group-label" aria-hidden="true">Workspace</div>
+<button class="sidebar-nav-item active" data-view="dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 9v12"/></svg>
+            <span class="sidebar-label">Dashboard</span>
           </button>
-          <button class="sidebar-nav-item" data-view="documents">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
-            Sessions
+<button class="sidebar-nav-item" data-view="documents">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2zM8 3v18M11 8h5M11 12h5M11 16h3"/></svg>
+            <span class="sidebar-label">Sessions</span>
           </button>
-          <button class="sidebar-nav-item" data-view="stories">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
-            Community
+          </div>
+          <div class="sidebar-group" role="group" aria-label="Connect"><div class="sidebar-group-label" aria-hidden="true">Connect</div>
+<button class="sidebar-nav-item" data-view="stories">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a7 7 0 01-7 7H7l-4 3V10a7 7 0 017-7h3a7 7 0 017 7zM7 9h9M7 13h6"/></svg>
+            <span class="sidebar-label">Community</span>
             <span class="notif-badge" id="notif-badge" style="display:none"></span>
             <span class="community-new-dot" id="community-new-dot" style="display:none;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:auto;flex-shrink:0"></span>
           </button>
-          <button class="sidebar-nav-item" data-view="leaderboard">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 21h8M12 17v4"/><path d="M7 4h10l-1 9H8L7 4z"/><path d="M7 8H4l1 4h2M17 8h3l-1 4h-2"/></svg>
-            Leaderboard
+<button class="sidebar-nav-item" data-view="leaderboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-9h5v9M9 21V4h6v17M15 21V8h5v13M2 21h20"/></svg>
+            <span class="sidebar-label">Leaderboard</span>
           </button>
-          <button class="sidebar-nav-item" data-view="duels">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            Duels
+<button class="sidebar-nav-item" data-view="duels" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3l6 6-2 2-5-5V3h1zM20 3l-6 6 2 2 5-5V3h-1zM6 17l11-11M18 17L7 6M3 16l5 5M16 21l5-5"/></svg>
+            <span class="sidebar-label">Duels</span>
             <span class="duels-lobby-pulse" id="duels-lobby-pulse" title="People looking for a duel" style="display:none"></span>
             <span class="nav-badge" id="duels-badge" style="display:none">0</span>
           </button>
-          <button class="sidebar-nav-item" data-view="friends">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            Friends
+<button class="sidebar-nav-item" data-view="friends">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0112 0v3M16 5a3 3 0 010 6M18 15a5 5 0 013 4v2"/></svg>
+            <span class="sidebar-label">Friends</span>
             <span class="nav-badge" id="friends-badge" style="display:none">0</span>
           </button>
-          <button class="sidebar-nav-item" data-view="my-profile" id="my-profile-nav-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span id="my-profile-nav-label">Profile</span>
+<button class="sidebar-nav-item" data-view="my-profile" id="my-profile-nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0116 0v2"/></svg>
+            <span class="sidebar-label" id="my-profile-nav-label">Profile</span>
           </button>
-          <div class="sidebar-divider" id="pro-profile-divider" style="display:none"></div>
-          <div class="sidebar-divider" id="upgrade-divider-top"></div>
-          <button class="sidebar-nav-item" data-view="upgrade" id="upgrade-nav-btn">
+          </div>
+          <div class="sidebar-utilities" role="group" aria-label="Utilities">
+<button class="sidebar-nav-item" data-view="settings" id="settings-nav-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--ui-sidebar)"/><circle cx="15" cy="17" r="3" fill="var(--ui-sidebar)"/></svg>
+            <span class="sidebar-label">Settings</span>
+          </button>
+<button class="sidebar-nav-item" data-view="support">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg>
+            <span class="sidebar-label">Support</span>
+          </button>
+<button class="sidebar-nav-item" data-view="help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3zM8 12l3 3 5-6"/></svg>
+            <span class="sidebar-label">Privacy &amp; Policy</span>
+          </button>
+          </div>
+          <div class="sidebar-plan-area"><div id="pro-profile-divider" hidden></div><div id="upgrade-divider-top" hidden></div><button class="sidebar-nav-item sidebar-plan-link" data-view="upgrade" id="upgrade-nav-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span class="upgrade-nav-label">Upgrade to Pro</span>
-          </button>
-          <div class="sidebar-divider" id="upgrade-divider-bottom"></div>
-          <button class="sidebar-nav-item" data-view="settings" id="settings-nav-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-            Settings
-          </button>
-          <button class="sidebar-nav-item" data-view="support">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            Support
-          </button>
-          <button class="sidebar-nav-item" data-view="help">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Help
-          </button>
+            <span class="sidebar-plan-copy"><span class="upgrade-nav-label sidebar-label">Upgrade to Pro</span><small>Your writing plan</small></span><span class="sidebar-plan-arrow" aria-hidden="true">↗</span>
+          </button><div id="upgrade-divider-bottom" hidden></div></div>
         </nav>
         <div class="sidebar-footer">
-          <div class="user-info" id="user-info-btn" style="cursor:pointer" title="Settings">
+          <button type="button" class="sidebar-streak" id="streak-badge" style="display:none" onclick="App.openStreakPopup()" title="View writing streak" aria-label="View writing streak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2c1 5-3 6-2 10 2-1 3-3 3-4 4 3 6 6 4 10a7 7 0 01-12-1c-2-5 3-8 3-11 1 2 1 3 2 3 0-3 2-5 2-7z"/></svg><span id="streak-count">0</span><span class="sidebar-streak-label">day streak</span><span class="sidebar-streak-arrow" aria-hidden="true">↗</span></button>
+          <div class="user-info" id="user-info-btn" role="button" tabindex="0" aria-label="Account settings" title="Account settings">
             <div class="user-avatar" id="user-avatar">?</div>
             <div class="user-details">
               <div class="user-name-row">
@@ -295,11 +269,11 @@
           <button class="sidebar-nav-item theme-toggle-btn" id="theme-toggle-btn" style="margin-top:8px;color:var(--text-muted)" title="Toggle theme">
             <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
             <svg class="theme-icon-light" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-            <span class="theme-toggle-label">Light Mode</span>
+            <span class="theme-toggle-label sidebar-label">Light Mode</span>
           </button>
           <button class="sidebar-nav-item" id="logout-btn" style="margin-top:8px;color:var(--text-muted)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Log Out
+            <span class="sidebar-label">Log Out</span>
           </button>
         </div>
       </aside>
@@ -309,66 +283,52 @@
         <div id="view-dashboard" class="view">
           <div class="dashboard-hero-row">
             <div class="dashboard-hero">
+              <img class="dashboard-hero-art" src="/media/hero-philosopher-statue.png?v=2" alt="">
               <div class="dashboard-hero-text">
                 <h1 id="greeting-text">Ready to write?</h1>
-                <p class="dashboard-hero-sub">Your writing journey continues. Pick up where you left off.</p>
+                <span class="dashboard-hero-kicker" id="hero-kicker">Your writing today</span>
+              </div>
+              <div class="td-hero-actions">
+                <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">START WRITING</button>
+                <button class="stories-icon-btn dashboard-notif-btn" id="dashboard-notif-btn" title="Notifications" aria-label="Notifications">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                </button>
                 <div class="online-indicator" id="online-indicator" style="display:none">
                   <span class="online-dot"></span>
                   <span id="online-count">0</span> <span id="online-writer-text">writers</span> online now
                 </div>
               </div>
-              <!-- Test Mode only: writer's-desk polaroid (photo emoji rotates daily) -->
-              <div class="td-hero-aside test-only" aria-hidden="true">
-                <div class="td-polaroid">
-                  <span class="td-polaroid-tape"></span>
-                  <div class="td-polaroid-photo" id="td-polaroid-photo">&#x2615;</div>
-                </div>
-              </div>
-              <div class="td-hero-actions">
-                <button class="btn btn-primary btn-large dashboard-start-btn" id="new-doc-btn">
-                  <span style="padding-right:10px;font-size:1.3em;line-height:1">&#x270F;&#xFE0F;</span> Start Writing
-                </button>
-              </div>
+              <p class="dashboard-session-quota" id="dashboard-session-quota" aria-live="polite"></p>
             </div>
-            <!-- Announcements carousel (renders only when there are announcements) -->
-            <div class="dashboard-announcements" id="dashboard-announcements" style="display:none"></div>
           </div>
 
           <!-- Username reminder -->
           <div id="username-reminder" style="display:none;align-items:center;gap:12px;padding:12px 16px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);margin-bottom:16px">
             <span style="font-size:13px;color:var(--text-primary);flex:1">You haven't set a username yet. Pick one so others can find you!</span>
-            <button class="btn btn-primary btn-small" onclick="App.switchView('profile')">Set Username</button>
+            <button class="btn btn-primary btn-small" onclick="App.switchView('settings')">Set Username</button>
           </div>
 
           <div class="dashboard-stats-row">
             <div class="dash-stat-card dash-stat-words">
-              <div class="dash-stat-emoji">&#x1F4DD;</div>
+              <div class="dash-stat-emoji" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h6"/></svg></div>
               <div class="dash-stat-value" id="total-words">0</div>
               <div class="dash-stat-label">Session Words</div>
             </div>
             <div class="dash-stat-card dash-stat-sessions" style="cursor:pointer" onclick="App.switchView('documents')" title="View all sessions">
-              <div class="dash-stat-emoji">&#x1F3AF;</div>
+              <div class="dash-stat-emoji" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="17" rx="3"/><path d="M8 2v4M16 2v4M4 10h16m-12 5 3 3 5-5"/></svg></div>
               <div class="dash-stat-value" id="total-sessions">0</div>
               <div class="dash-stat-label">Sessions Done</div>
             </div>
             <div class="dash-stat-card dash-stat-streak" style="cursor:pointer" onclick="App.openStreakPopup()">
-              <div class="dash-stat-emoji">&#x1F525;</div>
+              <div class="dash-stat-emoji" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3c1 5-4 5-2 9 1-2 3-2 4-4 4 4 5 8 1 12-5 4-12 0-11-5 0-3 3-5 3-7 0 3 2 3 2 3-1-4 2-6 3-8Z"/></svg></div>
               <div class="dash-stat-value" id="current-streak">0</div>
               <div class="dash-stat-label">Day Streak</div>
               <div class="dash-stat-sub" id="longest-streak-text">Best: 0</div>
             </div>
             <div class="dash-stat-card dash-stat-xp">
-              <div class="dash-stat-emoji">&#x2B50;</div>
+              <div class="dash-stat-emoji" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/></svg></div>
               <div class="dash-stat-value" id="total-xp">0</div>
               <div class="dash-stat-label">Total XP</div>
-            </div>
-            <!-- Test Mode only: level progress lives inline at the end of the stat bar -->
-            <div class="dash-level-segment test-only">
-              <div class="dls-head">
-                <span class="dls-label">Level <span id="td-level">1</span></span>
-                <span class="dls-xp" id="td-level-xp">0 / 100 XP</span>
-              </div>
-              <div class="dls-bar"><div class="dls-fill" id="td-level-fill" style="width:0%"></div></div>
             </div>
           </div>
 
@@ -383,96 +343,87 @@
           </div>
 
           <div class="dashboard-grid">
-            <div class="heatmap-section">
-              <div class="heatmap-header">
-                <h3 class="heatmap-title">Writing Activity</h3>
-                <span class="heatmap-total" id="heatmap-total"></span>
-              </div>
-              <div class="heatmap-scroll">
-                <div class="heatmap-grid" id="heatmap-grid"></div>
-              </div>
-              <div class="heatmap-footer">
-                <div class="heatmap-legend">
-                  <span class="heatmap-legend-label">Less</span>
-                  <div class="heatmap-legend-cell" data-level="0"></div>
-                  <div class="heatmap-legend-cell" data-level="1"></div>
-                  <div class="heatmap-legend-cell" data-level="2"></div>
-                  <div class="heatmap-legend-cell" data-level="3"></div>
-                  <div class="heatmap-legend-cell" data-level="4"></div>
-                  <span class="heatmap-legend-label">More</span>
-                </div>
-              </div>
-            </div>
-            <!-- Test Mode only: Today's Progress ring + Reflection stacked -->
-            <div class="td-mid-stack test-only">
-              <div class="td-progress-card">
-                <div class="td-progress-body">
-                  <div class="td-ring">
-                    <svg viewBox="0 0 120 120" width="120" height="120">
-                      <circle class="td-ring-track" cx="60" cy="60" r="52"></circle>
-                      <circle class="td-ring-fill" id="td-ring-fill" cx="60" cy="60" r="52"></circle>
-                    </svg>
-                    <span class="td-ring-emoji">&#x1F331;</span>
+            <section class="glow-activity" aria-labelledby="glow-activity-title">
+              <div class="glow-activity-heading"><div><h2 id="glow-activity-title">Writing activity</h2><p class="glow-reading"><strong id="glow-week-words">0</strong> <span>words</span></p></div><label class="glow-range"><span class="glow-status-dot" aria-hidden="true"></span><select id="glow-range" aria-label="Writing activity period"><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></label></div>
+              <div class="glow-chart" id="glow-chart"></div>
+              <div class="glow-chart-footer"><span id="glow-date-start"></span><span id="glow-point-readout"></span><span id="glow-date-end"></span></div>
+              <p class="glow-empty" id="glow-empty" hidden>Your next saved session will appear here.</p>
+            </section>
+            <details class="glow-chart-data"><summary>View activity data</summary><div class="glow-data-scroll"><table><caption>Saved words by day</caption><thead><tr><th scope="col">Date</th><th scope="col">Words</th></tr></thead><tbody id="glow-data-rows"></tbody></table></div></details>
+            <section class="glow-recent" aria-labelledby="glow-recent-title"><div class="glow-section-head"><div><h2 id="glow-recent-title">Back to your words</h2><p>Pick up where you left off.</p></div><button class="btn btn-ghost" id="glow-all-docs">All documents <span aria-hidden="true">↗</span></button></div><div id="glow-recent-docs"></div></section>
+            <div class="dash-row-top">
+              <div class="td-mid-stack">
+                <section class="td-progress-card" aria-label="Daily writing goal">
+                  <div class="glow-dial" id="glow-dial" aria-hidden="true"></div>
+                  <div class="td-progress-body">
+                    <div class="td-ring" hidden><svg viewBox="0 0 120 120"><circle id="td-ring-fill" cx="60" cy="60" r="52"/></svg></div>
+                    <div class="td-progress-text">
+                      <p class="glow-goal-label">Daily word goal</p>
+                      <div class="td-progress-head" id="td-progress-head">Start your day</div>
+                      <p class="glow-goal-percent"><strong id="glow-goal-percent">0</strong><span>%</span></p>
+                      <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span> words</div>
+                      <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">Edit goal</button>
+                    </div>
                   </div>
-                  <div class="td-progress-text">
-                    <div class="td-progress-head" id="td-progress-head">Keep going!</div>
-                    <p class="td-progress-sub">You&rsquo;re building something great.</p>
-                    <div class="td-progress-count"><span id="td-words-today">0</span> / <span id="td-words-goal">1,000</span></div>
-                    <div class="td-progress-goal-label">Daily Word Goal</div>
-                    <button class="btn btn-ghost btn-small" id="td-edit-goal-btn">&#x270E; Edit Goal</button>
+                </section>
+                <div class="td-reflection-card">
+                  <div class="td-card-head">
+                    <h3>Reflection</h3>
+                    <button class="td-newprompt-btn" id="td-new-prompt-btn">New</button>
+                  </div>
+                  <div class="td-sticky">
+                    <p id="td-prompt-text">&ldquo;What&rsquo;s one small truth you discovered while writing recently?&rdquo;</p>
+                    <span class="td-sticky-feather">&#x1FAB6;</span>
                   </div>
                 </div>
               </div>
-              <div class="td-reflection-card">
-                <div class="td-card-head">
-                  <h3>&#x275D; Reflection Prompt</h3>
-                  <button class="td-newprompt-btn" id="td-new-prompt-btn">&#x21BB; New Prompt</button>
-                </div>
-                <div class="td-sticky">
-                  <p id="td-prompt-text">&ldquo;What&rsquo;s one small truth you discovered while writing recently?&rdquo;</p>
-                  <span class="td-sticky-feather">&#x1FAB6;</span>
-                </div>
-              </div>
-            </div>
-            <div class="tree-container">
-              <h3>&#x1F333; Your Writing Tree</h3>
-              <canvas id="tree-canvas" width="280" height="300"></canvas>
-              <p class="tree-info">Stage: <span class="tree-stage-label" id="tree-stage-text">Seed</span></p>
-            </div>
-            <div class="dashboard-recent">
-              <div class="docs-header">
-                <h2>&#x1F4C4; Recent Sessions</h2>
-                <button class="btn btn-primary btn-small" id="new-doc-btn-2">New Session</button>
-              </div>
-              <div id="recent-docs"></div>
-            </div>
-            <!-- Test Mode only: achievements swiper -->
-            <div class="td-achievements-card test-only">
-              <div class="td-card-head">
-                <h3>&#x1F3C6; Achievements</h3>
-                <div class="td-ach-nav">
-                  <button class="td-ach-arrow" id="td-ach-prev" aria-label="Previous">&#x2039;</button>
-                  <button class="td-ach-arrow" id="td-ach-next" aria-label="Next">&#x203A;</button>
+              <div class="dash-panel-tabs">
+                <div class="glow-rhythm-heading"><span class="glow-rhythm-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 18h16M5 14l5-5 4 3 5-8"/></svg></span><div><h2>Session momentum</h2><p id="glow-rhythm-caption">Your saved sessions</p></div></div>
+                <p class="session-chart-average"><strong id="glow-rhythm-average">0</strong><span>avg. words / session</span></p>
+                <div class="glow-rhythm-bars" id="glow-rhythm-bars" role="group" aria-label="Recent saved sessions"></div><p class="glow-rhythm-readout" id="glow-rhythm-readout"></p>
+                <div class="dash-panel-pane" id="dash-pane-achievements">
+                  <div class="td-card-head">
+                    <h2 class="dash-panel-pane-title">Achievements</h2>
+                    <div class="td-ach-nav">
+                      <button class="td-ach-arrow" id="td-ach-prev" aria-label="Previous achievements"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+                      <button class="td-ach-arrow" id="td-ach-next" aria-label="Next achievements"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
+                    </div>
+                  </div>
+                  <div class="td-ach-viewport"><div class="td-ach-track" id="td-ach-track"></div></div>
+                  <div class="td-ach-dots" id="td-ach-dots"></div>
                 </div>
               </div>
-              <div class="td-ach-viewport"><div class="td-ach-track" id="td-ach-track"></div></div>
-              <div class="td-ach-dots" id="td-ach-dots"></div>
             </div>
-          </div>
-          <!-- Test Mode only: footer quote + maker's stamp -->
-          <div class="td-footer test-only">
-            <blockquote class="td-footer-quote">
-              &#x201C;The first draft doesn&rsquo;t have to be perfect. It just has to be written.&#x201D;
-              <cite>&mdash; James Clear</cite>
-            </blockquote>
-            <div class="td-stamp" aria-hidden="true">
-              <svg viewBox="0 0 100 100" width="84" height="84">
-                <defs><path id="td-stamp-path" d="M 50,50 m -34,0 a 34,34 0 1,1 68,0 a 34,34 0 1,1 -68,0"></path></defs>
-                <circle cx="50" cy="50" r="47" class="td-stamp-ring"></circle>
-                <circle cx="50" cy="50" r="28" class="td-stamp-ring-inner"></circle>
-                <text class="td-stamp-text"><textPath href="#td-stamp-path" startOffset="0">WRITE &#x00B7; REFLECT &#x00B7; GROW &#x00B7; WRITE &#x00B7; REFLECT &#x00B7; GROW &#x00B7; </textPath></text>
-                <text x="50" y="57" text-anchor="middle" class="td-stamp-center">&#x1F58B;</text>
-              </svg>
+
+            <div class="dash-row-bottom">
+              <div class="heatmap-section">
+                <div class="heatmap-header">
+                  <h3 class="heatmap-title">Writing Activity</h3>
+                  <span class="heatmap-total" id="heatmap-total"></span>
+                </div>
+                <div class="heatmap-scroll">
+                  <div class="heatmap-grid" id="heatmap-grid"></div>
+                </div>
+                <div class="heatmap-footer">
+                  <div class="heatmap-legend">
+                    <span class="heatmap-legend-label">Less</span>
+                    <div class="heatmap-legend-cell" data-level="0"></div>
+                    <div class="heatmap-legend-cell" data-level="1"></div>
+                    <div class="heatmap-legend-cell" data-level="2"></div>
+                    <div class="heatmap-legend-cell" data-level="3"></div>
+                    <div class="heatmap-legend-cell" data-level="4"></div>
+                    <span class="heatmap-legend-label">More</span>
+                  </div>
+                </div>
+              </div>
+              <div class="tree-container">
+                <h3>Your Writing Tree</h3>
+                <div class="tree-canvas-wrap">
+                  <canvas id="tree-canvas" width="280" height="300"></canvas>
+                  <p class="tree-seed-note" id="tree-seed-note" style="display:none">Still a seed — your streak's too short to grow yet. Come back tomorrow and keep it going.</p>
+                </div>
+                <p class="tree-info">Stage: <span class="tree-stage-label" id="tree-stage-text">Seed</span></p>
+              </div>
             </div>
           </div>
         </div>
@@ -480,20 +431,24 @@
         <!-- SESSIONS VIEW -->
         <div id="view-documents" class="view" style="display:none">
           <div class="docs-header">
-            <h1 style="font-size: 40px;">📚 All Sessions</h1>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="doc-action-btn" id="create-folder-btn" title="Create Folder" style="width:40px;height:40px">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
-              </button>
+            <div>
+              <span class="sessions-kicker" id="sessions-kicker">Sessions</span>
+              <h1>Sessions</h1>
+            </div>
+            <div style="display:flex;gap:9px;align-items:center">
+              <button class="btn btn-ghost sessions-pill-btn" id="create-folder-btn" title="Create Folder">New folder</button>
               <button class="doc-action-btn" id="history-btn" title="Session History" style="width:40px;height:40px">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
               </button>
-              <button class="btn btn-primary" id="new-doc-btn-3" style="padding:10px 20px;font-size:14px">New Session</button>
+              <button class="btn btn-primary sessions-pill-btn" id="new-doc-btn-3">Start writing</button>
             </div>
           </div>
           <div class="session-search-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" class="session-search" id="session-search" placeholder="Search sessions by title...">
+          </div>
+          <div class="docs-filter-pills" id="docs-filter-pills">
+            <button class="docs-filter-pill active" data-docs-filter="all">All</button>
           </div>
           <!-- Folder back button -->
           <div id="folder-back-btn" style="display:none"></div>
@@ -503,13 +458,24 @@
           <div id="folder-list" class="folder-list"></div>
           <div id="all-docs"></div>
           <div id="shared-docs-section" style="display:none;margin-top:32px">
-            <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">&#x1F517; Shared With Me</h3>
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">Shared With Me</h3>
             <div id="shared-docs"></div>
           </div>
         </div>
 
         <!-- STORIES VIEW -->
         <div id="view-stories" class="view stories-view stories-mode-feed" style="display:none">
+          <div class="community-hero">
+            <div class="community-hero-text">
+              <span class="community-hero-kicker">Community</span>
+              <h1>Publish your writing to the world</h1>
+              <p>Share a finished session with other writers, get feedback, and build a following around what you write.</p>
+              <div class="community-hero-actions">
+                <button class="btn btn-primary" id="community-hero-publish-btn">Publish a session</button>
+              </div>
+            </div>
+            <img class="community-hero-illustration" src="/media/community-column.webp" alt="">
+          </div>
           <div class="stories-header-row">
             <div class="stories-navbar">
               <div class="stories-filter-row stories-primary-tabs">
@@ -533,9 +499,9 @@
             <div class="stories-topbar">
               <div class="stories-topbar-filters">
                 <div class="stories-filter-row" id="stories-feed-sort-row">
-                  <button class="stories-filter-btn active" data-story-sort="newest">Newest</button>
-                  <button class="stories-filter-btn" data-story-sort="oldest">Oldest</button>
-                  <button class="stories-filter-btn" data-story-sort="popular">Popular</button>
+                  <button class="stories-filter-btn active" data-story-sort="newest">Latest</button>
+                  <button class="stories-filter-btn" data-story-sort="following">Following</button>
+                  <button class="stories-filter-btn" data-story-sort="popular">Most read</button>
                 </div>
                 <div class="stories-filter-row" id="stories-mine-filter-row" style="display:none">
                   <button class="stories-filter-btn active" data-story-mine-filter="drafts">Drafts</button>
@@ -558,7 +524,10 @@
           <div class="stories-layout">
             <section class="stories-feed-panel">
               <div id="stories-feed"></div>
-              <aside id="stories-popular" class="stories-popular-panel" aria-label="Popular writers"></aside>
+              <div class="stories-rail">
+                <aside id="stories-popular" class="stories-popular-panel" aria-label="Most followed"></aside>
+                <aside id="stories-top-week" class="stories-popular-panel" aria-label="Top this week"></aside>
+              </div>
             </section>
             <section class="stories-detail-panel">
               <div id="story-detail"></div>
@@ -571,41 +540,46 @@
 
         <!-- LEADERBOARD VIEW -->
         <div id="view-leaderboard" class="view" style="display:none">
-          <div class="dashboard-header">
-            <h1>&#x1F3C6; Leaderboard</h1>
-            <p>See who's writing the most. Climb the ranks!</p>
-          </div>
+          <div class="lb-kicker" id="lb-kicker">All users · by XP</div>
+          <h1 class="lb-page-title">Leaderboard</h1>
           <div class="lb-tabs" id="lb-tabs">
-            <button class="lb-tab active" data-lb-tab="streaks">Streaks</button>
-            <button class="lb-tab" data-lb-tab="time">Writing Time</button>
+            <button class="lb-tab active" data-lb-tab="overall">Overall</button>
+            <button class="lb-tab" data-lb-tab="streaks">Streak</button>
+            <button class="lb-tab" data-lb-tab="time">Time spent</button>
             <button class="lb-tab" data-lb-tab="referrals">Referrals</button>
           </div>
-          <div class="leaderboard-container" id="leaderboard-container">
-            <div class="leaderboard-podium" id="leaderboard-podium"></div>
-            <div class="leaderboard-table-wrap">
-              <table class="leaderboard-table" id="leaderboard-table">
-                <thead id="leaderboard-thead">
-                  <tr>
-                    <th>Rank</th>
-                    <th class="lb-pro-col"></th>
-                    <th>Writer</th>
-                    <th>Streak</th>
-                    <th class="lb-col-words">Words</th>
-                    <th class="lb-col-sessions">Sessions</th>
-                    <th class="lb-col-time">Time</th>
-                    <th class="lb-col-level">Level</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
+          <div class="leaderboard-layout">
+            <section class="lb-board-card" id="leaderboard-container">
+              <div class="lb-board-head">
+                <span>Rank</span><span>Writer</span><span class="lb-board-metric-th" id="lb-metric-label">XP</span>
+              </div>
+              <div id="leaderboard-rows"></div>
+              <div class="lb-board-foot">
+                <div class="lb-range" id="lb-range"></div>
+                <div class="lb-pagination" id="lb-pagination" style="display:none"></div>
+              </div>
+            </section>
+            <aside class="leaderboard-rail" id="leaderboard-rail">
+              <div class="lb-rail-card">
+                <div class="lb-rail-kicker">Your overall place</div>
+                <div class="lb-rail-rank-row">
+                  <span class="lb-rail-rank-num" id="lb-your-rank">#—</span>
+                  <span class="lb-rail-rank-of" id="lb-your-of"></span>
+                </div>
+                <div class="lb-rail-note" id="lb-your-note"></div>
+                <div class="lb-rail-divider"></div>
+                <div class="lb-rail-breakdown" id="lb-rail-breakdown"></div>
+                <div class="lb-rail-divider"></div>
+                <p class="lb-rail-static-note">Ranks refresh hourly. Streak days reset at 00:00 UTC, which is 05:00 in GMT+5.</p>
+              </div>
+            </aside>
           </div>
         </div>
 
         <!-- DUELS VIEW -->
         <div id="view-duels" class="view" style="display:none">
           <div class="dashboard-header">
-            <h1>⚡ Writing Duels</h1>
+            <h1>Writing Duels</h1>
             <p>Challenge friends or get matched with anyone. Whoever leaves first loses. Last one standing wins.</p>
           </div>
 
@@ -658,15 +632,15 @@
             <div id="duel-requests-list"></div>
           </div>
           <div id="duel-sent-section" style="display:none;margin-bottom:32px">
-            <h3 class="duel-section-title">📤 Sent Challenges</h3>
+            <h3 class="duel-section-title">Sent Challenges</h3>
             <div id="duel-sent-list"></div>
           </div>
           <div id="duel-active-section" style="display:none;margin-bottom:32px">
-            <h3 class="duel-section-title">🔥 Active Duels</h3>
+            <h3 class="duel-section-title">Active Duels</h3>
             <div id="active-duels"></div>
           </div>
           <div style="margin-top:24px">
-            <h3 class="duel-section-title">📜 Duel History</h3>
+            <h3 class="duel-section-title">Duel History</h3>
             <div id="duel-history">
               <div class="empty-state"><p>Your completed duels will appear here.</p></div>
             </div>
@@ -675,84 +649,54 @@
 
         <!-- FRIENDS VIEW -->
         <div id="view-friends" class="view" style="display:none">
-          <div class="dashboard-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div class="friends-header">
             <div>
-              <h1>&#x1F46B; Friends</h1>
-              <p>Add friends by their email to challenge them to writing duels.</p>
+              <span class="friends-kicker" id="friends-kicker">Friends</span>
+              <h1>Friends</h1>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-              <div class="share-dropdown-wrap" style="position:relative">
-                <button class="btn-share-analytics" id="btn-share-analytics-top">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                  Share My Progress
-                </button>
-                <div class="share-dropdown" id="share-dropdown" style="display:none">
-                  <button class="share-dropdown-item" id="share-download-card">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Download stat card
-                  </button>
-                  <div class="share-dropdown-divider"></div>
-                  <button class="share-dropdown-item" id="share-to-x">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    Share on X
-                  </button>
-                  <button class="share-dropdown-item" id="share-to-telegram">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0h-.056zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                    Share on Telegram
-                  </button>
-                  <button class="share-dropdown-item" id="share-to-instagram">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                    Share on Instagram
-                  </button>
-                </div>
-              </div>
-              <button class="btn btn-small" id="copy-invite-link-btn" style="white-space:nowrap;display:flex;align-items:center;gap:6px">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                Copy Invite Link
-              </button>
-            </div>
+            <button class="btn btn-primary friends-add-toggle-btn" id="friends-add-toggle-btn">Add a friend</button>
+          </div>
+          <div id="friends-add-row" class="friends-add-row" style="display:none">
+            <input type="text" id="friend-email-input" placeholder="Enter friend's username or email">
+            <button class="btn btn-primary btn-small" id="add-friend-btn" title="Send friend request">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
           </div>
           <div class="friends-split-layout">
             <!-- Left: Friends list -->
             <div class="friends-left">
-              <div style="display:flex;gap:12px;margin-bottom:24px">
-                <input type="text" id="friend-email-input" placeholder="Enter friend's username or email" style="flex:1;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:14px;outline:none;background:var(--bg-card);color:var(--text-primary)">
-                <button class="btn btn-primary btn-small" id="add-friend-btn" title="Send friend request">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                </button>
-              </div>
               <div id="friend-requests-section" style="display:none;margin-bottom:24px">
-                <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">&#x1F514; Friend Requests</h3>
+                <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">Friend Requests</h3>
                 <div id="friend-requests-list"></div>
               </div>
-              <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-                  <h3 style="font-size:15px;font-weight:700;color:var(--text-secondary)">🤝 Your Friends</h3>
-                  <div class="friends-sort-row">
-                    <button class="friends-sort-btn active" data-sort="added">Recent</button>
-                    <button class="friends-sort-btn" data-sort="added_oldest">Oldest</button>
-                    <button class="friends-sort-btn" data-sort="streak">Streak</button>
-                    <button class="friends-sort-btn" data-sort="xp">XP</button>
-                  </div>
+              <div class="friends-sort-row" id="friends-sort-row">
+                <button class="friends-sort-btn active" data-sort="added">Recent</button>
+                <button class="friends-sort-btn" data-sort="added_oldest">Oldest</button>
+                <button class="friends-sort-btn" data-sort="streak">Streak</button>
+                <button class="friends-sort-btn" data-sort="xp">XP</button>
+              </div>
+              <section class="friends-table-card">
+                <div class="friends-table-head">
+                  <span>Writer</span><span style="text-align:right">Streak</span><span style="text-align:right">Words</span><span></span>
                 </div>
                 <div id="friends-list">
                   <div class="empty-state">
-                    <p>Add friends by their email above to start challenging them to duels.</p>
+                    <p>Add friends by their email above to see their progress alongside yours.</p>
                   </div>
                 </div>
-              </div>
+              </section>
               <div id="friend-suggestions-section" style="display:none;margin-top:24px">
-                <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-muted)">&#x1F4A1; People You May Know</h3>
+                <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text-muted)">People You May Know</h3>
                 <div id="friend-suggestions-list"></div>
               </div>
             </div>
-            <!-- Right: Activity feed -->
-            <div class="friends-right">
-              <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;color:var(--text-secondary)">📢 Friends Activity</h3>
+            <!-- Right: Recent activity -->
+            <section class="friends-right">
+              <div class="friends-right-label">Recent activity</div>
               <div id="activity-feed">
-                <div class="empty-state"><p>No activity yet. Your friends' milestones will appear here!</p></div>
+                <div class="empty-state"><h3>No activity yet</h3><p>Your friends’ milestones will appear here.</p></div>
               </div>
-            </div>
+            </section>
           </div>
         </div>
 
@@ -789,9 +733,7 @@
         </div>
         <!-- SETTINGS (old Profile tab content) -->
         <div id="view-settings" class="view" style="display:none">
-          <div class="dashboard-header">
-            <h1>&#x2699;&#xFE0F; Settings</h1>
-          </div>
+          <h1 class="lb-page-title" style="margin-bottom:18px">Settings</h1>
           <div class="profile-layout settings-layout">
             <!-- Column 1: Avatar, Banner, Referral -->
             <div class="settings-col">
@@ -809,11 +751,12 @@
                     <div class="profile-avatar-name" id="profile-avatar-name"></div>
                     <div class="profile-avatar-username" id="profile-avatar-username"></div>
                     <div class="profile-avatar-actions">
-                      <button class="btn btn-ghost btn-small" id="remove-avatar-btn" style="display:none">Remove photo</button>
+                      <label class="btn btn-ghost btn-small" for="avatar-file-input" style="cursor:pointer">Upload photo</label>
+                      <button class="btn btn-ghost btn-small" id="remove-avatar-btn" style="display:none">Remove</button>
                     </div>
                   </div>
-                  <div class="profile-plan-info" id="profile-plan-info"></div>
                 </div>
+                <div class="settings-plan-row" id="profile-plan-info"></div>
               </div>
 
               <div class="profile-section">
@@ -828,10 +771,21 @@
                 </div>
               </div>
 
+              <div class="profile-section" id="appearance-section">
+                <h3 class="profile-section-title">Appearance</h3>
+                <div class="appearance-theme-tabs">
+                  <button class="appearance-theme-tab" id="appearance-light-btn" type="button">Light</button>
+                  <button class="appearance-theme-tab" id="appearance-dark-btn" type="button">Dark</button>
+                </div>
+                <div class="appearance-row">
+                  <span>Collapse sidebar by default</span>
+                  <button class="appearance-toggle" id="appearance-collapse-toggle" type="button" role="switch" aria-label="Collapse sidebar by default"></button>
+                </div>
+              </div>
               <div class="profile-section" id="referral-section"></div>
             </div>
 
-            <!-- Column 2: Account Details, Change Password -->
+            <!-- Column 2: Account Details -->
             <div class="settings-col">
               <div class="profile-section">
                 <h3 class="profile-section-title">Account Details</h3>
@@ -860,30 +814,33 @@
                 <button class="btn btn-primary btn-small" id="save-profile-btn" style="margin-top:8px">Save Changes</button>
               </div>
 
-              <div class="profile-section" id="change-password-section">
-                <h3 class="profile-section-title">&#x1F512; Change Password</h3>
+              <div class="profile-section settings-reset-section" id="change-password-section">
+                <h3 class="profile-section-title">Reset Password</h3>
+                <p class="settings-card-copy" id="change-password-copy">Update the password for this account. You will keep your current session after the reset succeeds.</p>
                 <div class="auth-error" id="password-error"></div>
-                <div class="auth-field">
-                  <label>Current Password</label>
-                  <input type="password" id="current-password" placeholder="Enter current password">
-                </div>
-                <div class="auth-field">
-                  <label>New Password</label>
-                  <input type="password" id="new-password" placeholder="Min 6 characters">
-                </div>
-                <div class="auth-field">
-                  <label>Confirm New Password</label>
-                  <input type="password" id="confirm-password" placeholder="Re-enter new password">
+                <div class="settings-reset-grid">
+                  <div class="auth-field">
+                    <label>Current Password</label>
+                    <input type="password" id="current-password" placeholder="Enter current password">
+                  </div>
+                  <div class="auth-field">
+                    <label>New Password</label>
+                    <input type="password" id="new-password" placeholder="Min 6 characters">
+                  </div>
+                  <div class="auth-field">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirm-password" placeholder="Re-enter new password">
+                  </div>
                 </div>
                 <div class="auth-error" id="password-success" style="color:var(--success)"></div>
-                <button class="btn btn-primary btn-small" id="change-password-btn" style="margin-top:8px">Update Password</button>
+                <button class="btn btn-primary btn-small" id="change-password-btn" style="margin-top:8px">Reset Password</button>
               </div>
             </div>
           </div>
 
           <!-- Danger Zone -->
           <div class="profile-section danger-zone-section" style="margin-top:24px;border:1.5px solid rgba(239,68,68,0.35);border-radius:var(--radius-sm);padding:20px 24px;background:rgba(239,68,68,0.04)">
-            <h3 class="profile-section-title" style="color:#ef4444;margin-bottom:4px">Danger Zone</h3>
+            <h3 class="profile-section-title" style="color:#ef4444;margin-bottom:4px">Danger zone</h3>
             <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">Permanently delete your account and all associated data. This cannot be undone.</p>
             <button class="btn btn-small" id="delete-account-btn" style="background:transparent;border:1.5px solid #ef4444;color:#ef4444;font-weight:600">Delete My Account</button>
           </div>
@@ -941,7 +898,7 @@
         <!-- ANALYTICS VIEW -->
         <div id="view-analytics" class="view" style="display:none">
           <div class="dashboard-header">
-            <h1>&#x1F4CA; Analytics <span class="pro-badge-inline">PRO</span></h1>
+            <h1>Analytics <span class="pro-badge-inline">PRO</span></h1>
             <p>Personal insights into your writing habits.</p>
           </div>
           <div id="analytics-content"></div>
@@ -953,7 +910,7 @@
           </button>
           <div class="upgrade-hero">
             <h1 class="upgrade-title">Unlock Your Full <span class="upgrade-pro-badge">Pro</span> Potential</h1>
-            <p class="upgrade-subtitle">Select the plan that matches your goals. Upgrade anytime and cancel whenever you want.</p>
+            <p class="upgrade-subtitle">Three sessions a day with Free. Unlimited sessions, flexible timers and more room to write with Pro.</p>
             <div class="upgrade-pay-logos" id="upgrade-pay-logos"></div>
           </div>
           <div class="upgrade-cards" id="upgrade-plan-cards"></div>
@@ -962,7 +919,7 @@
         <!-- SUPPORT VIEW -->
         <div id="view-support" class="view" style="display:none">
           <div class="dashboard-header">
-            <h1>&#x1F4AC; Support</h1>
+            <h1>Support</h1>
             <p>Send us feedback, report bugs, or suggest features.</p>
           </div>
           <div class="support-form" style="max-width:800px;margin-bottom:32px">
@@ -1003,51 +960,80 @@
           </div>
         </div>
 
-        <!-- HELP VIEW -->
+        <!-- PRIVACY & POLICY VIEW -->
         <div id="view-help" class="view" style="display:none">
-          <div class="dashboard-header">
-            <h1>&#x2753; Help &amp; Documentation</h1>
-            <p>Everything you need to know about iWrite4.me.</p>
-          </div>
+          <article class="privacy-document" aria-labelledby="privacy-policy-title">
+            <header class="privacy-document-header">
+              <p class="privacy-document-kicker">iWrite4.me Privacy &amp; Policy</p>
+              <h1 id="privacy-policy-title">Privacy, Safety, and Writing Protection</h1>
+              <p class="privacy-document-date">Effective date: 30th July, 2026</p>
+            </header>
 
-          <div class="help-buttons-grid">
-            <button class="help-topic-btn" onclick="App.openHelpTopic('how-it-works')">
-              <span class="help-topic-icon">&#x270F;&#xFE0F;</span>
-              <span class="help-topic-title">How It Works</span>
-            </button>
-            <button class="help-topic-btn" onclick="App.openHelpTopic('writing-modes')">
-              <span class="help-topic-icon">&#x26A1;</span>
-              <span class="help-topic-title">Writing Modes</span>
-            </button>
-            <button class="help-topic-btn" onclick="App.openHelpTopic('xp-levels')">
-              <span class="help-topic-icon">&#x2B50;</span>
-              <span class="help-topic-title">XP &amp; Levels</span>
-            </button>
-            <button class="help-topic-btn" onclick="App.openHelpTopic('streaks')">
-              <span class="help-topic-icon">&#x1F525;</span>
-              <span class="help-topic-title">Streaks</span>
-            </button>
-            <button class="help-topic-btn" onclick="App.openHelpTopic('tree')">
-              <span class="help-topic-icon">&#x1F333;</span>
-              <span class="help-topic-title">Your Writing Tree</span>
-            </button>
-            <button class="help-topic-btn" onclick="App.openHelpTopic('leaderboard')">
-              <span class="help-topic-icon">&#x1F3C6;</span>
-              <span class="help-topic-title">Leaderboard</span>
-            </button>
-            <button class="help-topic-btn" onclick="App.openHelpTopic('friends-duels')">
-              <span class="help-topic-icon">&#x1F46B;</span>
-              <span class="help-topic-title">Friends &amp; Duels</span>
-            </button>
-            <button class="help-topic-btn" onclick="App.openHelpTopic('sharing')">
-              <span class="help-topic-icon">&#x1F4E4;</span>
-              <span class="help-topic-title">Sharing Documents</span>
-            </button>
-            <button class="help-topic-btn" onclick="App.openNotificationHistory()">
-              <span class="help-topic-icon">&#x1F4E2;</span>
-              <span class="help-topic-title">Notification History</span>
-            </button>
-          </div>
+            <div class="privacy-document-scroll">
+              <section>
+                <h2>1. Our Promise</h2>
+                <p>iWrite4.me exists to give writers a calm place to finish their work. <strong>Your writing is private by default.</strong> We do not sell your documents, prompts, drafts, stories, or account data. We only use your information to run the workspace, save your sessions, protect your account, support payments, provide community features, and improve the reliability of the product.</p>
+                <p><strong>Your writings are protected with encryption in transit, authenticated account access, permission checks, and server-side security controls.</strong> Shared documents and published stories become visible only according to the choices you make inside the platform.</p>
+              </section>
+
+              <section>
+                <h2>2. Information We Collect</h2>
+                <p>We collect account information such as your name, email address, username, password credentials, plan status, profile details, and settings. We collect writing information such as session titles, document content, word counts, writing modes, folder placement, completion status, XP, streaks, and timestamps.</p>
+                <p>We also collect community and social information when you choose to use those features, including published stories, comments, likes, follows, friend requests, duel activity, referrals, announcements viewed, and support tickets.</p>
+              </section>
+
+              <section>
+                <h2>3. How We Protect Writing</h2>
+                <p><strong>Writing content is protected while traveling between your browser and iWrite4.me using HTTPS encryption.</strong> Access to private sessions requires your signed-in account. The app checks document ownership and sharing permissions before returning private content.</p>
+                <p><strong>Private sessions are not public.</strong> A document stays private unless you publish it to the Community, create a share link, invite another person to view or comment, or otherwise choose to expose it through a feature of the app.</p>
+                <p>Some platform operations require server-side access to stored content, such as saving sessions, exporting files, showing your own history, support investigation, abuse prevention, moderation of published content, and restoring account functionality. Access is limited to what is needed to operate and protect the service.</p>
+              </section>
+
+              <section>
+                <h2>4. How We Use Data</h2>
+                <p>We use your data to authenticate you, save and restore sessions, calculate streaks and XP, power folders and pinned documents, run duels, show leaderboards, manage subscriptions, process support requests, send account emails, and keep the service secure.</p>
+                <p><strong>We do not use your private documents as public marketing content.</strong> If writing appears publicly, it is because you published it, shared it, or submitted it through a visible public feature.</p>
+              </section>
+
+              <section>
+                <h2>5. Sharing, Publishing, and Community</h2>
+                <p>When you publish a story, people may be able to read it, react to it, comment on it, and view public profile information connected to it. When you create a share link, anyone with that link may have the access level you selected. <strong>You control whether a private session remains private, is shared, or becomes public.</strong></p>
+                <p>Community content may be moderated for safety, abuse, spam, illegal material, harassment, or platform integrity. Moderation protects writers and keeps the space usable.</p>
+              </section>
+
+              <section>
+                <h2>6. Payments and Pro Features</h2>
+                <p>Payment providers process subscription and checkout information. iWrite4.me stores plan status, renewal timing, subscription source, and related account state so the app can unlock Pro features. We do not store full card numbers in the app.</p>
+              </section>
+
+              <section>
+                <h2>7. Security Responsibilities</h2>
+                <p><strong>Keep your login credentials private.</strong> Use a strong password, protect your email account, and sign out on shared devices. If you think your account has been accessed by someone else, change your password and contact support.</p>
+                <p>We use practical safeguards such as authentication, permission checks, secure transport, abuse monitoring, and operational logging. No online system can promise absolute security, but iWrite4.me is designed to reduce unnecessary exposure and keep private writing private.</p>
+              </section>
+
+              <section>
+                <h2>8. Retention and Deletion</h2>
+                <p>We keep account and writing data while your account is active so the platform can preserve your workspace, stats, history, and published content. Deleted or failed dangerous-mode sessions may be removed or marked according to the product behavior shown in the app.</p>
+                <p>You may request account deletion through support. Some records may be retained when needed for security, legal compliance, payments, abuse prevention, or dispute handling.</p>
+              </section>
+
+              <section>
+                <h2>9. Children, Abuse, and Safety</h2>
+                <p>iWrite4.me is not designed for children under the age required by local law to create an online account. Do not use the service to harass people, publish illegal content, scrape private data, attack the platform, impersonate others, or manipulate rankings.</p>
+              </section>
+
+              <section>
+                <h2>10. Changes to This Policy</h2>
+                <p>We may update this document as the product changes. The effective date at the top tells you when this version became active. Material changes may also be announced inside the app.</p>
+              </section>
+
+              <section>
+                <h2>11. Contact</h2>
+                <p>For privacy, safety, support, or account questions, contact <strong>hello@iwrite4.me</strong> or submit a support ticket from the Support tab.</p>
+              </section>
+            </div>
+          </article>
 
         </div>
 
@@ -1063,9 +1049,13 @@
 
     <!-- EDITOR -->
     <div class="editor-container" id="editor-container">
+      <!-- Session-elapsed progress hairline, full viewport width -->
+      <div class="editor-elapsed-track" id="editor-elapsed-track">
+        <div class="editor-elapsed-fill" id="editor-elapsed-fill"></div>
+      </div>
       <!-- Row 1: Back / Title / Timer / Buttons -->
       <div class="editor-toolbar">
-        <div class="editor-toolbar-left">
+        <div class="editor-toolbar-left chrome-el">
           <button class="editor-back-btn" id="editor-back">&larr;</button>
           <input type="text" class="editor-title-input" id="editor-title" placeholder="Give your writing a title..." value="">
         </div>
@@ -1076,31 +1066,91 @@
             <svg id="timer-eye-open" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <svg id="timer-eye-closed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
           </button>
-          <div class="editor-add-time">
-            <button class="editor-add-time-btn" id="add-time-1" title="Add 1 minute">+1m</button>
+          <div class="editor-add-time chrome-el">
             <button class="editor-add-time-btn" id="add-time-5" title="Add 5 minutes">+5m</button>
+            <div class="add-time-confirm" id="add-time-confirm" style="display:none">
+              <div class="add-time-confirm-text">Add 5 more minutes to this session?</div>
+              <div class="add-time-confirm-actions">
+                <button class="btn btn-primary btn-small" id="add-time-confirm-yes">Yes, add</button>
+                <button class="btn btn-ghost btn-small" id="add-time-confirm-no">Cancel</button>
+              </div>
+            </div>
           </div>
           <button class="editor-add-time-btn duel-add-time-btn" id="duel-add-time-btn" onclick="Editor.addExtraTime()" title="Add 5 minutes" style="display:none">+5m</button>
-          <div class="editor-hearts" id="editor-hearts" style="display:none">
-            <span class="heart" data-idx="0">❤</span>
-            <span class="heart" data-idx="1">❤</span>
-            <span class="heart" data-idx="2">❤</span>
-          </div>
         </div>
         <div class="editor-toolbar-right">
-          <div class="editor-font-size-controls" style="display:inline-flex;align-items:center;gap:2px;margin-right:6px">
+        <div class="editor-hearts" id="editor-hearts" style="display:none">
+          <span class="heart" data-idx="0">❤</span>
+          <span class="heart" data-idx="1">❤</span>
+          <span class="heart" data-idx="2">❤</span>
+        </div>
+          <div class="editor-paper-zoom chrome-el" role="group" aria-label="Paper zoom">
+            <button type="button" id="paper-zoom-out" title="Zoom paper out" aria-label="Zoom paper out">−</button>
+            <button type="button" id="paper-zoom-reset" title="Reset paper to 100%" aria-label="Reset paper zoom to 100%"><span id="paper-zoom-value" aria-live="polite">100%</span></button>
+            <button type="button" id="paper-zoom-in" title="Zoom paper in" aria-label="Zoom paper in">+</button>
+          </div>
+          <div class="tools-menu-wrap chrome-el">
+            <button class="tool" id="editor-tools-btn" title="Session tools" aria-label="Session tools" aria-expanded="false" aria-controls="editor-tools-menu">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+            </button>
+            <div class="tools-menu" id="editor-tools-menu" aria-label="Session tools" style="display:none">
+              <div class="session-menu-heading">Your workspace</div>
+              <button class="menu-row" id="tools-theme-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <span class="menu-row-label" id="tools-theme-label">Dark mode</span>
+                <span class="menu-row-toggle" id="tools-theme-toggle"><span class="menu-row-toggle-thumb"></span></span>
+              </button>
+              <button class="menu-row" id="tools-formatting-row">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
+                <span class="menu-row-label">Formatting</span>
+                <span class="menu-row-toggle" id="tools-formatting-toggle"><span class="menu-row-toggle-thumb"></span></span>
+              </button>
+              <button class="menu-row" id="tools-focus-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                <span class="menu-row-label">Focus mode</span>
+                <span class="menu-row-badge">PRO</span>
+              </button>
+              <button class="menu-row" id="tools-pageless-row" type="button" role="switch" aria-checked="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16M4 20h16M4 8v8m16-8v8M8 9h8M8 13h8"/></svg>
+                <span class="menu-row-label">Pageless</span>
+                <span class="menu-row-toggle" aria-hidden="true" id="tools-pageless-toggle"><span class="menu-row-toggle-thumb"></span></span>
+              </button>
+              <button class="menu-row" id="tools-research-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span class="menu-row-label">Research assistant</span>
+              </button>
+              <button class="menu-row" id="tools-audio-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                <span class="menu-row-label">Ambient sound</span>
+              </button>
+              <button class="menu-row" id="tools-fullscreen-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                <span class="menu-row-label">Full screen</span>
+              </button>
+              <div class="menu-row menu-row-static" id="tools-target-words-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                <span class="menu-row-label">Target words</span>
+                <input type="number" id="editor-target-words" class="menu-row-input" min="0" max="50000" placeholder="##">
+              </div>
+              <button class="menu-row" id="tools-comment-history-row" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
+                <span class="menu-row-label">Comment history</span>
+              </button>
+            </div>
+          </div>
+          <div class="editor-font-size-controls" style="display:none;align-items:center;gap:2px;margin-right:6px">
             <button class="doc-action-btn" id="editor-font-dec" title="Zoom out" style="width:28px;height:30px;flex-shrink:0;font-size:18px;font-weight:700;line-height:1">−</button>
             <button class="doc-action-btn" id="editor-font-inc" title="Zoom in" style="width:28px;height:30px;flex-shrink:0;font-size:18px;font-weight:700;line-height:1">+</button>
           </div>
-          <button class="doc-action-btn" id="editor-theme-btn" title="Toggle dark/light mode" style="width:30px;height:30px;flex-shrink:0">
+          <button class="doc-action-btn" id="editor-theme-btn" title="Toggle dark/light mode" style="width:30px;height:30px;flex-shrink:0;display:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           </button>
-          <button class="doc-action-btn" id="editor-fullscreen-btn" title="Toggle fullscreen" style="width:30px;height:30px;flex-shrink:0">
+          <button class="doc-action-btn" id="editor-fullscreen-btn" title="Toggle fullscreen" style="width:30px;height:30px;flex-shrink:0;display:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
           </button>
-          <button class="doc-action-btn" id="editor-focus-btn" title="Focus mode (Pro)" style="width:30px;height:30px;flex-shrink:0;position:relative">
+          <button class="doc-action-btn" id="editor-focus-btn" title="Focus mode (Pro)" style="width:30px;height:30px;flex-shrink:0;position:relative;display:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-            <span style="position:absolute;top:2px;right:1px;font-size:6px;font-weight:800;letter-spacing:.3px;color:#fff;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:3px;padding:1px 2px;line-height:1;pointer-events:none">PRO</span>
+            <span style="position:absolute;top:2px;right:1px;font-size:6px;font-weight:800;letter-spacing:.3px;color:#fff;background:var(--accent);border-radius:3px;padding:1px 2px;line-height:1;pointer-events:none">PRO</span>
           </button>
           <div class="editor-focus-dropdown" id="editor-focus-dropdown" style="display:none">
             <div class="focus-drop-header">Focus Mode</div>
@@ -1110,16 +1160,27 @@
               <span class="focus-toggle-label">Off</span>
             </button>
           </div>
-          <button class="doc-action-btn" id="editor-research-btn" title="Research — Wikipedia + AI" style="width:30px;height:30px;flex-shrink:0">
+          <button class="doc-action-btn" id="editor-research-btn" title="Research" style="width:30px;height:30px;flex-shrink:0;display:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           </button>
-          <button class="doc-action-btn" id="editor-audio-btn" title="Background audio" style="width:30px;height:30px;flex-shrink:0">
+          <button class="doc-action-btn" id="editor-audio-btn" title="Background audio" style="width:30px;height:30px;flex-shrink:0;display:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
           </button>
-          <div class="editor-audio-dropdown" id="editor-audio-dropdown" style="display:none">
+          <div class="editor-audio-dropdown" id="editor-audio-dropdown" aria-label="Sound studio" style="display:none">
+            <div class="session-menu-heading">Sound studio<span>Set the atmosphere for your writing.</span></div>
             <div class="audio-section">
               <div class="audio-section-label">Writing feel</div>
-              <label class="audio-pref-row"><span>Typewriter sounds</span><input type="checkbox" id="pref-typewriter"></label>
+              <label class="typewriter-select-wrap" for="typewriter-pack-select">
+                <span class="typewriter-select-label">Typewriter sound</span>
+                <select id="typewriter-pack-select" class="typewriter-pack-select" aria-label="Typewriter switch sounds">
+                  <option value="off">Off</option>
+                  <option value="synth">Classic</option>
+                  <option value="nk-cream">NK Cream</option>
+                  <option value="cherrymx-black-pbt">CherryMX PBT</option>
+                  <option value="eg-oreo">EG Oreo</option>
+                  <option value="cherrymx-black-abs">CherryMX ABS</option>
+                </select>
+              </label>
             </div>
             <div class="audio-section">
               <div class="audio-section-label">Ambient Sounds</div>
@@ -1137,6 +1198,11 @@
                 <button class="audio-play-btn" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
                 <span class="audio-track-name">Brown Noise</span>
                 <input type="range" class="audio-track-vol" min="0" max="100" value="50" title="Volume">
+              </div>
+              <div class="audio-track" data-audio="pink">
+                <button class="audio-play-btn" title="Play" aria-label="Play Pink Noise"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
+                <span class="audio-track-name">Pink Noise</span>
+                <input type="range" class="audio-track-vol" min="0" max="100" value="50" title="Pink Noise volume" aria-label="Pink Noise volume">
               </div>
               <div class="audio-track" data-audio="hz40">
                 <button class="audio-play-btn" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
@@ -1156,7 +1222,7 @@
             </div>
             <div class="audio-separator"></div>
             <div class="audio-section" id="audio-yt-section">
-              <div class="audio-section-label">YouTube Link <span class="pro-feature-badge" id="yt-pro-badge" style="display:none;font-size:9px;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:0.5px">PRO</span></div>
+              <div class="audio-section-label">YouTube Link <span class="pro-feature-badge" id="yt-pro-badge" style="display:none;font-size:9px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:1px 6px;border-radius:4px;margin-left:6px;letter-spacing:0.5px">PRO</span></div>
               <div class="audio-yt-row">
                 <input type="text" id="audio-yt-input" class="audio-yt-input" placeholder="Paste YouTube URL...">
                 <button class="audio-play-btn" id="audio-yt-play" title="Play"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></button>
@@ -1166,17 +1232,19 @@
                 <input type="range" class="audio-yt-seek" id="audio-yt-seek" min="0" max="100" value="0" title="Seek">
                 <input type="range" class="audio-track-vol" id="audio-yt-vol" min="0" max="100" value="50" title="Volume">
               </div>
+              <p id="audio-yt-status" class="audio-yt-status" role="status" hidden></p>
+              <div id="yt-player-container" class="audio-yt-player" hidden></div>
             </div>
           </div>
-          <button class="doc-action-btn" id="editor-copy-btn" title="Copy to clipboard" style="width:30px;height:30px;flex-shrink:0">
+          <button class="doc-action-btn" id="editor-copy-btn" title="Copy to clipboard" style="width:30px;height:30px;flex-shrink:0;display:none">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
           </button>
           <button class="doc-action-btn" id="editor-comment-history-btn" title="Comment History" style="display:none;width:30px;height:30px;flex-shrink:0">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
           </button>
-          <button class="btn btn-primary btn-small" id="editor-save-btn">Complete</button>
-          <button class="btn btn-primary btn-small" id="editor-edit-btn" style="display:none">Edit</button>
-          <button class="btn btn-primary btn-small" id="editor-save-edit-btn" style="display:none">Save</button>
+          <button class="btn btn-primary btn-small chrome-el" id="editor-save-btn">Complete</button>
+          <button class="btn btn-primary btn-small chrome-el" id="editor-edit-btn" style="display:none">Edit</button>
+          <button class="btn btn-primary btn-small chrome-el" id="editor-save-edit-btn" style="display:none">Save</button>
         </div>
       </div>
       <!-- Duel bar (shown during active duel) -->
@@ -1195,7 +1263,7 @@
            close it manually. The +5 min button stays in the duel toolbar;
            a small "Finish" link is included for ending the session early. -->
       <div class="duel-opponent-left-notice" id="duel-opponent-left-notice" style="display:none" role="status" aria-live="polite">
-        <span class="duel-opp-left-icon">🏆</span>
+        <span class="duel-opp-left-icon"></span>
         <div class="duel-opp-left-text">
           <div class="duel-opp-left-title">You won!</div>
           <div class="duel-opp-left-sub" id="duel-opp-left-sub">Opponent left. Keep writing or finish anytime.</div>
@@ -1209,56 +1277,120 @@
         <button class="duel-extra-time-accept" onclick="Editor.acceptExtraTime()">✓</button>
         <button class="duel-extra-time-decline" onclick="Editor.declineExtraTime()">✗</button>
       </div>
-      <!-- Row 2: Formatting toolbar (hidden in danger mode) -->
-      <div class="editor-format-bar" id="formatting-toolbar" style="display:none">
-        <!-- Font selector -->
-        <div class="fmt-font-wrap">
-          <select class="fmt-font-select" id="fmt-font-select">
-            <option value="sans">Sans Serif</option>
-            <option value="serif">Serif</option>
-            <option value="mono">Monospace</option>
-            <option value="georgia">Georgia</option>
-            <option value="garamond">Garamond</option>
-            <option value="courier">Courier</option>
-            <option value="dyslexic">OpenDyslexic</option>
-          </select>
-        </div>
-        <div class="fmt-separator"></div>
-        <button class="fmt-btn" data-command="bold" title="Bold (Ctrl+B)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
-        </button>
-        <button class="fmt-btn" data-command="italic" title="Italic (Ctrl+I)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
-        </button>
-        <button class="fmt-btn" data-command="underline" title="Underline (Ctrl+U)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
-        </button>
-        <div class="fmt-separator"></div>
-        <button class="fmt-btn fmt-size-btn" id="fmt-size-down" title="Decrease size">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11h14v2H5z"/></svg>
-        </button>
-        <span class="fmt-size-label" id="fmt-size-label">3</span>
-        <button class="fmt-btn fmt-size-btn" id="fmt-size-up" title="Increase size">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-        </button>
-        <div class="fmt-separator"></div>
-        <button class="fmt-btn fmt-color-btn" data-color="#111111" title="Black" style="color:#111111; -webkit-text-stroke: 0.5px #555">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#ffffff" title="White" style="color:#ffffff; -webkit-text-stroke: 0.5px #aaa">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#ef4444" title="Red" style="color:#ef4444">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#22c55e" title="Green" style="color:#22c55e">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#6c5ce7" title="Purple" style="color:#6c5ce7">A</button>
-        <button class="fmt-btn fmt-color-btn" data-color="#f59e0b" title="Yellow" style="color:#f59e0b">A</button>
-      </div>
       <div class="danger-progress" id="danger-progress" style="display:none">
-        <div class="danger-progress-bar" id="danger-progress-bar"></div>
+        <div class="danger-progress-track"><div class="danger-progress-bar" id="danger-progress-bar"></div></div>
+
       </div>
       <div class="screen-vignette" id="screen-vignette"></div>
-      <!-- Topic bar (shown when topic is set) -->
-      <div class="editor-topic-bar" id="editor-topic-bar" style="display:none">
-        <input type="text" class="editor-topic-input" id="editor-topic-text" placeholder="Enter your topic or question...">
-      </div>
-      <div class="editor-area">
-        <div class="editor-textarea" id="editor-textarea" contenteditable="true" data-placeholder="Start writing your thoughts..."></div>
+      <div class="editor-body">
+        <aside class="editor-tabs-rail chrome-el" id="editor-tabs-rail">
+          <div class="editor-tabs-label">Tabs</div>
+          <div id="editor-tabs-list"></div>
+          <button class="editor-tab-row editor-tab-new" id="editor-tab-new">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span class="editor-tab-name">New tab</span>
+            <span class="editor-tab-pro-badge" id="editor-tab-new-badge">PRO</span>
+          </button>
+          <div class="editor-tabs-note">Tabs keep one session's notes and drafts side by side.</div>
+        </aside>
+        <div class="editor-tabs-resizer" id="editor-tabs-resizer" role="separator" aria-orientation="vertical" aria-label="Resize tabs column"></div>
+        <div class="editor-writing-desk">
+          <!-- Row 2: Formatting toolbar (hidden in danger mode) -->
+          <div class="editor-format-bar chrome-el" id="formatting-toolbar" style="display:none">
+            <button class="fmt-close-btn" id="formatting-toolbar-close" title="Hide formatting toolbar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <!-- Font selector -->
+            <div class="fmt-font-wrap">
+              <select class="fmt-font-select" id="fmt-font-select">
+                <option value="sans">Sans Serif</option>
+                <option value="serif">Serif</option>
+                <option value="mono">Monospace</option>
+                <option value="georgia">Georgia</option>
+                <option value="garamond">Garamond</option>
+                <option value="courier">Courier</option>
+                <option value="dyslexic">OpenDyslexic</option>
+              </select>
+            </div>
+            <div class="fmt-separator"></div>
+            <button class="fmt-btn" data-command="bold" title="Bold (Ctrl+B)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h7.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-3v-3zm3.5 9H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/></svg>
+            </button>
+            <button class="fmt-btn" data-command="italic" title="Italic (Ctrl+I)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/></svg>
+            </button>
+            <button class="fmt-btn" data-command="underline" title="Underline (Ctrl+U)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
+            </button>
+            <div class="fmt-separator"></div>
+            <button class="fmt-btn fmt-size-btn" id="fmt-size-down" title="Decrease size">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 11h14v2H5z"/></svg>
+            </button>
+            <span class="fmt-size-label" id="fmt-size-label">3</span>
+            <button class="fmt-btn fmt-size-btn" id="fmt-size-up" title="Increase size">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </button>
+            <div class="fmt-separator"></div>
+            <button class="fmt-btn fmt-color-btn" data-color="#111111" title="Black" style="color:#111111; -webkit-text-stroke: 0.5px #555">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#ffffff" title="White" style="color:#ffffff; -webkit-text-stroke: 0.5px #aaa">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#ef4444" title="Red" style="color:#ef4444">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#22c55e" title="Green" style="color:#22c55e">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#6c5ce7" title="Purple" style="color:#6c5ce7">A</button>
+            <button class="fmt-btn fmt-color-btn" data-color="#f59e0b" title="Yellow" style="color:#f59e0b">A</button>
+          </div>
+        <div class="editor-paper-stage">
+        <div class="editor-area">
+          <div class="editor-textarea" id="editor-textarea" contenteditable="true" data-placeholder="Start writing your thoughts..."></div>
+        </div>
+        </div>
+        </div>
+        <!-- RESEARCH DRAWER -->
+        <aside class="research-drawer" id="research-drawer" aria-label="Research" inert>
+          <div class="research-drawer-header">
+            <span class="research-drawer-title">Research</span>
+            <button class="research-drawer-close" id="research-drawer-close" title="Close" aria-label="Close research">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="research-tabs">
+            <button class="research-tab active" data-rtab="wiki">Search</button>
+            <button class="research-tab" data-rtab="ai">Ask AI</button>
+          </div>
+          <div class="research-quota" id="research-quota"></div>
+
+          <!-- Ask AI composer — lives at the top right after the tabs so it's always visible -->
+          <div id="gem-box">
+            <textarea id="gem-input" placeholder="Ask a question about your writing..." rows="1"></textarea>
+            <button id="gem-send" type="button" aria-label="Send">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+
+          <!-- WIKI TAB -->
+          <div class="research-pane" data-rpane="wiki">
+            <div class="research-input-row">
+              <input type="text" class="research-input" id="research-wiki-input" placeholder="Search a topic..." maxlength="120">
+              <button class="research-submit-btn" id="research-wiki-btn">Search</button>
+            </div>
+            <div class="research-hint">Free and unlimited. Click any Wikipedia result for the full article.</div>
+            <div class="research-results" id="research-wiki-results">
+              <div class="research-empty-state"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><strong>A little context for your next idea</strong><p>Look up a topic, explore a source, then return to your draft.</p></div>
+            </div>
+            <div class="research-detail" id="research-wiki-detail" style="display:none">
+              <button class="research-back-btn" id="research-wiki-back" title="Back to results">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Back to results</span>
+              </button>
+              <div class="research-detail-body" id="research-wiki-detail-body"></div>
+            </div>
+          </div>
+
+          <!-- AI TAB -->
+          <div class="research-pane research-pane-ai" data-rpane="ai" style="display:none">
+            <div class="research-chat" id="research-ai-chat"></div>
+          </div>
+        </aside>
+
       </div>
     </div>
 
@@ -1275,144 +1407,130 @@
     </div>
 
     <!-- GLOBAL STATUS BAR (bottom-left, like Google Docs) -->
-    <div class="status-bar" id="status-bar" style="display:none">
+    <div class="status-bar chrome-el" id="status-bar" style="display:none">
       <span id="editor-word-count">0 words</span>
       <span class="status-separator">|</span>
+      <span id="editor-pace">— wpm</span>
+      <span class="status-separator" id="editor-words-remaining-sep" style="display:none">|</span>
       <span id="editor-words-remaining" style="display:none"></span>
+      <span id="editor-saved-line" class="status-saved-line">saved just now</span>
+      <span class="status-state-dot" id="status-state-label">Writing</span>
     </div>
     <!-- Word limit indicator (bottom-left, above status bar) -->
     <div class="word-limit-indicator" id="word-limit-indicator" style="display:none"></div>
 
-    <!-- YouTube iframe container (hidden) -->
-    <div id="yt-player-container" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden"></div>
-
-    <!-- RESEARCH DRAWER -->
-    <div class="research-drawer" id="research-drawer">
-      <div class="research-drawer-header">
-        <span class="research-drawer-title">Research</span>
-        <button class="research-drawer-close" id="research-drawer-close" title="Close">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="research-tabs">
-        <button class="research-tab active" data-rtab="wiki">Search</button>
-        <button class="research-tab" data-rtab="ai">Ask AI</button>
-      </div>
-      <div class="research-quota" id="research-quota"></div>
-
-      <!-- Ask AI composer — lives at the top right after the tabs so it's always visible -->
-      <div id="gem-box">
-        <textarea id="gem-input" placeholder="Message Gemini..." rows="1"></textarea>
-        <button id="gem-send" type="button" aria-label="Send">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
-      </div>
-
-      <!-- WIKI TAB -->
-      <div class="research-pane" data-rpane="wiki">
-        <div class="research-input-row">
-          <input type="text" class="research-input" id="research-wiki-input" placeholder="Search Wikipedia + DuckDuckGo..." maxlength="120">
-          <button class="research-submit-btn" id="research-wiki-btn">Search</button>
-        </div>
-        <div class="research-hint">Free and unlimited. Click any Wikipedia result for the full article.</div>
-        <div class="research-results" id="research-wiki-results"></div>
-        <div class="research-detail" id="research-wiki-detail" style="display:none">
-          <button class="research-back-btn" id="research-wiki-back" title="Back to results">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            <span>Back to results</span>
-          </button>
-          <div class="research-detail-body" id="research-wiki-detail-body"></div>
-        </div>
-      </div>
-
-      <!-- AI TAB -->
-      <div class="research-pane research-pane-ai" data-rpane="ai" style="display:none">
-        <div class="research-chat" id="research-ai-chat"></div>
-      </div>
-    </div>
-
     <!-- TAB WARNING -->
-    <div class="tab-warning" id="tab-warning">
-      <h2>Come back!</h2>
-      <p>Your writing is being deleted...</p>
-      <div class="tab-warning-timer" id="tab-warning-timer">10</div>
+    <div class="tab-warning" id="tab-warning" role="alert">
+      <div class="session-notice-card" aria-label="Time left to return before this session ends and unsaved writing is deleted">
+        <div class="session-countdown-value"><span class="tab-warning-timer" id="tab-warning-timer">10</span><span>seconds</span></div>
+      </div>
     </div>
 
-    <!-- SESSION START MODAL -->
-    <div class="modal-overlay" id="session-modal">
-      <div class="session-modal-wrapper" id="session-modal-wrapper">
-        <!-- LEFT PANEL: mode chooser + shared fields -->
-        <div class="modal session-main-panel">
-          <h2>New Session</h2>
-          <p>Pick a mode and start writing.</p>
-          <div class="modal-field">
-            <label>What are you writing about?</label>
-            <div class="topic-input-wrap">
-              <textarea id="session-topic-input" class="session-topic-input" rows="2" placeholder="Paste your essay question, topic, or just a few words about what you want to focus on..."></textarea>
-              <button type="button" class="prompt-generate-btn" id="prompt-generate-btn" title="Generate a writing prompt" aria-label="Generate a prompt">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.88 4.62L18.5 8.5l-4.62 1.88L12 15l-1.88-4.62L5.5 8.5l4.62-1.88L12 2z"/><path d="M19 15l.94 2.31L22 18l-2.06.69L19 21l-.94-2.31L16 18l2.06-.69L19 15z"/></svg>
-              </button>
-              <div class="prompt-popover" id="prompt-popover" style="display:none">
-                <div class="prompt-popover-header">Pick a category</div>
-                <div class="prompt-popover-chips">
-                  <button type="button" class="prompt-chip" data-category="ielts">IELTS Writing</button>
-                  <button type="button" class="prompt-chip" data-category="college">College Admissions</button>
-                  <button type="button" class="prompt-chip" data-category="self">Explore Myself / Life</button>
-                  <button type="button" class="prompt-chip" data-category="creative">Creative</button>
-                  <button type="button" class="prompt-chip" data-category="random">🎲 Random</button>
-                </div>
-                <div class="prompt-popover-quota" id="prompt-popover-quota"></div>
+    <!-- SESSION START MODAL — 1:1 with Writing Session.dc.html's picker screen -->
+    <div class="modal-overlay" id="session-modal" role="dialog" aria-modal="true" aria-labelledby="session-picker-title">
+      <div class="mp-shell" id="session-modal-wrapper">
+        <div class="mp-topbar">
+          <h1 class="mp-title" id="session-picker-title">Choose your <span class="mp-title-accent">writing mode</span></h1>
+          <button class="tool mp-close-btn" id="modal-cancel" title="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+
+        <div class="mp-body">
+          <div class="mode-selector" id="mode-selector">
+            <button type="button" aria-pressed="false" class="mode-option" data-mode="normal">
+              <img src="/media/mode-aristotle.png" alt="">
+              <div class="mode-card-scrim"></div>
+              <div class="mode-card-badge">Chosen</div>
+              <div class="mode-card-text"><div class="mode-card-figure">Aristotle</div><div class="mode-card-name">Time</div></div>
+            </button>
+            <button type="button" aria-pressed="false" class="mode-option dangerous-opt" data-mode="dangerous">
+              <img src="/media/mode-leonidas.png" alt="">
+              <div class="mode-card-scrim"></div>
+              <div class="mode-card-badge">Chosen</div>
+              <div class="mode-card-text"><div class="mode-card-figure">Leonidas</div><div class="mode-card-name">Dangerous</div></div>
+            </button>
+            <button type="button" aria-pressed="false" class="mode-option" data-mode="zen">
+              <img src="/media/mode-eirene.png" alt="">
+              <div class="mode-card-scrim"></div>
+              <div class="mode-card-badge">Chosen</div>
+              <div class="mode-card-text"><div class="mode-card-figure">Eirene</div><div class="mode-card-name">Zen</div></div>
+            </button>
+            <button type="button" aria-pressed="false" class="mode-option duel-opt" data-mode="duel">
+              <img src="/media/mode-arena.png" alt="">
+              <div class="mode-card-scrim"></div>
+              <div class="mode-card-badge">Chosen</div>
+              <div class="mode-card-text"><div class="mode-card-figure">Arena</div><div class="mode-card-name">Duel</div></div>
+            </button>
+          </div>
+
+          <!-- RIGHT PANEL: live mode lore + mode-specific real config
+               (add new modes by tagging sections with data-for-mode). -->
+          <div class="mp-detail" id="session-config-panel">
+            <div class="mode-detail-panel" id="mode-detail-panel" tabindex="0" aria-label="Writing mode details">
+              <div class="mode-detail-tag" id="mode-detail-tag"></div>
+              <h3 class="mode-detail-figure" id="mode-detail-figure"></h3>
+              <div class="mode-detail-kicker" id="mode-detail-kicker"></div>
+              <p class="mode-detail-blurb" id="mode-detail-blurb"></p>
+              <div class="mode-detail-rules" id="mode-detail-rules"></div>
+            </div>
+
+            <!-- Death Timer (dangerous only) -->
+            <div class="config-section" id="death-timer-section" data-for-mode="dangerous">
+              <div class="mp-config-label">Idle timer <span class="mp-config-label-hint">— stop typing and it deletes your work</span></div>
+              <div class="time-presets" id="death-timer-presets">
+                <button class="time-preset active" data-seconds="5">5s</button>
+                <button class="time-preset" data-seconds="7">7s</button>
+                <button class="time-preset" data-seconds="10">10s</button>
+                <button class="time-preset time-preset-add" id="death-timer-custom-btn" title="Custom death timer">+</button>
+              </div>
+              <div class="time-custom-row" id="death-timer-custom-row" style="display:none">
+                <input type="number" id="death-timer-custom-input" min="2" max="60" placeholder="e.g. 8">
+                <span class="input-suffix">sec</span>
+                <button class="btn btn-primary btn-small" id="death-timer-custom-set">Set</button>
               </div>
             </div>
-          </div>
-          <div class="modal-field">
-            <label>Target Word Count <span class="label-hint">(optional)</span></label>
-            <input type="number" id="session-target-words" class="session-target-input" min="50" max="50000" placeholder="e.g. 500">
-          </div>
-          <div class="modal-field">
-            <label>Writing Mode</label>
-            <div class="mode-selector">
-              <div class="mode-option" data-mode="zen">
-                <h4>Zen</h4>
-                <p>No timer, no XP, no streak. Just write.</p>
+
+            <!-- Tab Timer (normal only) -->
+            <div class="config-section" id="tab-timer-section" data-for-mode="normal">
+              <div class="mp-config-label">Tab timer <span class="mp-config-label-hint">— grace period when you leave the tab</span></div>
+              <div class="time-presets" id="tab-timer-presets">
+                <button class="time-preset active" data-seconds="10">10s</button>
+                <button class="time-preset" data-seconds="20">20s</button>
+                <button class="time-preset" data-seconds="30">30s</button>
+                <button class="time-preset" data-seconds="60">1m</button>
+                <button class="time-preset time-preset-add" id="tab-timer-custom-btn" title="Custom tab timer">+</button>
               </div>
-              <div class="mode-option active" data-mode="normal">
-                <h4>Time</h4>
-                <p>Tab-lock only. Leave and lose it.</p>
-              </div>
-              <div class="mode-option dangerous-opt" data-mode="dangerous">
-                <h4>Dangerous</h4>
-                <p>Stop typing and the session fails.</p>
-              </div>
-              <div class="mode-option research-opt" data-mode="research">
-                <h4>Research</h4>
-                <p>Wikipedia + AI sidebar, side-by-side with your writing.</p>
+              <div class="time-custom-row" id="tab-timer-custom-row" style="display:none">
+                <input type="number" id="tab-timer-custom-input" min="5" max="300" placeholder="e.g. 45">
+                <span class="input-suffix">sec</span>
+                <button class="btn btn-primary btn-small" id="tab-timer-custom-set">Set</button>
               </div>
             </div>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn-ghost btn-full" id="modal-cancel">Cancel</button>
-            <button class="btn btn-primary btn-full" id="modal-start">Start Writing</button>
+
+            <!-- Duel duration (duel only) — sits where Idle timer sits for
+                 Dangerous. Picking a duration here and starting hands off
+                 straight into the real matchmaking search. -->
+            <div class="config-section" id="duel-duration-section" data-for-mode="duel">
+              <div class="mp-config-label">Duel length</div>
+              <div class="time-presets" id="duel-duration-presets">
+                <button class="time-preset active" data-minutes="10">10 min</button>
+                <button class="time-preset" data-minutes="30">30 min</button>
+                <button class="time-preset" data-minutes="45">45 min</button>
+              </div>
+            </div>
+
+            <!-- Hidden inputs to preserve values for editor -->
+            <input type="hidden" id="tab-grace-input" value="10">
+            <input type="hidden" id="danger-threshold-input" value="5">
           </div>
         </div>
 
-        <!-- RIGHT PANEL: mode-specific config. Add new modes by tagging sections with data-for-mode. -->
-        <div class="modal session-config-panel" id="session-config-panel">
-          <h3 class="config-panel-title" id="config-panel-title">Time Settings</h3>
-
-          <!-- Danger Variant Tabs (dangerous only) -->
-          <div class="config-section danger-variant-tabs-section" data-for-mode="dangerous">
-            <div class="danger-variant-tabs" id="danger-variant-tabs">
-              <button class="danger-variant-tab active" data-variant="classic">Dangerous</button>
-              <button class="danger-variant-tab" data-variant="chill">Chill Danger</button>
-            </div>
-            <div class="danger-variant-desc" id="danger-variant-desc">Stop typing and everything you wrote is gone.</div>
-          </div>
-
-          <!-- Session Duration (normal + dangerous; each mode shows its own preset row) -->
-          <div class="config-section" data-for-mode="normal dangerous research">
-            <label>Session Duration</label>
-            <div class="time-presets" id="time-presets" data-for-mode="normal research">
+        <!-- Duration, allowance and start share one desktop row. -->
+        <section class="mp-bottom" id="mp-bottom">
+          <div class="mp-bottom-left" id="mp-bottom-left">
+            <div class="time-presets" id="time-presets" role="group" aria-label="Session duration" data-for-mode="normal">
               <button class="time-preset" data-minutes="5">5 min</button>
               <button class="time-preset" data-minutes="15">15 min</button>
               <button class="time-preset active" data-minutes="30">30 min</button>
@@ -1421,7 +1539,7 @@
               <button class="time-preset" data-minutes="0">Unlimited</button>
               <button class="time-preset time-preset-add" id="time-preset-add-btn" title="Custom time">+</button>
             </div>
-            <div class="time-presets" id="danger-time-presets" data-for-mode="dangerous" style="display:none">
+            <div class="time-presets" id="danger-time-presets" role="group" aria-label="Dangerous session duration" data-for-mode="dangerous" style="display:none">
               <button class="time-preset" data-minutes="3">3 min</button>
               <button class="time-preset active" data-minutes="5">5 min</button>
               <button class="time-preset" data-minutes="10">10 min</button>
@@ -1433,68 +1551,33 @@
               <span class="input-suffix">min</span>
               <button class="btn btn-primary btn-small" id="custom-time-set">Set</button>
             </div>
+            <div class="mp-goal-line" id="mp-goal-line"></div>
           </div>
-
-          <!-- Death Timer (dangerous only) -->
-          <div class="config-section" id="death-timer-section" data-for-mode="dangerous">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-              <span style="font-size:13px;font-weight:600;color:var(--text-primary)">Death Timer</span>
-              <span style="font-size:11px;color:var(--text-muted)">— stop typing and it deletes your work</span>
-            </div>
-            <div class="time-presets" id="death-timer-presets">
-              <button class="time-preset active" data-seconds="5">5s</button>
-              <button class="time-preset" data-seconds="7">7s</button>
-              <button class="time-preset" data-seconds="10">10s</button>
-              <button class="time-preset time-preset-add" id="death-timer-custom-btn" title="Custom death timer">+</button>
-            </div>
-            <div class="time-custom-row" id="death-timer-custom-row" style="display:none">
-              <input type="number" id="death-timer-custom-input" min="2" max="60" placeholder="e.g. 8">
-              <span class="input-suffix">sec</span>
-              <button class="btn btn-primary btn-small" id="death-timer-custom-set">Set</button>
-            </div>
+          <div class="session-quota" id="session-quota" aria-live="polite">
+            <span id="session-quota-message">Checking today's sessions…</span>
+            <small id="session-quota-reset"></small>
           </div>
-
-          <!-- Tab Timer (normal + dangerous) -->
-          <div class="config-section" id="tab-timer-section" data-for-mode="normal dangerous research">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-              <span style="font-size:13px;font-weight:600;color:var(--text-primary)">Tab Timer</span>
-              <span style="font-size:11px;color:var(--text-muted)">— grace period when you leave the tab</span>
-            </div>
-            <div class="time-presets" id="tab-timer-presets">
-              <button class="time-preset active" data-seconds="10">10s</button>
-              <button class="time-preset" data-seconds="20">20s</button>
-              <button class="time-preset" data-seconds="30">30s</button>
-              <button class="time-preset" data-seconds="60">1m</button>
-              <button class="time-preset time-preset-add" id="tab-timer-custom-btn" title="Custom tab timer">+</button>
-            </div>
-            <div class="time-custom-row" id="tab-timer-custom-row" style="display:none">
-              <input type="number" id="tab-timer-custom-input" min="5" max="300" placeholder="e.g. 45">
-              <span class="input-suffix">sec</span>
-              <button class="btn btn-primary btn-small" id="tab-timer-custom-set">Set</button>
-            </div>
+          <div class="mp-bottom-right">
+            <div class="mp-summary" id="mp-summary"></div>
+            <button class="mp-start-btn" id="modal-start">START WRITING</button>
           </div>
-
-          <!-- Hidden inputs to preserve values for editor -->
-          <input type="hidden" id="tab-grace-input" value="10">
-          <input type="hidden" id="danger-threshold-input" value="5">
-        </div>
+        </section>
       </div>
     </div>
 
-    <!-- DOCUMENT NAME MODAL -->
-    <div class="modal-overlay" id="doc-name-modal">
-      <div class="modal" style="max-width:400px">
-        <button class="modal-back-btn" id="doc-name-back" title="Go back">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        </button>
-        <h2 style="margin-top:32px">Name Your Document</h2>
-        <p>Give your writing a title before you begin.</p>
-        <div class="modal-field">
-          <input type="text" id="doc-name-input" class="session-target-input" placeholder="e.g. My Essay on Climate Change" maxlength="100" style="font-size:14px">
+    <div class="modal-overlay" id="daily-limit-modal" role="dialog" aria-modal="true" aria-labelledby="daily-limit-title" aria-describedby="daily-limit-description">
+      <div class="modal daily-limit-card">
+        <p class="daily-limit-kicker">Daily free limit</p>
+        <h2 id="daily-limit-title">3 free sessions used</h2>
+        <p id="daily-limit-reset" class="daily-limit-reset"></p>
+        <p id="daily-limit-description">Go Pro for unlimited sessions and support iWrite's development.</p>
+        <div class="daily-limit-prices">
+          <p><strong id="daily-limit-stripe-price">$1.99/month</strong><img class="daily-limit-logo daily-limit-logo-stripe" src="/img/stripe.svg?v=1" alt="Stripe"></p>
+          <p><strong id="daily-limit-click-price">24,990 so'm/month</strong><img class="daily-limit-logo daily-limit-logo-click" src="/img/click-logo.png?v=1" alt="Click"></p>
         </div>
-        <div class="modal-actions">
-          <button class="btn btn-ghost btn-full" id="doc-name-skip">Skip (Untitled)</button>
-          <button class="btn btn-primary btn-full" id="doc-name-confirm">Start Writing</button>
+        <div class="daily-limit-actions">
+          <button type="button" class="btn btn-primary" id="daily-limit-upgrade">Upgrade to Pro</button>
+          <button type="button" class="btn btn-ghost" id="daily-limit-dashboard">Go to Dashboard</button>
         </div>
       </div>
     </div>
@@ -1657,7 +1740,7 @@
 
     <!-- SESSION FAILED -->
     <div class="session-failed" id="session-failed">
-      <div class="session-failed-icon">&#x1F480;</div>
+      <img class="session-failed-icon" src="/media/session-failed-skull.png" alt="">
       <h2>Session Failed</h2>
       <p id="sf-reason">Your writing is gone.</p>
       <div style="display:flex;gap:12px;margin-top:32px">
@@ -1668,7 +1751,7 @@
 
     <!-- SESSION COMPLETE -->
     <div class="session-complete" id="session-complete">
-      <h2>Session Complete &#x1F389;</h2>
+      <h2>Session Complete</h2>
       <div class="session-stats">
         <div class="session-stat">
           <div class="session-stat-value" id="sc-words">0</div>
@@ -1687,6 +1770,7 @@
         <span class="streak-fire">&#x1F525;</span>
         <span id="sc-streak-count">0 day streak!</span>
       </div>
+      <section id="session-feedback" aria-label="Session feedback" hidden></section>
       <div style="display:flex;gap:12px">
         <button class="btn btn-ghost btn-large" id="sc-dashboard">Back to Dashboard</button>
         <button class="btn btn-primary btn-large" id="sc-new-session">Write Again</button>
@@ -1706,7 +1790,7 @@
   <div class="right-sidebar-overlay" id="history-sidebar-overlay"></div>
   <div class="right-sidebar" id="history-modal">
     <div class="right-sidebar-header">
-      <h3>&#x1F4CA; Session History</h3>
+      <h3>Session History</h3>
       <button class="right-sidebar-close" id="history-close" aria-label="Close">&times;</button>
     </div>
     <div class="right-sidebar-body">
@@ -1719,7 +1803,7 @@
   <div class="right-sidebar-overlay" id="sub-history-sidebar-overlay"></div>
   <div class="right-sidebar" id="sub-history-modal">
     <div class="right-sidebar-header">
-      <h3>&#x1F4DC; Subscription History</h3>
+      <h3>Subscription History</h3>
       <button class="right-sidebar-close" id="sub-history-close" aria-label="Close">&times;</button>
     </div>
     <div class="right-sidebar-body">
@@ -1731,7 +1815,7 @@
   <div class="right-sidebar-overlay" id="comment-history-sidebar-overlay"></div>
   <div class="right-sidebar" id="comment-history-modal">
     <div class="right-sidebar-header">
-      <h3>&#x1F4AC; Comment History</h3>
+      <h3>Comment History</h3>
       <button class="right-sidebar-close" id="comment-history-close" aria-label="Close">&times;</button>
     </div>
     <div class="right-sidebar-body">
@@ -1743,9 +1827,10 @@
   <!-- DANGEROUS MODE COUNTDOWN -->
   <div class="danger-countdown" id="danger-countdown">
     <div class="danger-countdown-inner">
-      <p class="danger-countdown-label">&#x26A1; Dangerous Mode</p>
+      <p class="danger-countdown-label">Leonidas · Dangerous mode</p>
       <div class="danger-countdown-num" id="danger-countdown-num">5</div>
-      <p class="danger-countdown-sub">Stop typing and your work disappears</p>
+      <span class="session-notice-eyebrow">Your session starts shortly</span>
+      <p class="danger-countdown-sub">Keep typing to protect your draft. Inactivity costs hearts and can delete your writing.</p>
     </div>
   </div>
 
@@ -1754,7 +1839,7 @@
 
   <!-- IN-APP CONFIRM DIALOG -->
   <div class="confirm-overlay" id="confirm-overlay">
-    <div class="confirm-dialog">
+    <div class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-message">
       <p class="confirm-message" id="confirm-message"></p>
       <div class="confirm-actions">
         <button class="btn btn-ghost btn-small" id="confirm-cancel">Cancel</button>
@@ -1776,32 +1861,41 @@
   </div>
 
   <!-- STREAK POPUP -->
-  <div class="streak-popup-overlay" id="streak-popup-overlay">
-    <div class="streak-popup">
-      <button class="streak-popup-close" onclick="App.closeStreakPopup()">&times;</button>
-      <div class="streak-popup-fire" id="streak-popup-fire">
-        <div class="streak-flame flame-1">&#x1F525;</div>
-        <div class="streak-flame flame-2">&#x1F525;</div>
-        <div class="streak-flame flame-3">&#x1F525;</div>
+  <div class="streak-popup-overlay" id="streak-popup-overlay" inert>
+    <section class="streak-popup" role="dialog" aria-modal="true" aria-labelledby="streak-popup-title" aria-describedby="streak-popup-message">
+      <button type="button" class="streak-popup-close" onclick="App.closeStreakPopup()" aria-label="Close writing streak">&times;</button>
+      <p class="streak-popup-kicker">One day at a time</p>
+      <div class="streak-orbit">
+        <svg class="streak-orbit-ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="streak-ring-track" cx="100" cy="100" r="82"/><circle class="streak-ring-fill" cx="100" cy="100" r="82" pathLength="100"/></svg>
+        <div class="streak-orbit-center"><div class="streak-popup-count" id="streak-popup-count">0</div><h2 class="streak-popup-label" id="streak-popup-title">Day streak</h2></div>
+        <span class="streak-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2c1 5-3 6-2 10 2-1 3-3 3-4 4 3 6 6 4 10a7 7 0 0 1-12-1c-2-5 3-8 3-11 1 2 1 3 2 3 0-3 2-5 2-7Z"/></svg></span>
+        <svg class="streak-spark streak-spark-one" viewBox="0 0 16 16" aria-hidden="true"><path d="m8 0 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z"/></svg>
+        <svg class="streak-spark streak-spark-two" viewBox="0 0 16 16" aria-hidden="true"><path d="m8 0 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z"/></svg>
       </div>
-      <div class="streak-popup-count" id="streak-popup-count">0</div>
-      <div class="streak-popup-label">Day Streak!</div>
-      <div class="streak-popup-message" id="streak-popup-message">Keep writing every day!</div>
-      <div class="streak-popup-best" id="streak-popup-best">Best: 0 days</div>
-    </div>
+      <p class="streak-popup-message" id="streak-popup-message">A little writing can start something good.</p>
+      <div class="streak-milestone"><span id="streak-milestone-title">Next milestone</span><strong id="streak-milestone-left"></strong></div>
+      <div class="streak-popup-best" id="streak-popup-best">Personal best · 0 days</div>
+    </section>
   </div>
 
-  <script src="/js/api.js?v=23"></script>
+  <script src="/js/notification-policy.js?v=1"></script>
+  <script src="/js/api.js?v=26"></script>
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
-  <script src="/js/editor.js?v=49"></script>
-  <script src="/js/app.js?v=139"></script>
-  <script src="/js/stories.js?v=20"></script>
+  <script src="/js/feedback.js?v=optional-feedback-2"></script>
+  <script src="/js/editor.js?v=session-sound-6"></script>
+  <script src="/js/app.js?v=release-auth-1"></script>
+  <script src="/js/stories.js?v=24"></script>
+  <script src="/js/paper-zoom.js?v=5"></script>
+  <script src="/js/glow-widgets.js?v=5"></script>
+  <script src="/js/staging-chrome.js?v=6"></script>
+  <script src="/js/workspace-pages.js?v=8"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
       const el = document.getElementById('version-tag');
       if (el && d.version) el.textContent = 'v' + d.version;
     }).catch(() => {});
   </script>
+  <script src="/js/live-map.js?v=1" defer></script>
 </body>
 </html>

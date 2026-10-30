@@ -49,6 +49,7 @@ const App = {
   currentFolder: null, // null = root
   currentView: 'dashboard',
   _docsCacheLoaded: false,
+  _foldersCacheLoaded: false,
   _docsCacheDirty: true,
   _docsPage: 1,
   _docsPerPage: 10,
@@ -185,57 +186,7 @@ const App = {
     document.getElementById('auth-view').style.display = 'flex';
     document.getElementById('app-view').style.display = 'none';
     this.bindAuthEvents();
-    this.initAuthCarousel();
     this.initGoogleSignIn();
-    Monsters.init();
-  },
-
-  initAuthCarousel() {
-    const panel = document.querySelector('.auth-visual-panel');
-    const slides = Array.from(document.querySelectorAll('.auth-visual-slide'));
-    const dots = Array.from(document.querySelectorAll('.auth-visual-dots [data-auth-slide]'));
-    const bgLayers = Array.from(document.querySelectorAll('.auth-visual-bg-layer'));
-    if (!panel || !slides.length) return;
-
-    const setSlide = (index) => {
-      const next = ((index % slides.length) + slides.length) % slides.length;
-      const current = Number(panel.dataset.authSlide || 0);
-      slides.forEach((slide, i) => slide.classList.toggle('active', i === next));
-      dots.forEach((dot, i) => dot.classList.toggle('active', i === next));
-      bgLayers.forEach((layer, i) => {
-        layer.classList.toggle('active', i === next);
-        if (i === current && i !== next) {
-          layer.classList.add('leaving');
-          window.setTimeout(() => layer.classList.remove('leaving'), 560);
-        } else if (i !== next) {
-          layer.classList.remove('leaving');
-        }
-      });
-      panel.dataset.authSlide = String(next);
-    };
-
-    if (!this._authCarouselBound) {
-      this._authCarouselBound = true;
-      dots.forEach(dot => {
-        dot.addEventListener('click', () => {
-          const index = Number(dot.dataset.authSlide || 0);
-          setSlide(index);
-          if (this._authCarouselTimer) clearInterval(this._authCarouselTimer);
-          this._authCarouselTimer = setInterval(() => {
-            const current = Number(panel.dataset.authSlide || 0);
-            setSlide(current + 1);
-          }, 4800);
-        });
-      });
-    }
-
-    setSlide(Number(panel.dataset.authSlide || 0));
-    if (!this._authCarouselTimer) {
-      this._authCarouselTimer = setInterval(() => {
-        const current = Number(panel.dataset.authSlide || 0);
-        setSlide(current + 1);
-      }, 4800);
-    }
   },
 
   async initGoogleSignIn() {
@@ -372,10 +323,9 @@ const App = {
       localStorage.setItem('iwrite_last_level', level.toString());
     }
 
-    let savedTheme = localStorage.getItem('iwrite_theme') || 'dark';
-    if (savedTheme === 'test') savedTheme = 'light';
-    document.documentElement.classList.add('test'); // Writer's Desk structure — always on
-    if (savedTheme === 'light' || savedTheme === 'sepia') document.documentElement.classList.add(savedTheme);
+    let savedTheme = localStorage.getItem('iwrite_theme') || 'light';
+    if (savedTheme === 'test' || savedTheme === 'sepia') savedTheme = 'light';
+    if (savedTheme === 'dark') document.documentElement.classList.add('dark');
 
     // Resolve current URL to determine which view to show
     const initialRoute = resolveRoute(location.pathname, location.hash);
@@ -1062,17 +1012,17 @@ const App = {
       mobileSidebarToggle.classList.remove('open');
       mobileSidebarOverlay.style.display = 'none';
     };
-    const collapseSidebar = () => { document.body.classList.add('sidebar-collapsed'); localStorage.setItem('iwrite_sidebar_collapsed', '1'); };
-    const expandSidebar = () => { document.body.classList.remove('sidebar-collapsed'); localStorage.setItem('iwrite_sidebar_collapsed', '0'); };
+    const collapseSidebar = () => { this._applySidebarCollapsed(true); localStorage.setItem('iwrite_sidebar_rail_collapsed', '1'); };
+    const expandSidebar = () => { this._applySidebarCollapsed(false); localStorage.setItem('iwrite_sidebar_rail_collapsed', '0'); };
 
-    // Restore desktop collapsed state
-    if (localStorage.getItem('iwrite_sidebar_collapsed') === '1') document.body.classList.add('sidebar-collapsed');
+    // The desktop rail owns collapse state; remove the obsolete full-hide state.
+    document.body.classList.remove('sidebar-collapsed');
 
     mobileSidebarToggle.addEventListener('click', () => {
       // When in story-back-mode, the stories.js handler takes over via onclick
       if (mobileSidebarToggle.classList.contains('story-back-mode')) return;
       if (isDesktop()) {
-        document.body.classList.contains('sidebar-collapsed') ? expandSidebar() : collapseSidebar();
+        document.querySelector('.app-container').classList.contains('sidebar-collapsed') ? expandSidebar() : collapseSidebar();
         return;
       }
       sidebar.classList.contains('open') ? closeMobileSidebar() : openMobileSidebar();
@@ -1090,11 +1040,75 @@ const App = {
       });
     });
 
-    // Theme toggle — restore the saved theme (dark / light / sepia / test)
-    this._applyTheme(localStorage.getItem('iwrite_theme') || 'dark');
-    document.getElementById('theme-toggle-btn').addEventListener('click', () => {
-      this._cycleTheme();
+    // Theme toggle — restore the saved theme (default: light)
+    this._applyTheme(localStorage.getItem('iwrite_theme') || 'light');
+    document.getElementById('theme-toggle-btn').addEventListener('click', event => {
+      this._cycleTheme(event.currentTarget);
     });
+
+    // Sidebar collapse (desktop rail, 248px <-> 68px) — logo click or chevron toggles.
+    // Every desktop collapse control shares the same rail state and preference.
+    this._applySidebarCollapsed(localStorage.getItem('iwrite_sidebar_rail_collapsed') === '1');
+    const collapseToggle = () => {
+      const collapsed = !document.querySelector('.app-container').classList.contains('sidebar-collapsed');
+      this._applySidebarCollapsed(collapsed);
+      localStorage.setItem('iwrite_sidebar_rail_collapsed', collapsed ? '1' : '0');
+    };
+    document.getElementById('sidebar-logo-btn').addEventListener('click', collapseToggle);
+    document.getElementById('sidebar-collapse-chevron').addEventListener('click', collapseToggle);
+
+    // Sessions: filter pills
+    const filterPillsEl = document.getElementById('docs-filter-pills');
+    if (filterPillsEl) {
+      filterPillsEl.addEventListener('click', (e) => {
+        const pill = e.target.closest('.docs-filter-pill');
+        if (!pill) return;
+        filterPillsEl.querySelectorAll('.docs-filter-pill').forEach(p => p.classList.toggle('active', p === pill));
+        this._docsFilter = pill.dataset.docsFilter;
+        if (this._docsFilter === 'all') this.currentFolder = null;
+        this._docsPage = 1;
+        if (this._docsFilter === 'folders' && !this._foldersCacheLoaded) this.loadDocuments(true);
+        else this._renderDocumentsView();
+      });
+    }
+
+    // Settings: Appearance section — mirrors the sidebar footer theme toggle
+    // and the logo/chevron rail-collapse, just exposed as explicit controls too.
+    const syncAppearanceUI = () => {
+      const theme = localStorage.getItem('iwrite_theme') === 'dark' ? 'dark' : 'light';
+      const lightBtn = document.getElementById('appearance-light-btn');
+      const darkBtn = document.getElementById('appearance-dark-btn');
+      if (lightBtn) lightBtn.classList.toggle('active', theme === 'light');
+      if (darkBtn) darkBtn.classList.toggle('active', theme === 'dark');
+      const collapseToggleBtn = document.getElementById('appearance-collapse-toggle');
+      if (collapseToggleBtn) collapseToggleBtn.classList.toggle('on', localStorage.getItem('iwrite_sidebar_rail_collapsed') === '1');
+    };
+    document.getElementById('appearance-light-btn')?.addEventListener('click', event => this._animateTheme('light', event.currentTarget));
+    document.getElementById('appearance-dark-btn')?.addEventListener('click', event => this._animateTheme('dark', event.currentTarget));
+    document.getElementById('appearance-collapse-toggle')?.addEventListener('click', () => {
+      const collapsed = !document.querySelector('.app-container').classList.contains('sidebar-collapsed');
+      this._applySidebarCollapsed(collapsed);
+      localStorage.setItem('iwrite_sidebar_rail_collapsed', collapsed ? '1' : '0');
+      syncAppearanceUI();
+    });
+    syncAppearanceUI();
+    this._syncAppearanceUI = syncAppearanceUI;
+
+    // Friends: single "Add a friend" button reveals the email/username input row
+    document.getElementById('friends-add-toggle-btn')?.addEventListener('click', () => {
+      const row = document.getElementById('friends-add-row');
+      if (!row) return;
+      const showing = row.style.display !== 'none';
+      row.style.display = showing ? 'none' : 'flex';
+      if (!showing) document.getElementById('friend-email-input')?.focus();
+    });
+
+    // Community hero — delegate to the existing New Story control
+    const communityPublishBtn = document.getElementById('community-hero-publish-btn');
+    if (communityPublishBtn) communityPublishBtn.addEventListener('click', () => this.openSessionStoryPicker());
+    const dashboardNotifBtn = document.getElementById('dashboard-notif-btn');
+    if (dashboardNotifBtn) dashboardNotifBtn.addEventListener('click', (e) => this.toggleDashboardNotifications(e));
+
     // Support submit
     const supportBtn = document.getElementById('support-submit-btn');
     if (supportBtn) supportBtn.addEventListener('click', () => this.submitSupportTicket());
@@ -1104,33 +1118,20 @@ const App = {
     document.getElementById('help-popup-overlay').addEventListener('click', () => this.closeHelpPopup());
 
     document.getElementById('new-doc-btn').addEventListener('click', () => this.openSessionModal());
-    document.getElementById('new-doc-btn-2').addEventListener('click', () => this.openSessionModal());
     document.getElementById('new-doc-btn-3').addEventListener('click', () => this.openSessionModal());
 
     document.getElementById('modal-cancel').addEventListener('click', () => this.closeSessionModal());
     document.getElementById('modal-start').addEventListener('click', () => this.startSession());
+    document.getElementById('daily-limit-upgrade').addEventListener('click', () => {
+      this.closeDailyLimitModal();
+      this.openPricing();
+    });
+    document.getElementById('daily-limit-dashboard').addEventListener('click', () => {
+      this.closeDailyLimitModal();
+      this.switchView('dashboard');
+    });
 
-    // Document name modal
-    const docNameInput = document.getElementById('doc-name-input');
-    const tryConfirmDocName = () => {
-      const name = docNameInput.value.trim();
-      if (!name) {
-        docNameInput.classList.add('input-invalid');
-        docNameInput.focus();
-        return;
-      }
-      this._confirmDocName(name);
-    };
-    document.getElementById('doc-name-confirm').addEventListener('click', tryConfirmDocName);
-    document.getElementById('doc-name-skip').addEventListener('click', () => this._confirmDocName('Untitled'));
-    document.getElementById('doc-name-back').addEventListener('click', () => {
-      document.getElementById('doc-name-modal').classList.remove('active');
-      this.openSessionModal();
-    });
-    docNameInput.addEventListener('input', () => docNameInput.classList.remove('input-invalid'));
-    docNameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') tryConfirmDocName();
-    });
+
 
     document.querySelectorAll('#time-presets .time-preset[data-minutes]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1146,6 +1147,7 @@ const App = {
         btn.classList.add('active');
         this.sessionDuration = mins;
         document.getElementById('time-custom-row').style.display = 'none';
+        this._renderModePickerBottom(this.sessionMode);
       });
     });
 
@@ -1170,77 +1172,63 @@ const App = {
       this.sessionDuration = val;
       document.getElementById('time-custom-row').style.display = 'none';
       document.getElementById('custom-time-input').value = '';
+      this._renderModePickerBottom(this.sessionMode);
     };
     document.getElementById('custom-time-set').addEventListener('click', setCustomTime);
     document.getElementById('custom-time-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') setCustomTime();
     });
 
-    // Auto-grow topic textarea as user types
-    const topicInput = document.getElementById('session-topic-input');
-    if (topicInput) {
-      topicInput.addEventListener('input', () => this._autoGrowTopic());
-    }
-
-    // Prompt generator: ✨ button + category popover
-    const genBtn = document.getElementById('prompt-generate-btn');
-    const pop = document.getElementById('prompt-popover');
-    if (genBtn && pop) {
-      genBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const showing = pop.style.display !== 'none';
-        if (showing) { pop.style.display = 'none'; return; }
-        pop.style.display = 'block';
-        this._refreshPromptQuota();
-      });
-      document.addEventListener('click', (e) => {
-        if (pop.style.display === 'none') return;
-        if (!pop.contains(e.target) && e.target !== genBtn && !genBtn.contains(e.target)) {
-          pop.style.display = 'none';
-        }
-      });
-      pop.querySelectorAll('.prompt-chip').forEach(chip => {
-        chip.addEventListener('click', () => this._fetchPrompt(chip.dataset.category));
-      });
-    }
 
     document.querySelectorAll('.mode-option').forEach(opt => {
       opt.addEventListener('click', () => {
         document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
         opt.classList.add('active');
+        document.getElementById('mode-selector')?.classList.add('has-chosen');
         this.sessionMode = opt.dataset.mode;
+
+        // Expand modal to show config panel
+        const shell = document.getElementById('session-modal-wrapper');
+        const body = document.querySelector('.mp-body');
+        if (shell) shell.classList.add('mp-expanded');
+        if (body) body.classList.add('mp-body-expanded');
+
         this._applyModeConfigPanel(this.sessionMode);
         const isDanger = this.sessionMode === 'dangerous';
         const isZen = this.sessionMode === 'zen';
+        const isDuel = this.sessionMode === 'duel';
         document.getElementById('time-custom-row').style.display = 'none';
         if (isZen) {
           this.sessionDuration = 0;
         } else if (isDanger) {
           const dangerActive = document.querySelector('#danger-time-presets .time-preset.active');
           this.sessionDuration = parseInt(dangerActive?.dataset.minutes || 5);
+        } else if (isDuel) {
+          const duelActive = document.querySelector('#duel-duration-presets .time-preset.active');
+          this.sessionDuration = parseInt(duelActive?.dataset.minutes || 10);
         } else {
           const normalActive = document.querySelector('#time-presets .time-preset.active');
           this.sessionDuration = parseInt(normalActive?.dataset.minutes || 30);
         }
         this._applyTimerRestrictions();
+        this._renderModePickerBottom(this.sessionMode);
       });
     });
 
-    // Bind danger variant tabs (Dangerous classic vs Chill Danger)
-    this.sessionDangerVariant = 'classic';
-    const variantDescEl = document.getElementById('danger-variant-desc');
-    const variantDescMap = {
-      classic: 'Stop typing and everything you wrote is gone.',
-      chill: '3 hearts. Stop typing and you lose 40% of your progress. Run out of hearts — everything is gone.'
-    };
-    document.querySelectorAll('.danger-variant-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.danger-variant-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        this.sessionDangerVariant = tab.dataset.variant;
-        if (variantDescEl) variantDescEl.textContent = variantDescMap[this.sessionDangerVariant] || '';
+    // Duel duration chips (10/30/45 min) — real matchmaking buckets.
+    document.querySelectorAll('#duel-duration-presets .time-preset[data-minutes]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#duel-duration-presets .time-preset').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (this.sessionMode === 'duel') {
+          this.sessionDuration = parseInt(btn.dataset.minutes);
+          this._renderModePickerBottom('duel');
+        }
       });
     });
+
+    // Dangerous mode only has the classic variant now (Chill Danger removed).
+    this.sessionDangerVariant = 'classic';
 
     // Bind danger mode time presets
     document.querySelectorAll('#danger-time-presets .time-preset[data-minutes]').forEach(btn => {
@@ -1249,6 +1237,7 @@ const App = {
         btn.classList.add('active');
         this.sessionDuration = parseInt(btn.dataset.minutes);
         document.getElementById('time-custom-row').style.display = 'none';
+        this._renderModePickerBottom(this.sessionMode);
       });
     });
     // Danger mode custom time "+" button (Pro only)
@@ -1282,6 +1271,7 @@ const App = {
         btn.classList.add('active');
         document.getElementById('danger-threshold-input').value = secs;
         document.getElementById('death-timer-custom-row').style.display = 'none';
+        if (this.sessionMode === 'dangerous') this._renderModeDetailPanel('dangerous');
       });
     });
     // Death Timer custom "+" (Pro only)
@@ -1309,6 +1299,7 @@ const App = {
       document.getElementById('danger-threshold-input').value = val;
       document.getElementById('death-timer-custom-row').style.display = 'none';
       document.getElementById('death-timer-custom-input').value = '';
+      if (this.sessionMode === 'dangerous') this._renderModeDetailPanel('dangerous');
     };
     document.getElementById('death-timer-custom-set').addEventListener('click', setDeathCustom);
     document.getElementById('death-timer-custom-input').addEventListener('keydown', (e) => {
@@ -1406,7 +1397,7 @@ const App = {
         const audioDD = document.getElementById('editor-audio-dropdown');
         if (audioDD) audioDD.style.display = 'none';
         if (open) {
-          const rect = focusBtn.getBoundingClientRect();
+          const rect = document.getElementById('editor-tools-btn').getBoundingClientRect();
           const W = 224;
           // Right-align dropdown to button, but clamp so it stays inside viewport
           let left = rect.right - W;
@@ -1423,27 +1414,31 @@ const App = {
       });
     }
 
-    // Writing-feel preferences (typewriter sounds), in the audio dropdown
-    const prefTypewriter = document.getElementById('pref-typewriter');
-    if (prefTypewriter) prefTypewriter.addEventListener('change', () => Editor.setTypewriterSound(prefTypewriter.checked));
+    // Writing-feel preferences (typewriter switch sounds), in the audio dropdown
+    const typewriterSelect = document.getElementById('typewriter-pack-select');
+    if (typewriterSelect) {
+      typewriterSelect.addEventListener('change', () => {
+        Editor.setTypewriterSwitch(typewriterSelect.value || 'off');
+      });
+    }
 
     // Timer toggle + add time
     document.getElementById('editor-timer-toggle').addEventListener('click', () => Editor.toggleTimerVisibility());
-    document.getElementById('add-time-1').addEventListener('click', () => {
-      if (!this.user || this.user.plan !== 'premium') {
-        this.toast('Adding time is a Pro feature.', 'info');
-        this.openPricing();
-        return;
-      }
-      Editor.addTime(1);
-    });
+    const addTimeConfirm = document.getElementById('add-time-confirm');
     document.getElementById('add-time-5').addEventListener('click', () => {
       if (!this.user || this.user.plan !== 'premium') {
         this.toast('Adding time is a Pro feature.', 'info');
         this.openPricing();
         return;
       }
+      addTimeConfirm.style.display = 'flex';
+    });
+    document.getElementById('add-time-confirm-yes').addEventListener('click', () => {
+      addTimeConfirm.style.display = 'none';
       Editor.addTime(5);
+    });
+    document.getElementById('add-time-confirm-no').addEventListener('click', () => {
+      addTimeConfirm.style.display = 'none';
     });
 
     // Format bar: font selector
@@ -1468,7 +1463,7 @@ const App = {
       });
     }
     const researchClose = document.getElementById('research-drawer-close');
-    if (researchClose) researchClose.addEventListener('click', () => this._closeResearch());
+    if (researchClose) researchClose.addEventListener('click', () => { this._closeResearch(); document.getElementById('editor-tools-btn').focus(); });
     document.querySelectorAll('.research-tab').forEach(t => {
       t.addEventListener('click', () => this._switchResearchTab(t.dataset.rtab));
     });
@@ -1504,7 +1499,10 @@ const App = {
       e.stopPropagation();
       const willOpen = audioDrop.style.display === 'none';
       if (willOpen) {
-        const r = audioBtn.getBoundingClientRect();
+        Editor.warmAudio();
+        const focusDD = document.getElementById('editor-focus-dropdown');
+        if (focusDD) focusDD.style.display = 'none';
+        const r = document.getElementById('editor-tools-btn').getBoundingClientRect();
         audioDrop.style.top = (r.bottom + 6) + 'px';
         audioDrop.style.right = (window.innerWidth - r.right) + 'px';
       }
@@ -1519,6 +1517,192 @@ const App = {
       audioDrop.style.display = 'none';
       const fd = document.getElementById('editor-focus-dropdown');
       if (fd) fd.style.display = 'none';
+    });
+
+    // Session tools kebab menu — consolidates the toolbar icon buttons into
+    // one dropdown per the Writing Session design. Each row forwards to the
+    // real (now visually hidden) button so existing feature logic — Pro
+    // gates, dropdown positioning, conditional visibility — stays untouched.
+    const toolsBtn = document.getElementById('editor-tools-btn');
+    const toolsMenu = document.getElementById('editor-tools-menu');
+    if (toolsBtn && toolsMenu) {
+      // Escape .editor-container's stacking context (fixed + z-index:2000
+      // caps descendants there regardless of their own z-index) same as the
+      // audio/focus dropdowns — otherwise the research drawer (z-index:2500)
+      // renders on top of this menu and it's invisible while open.
+      if (toolsMenu.parentElement !== document.body) document.body.appendChild(toolsMenu);
+      const syncToolsMenu = () => {
+        const isDark = document.documentElement.classList.contains('dark');
+        const themeLabel = document.getElementById('tools-theme-label');
+        if (themeLabel) themeLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
+        const commentBtn = document.getElementById('editor-comment-history-btn');
+        const commentRow = document.getElementById('tools-comment-history-row');
+        if (commentBtn && commentRow) commentRow.style.display = commentBtn.style.display === 'none' ? 'none' : 'flex';
+        this._syncToolsToggles();
+      };
+      toolsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = toolsMenu.style.display === 'none';
+        audioDrop.style.display = 'none';
+        document.getElementById('editor-focus-dropdown').style.display = 'none';
+        if (willOpen) syncToolsMenu();
+        toolsMenu.style.display = willOpen ? 'block' : 'none';
+        toolsBtn.setAttribute('aria-expanded', String(willOpen));
+      });
+      toolsMenu.addEventListener('click', (e) => e.stopPropagation());
+      document.addEventListener('click', () => { toolsMenu.style.display = 'none'; });
+
+      const forward = (rowId, btnId, keepOpen) => {
+        const row = document.getElementById(rowId);
+        if (!row) return;
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.getElementById(btnId).click();
+          if (!keepOpen) toolsMenu.style.display = 'none';
+          syncToolsMenu();
+        });
+      };
+      // Focus/Audio open their own dropdown — keep the tools menu open behind them off,
+      // closing it immediately reads cleanest since those dropdowns render above it.
+      forward('tools-theme-row', 'editor-theme-btn');
+      forward('tools-focus-row', 'editor-focus-btn');
+      forward('tools-research-row', 'editor-research-btn');
+      forward('tools-audio-row', 'editor-audio-btn');
+      forward('tools-fullscreen-row', 'editor-fullscreen-btn');
+      forward('tools-comment-history-row', 'editor-comment-history-btn');
+
+      // Theme/Focus/Formatting rows carry an on/off toggle switch — synced
+      // whenever the menu opens (syncToolsMenu) and whenever their state
+      // changes elsewhere (theme cycled via sidebar, formatting bar closed
+      // via its own × button).
+      const setToggle = (id, on) => document.getElementById(id)?.classList.toggle('on', !!on);
+      this._syncToolsToggles = () => {
+        setToggle('tools-theme-toggle', document.documentElement.classList.contains('dark'));
+        setToggle('tools-formatting-toggle', document.getElementById('formatting-toolbar').style.display !== 'none');
+      };
+
+      // Formatting: toggle the persistent format bar directly
+      const formattingRow = document.getElementById('tools-formatting-row');
+      if (formattingRow) {
+        formattingRow.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const bar = document.getElementById('formatting-toolbar');
+          bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+          toolsMenu.style.display = 'none';
+          this._syncToolsToggles();
+        });
+      }
+      document.getElementById('formatting-toolbar-close').addEventListener('click', () => {
+        document.getElementById('formatting-toolbar').style.display = 'none';
+        this._syncToolsToggles();
+      });
+
+      // Target words — moved here from the mode picker so it's adjustable
+      // mid-session instead of only being set up front.
+      const targetWordsInput = document.getElementById('editor-target-words');
+      if (targetWordsInput) {
+        targetWordsInput.addEventListener('click', (e) => e.stopPropagation());
+        targetWordsInput.addEventListener('input', () => {
+          Editor.targetWords = parseInt(targetWordsInput.value) || 0;
+          Editor._updateWordsRemaining();
+        });
+      }
+    }
+
+    // Tabs rail — title syncs the sole tab's label until a second tab
+    // exists; New Tab opens a real blank space inside the same document
+    // (persisted via an invisible marker in the saved content), gated Pro.
+    document.getElementById('editor-title').addEventListener('input', () => Editor._syncTabName());
+    document.getElementById('editor-tabs-list').addEventListener('click', (e) => {
+      if (e.target.closest('.editor-tab-rename-input')) return;
+      const del = e.target.closest('.editor-tab-delete[data-tab-delete-idx]');
+      if (del) { e.stopPropagation(); Editor._deleteTab(parseInt(del.dataset.tabDeleteIdx)); return; }
+      const row = e.target.closest('.editor-tab-row[data-tab-idx]');
+      if (row) Editor._switchTab(parseInt(row.dataset.tabIdx));
+    });
+    document.getElementById('editor-tabs-list').addEventListener('dblclick', (e) => {
+      const row = e.target.closest('.editor-tab-row[data-tab-idx]');
+      if (row) Editor._renameTab(parseInt(row.dataset.tabIdx));
+    });
+    document.getElementById('editor-tab-new').addEventListener('click', () => {
+      if (!this.user || this.user.plan !== 'premium') {
+        this.toast('Multiple tabs per session is a Pro feature.', 'info');
+        this.openPricing();
+        return;
+      }
+      Editor._addTab();
+    });
+    this._initTabsRailResize();
+
+    // Idle chrome-hide — back/title, +5m/kebab, Tabs rail and the bottom
+    // bar fade out after ~2.6s of no mouse movement, wake instantly on move.
+    const editorContainer = document.getElementById('editor-container');
+    const editorStatusBar = document.getElementById('status-bar');
+    const setChromeHidden = (hidden) => {
+      editorContainer.classList.toggle('chrome-hidden', hidden);
+      editorStatusBar.classList.toggle('chrome-hidden', hidden);
+    };
+    editorContainer.addEventListener('mousemove', () => {
+      Editor._lastMove = Date.now();
+      if (Editor.active) setChromeHidden(false);
+    });
+    setInterval(() => {
+      if (!Editor.active) return;
+      const menuOpen = document.getElementById('editor-tools-menu').style.display !== 'none';
+      const addTimeOpen = document.getElementById('add-time-confirm').style.display !== 'none';
+      const focusOpen = document.getElementById('editor-focus-dropdown').style.display !== 'none';
+      const audioOpen = document.getElementById('editor-audio-dropdown').style.display !== 'none';
+      if (menuOpen || addTimeOpen || focusOpen || audioOpen || editorContainer.contains(document.activeElement) && document.activeElement.closest('button,input,select,textarea')) return;
+      if (Date.now() - (Editor._lastMove || 0) > 2600) setChromeHidden(true);
+    }, 600);
+
+    audioDrop.querySelectorAll('.audio-track').forEach(track => {
+      const name = track.querySelector('.audio-track-name').textContent.trim();
+      track.querySelector('input[type=range]')?.setAttribute('aria-label', `${name} volume`);
+      track.querySelector('.audio-play-btn')?.setAttribute('aria-label', `Play or pause ${name}`);
+    });
+    this._closeSessionPopovers = () => {
+      this._dismissConfirm?.();
+      ['editor-tools-menu', 'editor-audio-dropdown', 'editor-focus-dropdown', 'add-time-confirm', 'selection-popup'].forEach(id => {
+        const panel = document.getElementById(id);
+        if (panel) panel.style.display = 'none';
+      });
+      toolsBtn.setAttribute('aria-expanded', 'false');
+    };
+    new MutationObserver(() => {
+      if (!editorContainer.classList.contains('active')) this._closeSessionPopovers();
+    }).observe(editorContainer, { attributes: true, attributeFilter: ['class'] });
+    const sessionPopovers = [toolsMenu, audioDrop, document.getElementById('editor-focus-dropdown')].filter(Boolean);
+    const positionSessionPopovers = () => {
+      const rect = toolsBtn.getBoundingClientRect();
+      sessionPopovers.forEach(panel => {
+        const placement = { left: 'auto', top: `${rect.bottom + 8}px`, right: `${Math.max(12, window.innerWidth - rect.right)}px`, maxHeight: `${Math.max(160, window.innerHeight - rect.bottom - 24)}px` };
+        Object.entries(placement).forEach(([key, value]) => { if (panel.style[key] !== value) panel.style[key] = value; });
+      });
+      toolsBtn.setAttribute('aria-expanded', String(toolsMenu.style.display !== 'none'));
+    };
+    sessionPopovers.forEach(panel => {
+      new MutationObserver(positionSessionPopovers).observe(panel, { attributes: true, attributeFilter: ['style'] });
+      panel.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+          event.preventDefault(); event.stopPropagation();
+          panel.style.display = 'none'; toolsBtn.focus();
+        }
+        if (panel === toolsMenu && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) && !event.target.matches('input')) {
+          event.preventDefault();
+          const items = [...panel.querySelectorAll('button')].filter(el => el.getClientRects().length);
+          const index = items.indexOf(document.activeElement);
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+          items[next]?.focus();
+        }
+      });
+    });
+    toolsBtn.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown') { event.preventDefault(); if (toolsMenu.style.display === 'none') toolsBtn.click(); toolsMenu.querySelector('button')?.focus(); }
+    });
+    window.addEventListener('resize', positionSessionPopovers);
+    document.getElementById('research-drawer').addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.stopPropagation(); this._closeResearch(); toolsBtn.focus(); }
     });
 
     // Restore saved font preference
@@ -1575,7 +1759,7 @@ const App = {
 
     document.getElementById('sc-dashboard').addEventListener('click', () => {
       document.getElementById('session-complete').classList.remove('active');
-      this.loadDashboard();
+      this.switchView('dashboard');
     });
 
     document.getElementById('sc-new-session').addEventListener('click', () => {
@@ -1674,8 +1858,7 @@ const App = {
 
     document.getElementById('create-folder-btn').addEventListener('click', () => {
       if (this.user && this.user.plan !== 'premium') {
-        this.toast('Folders are a Pro feature. Upgrade to Pro!', 'info');
-        this.openPricing();
+        this._showFolderProPrompt();
         return;
       }
       this.createFolder();
@@ -1827,7 +2010,7 @@ const App = {
           badge.innerHTML = pill('PRO');
         }
       } else if (isPro && this.user.planExpiresAt === 'infinite') {
-        badge.innerHTML = pill('PRO') + pill('∞', 'plan-badge-sub');
+        badge.innerHTML = pill('PRO');
       } else {
         badge.innerHTML = pill(isPro ? 'PRO' : 'Free');
       }
@@ -1864,17 +2047,24 @@ const App = {
       }
     }
 
-    const hour = new Date().getHours();
-    let greeting = 'Good evening';
-    let emoji = '&#x1F319;';
-    if (hour < 12) { greeting = 'Good morning'; emoji = '&#x2600;&#xFE0F;'; }
-    else if (hour < 18) { greeting = 'Good afternoon'; emoji = '&#x1F324;&#xFE0F;'; }
-    const firstName = (this.user.name || '').split(' ')[0];
     const greetingEl = document.getElementById('greeting-text');
-    if (greetingEl) greetingEl.innerHTML = `${emoji} ${greeting}, <em>${firstName}</em>`;
+    if (greetingEl) greetingEl.innerHTML = `Think for yourself.<br>Write for <em>yourself.</em>`;
+
+    const kickerEl = document.getElementById('hero-kicker');
+    if (kickerEl) {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      let wordsToday = 0;
+      (this.documents || []).forEach(d => {
+        if (!d.updatedAt || !d.wordCount || d.deletedBySystem) return;
+        if (new Date(d.updatedAt).toISOString().slice(0, 10) === todayKey) wordsToday += d.wordCount;
+      });
+      const hoursLeft = Math.max(1, 24 - new Date().getHours());
+      kickerEl.textContent = `${wordsToday.toLocaleString()} words today · ${hoursLeft}h left`;
+    }
   },
 
   async loadDashboard() {
+    this.refreshSessionQuota();
     // 1) Instant paint from the last-known cached user — avoids the "everything
     //    is 0 / blank visuals" flash while the network requests are in flight.
     try {
@@ -1958,11 +2148,11 @@ const App = {
       const stage = u.treeStage || 0;
       TreeRenderer.draw(canvas, stage, u.streak || 0);
       setText('tree-stage-text', TreeRenderer.stages[stage] || 'Seed');
+      const seedNote = document.getElementById('tree-seed-note');
+      if (seedNote) seedNote.style.display = stage === 0 ? '' : 'none';
     }
 
     this._renderHeatmap();
-    const visibleDocs = (this.documents || []).filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
-    this.renderDocumentList('recent-docs', visibleDocs.slice(0, 3));
     this._renderTestDashboard();
   },
 
@@ -2009,14 +2199,15 @@ const App = {
     const totalWords = u.totalWords || 0;
     const totalSessions = u.totalSessions || 0;
     const bestStreak = Math.max(u.streak || 0, u.longestStreak || 0);
+    const achievementIcon = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
     const defs = [
-      { icon: '&#x1F3AF;', name: 'Consistent', desc: 'Write a 7-day streak', cur: bestStreak, max: 7 },
-      { icon: '&#x26A1;', name: 'Speed Writer', desc: 'Write 500 total words', cur: totalWords, max: 500 },
-      { icon: '&#x1F4D6;', name: 'Storyteller', desc: 'Write 2,500 total words', cur: totalWords, max: 2500 },
-      { icon: '&#x1F4DA;', name: 'Novelist', desc: 'Write 10,000 total words', cur: totalWords, max: 10000 },
-      { icon: '&#x1F525;', name: 'On Fire', desc: 'Reach a 30-day streak', cur: bestStreak, max: 30 },
-      { icon: '&#x1F3C3;', name: 'Marathoner', desc: 'Complete 50 sessions', cur: totalSessions, max: 50 },
-      { icon: '&#x2B50;', name: 'Rising Star', desc: 'Reach Level 5', cur: level, max: 5 },
+      { icon: achievementIcon('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>'), name: 'Consistent', desc: 'Write a 7-day streak', cur: bestStreak, max: 7 },
+      { icon: achievementIcon('<path d="m13 3-8 10h6l-1 8 9-12h-7z"/>'), name: 'Speed Writer', desc: 'Write 500 total words', cur: totalWords, max: 500 },
+      { icon: achievementIcon('<path d="M12 6c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1v15"/>'), name: 'Storyteller', desc: 'Write 2,500 total words', cur: totalWords, max: 2500 },
+      { icon: achievementIcon('<path d="M4 3h5v18H4zM9 5h5v16H9zM16 4l4-1 4 17-4 1z"/>'), name: 'Novelist', desc: 'Write 10,000 total words', cur: totalWords, max: 10000 },
+      { icon: achievementIcon('<path d="M13 3c1 5-4 6-4 10-2-1-3-3-3-3-4 7 0 11 6 11s9-5 6-10c-1-2-3-4-5-8z"/>'), name: 'On Fire', desc: 'Reach a 30-day streak', cur: bestStreak, max: 30 },
+      { icon: achievementIcon('<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 10h16m-12 5 3 3 5-5"/>'), name: 'Marathoner', desc: 'Complete 50 sessions', cur: totalSessions, max: 50 },
+      { icon: achievementIcon('<path d="m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>'), name: 'Rising Star', desc: 'Reach Level 5', cur: level, max: 5 },
     ];
     // group: 0 = in progress, 1 = not started, 2 = done; then by progress ratio
     const groupOf = (a) => (a.cur >= a.max ? 2 : a.cur > 0 ? 0 : 1);
@@ -2030,15 +2221,15 @@ const App = {
     for (let i = 0; i < sorted.length; i += PER_PAGE) pages.push(sorted.slice(i, i + PER_PAGE));
     this._achPages = pages.length;
 
-    // Small circular progress indicator (check when done, clock while pending)
+    // Progress rings retain the measured fraction; a line icon identifies each milestone.
     const ringHTML = (a) => {
       const r = 18, C = 2 * Math.PI * r;
       const off = C * (1 - Math.min(1, a.cur / a.max));
       const done = a.cur >= a.max;
       const inner = done
-        ? '<span class="td-ach-ring-icon done">&#x2713;</span>'
-        : '<span class="td-ach-ring-icon pending">&#x1F551;</span>';
-      return `<div class="td-ach-ring"><svg viewBox="0 0 44 44" width="44" height="44">
+        ? `<span class="td-ach-ring-icon done">${achievementIcon('<path d="m5 12 4 4L19 6"/>')}</span>`
+        : `<span class="td-ach-ring-icon pending">${a.icon}</span>`;
+      return `<div class="td-ach-ring" aria-hidden="true"><svg viewBox="0 0 44 44" width="44" height="44">
         <circle class="td-ach-ring-track" cx="22" cy="22" r="${r}"></circle>
         <circle class="td-ach-ring-fill" cx="22" cy="22" r="${r}" style="stroke-dasharray:${C.toFixed(1)};stroke-dashoffset:${off.toFixed(1)}"></circle>
       </svg>${inner}</div>`;
@@ -2050,7 +2241,7 @@ const App = {
         page.map(a => {
           const cur = Math.min(a.cur, a.max);
           return `<div class="td-ach-item">
-            <div class="td-ach-icon">${a.icon}</div>
+            <div class="td-ach-icon" aria-hidden="true">${a.icon}</div>
             <div class="td-ach-meta">
               <div class="td-ach-name">${a.name}</div>
               <div class="td-ach-desc">${a.desc}</div>
@@ -2140,16 +2331,19 @@ const App = {
     const totalEl = document.getElementById('heatmap-total');
     if (!grid) return;
 
+    const dayKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Build map of last 20 weeks (140 days) — word counts per day
-    const totalDays = 140;
+    // Build map of last 21 weeks (147 days, ~1 month more than before) —
+    // word counts per day. Cell size is shrunk slightly (redesign.css) to
+    // fit the extra weeks in the same card width without scrolling.
+    const totalDays = 147;
     const dayMap = {};
     for (let i = totalDays - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const key = dayKey(d);
       dayMap[key] = 0;
     }
 
@@ -2158,7 +2352,7 @@ const App = {
     let totalWords = 0;
     allDocs.forEach(doc => {
       if (!doc.updatedAt || !doc.wordCount || doc.deletedBySystem) return;
-      const key = new Date(doc.updatedAt).toISOString().slice(0, 10);
+      const key = dayKey(new Date(doc.updatedAt));
       if (key in dayMap) {
         dayMap[key] += doc.wordCount;
         totalWords += doc.wordCount;
@@ -2187,7 +2381,7 @@ const App = {
     while (d <= today) {
       const week = [];
       for (let dow = 0; dow < 7; dow++) {
-        const key = d.toISOString().slice(0, 10);
+        const key = dayKey(d);
         const words = dayMap[key] || 0;
         const isFuture = d > today;
         const isInRange = key in dayMap;
@@ -2202,7 +2396,7 @@ const App = {
         week.push({
           key, words, level,
           hide: isFuture || !isInRange,
-          isToday: key === today.toISOString().slice(0, 10),
+          isToday: key === dayKey(today),
           month: d.getDate() <= 7 && dow === 0 ? months[d.getMonth()] : null
         });
         d.setDate(d.getDate() + 1);
@@ -2290,7 +2484,7 @@ const App = {
 
   async loadDocuments(forceRefresh) {
     // Use cache if data already loaded and not dirty
-    if (!forceRefresh && !this._docsCacheDirty && this._docsCacheLoaded) {
+    if (!forceRefresh && !this._docsCacheDirty && this._docsCacheLoaded && this._foldersCacheLoaded) {
       this._renderDocumentsView();
       return;
     }
@@ -2302,8 +2496,10 @@ const App = {
     }
     try {
       this.folders = await API.getFolders();
+      this._foldersCacheLoaded = true;
     } catch {
       this.folders = [];
+      this._foldersCacheLoaded = false;
     }
 
     this._docsCacheDirty = false;
@@ -2312,12 +2508,22 @@ const App = {
   },
 
   _renderDocumentsView() {
+    const kickerEl = document.getElementById('sessions-kicker');
+    if (kickerEl) {
+      const visible = (this.documents || []).filter(d => !d.deletedBySystem && !d.deactivatedByAdmin);
+      const totalWords = visible.reduce((sum, d) => sum + (d.wordCount || 0), 0);
+      kickerEl.textContent = visible.length ? `${visible.length} session${visible.length === 1 ? '' : 's'} · ${totalWords.toLocaleString()} words` : 'Sessions';
+    }
+
     // Update folder button UI based on plan
     const folderBtn = document.getElementById('create-folder-btn');
     if (folderBtn) {
       const isPro = this.user && this.user.plan === 'premium';
       folderBtn.title = isPro ? 'Create Folder' : 'Folders — Pro Feature';
-      folderBtn.style.opacity = isPro ? '' : '0.5';
+      folderBtn.style.opacity = '';
+      folderBtn.setAttribute('aria-label', isPro ? 'Create folder' : 'Create folder (Pro)');
+      const folderHint = document.querySelector('.workspace-folder-hint');
+      if (folderHint) folderHint.textContent = isPro ? 'Use + to create a folder.' : 'Create folders with Pro to organise your writing.';
     }
 
     // Only show non-failed, non-admin-deactivated docs in main list
@@ -2372,15 +2578,21 @@ const App = {
     // Render folders for current level (Pro only for free users)
     const folderContainer = document.getElementById('folder-list');
     const isPro = this.user && this.user.plan === 'premium';
-    const childFolders = this.folders.filter(f => (f.parentFolder || null) === this.currentFolder);
+    const childFolders = this.folders;
+    document.querySelector('[data-docs-filter=all]')?.classList.toggle('active', !this.currentFolder);
+    const activeFilter = this._docsFilter || 'all';
+    folderContainer?.classList.toggle('folder-list-compact', childFolders.length > 5);
     if (childFolders.length > 0) {
       folderContainer.innerHTML = childFolders.map(f => {
         const count = this.countDocsInFolder(f.id, visibleDocs);
-        return `<div class="folder-card" data-folder-id="${f.id}">
+        const depth = Math.min(3, Math.max(0, this.getFolderPath(f.id).length - 1));
+        return `<div class="folder-card${this.currentFolder === f.id ? ' active' : ''}" data-folder-id="${f.id}" style="--folder-depth:${depth}">
+          <button type="button" class="workspace-folder-open" data-open-folder="${f.id}" aria-pressed="${this.currentFolder === f.id}">
           <span class="folder-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></span>
           <span class="folder-card-name">${this.escapeHtml(f.name)}</span>
           <span class="folder-card-count">${count}</span>
-          <button class="folder-card-menu" data-folder-menu="${f.id}" title="Options">⋯</button>
+          </button>
+          <button class="folder-card-menu" data-folder-menu="${f.id}" title="Folder options" aria-label="Options for ${this.escapeHtml(f.name)}">⋯</button>
         </div>`;
       }).join('');
 
@@ -2399,20 +2611,33 @@ const App = {
         }
       };
     } else {
-      folderContainer.innerHTML = '';
+      folderContainer.innerHTML = activeFilter === 'folders'
+        ? `<div class="folder-empty-state">
+            <strong>No folders here</strong>
+            <span>${this.currentFolder ? 'This folder has no child folders yet.' : 'Create a folder and it will stay visible here.'}</span>
+          </div>`
+        : '<p class="workspace-folder-empty">No folders yet</p>';
     }
 
-    // Filter docs by current folder
+    // All includes documents inside folders as well as the root.
     let folderDocs = this.currentFolder
       ? visibleDocs.filter(d => d.folder === this.currentFolder)
-      : visibleDocs.filter(d => !d.folder);
+      : visibleDocs;
 
     // Apply search filter (title only)
     if (this._searchQuery) {
       folderDocs = folderDocs.filter(d => (d.title || '').toLowerCase().includes(this._searchQuery));
     }
 
-    this.renderDocumentList('all-docs', folderDocs);
+    // Apply mode/pinned filter pill
+    if (['timed', 'dangerous', 'zen', 'duel'].includes(activeFilter)) {
+      folderDocs = folderDocs.filter(d => this._getSessionModeMeta(d.mode).key === activeFilter);
+    }
+    else if (activeFilter === 'pinned') folderDocs = folderDocs.filter(d => d.pinned);
+
+    const allDocsEl = document.getElementById('all-docs');
+    if (allDocsEl) allDocsEl.style.display = activeFilter === 'folders' ? 'none' : '';
+    if (activeFilter !== 'folders') this.renderDocumentList('all-docs', folderDocs);
 
     // Shared docs (only at root level)
     if (!this.currentFolder) {
@@ -2457,16 +2682,50 @@ const App = {
     };
   },
 
+  _getSessionModeMeta(mode) {
+    const normalized = String(mode || '').trim().toLowerCase();
+    if (normalized === 'dangerous') {
+      return { key: 'dangerous', label: 'DANGEROUS', className: 'dangerous', glyphClass: 'dangerous' };
+    }
+    if (normalized === 'zen') {
+      return { key: 'zen', label: 'ZEN', className: 'zen', glyphClass: 'zen' };
+    }
+    if (normalized === 'duel' || normalized === 'arena') {
+      return { key: 'duel', label: 'DUEL', className: 'duel', glyphClass: 'duel' };
+    }
+    if (!normalized || normalized === 'normal' || normalized === 'time' || normalized === 'timed') {
+      return { key: 'timed', label: 'TIMED', className: 'time', glyphClass: 'normal' };
+    }
+    return { key: 'legacy', label: 'LEGACY', className: 'legacy', glyphClass: 'legacy' };
+  },
+
+  _sessionModeIcon(mode) {
+    const paths = {
+      normal: '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',
+      dangerous: '<path d="M13 3c1 5-4 5-2 9 1-1 2-2 2-4 4 3 5 6 3 9a5 5 0 0 1-8-6c-1 4 1 5 2 5"/>',
+      zen: '<path d="M19 4C9 3 4 8 6 14c4 7 15 3 13-10Z"/><path d="M5 20 15 9"/>',
+      duel: '<path d="m4 3 17 17M3 4l1-1h3l13 13-4 4L3 7V4Zm17-1L3 20m18-16-1-1h-3l-4 4M8 16l-4 4m12-4 4 4"/>',
+      legacy: '<path d="M6 3h9l3 3v15H6Z"/><path d="M9 10h6M9 14h6"/>'
+    };
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[mode] || paths.legacy}</svg>`;
+  },
+
+  _sessionFolderGlyph(modeGlyphClass) {
+    return `<span class="session-folder-mark" aria-hidden="true"><svg class="doc-folder-glyph" width="34" height="30" viewBox="0 0 30 26" fill="none"><path class="doc-folder-glyph-back" d="M2 4a2 2 0 012-2h7l2 2.5h11a2 2 0 012 2V22a2 2 0 01-2 2H4a2 2 0 01-2-2V4z"/><path class="doc-folder-glyph-front" d="M1 9a2 2 0 012-2h24a2 2 0 012 2l-1.6 12.5A2 2 0 0125.4 23H4.6a2 2 0 01-1.98-1.5L1 9z"/></svg><span class="session-folder-mode">${this._sessionModeIcon(modeGlyphClass)}</span></span>`;
+  },
+
+  _pinIconSvg(extraClass = '') {
+    return `<svg class="doc-pin-icon ${extraClass}" width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M14.8 3.4 20.6 9.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M8.2 12.1 4.6 15.7l3.7 3.7 3.6-3.6 4.7-1.1 2.1-2.1-7.3-7.3-2.1 2.1-1.1 4.7Z" fill="currentColor" opacity=".18"/>
+      <path d="M8.2 12.1 4.6 15.7l3.7 3.7 3.6-3.6 4.7-1.1 2.1-2.1-7.3-7.3-2.1 2.1-1.1 4.7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="m4.6 19.4 4.8-4.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>`;
+  },
+
   renderDocumentList(containerId, docs) {
     const container = document.getElementById(containerId);
     if (docs.length === 0) {
-      // Don't show "No documents yet" if there are child folders at this level
-      const childFolders = this.folders.filter(f => (f.parentFolder || null) === this.currentFolder);
-      const hasFolders = childFolders.length > 0;
-      if (hasFolders && containerId === 'all-docs') {
-        container.innerHTML = '';
-        return;
-      }
       // Inside a folder, say "No documents in this folder"
       const emptyMsg = this.currentFolder
         ? { title: 'No documents in this folder', sub: 'Move documents here or start a new session.' }
@@ -2475,7 +2734,7 @@ const App = {
         <div class="empty-state">
           <h3>${emptyMsg.title}</h3>
           <p>${emptyMsg.sub}</p>
-          <button class="btn btn-primary btn-small" onclick="App.openSessionModal()">New Session</button>
+          <button class="btn btn-primary btn-small" onclick="App.openSessionModal()">Start writing</button>
         </div>`;
       return;
     }
@@ -2494,19 +2753,15 @@ const App = {
 
     let html = pageDocs.map(doc => {
       const isFailed = doc.deletedBySystem;
-      const isDangerous = doc.mode === 'dangerous';
-      const iconClass = isFailed ? 'doc-icon-failed' : isDangerous ? 'doc-icon-dangerous' : doc.completed ? 'doc-icon-completed' : 'doc-icon-draft';
-      const iconSvg = isFailed
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-        : isDangerous
-        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+      const modeMeta = this._getSessionModeMeta(doc.mode);
+      const modeGlyphClass = modeMeta.glyphClass;
+      const leadingIcon = this._sessionFolderGlyph(modeGlyphClass);
       return `
       <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}">
         <div class="doc-card-info">
-          <div class="doc-icon ${iconClass}">${iconSvg}</div>
+          ${leadingIcon}
           <div class="doc-card-text">
-            <h4>${doc.pinned ? '<span class="pin-icon" title="Pinned">&#x1F4CC;</span> ' : ''}${this.escapeHtml(doc.title)} ${isFailed ? '<span class="badge badge-failed">FAILED</span>' : ''}</h4>
+            <h4>${doc.pinned ? this._pinIconSvg('doc-pin-inline') : ''}${this.escapeHtml(doc.title)} ${isFailed ? '<span class="badge badge-failed">FAILED</span>' : ''}</h4>
             <div class="doc-card-meta">
               <span>${doc.wordCount || 0} words</span>
               <span>${this.formatDate(doc.updatedAt)}</span>
@@ -2515,7 +2770,7 @@ const App = {
           </div>
         </div>
         <div class="doc-card-right">
-          <span class="doc-mode-badge doc-mode-${doc.mode === 'dangerous' ? 'dangerous' : doc.mode === 'zen' ? 'zen' : doc.mode === 'research' ? 'research' : 'time'}">${doc.mode === 'dangerous' ? 'DANGEROUS' : doc.mode === 'zen' ? 'ZEN' : doc.mode === 'research' ? 'RESEARCH' : 'TIME'}</span>
+          <span class="doc-mode-badge doc-mode-${modeMeta.className}" role="img" aria-label="${modeMeta.label}" title="${modeMeta.label}">${this._sessionModeIcon(modeGlyphClass)}</span>
           <button class="doc-card-menu-btn" data-doc-id="${doc.id}" title="Options">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
           </button>
@@ -2524,18 +2779,18 @@ const App = {
     }).join('');
 
     // Add pagination controls if more than one page
-    if (isPaginated && totalPages > 1) {
-      html += `<div class="docs-pagination">
+    if (isPaginated) {
+      html += `<nav class="docs-pagination" aria-label="Session pages">
         <button class="docs-pagination-btn" id="docs-prev" ${page <= 1 ? 'disabled' : ''}>← Prev</button>
-        <span class="docs-pagination-info">${page} / ${totalPages}</span>
+        <span class="docs-pagination-info" aria-live="polite">${(page - 1) * this._docsPerPage + 1}–${Math.min(page * this._docsPerPage, docs.length)} of ${docs.length} · Page ${page} of ${totalPages}</span>
         <button class="docs-pagination-btn" id="docs-next" ${page >= totalPages ? 'disabled' : ''}>Next →</button>
-      </div>`;
+      </nav>`;
     }
 
     container.innerHTML = html;
 
     // Bind pagination buttons
-    if (isPaginated && totalPages > 1) {
+    if (isPaginated) {
       const prevBtn = document.getElementById('docs-prev');
       const nextBtn = document.getElementById('docs-next');
       if (prevBtn) prevBtn.onclick = () => { this._docsPage--; this._renderDocumentsView(); };
@@ -2569,6 +2824,11 @@ const App = {
       Editor.isEditing = false;
       Editor.originalContent = doc.content || '';
       Editor.originalTitle = doc.title;
+      // Viewing a saved doc isn't a live session — show it as one tab rather
+      // than carrying over stale tab state from whatever was open before.
+      Editor._tabs = [{ name: doc.title || 'Draft', html: doc.content || '' }];
+      Editor._activeTabIdx = 0;
+      Editor._renderTabsList();
 
       document.getElementById('editor-container').classList.add('active');
       document.getElementById('editor-timer').textContent = '';
@@ -2581,7 +2841,6 @@ const App = {
       document.getElementById('editor-timer').style.display = 'none';
       document.querySelector('.editor-add-time').style.display = 'none';
       document.getElementById('duel-add-time-btn').style.display = 'none';
-      document.getElementById('editor-topic-bar').style.display = 'none';
 
       // Show Edit button, hide session buttons
       document.getElementById('editor-save-btn').style.display = 'none';
@@ -2618,17 +2877,26 @@ const App = {
   },
 
   openSessionModal() {
+    this._pendingDocumentTitle = '';
     document.getElementById('session-modal').classList.add('active');
     document.getElementById('time-custom-row').style.display = 'none';
     const addBtn = document.getElementById('time-preset-add-btn');
     addBtn.textContent = '+';
     addBtn.classList.remove('active');
-    // Reset to normal mode when opening
+    // Nothing is pre-chosen when the picker opens — the grid starts neutral
+    // and the user has to actually pick a mode before it lights up.
     document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
-    document.querySelector('.mode-option[data-mode="normal"]').classList.add('active');
-    this.sessionMode = 'normal';
+    document.getElementById('mode-selector')?.classList.remove('has-chosen');
+
+    // Start collapsed
+    const shell = document.getElementById('session-modal-wrapper');
+    const body = document.querySelector('.mp-body');
+    if (shell) shell.classList.remove('mp-expanded');
+    if (body) body.classList.remove('mp-body-expanded');
+
+    this.sessionMode = null;
     this.sessionDuration = 30;
-    this._applyModeConfigPanel('normal');
+    this._applyModeConfigPanel(null);
     document.querySelectorAll('#time-presets .time-preset').forEach(b => b.classList.remove('active'));
     document.querySelector('#time-presets .time-preset[data-minutes="30"]').classList.add('active');
     document.getElementById('danger-threshold-input').value = '5';
@@ -2638,19 +2906,68 @@ const App = {
     document.getElementById('death-timer-custom-row').style.display = 'none';
     const deathCustBtn = document.getElementById('death-timer-custom-btn');
     if (deathCustBtn) { deathCustBtn.textContent = '+'; deathCustBtn.classList.remove('active'); }
-    // Reset new fields
-    document.getElementById('session-topic-input').value = '';
-    document.getElementById('session-target-words').value = '';
-    const pGenBtn = document.getElementById('prompt-generate-btn');
-    if (pGenBtn) pGenBtn.classList.remove('has-prompt');
-    const pPop = document.getElementById('prompt-popover');
-    if (pPop) pPop.style.display = 'none';
-    const pTopic = document.getElementById('session-topic-input');
-    if (pTopic) pTopic.style.height = '';
+    document.querySelectorAll('#duel-duration-presets .time-preset').forEach(b => b.classList.remove('active'));
+    const defaultDuel = document.querySelector('#duel-duration-presets .time-preset[data-minutes="10"]');
+    if (defaultDuel) defaultDuel.classList.add('active');
     // Apply plan-based timer restrictions
     this._applyTimerRestrictions();
-    // Session limits are invisible — enforced server-side only
-    this._showWeeklySessionInfo();
+    this.refreshSessionQuota();
+  },
+
+  // Mode lore shown in the picker's detail panel — kept in sync with the
+  // "Writing Session + Mode picker" design (figure names, blurbs, rules).
+  MODE_LORE: {
+    normal: {
+      tag: 'NORMAL MODE', figure: 'Aristotle', kicker: 'Timed Mode', tone: 'var(--accent)',
+      blurb: 'Aristotle believed excellence is a habit, not an accident — built through steady, measured practice. This mode is his method: a fixed timer, a full toolbar, and formatting and autosave switched on so nothing but the writing itself demands your attention.',
+      rules: ['Timer runs; you can add minutes', 'Autosaves as you go', 'Earns XP on completion']
+    },
+    zen: {
+      tag: 'ZEN MODE', figure: 'Eirene', kicker: 'Zen Mode', tone: 'var(--info)',
+      blurb: 'Eirene, Greek goddess of peace, is shown with the olive branch and the dove — emblems of a world where nothing needs defending or measuring. Her mode strips away every counter, every XP tally and every streak, so the page asks nothing of you but the words themselves.',
+      rules: ['Word count hidden', 'No XP, no streak effect', 'Leave whenever you like']
+    },
+    dangerous: {
+      tag: 'DANGEROUS MODE', figure: 'Leonidas', kicker: 'Dangerous Mode', tone: 'var(--danger)',
+      blurb: 'Leonidas held the pass at Thermopylae knowing retreat meant survival and standing meant loss — and chose to stand. His mode carries that same wager: stop typing and the page begins to erase your words, and only three lives stand between you and losing the draft entirely.',
+      rules: ['{idle} seconds idle begins the decay', 'Three lives, then the draft is lost', 'Double XP if you survive']
+    },
+    duel: {
+      tag: 'DUEL MODE', figure: 'Arena', kicker: 'Duel Mode', tone: 'var(--warning)',
+      blurb: 'The arena was where reputations were made in full view of a crowd — one combatant against another, nothing decided until the contest ended. This mode puts two writers head to head on a live word count, with the pot of XP going to whoever is still ahead when the clock runs out.',
+      rules: ['Live word count for both writers', 'Either side may offer +5 min', 'Winner takes the XP pot']
+    }
+  },
+
+  _renderModeDetailPanel(mode) {
+    const lore = this.MODE_LORE[mode];
+    const panel = document.getElementById('mode-detail-panel');
+    if (!lore) {
+      if (panel) panel.innerHTML = '<p class="mode-detail-placeholder">Pick a mode to see how it works.</p>';
+      return;
+    }
+    if (panel && !document.getElementById('mode-detail-tag')) {
+      // Placeholder was showing — restore the real structure before filling it in.
+      panel.innerHTML = `
+        <div class="mode-detail-tag" id="mode-detail-tag"></div>
+        <h3 class="mode-detail-figure" id="mode-detail-figure"></h3>
+        <div class="mode-detail-kicker" id="mode-detail-kicker"></div>
+        <p class="mode-detail-blurb" id="mode-detail-blurb"></p>
+        <div class="mode-detail-rules" id="mode-detail-rules"></div>`;
+    }
+    const tagEl = document.getElementById('mode-detail-tag');
+    const figureEl = document.getElementById('mode-detail-figure');
+    const kickerEl = document.getElementById('mode-detail-kicker');
+    const blurbEl = document.getElementById('mode-detail-blurb');
+    const rulesEl = document.getElementById('mode-detail-rules');
+    if (tagEl) { tagEl.textContent = lore.tag; tagEl.style.color = lore.tone; tagEl.style.borderColor = lore.tone; }
+    if (figureEl) figureEl.textContent = lore.figure;
+    if (kickerEl) { kickerEl.textContent = lore.kicker; kickerEl.style.color = lore.tone; }
+    if (blurbEl) blurbEl.textContent = lore.blurb;
+    if (rulesEl) {
+      const idleSecs = document.getElementById('danger-threshold-input')?.value || '5';
+      rulesEl.innerHTML = lore.rules.map(r => `<div class="mode-detail-rule"><span style="color:${lore.tone}">·</span><span>${r.replace('{idle}', idleSecs)}</span></div>`).join('');
+    }
   },
 
   // Show/hide mode-specific config sections based on data-for-mode attributes.
@@ -2663,29 +2980,155 @@ const App = {
     let anyVisible = false;
     sections.forEach(sec => {
       const modes = (sec.dataset.forMode || '').split(/\s+/).filter(Boolean);
-      const show = modes.includes(mode);
+      const show = !!mode && modes.includes(mode);
       sec.style.display = show ? '' : 'none';
       if (show) anyVisible = true;
     });
-    // Nested mode-specific preset rows (e.g. #time-presets vs #danger-time-presets)
-    panel.querySelectorAll('.time-presets[data-for-mode]').forEach(row => {
+    // Duration chip rows live in the bottom bar now (not inside the detail
+    // panel), so query the whole modal wrapper, not just the config panel.
+    wrapper.querySelectorAll('.time-presets[data-for-mode]').forEach(row => {
       const modes = (row.dataset.forMode || '').split(/\s+/).filter(Boolean);
-      row.style.display = modes.includes(mode) ? 'flex' : 'none';
+      row.style.display = !!mode && modes.includes(mode) ? 'flex' : 'none';
     });
     wrapper.classList.toggle('has-config', anyVisible);
-    const title = document.getElementById('config-panel-title');
-    if (title) {
-      const map = { normal: 'Time Settings', dangerous: 'Dangerous Settings', zen: '', research: 'Research Settings' };
-      title.textContent = map[mode] || 'Settings';
+    this._renderModeDetailPanel(mode);
+    this._renderModePickerBottom(mode);
+    // Nothing chosen yet — no bottom bar, no starting.
+    const bottomBar = document.getElementById('mp-bottom');
+    if (bottomBar) bottomBar.style.display = mode ? '' : 'none';
+    const startBtn = document.getElementById('modal-start');
+    if (startBtn) {
+      startBtn.textContent = mode === 'duel' ? 'Find opponent' : 'START WRITING';
+      startBtn.classList.toggle('btn-danger-solid', mode === 'dangerous');
     }
+    this._renderSessionQuota(this._sessionQuota);
+  },
+
+  // Bottom bar's goal-line + summary — mirrors the design's goalLine/summary
+  // fields exactly, driven by real duration/goal state.
+  _renderModePickerBottom(mode) {
+    if (!mode) return;
+    const goalEl = document.getElementById('mp-goal-line');
+    const summaryEl = document.getElementById('mp-summary');
+    if (goalEl) {
+      if (mode === 'zen') {
+        goalEl.textContent = '';
+      } else if (mode === 'duel') {
+        goalEl.textContent = '';
+      } else {
+        const goal = parseInt(localStorage.getItem('iwrite_daily_goal') || '1000', 10) || 1000;
+        const today = (this.documents || []).filter(d => {
+          const dt = new Date(d.updatedAt || d.createdAt);
+          const now = new Date();
+          return dt.toDateString() === now.toDateString();
+        }).reduce((sum, d) => sum + (d.wordCount || 0), 0);
+        const left = Math.max(0, goal - today);
+        goalEl.textContent = left > 0 ? `${left.toLocaleString()} words left of today's ${goal.toLocaleString()}.` : `Today's ${goal.toLocaleString()}-word goal is done.`;
+      }
+    }
+    if (summaryEl) {
+      const modeLabel = { zen: 'ZEN', normal: 'NORMAL', dangerous: 'DANGEROUS', duel: 'DUEL' }[mode] || mode.toUpperCase();
+      const minutes = this.sessionDuration || 0;
+      summaryEl.textContent = mode === 'duel' ? '' : mode === 'zen' ? 'ZEN · UNLIMITED' : minutes === 0 ? `${modeLabel} · UNLIMITED` : `${modeLabel} · ${minutes} MIN`;
+    }
+    // Duel has no duration controls or goal line; keep quota and start visible.
+    const bottomLeft = document.getElementById('mp-bottom-left');
+    const bottomBar = document.getElementById('mp-bottom');
+    if (bottomLeft) bottomLeft.style.display = mode === 'duel' ? 'none' : '';
+    if (bottomBar) {
+      bottomBar.classList.toggle('mp-bottom-solo', mode === 'duel');
+      bottomBar.dataset.mode = mode;
+    }
+  },
+
+  _tabsRailDefaultWidth: 196,
+  _tabsRailMinWidth: 58,
+  _tabsRailCompactWidth: 82,
+
+  _tabsRailMaxWidth() {
+    const body = document.querySelector('.editor-body');
+    const width = body ? body.getBoundingClientRect().width : 0;
+    return Math.max(this._tabsRailDefaultWidth, Math.floor(width * 0.5));
+  },
+
+  _setTabsRailWidth(width, opts = {}) {
+    const body = document.querySelector('.editor-body');
+    if (!body) return;
+    const min = this._tabsRailMinWidth;
+    const max = this._tabsRailMaxWidth();
+    const next = Math.min(max, Math.max(min, Math.round(Number(width) || this._tabsRailDefaultWidth)));
+    body.style.setProperty('--tabs-rail-width', `${next}px`);
+    body.classList.toggle('tabs-compact', next <= this._tabsRailCompactWidth);
+    const resizer = document.getElementById('editor-tabs-resizer');
+    if (resizer) {
+      resizer.setAttribute('aria-valuemin', String(min));
+      resizer.setAttribute('aria-valuemax', String(max));
+      resizer.setAttribute('aria-valuenow', String(next));
+    }
+    if (opts.save !== false) {
+      try { localStorage.setItem('iwrite_tabs_rail_width', String(next)); } catch {}
+    }
+  },
+
+  _resetTabsRailWidth(opts = {}) {
+    this._setTabsRailWidth(this._tabsRailDefaultWidth, opts);
+  },
+
+  _initTabsRailResize() {
+    const body = document.querySelector('.editor-body');
+    const rail = document.getElementById('editor-tabs-rail');
+    const resizer = document.getElementById('editor-tabs-resizer');
+    if (!body || !rail || !resizer || resizer._bound) return;
+    resizer._bound = true;
+
+    let startX = 0;
+    let startWidth = this._tabsRailDefaultWidth;
+    let dragging = false;
+    const saved = parseInt(localStorage.getItem('iwrite_tabs_rail_width') || '', 10);
+    this._setTabsRailWidth(Number.isFinite(saved) ? saved : this._tabsRailDefaultWidth, { save: false });
+
+    const stopDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      body.classList.remove('tabs-resizing');
+      resizer.classList.remove('dragging');
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', stopDrag);
+      document.removeEventListener('pointercancel', stopDrag);
+    };
+    const onMove = (e) => {
+      if (!dragging) return;
+      this._setTabsRailWidth(startWidth + (e.clientX - startX));
+    };
+
+    resizer.addEventListener('pointerdown', (e) => {
+      if (window.innerWidth <= 900) return;
+      dragging = true;
+      startX = e.clientX;
+      startWidth = rail.getBoundingClientRect().width;
+      body.classList.add('tabs-resizing');
+      resizer.classList.add('dragging');
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', stopDrag);
+      document.addEventListener('pointercancel', stopDrag);
+      e.preventDefault();
+    });
+    resizer.addEventListener('dblclick', () => this._resetTabsRailWidth());
+    window.addEventListener('resize', () => {
+      const current = rail.getBoundingClientRect().width;
+      this._setTabsRailWidth(current, { save: false });
+    });
   },
 
   _openResearch() {
     const drawer = document.getElementById('research-drawer');
     if (!drawer) return;
-    const offset = 55;
-    drawer.style.top = offset + 'px';
-    drawer.style.height = `calc(100vh - ${offset}px)`;
+    const rail = document.getElementById('editor-tabs-rail');
+    if (rail && rail.getBoundingClientRect().width > this._tabsRailDefaultWidth) {
+      this._resetTabsRailWidth();
+    }
+    clearTimeout(this._researchCloseTimer);
+    drawer.inert = false;
     drawer.classList.add('open');
     drawer.classList.add('docked');
     const editorEl = document.getElementById('editor-container');
@@ -2700,6 +3143,7 @@ const App = {
     if (drawer) {
       drawer.classList.remove('open');
       drawer.classList.remove('docked');
+      drawer.inert = true;
       // Defer clearing inline top/height until after the slide-out transition completes
       // so the drawer's geometry stays stable during the animation.
       clearTimeout(this._researchCloseTimer);
@@ -2718,6 +3162,7 @@ const App = {
     this._currentResearchTab = tab;
     document.querySelectorAll('.research-tab').forEach(t => {
       t.classList.toggle('active', t.dataset.rtab === tab);
+      t.setAttribute('aria-pressed', String(t.dataset.rtab === tab));
     });
     document.querySelectorAll('.research-pane').forEach(p => {
       p.style.display = p.dataset.rpane === tab ? '' : 'none';
@@ -2927,7 +3372,7 @@ const App = {
     if (!chat) return;
     const history = this._loadAIChatHistory();
     if (!history.length) {
-      chat.innerHTML = '<div class="research-chat-empty">Ask anything. History stays during this session.</div>';
+      chat.innerHTML = '<div class="research-chat-empty">Ask a question, clarify an idea, or explore a topic. This conversation stays during your session.</div>';
       return;
     }
     chat.innerHTML = history.slice().reverse().map(m => {
@@ -3064,63 +3509,6 @@ const App = {
     return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   },
 
-  async _refreshPromptQuota() {
-    const quotaEl = document.getElementById('prompt-popover-quota');
-    if (!quotaEl) return;
-    try {
-      const q = await API.promptQuota();
-      const remaining = Math.max(0, q.limit - q.used);
-      const capped = remaining === 0;
-      quotaEl.className = 'prompt-popover-quota' + (capped ? ' capped' : '');
-      quotaEl.textContent = capped
-        ? (q.isPro ? `You've used all ${q.limit} prompts today.` : `Daily prompt used. Upgrade to PRO for 10/day.`)
-        : `${remaining} of ${q.limit} prompt${q.limit === 1 ? '' : 's'} left today${q.isPro ? '' : ' · PRO gets 10/day'}`;
-      document.querySelectorAll('.prompt-chip').forEach(c => { c.disabled = capped; });
-    } catch (e) {
-      quotaEl.textContent = '';
-    }
-  },
-
-  _autoGrowTopic() {
-    const topic = document.getElementById('session-topic-input');
-    if (!topic) return;
-    const min = 56;
-    const max = 220;
-    const current = topic.style.height || (topic.offsetHeight + 'px');
-    topic.style.height = 'auto';
-    const target = Math.min(max, Math.max(min, topic.scrollHeight));
-    topic.style.height = current;
-    requestAnimationFrame(() => {
-      topic.style.height = target + 'px';
-    });
-  },
-
-  async _fetchPrompt(category) {
-    const btn = document.getElementById('prompt-generate-btn');
-    const pop = document.getElementById('prompt-popover');
-    const topic = document.getElementById('session-topic-input');
-    if (btn) btn.disabled = true;
-    try {
-      const res = await API.nextPrompt(category);
-      if (topic) {
-        topic.value = res.prompt.text;
-        this._autoGrowTopic();
-      }
-      if (btn) btn.classList.add('has-prompt');
-      if (pop) pop.style.display = 'none';
-      if (typeof this.toast === 'function') this.toast('Prompt loaded', 'success');
-    } catch (e) {
-      if (e.status === 429) {
-        await this._refreshPromptQuota();
-        if (typeof this.toast === 'function') this.toast(e.message || 'Daily limit reached', 'error');
-      } else {
-        if (typeof this.toast === 'function') this.toast('Failed: ' + (e.message || 'error'), 'error');
-      }
-    } finally {
-      if (btn) btn.disabled = false;
-    }
-  },
-
   _applyTimerRestrictions() {
     const isPro = this.user && this.user.plan === 'premium';
     // Normal mode presets: show all, but Pro-locked ones get badge for free users
@@ -3138,7 +3526,7 @@ const App = {
         btn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         btn.appendChild(badge);
       } else {
@@ -3156,7 +3544,7 @@ const App = {
         addBtn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         addBtn.appendChild(badge);
       } else {
@@ -3178,7 +3566,7 @@ const App = {
         dangerCustomBtn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         dangerCustomBtn.appendChild(badge);
       } else {
@@ -3196,7 +3584,7 @@ const App = {
         btn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         btn.appendChild(badge);
       }
@@ -3211,7 +3599,7 @@ const App = {
         deathCustomBtn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         deathCustomBtn.appendChild(badge);
       }
@@ -3227,7 +3615,7 @@ const App = {
         btn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         btn.appendChild(badge);
       }
@@ -3242,7 +3630,7 @@ const App = {
         tabCustomBtn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         tabCustomBtn.appendChild(badge);
       }
@@ -3258,18 +3646,99 @@ const App = {
         btn.style.opacity = '0.7';
         const badge = document.createElement('span');
         badge.className = 'timer-pro-badge';
-        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 3px;border-radius:4px;line-height:1.2';
+        badge.style.cssText = 'position:absolute;top:-5px;right:-5px;font-size:7px;font-weight:700;background:var(--accent);color:#fff;padding:1px 3px;border-radius:4px;line-height:1.2';
         badge.textContent = 'PRO';
         btn.appendChild(badge);
       }
     });
   },
 
-  _showWeeklySessionInfo() {
-    // Session limits are now invisible (200/month free, 300/month pro)
-    // Remove any old weekly-session-info element
-    const oldEl = document.getElementById('weekly-session-info');
-    if (oldEl) oldEl.style.display = 'none';
+  _sessionResetLabel(resetAt) {
+    if (!resetAt) return '';
+    return `Resets ${new Date(resetAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+  },
+
+  _sessionStartLabel() {
+    return this.sessionMode === 'duel' ? 'Find opponent' : 'START WRITING';
+  },
+
+  _renderSessionQuota(quota) {
+    const dashboardLabel = document.getElementById('dashboard-session-quota');
+    if (dashboardLabel) dashboardLabel.textContent = !quota
+      ? 'Checking today\'s sessions…'
+      : quota.plan === 'premium' ? 'Pro · Unlimited sessions' : `Free · ${quota.remaining}/3 sessions left today`;
+    const message = document.getElementById('session-quota-message');
+    const reset = document.getElementById('session-quota-reset');
+    const start = document.getElementById('modal-start');
+    if (!message || !reset || !start) return;
+    if (!quota) {
+      message.textContent = 'Checking today\'s sessions…';
+      reset.textContent = '';
+      start.textContent = this._sessionStartLabel();
+      return;
+    }
+    if (quota.plan === 'premium') {
+      message.textContent = 'Pro · Unlimited sessions';
+      reset.textContent = '';
+    } else {
+      message.textContent = quota.remaining === 0
+        ? 'You have used all 3 free sessions today.'
+        : `${quota.remaining} of 3 free sessions left today`;
+      reset.textContent = this._sessionResetLabel(quota.resetAt);
+    }
+    start.textContent = quota.plan === 'free' && quota.remaining === 0 ? 'START WRITING' : this._sessionStartLabel();
+  },
+
+  async refreshSessionQuota() {
+    const requestId = this._sessionQuotaRequestId = (this._sessionQuotaRequestId || 0) + 1;
+    this._sessionQuota = null;
+    this._renderSessionQuota(null);
+    try {
+      const quota = await API.getSessionQuota();
+      if (requestId !== this._sessionQuotaRequestId) return;
+      this._sessionQuota = quota;
+      this._renderSessionQuota(quota);
+      if (quota.plan === 'free' && this.user?.plan === 'premium') {
+        this.user = { ...this.user, plan: 'free' };
+      }
+      if (this._sessionQuotaTimer) clearTimeout(this._sessionQuotaTimer);
+      if (quota.plan === 'free') {
+        const untilReset = new Date(quota.resetAt).getTime() - Date.now();
+        this._sessionQuotaTimer = setTimeout(() => this.refreshSessionQuota(), Math.max(1000, untilReset + 1000));
+      }
+    } catch {
+      if (requestId !== this._sessionQuotaRequestId) return;
+      this._sessionQuota = null;
+      const dashboardLabel = document.getElementById('dashboard-session-quota');
+      if (dashboardLabel) dashboardLabel.textContent = 'Session allowance unavailable';
+      document.getElementById('session-quota-message').textContent = 'Session allowance unavailable';
+      document.getElementById('session-quota-reset').textContent = '';
+      document.getElementById('modal-start').textContent = this._sessionStartLabel();
+    }
+  },
+
+  showSessionQuotaLimit(quota) {
+    this._sessionQuotaRequestId = (this._sessionQuotaRequestId || 0) + 1;
+    this._sessionQuota = quota;
+    if (quota?.plan === 'free' && this.user?.plan === 'premium') {
+      this.user = { ...this.user, plan: 'free' };
+    }
+    this._renderSessionQuota(quota);
+    this.showDailyLimitModal(quota);
+  },
+
+  showDailyLimitModal(quota = this._sessionQuota) {
+    this.closeSessionModal();
+    const reset = document.getElementById('daily-limit-reset');
+    reset.textContent = quota?.resetAt ? this._sessionResetLabel(quota.resetAt) : '';
+    document.getElementById('daily-limit-stripe-price').textContent = `$${this._stripePricing['1m'].price}/month`;
+    document.getElementById('daily-limit-click-price').textContent = `${this._formatSom(this._localPrice('1m'))}/month`;
+    document.getElementById('daily-limit-modal').classList.add('active');
+    document.getElementById('daily-limit-upgrade').focus();
+  },
+
+  closeDailyLimitModal() {
+    document.getElementById('daily-limit-modal').classList.remove('active');
   },
 
   closeSessionModal() {
@@ -3277,29 +3746,41 @@ const App = {
   },
 
   startSession() {
-    // Monthly session limit is enforced server-side (invisible to user)
-    const targetInput = parseInt(document.getElementById('session-target-words').value) || 0;
-    if (targetInput > 0 && targetInput <= 50) {
-      const jokes = [
-        "Bro, are you even planning to write something? 😂",
-        "50 words? That's barely a text message 💀",
-        "Come on, even a grocery list is longer than that 🛒",
-        "Is this a writing session or a tweet? 🐦",
-        "Your target should be at least 51 words. Dream bigger! ✨"
-      ];
-      this.showToast(jokes[Math.floor(Math.random() * jokes.length)], 'warning');
+    if (this._sessionQuota?.plan === 'free' && this._sessionQuota.remaining === 0) {
+      API.recordBlockedSessionAttempt().catch(error => console.error('Could not record blocked session attempt:', error));
+      this.showDailyLimitModal();
+      return;
+    }
+    if (!this.sessionMode) return;
+    // Duel mode hands straight off to the real matchmaking flow: close the
+    // picker, land on the Duels view, and immediately start searching with
+    // the duration chosen in the picker — matching "another window opens
+    // instantly starting a searching period, with its own Cancel button" —
+    // reusing the real queue/join flow already built there instead of a
+    // second, duplicate "searching" modal.
+    if (this.sessionMode === 'duel') {
+      const duelMinutes = this.sessionDuration || 10;
+      this.closeSessionModal();
+      this.switchView('duels');
+      this._mmDuration = duelMinutes;
+      document.querySelectorAll('.duel-mm-dur-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.duration) === duelMinutes);
+      });
+      this.matchmakingFind();
       return;
     }
     this.closeSessionModal();
-    // Show document name modal before starting
-    this._pendingTopic = document.getElementById('session-topic-input').value.trim();
-    this._pendingTargetWords = targetInput;
-    document.getElementById('doc-name-input').value = '';
-    document.getElementById('doc-name-modal').classList.add('active');
+    // No separate "name your document" step — matches the design, where the
+    // title is just an inline editable field in the session header itself
+    // (this also sidesteps the old modal's silent required-name validation).
+    // Target word count is no longer set up front either — it's adjustable
+    // mid-session from the session tools menu instead.
+    this._pendingTopic = '';
+    this._pendingTargetWords = 0;
+    this._confirmDocName('Untitled');
   },
 
   _confirmDocName(name) {
-    document.getElementById('doc-name-modal').classList.remove('active');
     const titleInput = document.getElementById('editor-title');
     titleInput.value = (!name || name === 'Untitled') ? '' : name;
     titleInput.placeholder = 'Write a title...';
@@ -3323,6 +3804,7 @@ const App = {
   },
 
   showSessionFailed(reason) {
+    this._closeSessionPopovers?.();
     document.getElementById('sf-reason').textContent = reason;
     document.getElementById('session-failed').classList.add('active');
   },
@@ -3570,6 +4052,212 @@ const App = {
     countEl.textContent = count.toLocaleString();
   },
 
+  async toggleDashboardNotifications(e, refresh = false) {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    const btn = document.getElementById('dashboard-notif-btn');
+    if (!btn) return;
+    const dropdown = this._ensureDashboardNotifDropdown();
+    if (dropdown.classList.contains('active') && !refresh) {
+      this.closeDashboardNotifications();
+      return;
+    }
+
+    const rect = btn.getBoundingClientRect();
+    dropdown.style.top = `${Math.round(rect.bottom + 10)}px`;
+    dropdown.style.right = `${Math.max(12, Math.round(window.innerWidth - rect.right))}px`;
+    const request = this._dashboardNotifRequest = (this._dashboardNotifRequest || 0) + 1;
+    if (!refresh) dropdown.innerHTML = '<div class="dashboard-notif-loading">Loading notifications...</div>';
+    dropdown.inert = false;
+    dropdown.classList.add('active');
+    btn.setAttribute('aria-expanded', 'true');
+
+    try {
+      const [annRes, notifRes] = await Promise.allSettled([
+        fetch('/api/announcements', {
+          headers: { 'Authorization': `Bearer ${API.getToken()}` }
+        }),
+        API.getNotifications()
+      ]);
+      let announcements = [];
+      let notifications = [];
+      if (annRes.status === 'fulfilled' && annRes.value.ok) announcements = await annRes.value.json();
+      if (notifRes.status === 'fulfilled' && Array.isArray(notifRes.value)) notifications = notifRes.value;
+      if (request !== this._dashboardNotifRequest || !dropdown.classList.contains('active')) return;
+      const items = this._mergeDashboardNotifications(announcements, notifications);
+      clearTimeout(this._dashboardNotifExpiryTimer);
+      const expires = NotificationPolicy.nextExpiry(items);
+      if (expires) this._dashboardNotifExpiryTimer = setTimeout(() => this.toggleDashboardNotifications(undefined, true), Math.max(10, expires - Date.now() + 1));
+      dropdown.innerHTML = this._renderDashboardNotifDropdown(items);
+      this._syncDashboardNotifButton(items.filter(item => !item.read).length);
+      dropdown.querySelectorAll('[data-dashboard-ann-id]').forEach(row => {
+        row.addEventListener('click', () => {
+          const item = announcements.find(a => a.id === row.dataset.dashboardAnnId);
+          if (item) {
+            this.closeDashboardNotifications();
+            this.openAnnouncementModal(item);
+          }
+        });
+      });
+      dropdown.querySelectorAll('[data-dashboard-notif-id]').forEach(row => {
+        row.addEventListener('click', async () => {
+          const item = notifications.find(n => n.id === row.dataset.dashboardNotifId);
+          if (!item) return;
+          if (!item.read) {
+            try { await API.markNotifsRead([item.id]); } catch {}
+            item.read = true;
+            row.classList.remove('unread');
+            row.querySelector('.dashboard-notif-dot')?.remove();
+            const unreadCount = notifications.filter(n => !n.read).length;
+            this._syncDashboardNotifButton(unreadCount);
+            const countEl = dropdown.querySelector('[data-dashboard-unread-count]');
+            if (countEl) countEl.textContent = `${unreadCount} unread`;
+            this.updateNotifBadge?.();
+          }
+          if (item.storyId) {
+            this.closeDashboardNotifications();
+            this.switchView('stories');
+            await this.selectStory(item.storyId);
+          }
+        });
+      });
+    } catch {
+      if (request !== this._dashboardNotifRequest) return;
+      dropdown.innerHTML = '<div class="dashboard-notif-empty">Couldn’t load notifications.</div>';
+    }
+  },
+
+  _ensureDashboardNotifDropdown() {
+    let dropdown = document.getElementById('dashboard-notif-dropdown');
+    if (dropdown) return dropdown;
+    dropdown = document.createElement('div');
+    dropdown.id = 'dashboard-notif-dropdown';
+    dropdown.className = 'dashboard-notif-dropdown';
+    dropdown.inert = true;
+    dropdown.setAttribute('aria-label', 'Notifications');
+    document.getElementById('dashboard-notif-btn')?.setAttribute('aria-expanded', 'false');
+    dropdown.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.stopPropagation(); this.closeDashboardNotifications(); document.getElementById('dashboard-notif-btn')?.focus(); }
+    });
+    document.body.appendChild(dropdown);
+    dropdown.addEventListener('click', e => e.stopPropagation());
+    if (!this._dashboardNotifOutsideBound) {
+      this._dashboardNotifOutsideBound = true;
+      document.addEventListener('click', e => {
+        if (!e.target.closest('#dashboard-notif-dropdown') && !e.target.closest('#dashboard-notif-btn')) {
+          this.closeDashboardNotifications();
+        }
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && dropdown.classList.contains('active')) {
+          this.closeDashboardNotifications(); document.getElementById('dashboard-notif-btn')?.focus();
+        }
+      });
+      window.addEventListener('resize', () => this.closeDashboardNotifications());
+      window.addEventListener('scroll', event => {
+        // The notification list scrolls inside the popover. Only page scrolling
+        // should dismiss it.
+        if (event.target instanceof Node && dropdown.contains(event.target)) return;
+        this.closeDashboardNotifications();
+      }, true);
+    }
+    return dropdown;
+  },
+
+  closeDashboardNotifications() {
+    this._dashboardNotifRequest = (this._dashboardNotifRequest || 0) + 1;
+    clearTimeout(this._dashboardNotifExpiryTimer);
+    const dropdown = document.getElementById('dashboard-notif-dropdown');
+    dropdown?.classList.remove('active');
+    if (dropdown) dropdown.inert = true;
+    document.getElementById('dashboard-notif-btn')?.setAttribute('aria-expanded', 'false');
+  },
+
+  _syncDashboardNotifButton(unreadCount = 0) {
+    const btn = document.getElementById('dashboard-notif-btn');
+    if (!btn) return;
+    btn.classList.toggle('has-unread', unreadCount > 0);
+    btn.setAttribute('data-unread-count', String(unreadCount));
+  },
+
+  _mergeDashboardNotifications(announcements = [], notifications = []) {
+    const annItems = (announcements || []).map(a => ({
+      kind: 'announcement',
+      id: a.id,
+      title: a.title || 'Announcement',
+      text: a.subtitle || (a.body || '').replace(/\s+/g, ' ').slice(0, 90),
+      category: a.category || 'update',
+      createdAt: a.createdAt,
+      read: true
+    }));
+    const notifItems = (notifications || []).map(n => ({
+      kind: 'notification',
+      id: n.id,
+      type: n.type || 'notification',
+      title: this._dashboardNotificationTitle(n),
+      text: this._dashboardNotificationText(n),
+      createdAt: n.createdAt,
+      read: !!n.read,
+      storyId: n.storyId || '',
+      fromUserId: n.fromUserId || ''
+    }));
+    return NotificationPolicy.filter([...notifItems, ...annItems])
+      .sort((a, b) => {
+        if ((a.read ? 1 : 0) !== (b.read ? 1 : 0)) return (a.read ? 1 : 0) - (b.read ? 1 : 0);
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      })
+      .slice(0, 60);
+  },
+
+  _dashboardNotificationTitle(n) {
+    if (n.type === 'new_follower') return 'New follower';
+    if (n.type === 'story_comment') return 'New comment';
+    if (n.type === 'comment_reply') return 'Comment reply';
+    return 'Notification';
+  },
+
+  _dashboardNotificationText(n) {
+    const who = n.fromUserName || 'Someone';
+    if (n.type === 'new_follower') return `${who} started following you`;
+    if (n.type === 'story_comment') return `${who} commented on ${n.storyTitle || 'your story'}`;
+    if (n.type === 'comment_reply') return `${who} replied on ${n.storyTitle || 'your story'}`;
+    return n.text || 'New notification';
+  },
+
+  _dashboardNotificationIconHtml(item) {
+    if (item.type === 'new_follower') {
+      return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>`;
+    }
+    const label = item.kind === 'announcement' ? '!' : item.type === 'comment_reply' ? 'R' : item.type === 'story_comment' ? 'C' : 'N';
+    return this.escapeHtml(label);
+  },
+
+  _renderDashboardNotifDropdown(items) {
+    if (!items || items.length === 0) {
+      return `<div class="dashboard-notif-head"><strong>Notifications</strong><span data-dashboard-unread-count>0 unread</span></div><div class="dashboard-notif-empty">No notifications.</div>`;
+    }
+    const fmtDate = iso => iso ? this._timeAgo(iso) : '';
+    const unreadCount = items.filter(item => !item.read).length;
+    const rows = items.map(item => {
+      const isAnn = item.kind === 'announcement';
+      const attrs = isAnn
+        ? `data-dashboard-ann-id="${this.escapeHtml(item.id)}"`
+        : `data-dashboard-notif-id="${this.escapeHtml(item.id)}"`;
+      const cat = item.category || 'update';
+      const label = isAnn ? ({ update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update') : 'Social';
+      return `<button type="button" class="dashboard-notif-row ${item.read ? '' : 'unread'} ${isAnn ? 'announcement' : 'social'}" ${attrs}>
+        <span class="dashboard-notif-icon ${isAnn ? 'announcement' : 'social'}">${this._dashboardNotificationIconHtml(item)}</span>
+        <span class="dashboard-notif-title">${this.escapeHtml(item.title)}</span>
+        <span class="dashboard-notif-date">${fmtDate(item.createdAt)}</span>
+        <span class="dashboard-notif-subtitle">${this.escapeHtml(item.text || '')}</span>
+        ${item.read ? '' : '<span class="dashboard-notif-dot"></span>'}
+        ${isAnn ? '<span class="dashboard-notif-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></span>' : ''}
+        <span class="dashboard-notif-kind">${this.escapeHtml(label)}</span>
+      </button>`;
+    }).join('');
+    return `<div class="dashboard-notif-head"><strong>Notifications</strong><span data-dashboard-unread-count>${unreadCount} unread</span></div><div class="dashboard-notif-list">${rows}</div>`;
+  },
+
   async openNotificationHistory() {
     // Reuse the existing help-popup overlay for consistency
     const popup = document.getElementById('help-popup');
@@ -3604,9 +4292,9 @@ const App = {
 
   _renderNotificationHistory(items) {
     if (!items || items.length === 0) {
-      return '<h2 style="font-size:18px;margin-bottom:16px">📢 Notification History</h2><p style="color:var(--text-muted);padding:30px 0;text-align:center">No notifications yet.</p>';
+      return '<h2 style="font-size:18px;margin-bottom:16px">Announcements</h2><p style="color:var(--text-muted);padding:30px 0;text-align:center">No announcements yet.</p>';
     }
-    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const fmtDate = (iso) => iso ? this.formatDateFull(iso) : '';
     const rows = items.map(a => {
       const cat = a.category || 'update';
       const catLabel = { update: 'Update', news: 'News', feature: 'Feature', tip: 'Tip' }[cat] || 'Update';
@@ -3625,17 +4313,16 @@ const App = {
         <div style="font-size:11px;color:var(--text-muted);flex-shrink:0;text-align:right">${fmtDate(a.createdAt)}</div>
       </div>`;
     }).join('');
-    return `<h2 style="font-size:18px;margin-bottom:6px">📢 Notification History</h2>
+    return `<h2 style="font-size:18px;margin-bottom:6px">Announcements</h2>
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Every announcement we've published. Tap one to see the full content.</p>
       ${rows}`;
   },
 
   _lbData: null,
-  _lbTab: 'streaks',
+  _lbTab: 'overall',
 
   async loadLeaderboard() {
-    const tbody = document.querySelector('#leaderboard-table tbody');
-    const podium = document.getElementById('leaderboard-podium');
+    const rowsEl = document.getElementById('leaderboard-rows');
 
     // Wire up tab buttons once
     if (!this._lbTabsWired) {
@@ -3643,138 +4330,161 @@ const App = {
       document.querySelectorAll('.lb-tab').forEach(btn => {
         btn.addEventListener('click', () => {
           this._lbTab = btn.dataset.lbTab;
+          this._lbPage = 1;
           document.querySelectorAll('.lb-tab').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          if (this._lbData) this._renderLeaderboard(this._lbData);
+          this._fetchLeaderboardPage();
         });
       });
     }
 
+    this._lbPage = 1;
+    await this._fetchLeaderboardPage();
+  },
+
+  async _fetchLeaderboardPage() {
+    const rowsEl = document.getElementById('leaderboard-rows');
     try {
-      this._lbData = await API.getLeaderboard();
+      rowsEl.innerHTML = '<div class="lb-row-empty">Loading leaderboard...</div>';
+      this._lbData = await API.getLeaderboard({
+        tab: this._lbTab || 'overall',
+        page: this._lbPage || 1,
+        limit: 10
+      });
       this._renderLeaderboard(this._lbData);
     } catch {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Failed to load leaderboard</td></tr>';
+      rowsEl.innerHTML = '<div class="lb-row-empty">Failed to load leaderboard</div>';
     }
   },
 
-  _renderLeaderboard(rawData) {
-    const tbody = document.querySelector('#leaderboard-table tbody');
-    const podium = document.getElementById('leaderboard-podium');
-    const thead = document.getElementById('leaderboard-thead');
+  // Overall compares each writer's public stats; focused tabs show one metric.
+  // Pagination and the signed-in user's ranks are supplied by the API.
+  _renderLeaderboard(payload) {
+    const rowsEl = document.getElementById('leaderboard-rows');
     const isTime = this._lbTab === 'time';
     const isReferrals = this._lbTab === 'referrals';
+    const isStreaks = this._lbTab === 'streaks';
+    const isOverall = !isTime && !isReferrals && !isStreaks;
 
-    // Toggle tab class on leaderboard view for mobile column visibility
     const lbView = document.getElementById('view-leaderboard');
     if (lbView) {
       lbView.classList.toggle('lb-tab-time', isTime);
-      lbView.classList.toggle('lb-tab-streaks', !isTime && !isReferrals);
+      lbView.classList.toggle('lb-tab-streaks', isStreaks);
       lbView.classList.toggle('lb-tab-referrals', isReferrals);
+      lbView.classList.toggle('lb-tab-overall', isOverall);
     }
 
-    // Sort based on active tab, filter out zero-referral users for referrals tab
-    const filtered = isReferrals ? rawData.filter(e => (e.referralCount || 0) > 0) : rawData;
-    const data = [...filtered].sort((a, b) => {
-      if (isReferrals) return (b.referralCount || 0) - (a.referralCount || 0) || (b.totalWords || 0) - (a.totalWords || 0);
-      if (isTime) return (b.minutesWritten || 0) - (a.minutesWritten || 0) || (b.totalWords || 0) - (a.totalWords || 0);
-      return (b.streak || 0) - (a.streak || 0) || (b.totalWords || 0) - (a.totalWords || 0);
-    });
+    const metricLabel = isReferrals ? 'Referrals' : isTime ? 'Time' : isStreaks ? 'Streak' : 'XP';
+    const kickerBy = isReferrals ? 'referrals' : isTime ? 'time written' : isStreaks ? 'streak' : 'XP';
+    const metricLabelEl = document.getElementById('lb-metric-label');
+    if (metricLabelEl) metricLabelEl.textContent = metricLabel;
+    const kickerEl = document.getElementById('lb-kicker');
+    if (kickerEl) kickerEl.textContent = `All users · by ${kickerBy}`;
 
-    // Update thead
-    if (isReferrals) {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-referrals">Invites</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-level">Level</th></tr>`;
-    } else if (isTime) {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-time">Writing Time</th><th class="lb-col-words">Words</th><th class="lb-col-streak">Streak</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-level">Level</th></tr>`;
-    } else {
-      thead.innerHTML = `<tr><th>Rank</th><th class="lb-pro-col"></th><th>Writer</th><th class="lb-col-streak">Streak</th><th class="lb-col-words">Words</th><th class="lb-col-sessions">Sessions</th><th class="lb-col-time">Time</th><th class="lb-col-level">Level</th></tr>`;
+    const PER_PAGE = 10;
+    const data = payload.entries || [];
+    const total = payload.total || 0;
+    const totalPages = payload.totalPages || Math.max(1, Math.ceil(total / PER_PAGE));
+    this._lbPage = payload.page || this._lbPage || 1;
+    if (this._lbPage > totalPages) this._lbPage = totalPages;
+    const pageOffset = (this._lbPage - 1) * PER_PAGE;
+
+    const rangeEl = document.getElementById('lb-range');
+    if (rangeEl) rangeEl.textContent = total ? `Ranks ${pageOffset + 1}–${Math.min(total, pageOffset + PER_PAGE)} of ${total}` : '';
+
+    const pagerEl = document.getElementById('lb-pagination');
+    if (pagerEl) {
+      if (totalPages > 1) {
+        const PAGE_WINDOW = 10;
+        const windowStart = Math.floor((this._lbPage - 1) / PAGE_WINDOW) * PAGE_WINDOW + 1;
+        const windowEnd = Math.min(totalPages, windowStart + PAGE_WINDOW - 1);
+        const pages = [
+          `<button class="lb-page-btn lb-page-arrow lb-page-prev" data-lb-step="-1" ${this._lbPage <= 1 ? 'disabled' : ''} aria-label="Previous page">‹</button>`
+        ];
+        for (let i = windowStart; i <= windowEnd; i++) {
+          pages.push(`<button class="lb-page-btn${i === this._lbPage ? ' active' : ''}" data-lb-page="${i}">${i}</button>`);
+        }
+        pages.push(`<button class="lb-page-btn lb-page-arrow lb-page-next" data-lb-step="1" ${this._lbPage >= totalPages ? 'disabled' : ''} aria-label="Next page">›</button>`);
+        pagerEl.style.display = '';
+        pagerEl.innerHTML = pages.join('');
+        pagerEl.querySelectorAll('[data-lb-page]').forEach(btn => {
+          btn.onclick = () => { this._lbPage = parseInt(btn.dataset.lbPage, 10); this._fetchLeaderboardPage(); };
+        });
+        pagerEl.querySelectorAll('[data-lb-step]').forEach(btn => {
+          btn.onclick = () => {
+            this._lbPage = Math.max(1, Math.min(totalPages, this._lbPage + parseInt(btn.dataset.lbStep, 10)));
+            this._fetchLeaderboardPage();
+          };
+        });
+      } else {
+        pagerEl.style.display = 'none';
+        pagerEl.innerHTML = '';
+      }
     }
 
-    // Podium for top 3
-    const top3 = data.slice(0, 3);
-    const podiumOrder = [top3[1], top3[0], top3[2]];
-    const medals = ['&#x1F948;', '&#x1F947;', '&#x1F949;'];
-    const podiumLabels = ['2nd', '1st', '3rd'];
-    const heights = ['160px', '200px', '140px'];
+    const metricValue = (entry) => isReferrals
+      ? (entry.referralCount || 0).toLocaleString()
+      : isTime
+        ? this._formatWritingTime(entry.minutesWritten)
+        : isStreaks
+          ? `${entry.streak || 0} day${entry.streak === 1 ? '' : 's'}`
+          : (entry.xp || 0).toLocaleString();
 
-    podium.innerHTML = podiumOrder.map((entry, i) => {
-      if (!entry) return '<div class="podium-slot empty"></div>';
-      const isFirst = podiumLabels[i] === '1st';
-      const avatarContent = entry.avatar
-        ? `<img src="${entry.avatar}?t=${entry.avatarUpdatedAt || 0}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-        : entry.name.charAt(0).toUpperCase();
-      const statLine = isReferrals
-        ? `&#x1F4E9; ${entry.referralCount || 0} invite${(entry.referralCount || 0) === 1 ? '' : 's'}`
-        : isTime
-          ? `&#x23F1;&#xFE0F; ${this._formatWritingTime(entry.minutesWritten)}`
-          : `${entry.streak ? '&#x1F525; ' + entry.streak + ' day streak' : 'No streak'}`;
+    const head = document.querySelector('#leaderboard-container .lb-board-head');
+    head.innerHTML = `<span>Rank</span><span>Writer</span><span class="lb-board-metric-th" id="lb-metric-label">${metricLabel}</span>${isOverall ? '<span>Time spent</span><span>Words</span><span>Streak</span><span>Referrals</span><span>Joined</span>' : ''}`;
+    rowsEl.innerHTML = data.map((entry, i) => {
+      const absRank = (entry.rank || (pageOffset + i + 1)) - 1;
+      const isTop3 = absRank < 3;
+      const rankLabel = `<span class="lb-rank-emblem"${isTop3 ? ' data-podium="' + (absRank + 1) + '" role="img" aria-label="Rank ' + (absRank + 1) + '"' : ''}>${isTop3 ? ['🥇', '🥈', '🥉'][absRank] : absRank + 1}</span>`;
+      const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
+      const nameCell = entry.username
+        ? this.profileLink(entry.username, this.escapeHtml(entry.name), 'lb-name-link')
+        : this.escapeHtml(entry.name);
       return `
-        <div class="podium-slot">
-          ${isFirst ? '<div class="podium-crown">&#x1F451;</div>' : ''}
-          <div class="podium-avatar">${avatarContent}</div>
-          <div class="podium-name">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span> ' : ''}${this.escapeHtml(entry.name)}</div>
-          ${entry.username ? `<div class="podium-username">${this.profileLink(entry.username)}</div>` : ''}
-          <div class="podium-words">${statLine}</div>
-          <div class="podium-pedestal" style="height:${heights[i]}">
-            <span class="podium-medal">${medals[i]}</span>
-            <span class="podium-rank">${podiumLabels[i]}</span>
+        <div class="lb-row${isMe ? ' lb-row-me' : ''}">
+          <div class="lb-row-rank${isTop3 ? ' lb-row-rank-medal' : ''}">${rankLabel}</div>
+          <div class="lb-row-writer">
+            <div class="lb-row-avatar">${entry.name.charAt(0).toUpperCase()}</div>
+            <div class="lb-row-writer-info">
+              <div class="lb-row-name">${nameCell}${isMe ? ' <span class="lb-you">YOU</span>' : ''}${entry.plan === 'premium' ? ' <span class="lb-pro-badge">PRO</span>' : ''}</div>
+              <div class="lb-row-level">Level ${this.calcXPLevel(entry.xp || 0).level}</div>
+            </div>
           </div>
+          <div class="lb-row-metric">${metricValue(entry)}</div>
+          ${isOverall ? `<div class="lb-extra">${this._formatWritingTime(entry.minutesWritten)}</div><div class="lb-extra">${(entry.totalWords || 0).toLocaleString()}</div><div class="lb-extra">${entry.streak || 0} days</div><div class="lb-extra">${entry.referralCount || 0}</div><div class="lb-extra">${entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'}</div>` : ''}
         </div>`;
     }).join('');
 
-    // Full table
-    tbody.innerHTML = data.map((entry, i) => {
-      const rankEmoji = i === 0 ? '&#x1F947;' : i === 1 ? '&#x1F948;' : i === 2 ? '&#x1F949;' : `${i + 1}`;
-      const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
-      const timeStr = this._formatWritingTime(entry.minutesWritten);
-
-      const nameCell = entry.username
-        ? this.profileLink(entry.username, `${this.escapeHtml(entry.name)} <span class="lb-username">@${this.escapeHtml(entry.username)}</span>`, 'lb-name-link')
-        : this.escapeHtml(entry.name);
-      const youBadge = isMe ? ' <span class="lb-you">YOU</span>' : '';
-
-      if (isReferrals) {
-        return `
-          <tr class="${isMe ? 'leaderboard-me' : ''}">
-            <td class="lb-rank">${rankEmoji}</td>
-            <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-            <td class="lb-name">${nameCell}${youBadge}</td>
-            <td class="lb-col-referrals"><strong>${entry.referralCount || 0}</strong></td>
-            <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
-            <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-            <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-          </tr>`;
-      }
-      if (isTime) {
-        return `
-          <tr class="${isMe ? 'leaderboard-me' : ''}">
-            <td class="lb-rank">${rankEmoji}</td>
-            <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-            <td class="lb-name">${nameCell}${youBadge}</td>
-            <td class="lb-col-time"><strong>${timeStr}</strong></td>
-            <td class="lb-col-words">${(entry.totalWords || 0).toLocaleString()}</td>
-            <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-            <td class="lb-col-sessions">${entry.totalSessions || 0}</td>
-            <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-          </tr>`;
-      }
-      return `
-        <tr class="${isMe ? 'leaderboard-me' : ''}">
-          <td class="lb-rank">${rankEmoji}</td>
-          <td class="lb-pro-col">${entry.plan === 'premium' ? '<span class="lb-pro-badge">PRO</span>' : ''}</td>
-          <td class="lb-name">${nameCell}${youBadge}</td>
-          <td class="lb-col-streak">${entry.streak ? '&#x1F525; ' + entry.streak : '-'}</td>
-          <td class="lb-col-words"><strong>${(entry.totalWords || 0).toLocaleString()}</strong></td>
-          <td class="lb-col-sessions">${entry.totalSessions || 0}</td>
-          <td class="lb-col-time">${timeStr}</td>
-          <td class="lb-col-level"><span class="lb-level">Lv.${this.calcXPLevel(entry.xp || 0).level}</span></td>
-        </tr>`;
-    }).join('');
-
-    if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">No writers yet. Be the first!</td></tr>';
-      podium.innerHTML = '';
+    if (!data.length) {
+      rowsEl.innerHTML = '<div class="lb-row-empty">No writers yet. Be the first!</div>';
     }
+
+    // Rail: your place across all four categories, supplied by the API.
+    const summary = payload.summary || {};
+    const overall = summary.overall || null;
+    const rankEl = document.getElementById('lb-your-rank');
+    const ofEl = document.getElementById('lb-your-of');
+    const noteEl = document.getElementById('lb-your-note');
+    if (rankEl) rankEl.textContent = overall?.rank ? `#${overall.rank}` : '—';
+    if (ofEl) ofEl.textContent = overall?.rank ? `of ${(overall.total || total).toLocaleString()}` : '';
+    if (noteEl) noteEl.textContent = overall?.rank ? `Top ${Math.max(1, Math.ceil(overall.rank / Math.max(1, overall.total || total) * 100))}% of writers` : 'Complete a session to get ranked.';
+
+    const breakdownRow = (label, item, fmt) => `<div class="lb-rail-row"><span>${label}</span><span class="lb-rail-row-value">${item?.rank ? '#' + item.rank + ' · ' + fmt(item) : '—'}</span></div>`;
+    const breakdownEl = document.getElementById('lb-rail-breakdown');
+    if (breakdownEl) {
+      breakdownEl.innerHTML = [
+        breakdownRow('Overall', summary.overall, e => (e.xp || 0).toLocaleString() + ' XP'),
+        breakdownRow('Streak', summary.streaks, e => (e.streak || 0) + ' days'),
+        breakdownRow('Time spent', summary.time, e => this._formatWritingTime(e.minutesWritten)),
+        breakdownRow('Referrals', summary.referrals, e => (e.referralCount || 0).toLocaleString())
+      ].join('');
+    }
+  },
+
+  _lbPlaceNote(idx) {
+    if (idx === 0) return "You're #1 — stay ahead of the pack.";
+    if (idx < 10) return "You're in the top ten.";
+    return `${idx} writer${idx === 1 ? '' : 's'} ahead of you.`;
   },
 
   _formatWritingTime(minutes) {
@@ -4298,7 +5008,7 @@ const App = {
           const oppWords = isChallenger ? (d.opponentWords || 0) : (d.challengerWords || 0);
 
           const endDate = d.endAt ? new Date(d.endAt) : new Date(d.createdAt);
-          const dateStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const dateStr = this.formatDateFull(endDate);
           const timeStr = endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
           const docBtn = (myDocId && !iForfeited) ? `<button class="duel-history-doc-btn" onclick="App.openDocument('${myDocId}')">View Doc</button>` : '';
@@ -4696,16 +5406,20 @@ const App = {
 
   async exportDocPDF(id) {
     try {
-      const data = await API.exportDocument(id);
+      const data = await this._getExportDocumentData(id);
       // Create a printable HTML document and trigger browser print (Save as PDF)
       const printWin = window.open('', '_blank');
+      if (!printWin) {
+        this.toast('Allow popups to export PDF', 'warning');
+        return;
+      }
       printWin.document.write(`<!DOCTYPE html><html><head><title>${data.title || 'Document'}</title>
         <style>body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:20px;color:#222;line-height:1.7}
         h1{font-size:28px;margin-bottom:8px}
         .meta{font-size:13px;color:#888;margin-bottom:24px;border-bottom:1px solid #eee;padding-bottom:12px}
         .content{font-size:16px}</style></head><body>
         <h1>${this.escapeHtml(data.title || 'Untitled')}</h1>
-        <div class="meta">${data.wordCount || 0} words &middot; ${new Date(data.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })} &middot; iWrite4.me</div>
+        <div class="meta">${data.wordCount || 0} words &middot; ${this.formatDateFull(data.createdAt)} &middot; iWrite4.me</div>
         <div class="content">${data.content || ''}</div></body></html>`);
       printWin.document.close();
       setTimeout(() => printWin.print(), 500);
@@ -4717,29 +5431,43 @@ const App = {
   // --- Free export: Markdown & plain text ---
   async exportDocMarkdown(id) {
     try {
-      const data = await API.exportDocument(id);
+      const data = await this._getExportDocumentData(id);
       const title = data.title || 'Untitled';
       const body = this._htmlToMarkdown(data.content || '');
-      this._downloadBlob(this._safeFilename(title) + '.md', `# ${title}\n\n${body}\n`, 'text/markdown');
+      this._downloadTextBlob(this._safeFilename(title) + '.md', `# ${title}\n\n${body}\n`, 'text/markdown');
       this.toast('Exported as Markdown', 'success');
     } catch { this.toast('Failed to export document', 'error'); }
   },
 
   async exportDocText(id) {
     try {
-      const data = await API.exportDocument(id);
+      const data = await this._getExportDocumentData(id);
       const title = data.title || 'Untitled';
       const body = this._htmlToPlainText(data.content || '');
-      this._downloadBlob(this._safeFilename(title) + '.txt', `${title}\n\n${body}\n`, 'text/plain');
+      this._downloadTextBlob(this._safeFilename(title) + '.txt', `${title}\n\n${body}\n`, 'text/plain');
       this.toast('Exported as text', 'success');
     } catch { this.toast('Failed to export document', 'error'); }
+  },
+
+  async _getExportDocumentData(id) {
+    try {
+      return await API.exportDocument(id);
+    } catch {
+      const doc = await API.request(`/documents/${id}`);
+      return {
+        title: doc.title,
+        content: doc.content,
+        wordCount: doc.wordCount,
+        createdAt: doc.createdAt
+      };
+    }
   },
 
   _safeFilename(name) {
     return (name || 'document').replace(/[^\w\s.-]/g, '').replace(/\s+/g, '-').slice(0, 60) || 'document';
   },
 
-  _downloadBlob(filename, text, mime) {
+  _downloadTextBlob(filename, text, mime) {
     const blob = new Blob([text], { type: mime + ';charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -4821,6 +5549,7 @@ const App = {
     const bannerPreview = document.getElementById('profile-banner-preview');
     const removeBannerBtn = document.getElementById('remove-banner-btn');
     if (bannerPreview) {
+      bannerPreview.classList.toggle('profile-banner-empty', !this.user.banner);
       const bannerPlaceholder = document.getElementById('profile-banner-placeholder');
       if (this.user.banner) {
         const bannerUrl = `url(${this.user.banner}?t=${this.user.bannerUpdatedAt || 0})`;
@@ -4902,11 +5631,22 @@ const App = {
       }
     }
     const pwSection = document.getElementById('change-password-section');
-    if (pwSection) pwSection.style.display = this.user.provider === 'google' ? 'none' : '';
+    const pwCopy = document.getElementById('change-password-copy');
+    const pwFields = ['current-password', 'new-password', 'confirm-password']
+      .map(id => document.getElementById(id))
+      .filter(Boolean);
+    const pwBtn = document.getElementById('change-password-btn');
+    const isGoogleAccount = this.user.provider === 'google';
+    if (pwSection) pwSection.style.display = '';
+    if (pwCopy) {
+      pwCopy.textContent = isGoogleAccount
+        ? 'This account signs in with Google. Manage your password through Google, or use email reset if you add password login later.'
+        : 'Update the password for this account. You will keep your current session after the reset succeeds.';
+    }
+    pwFields.forEach(input => { input.disabled = isGoogleAccount; });
+    if (pwBtn) pwBtn.disabled = isGoogleAccount;
     const sinceEl = document.getElementById('profile-since');
-    if (sinceEl) sinceEl.value = new Date(this.user.createdAt).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    });
+    if (sinceEl) sinceEl.value = this.formatDateFull(this.user.createdAt);
 
     // Avatar
     const letter = this.user.name.charAt(0).toUpperCase();
@@ -4918,20 +5658,24 @@ const App = {
     const avatarUsernameEl = document.getElementById('profile-avatar-username');
     if (avatarUsernameEl) avatarUsernameEl.textContent = `@${this.user.username || ''}`;
 
-    // Plan info on right side
+    // Plan row — highlighted box below the avatar block, matching the
+    // design's "Free plan · N early completes left / Go Pro" treatment.
     const planInfoEl = document.getElementById('profile-plan-info');
     if (planInfoEl) {
       const isPro = this.user.plan === 'premium';
       if (isPro) {
-        let expiryText = '';
-        if (this.user.planExpiresAt === 'infinite') {
-          expiryText = 'Lifetime';
-        } else if (this.user.planExpiresAt) {
-          expiryText = `Expires ${new Date(this.user.planExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        let expiryText = 'Lifetime';
+        if (this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite') {
+          expiryText = `Expires ${this.formatDateFull(this.user.planExpiresAt)}`;
         }
-        planInfoEl.innerHTML = `<span class="profile-plan-badge pro">PRO</span><span class="profile-plan-expiry">${expiryText}</span>`;
+        planInfoEl.innerHTML = `<span>Pro plan · ${expiryText}</span>`;
       } else {
-        planInfoEl.innerHTML = `<span class="profile-plan-badge free">FREE</span><span class="profile-plan-expiry">Free forever</span>`;
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const used = (this.user.earlyCompletesMonth === currentMonth) ? (this.user.earlyCompletes || 0) : 0;
+        const left = Math.max(0, 3 - used);
+        planInfoEl.innerHTML = `<span>Free plan · ${left} early complete${left === 1 ? '' : 's'} left</span><button class="pill pill-a" id="settings-go-pro-btn">Go Pro</button>`;
+        const goProBtn = document.getElementById('settings-go-pro-btn');
+        if (goProBtn) goProBtn.onclick = () => this.openPricing();
       }
     }
 
@@ -5076,7 +5820,7 @@ const App = {
         <span class="up-stat-link" data-userid="${this.escapeHtml(p.id)}" data-type="followers"><strong>${p.followerCount}</strong> followers</span>
         <span class="up-stat-link" data-userid="${this.escapeHtml(p.id)}" data-type="following"><strong>${p.followingCount}</strong> following</span>
         <span class="up-stat-link" data-type="stories"><strong>${p.storyCount}</strong> stories</span>
-        <span>Joined ${new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+        <span>Joined ${this.formatMonthYear(p.createdAt)}</span>
       `;
 
       // Tabs
@@ -5199,7 +5943,7 @@ const App = {
       <span class="up-stat-link" data-userid="${esc(p.id)}" data-type="followers"><strong>${p.followerCount}</strong> followers</span>
       <span class="up-stat-link" data-userid="${esc(p.id)}" data-type="following"><strong>${p.followingCount}</strong> following</span>
       <span class="up-stat-link" data-type="stories"><strong>${p.storyCount}</strong> stories</span>
-      <span>Joined ${new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+      <span>Joined ${this.formatMonthYear(p.createdAt)}</span>
     `;
 
     // Tabs
@@ -5235,18 +5979,24 @@ const App = {
       return;
     }
     el.innerHTML = p.stories.map(s => `
-      <div class="up-story-card" onclick="window.location.hash='stories';setTimeout(()=>Stories.openStory&&Stories.openStory('${esc(s.id)}'),100)">
+      <article class="up-story-card" tabindex="0" role="link" data-profile-story="${esc(s.id)}" aria-label="Read ${esc(s.title)}">
         <h3 class="up-story-title">${esc(s.title)}</h3>
         <p class="up-story-excerpt">${esc(s.excerpt || '')}</p>
         <div class="up-story-meta">
-          <span>${new Date(s.publishedAt || s.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          <span>${this.formatDateFull(s.publishedAt || s.updatedAt)}</span>
           <span>${s.readTimeMinutes || 1} min read</span>
-          <span>👁 ${(s.viewCount || 0).toLocaleString()}</span>
-          <span>❤ ${s.likeCount || 0}</span>
-          <span>💬 ${s.commentCount || 0}</span>
+          ${this.renderMetric('view', s.viewCount)}
+          ${this.renderMetric('heart', s.likeCount)}
+          ${this.renderMetric('comment', s.commentCount)}
         </div>
-      </div>
+      </article>
     `).join('');
+    el.querySelectorAll('[data-profile-story]').forEach(card => {
+      card.addEventListener('click', () => this.openCommunityStory(card.dataset.profileStory));
+      card.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); this.openCommunityStory(card.dataset.profileStory); }
+      });
+    });
   },
 
   async _renderProfileActivity(p, targetId) {
@@ -5257,11 +6007,11 @@ const App = {
     const prefix = targetId ? targetId.replace('-activity', '') : 'up';
     el.innerHTML = `
       <div class="up-activity-stats">
-        <div class="up-stat-card"><div class="up-stat-value">${(p.totalWords || 0).toLocaleString()}</div><div class="up-stat-label">Total Words</div></div>
-        <div class="up-stat-card"><div class="up-stat-value">${p.totalSessions || 0}</div><div class="up-stat-label">Sessions</div></div>
-        <div class="up-stat-card"><div class="up-stat-value">${p.streak || 0}</div><div class="up-stat-label">Day Streak</div></div>
-        <div class="up-stat-card"><div class="up-stat-value">${p.longestStreak || 0}</div><div class="up-stat-label">Best Streak</div></div>
-        <div class="up-stat-card"><div class="up-stat-value">${level}</div><div class="up-stat-label">Level</div></div>
+        <div class="up-stat-card up-stat-words"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${(p.totalWords || 0).toLocaleString()}</div><div class="up-stat-label">Total Words</div></div>
+        <div class="up-stat-card up-stat-sessions"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${p.totalSessions || 0}</div><div class="up-stat-label">Sessions</div></div>
+        <div class="up-stat-card up-stat-streak"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${p.streak || 0}</div><div class="up-stat-label">Day Streak</div></div>
+        <div class="up-stat-card up-stat-best"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${p.longestStreak || 0}</div><div class="up-stat-label">Best Streak</div></div>
+        <div class="up-stat-card up-stat-xp"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${level}</div><div class="up-stat-label">Level</div></div>
       </div>
       <div id="${prefix}-heatmap" style="margin-top:20px"></div>
       <div class="up-achievements-section" style="margin-top:20px">
@@ -5332,7 +6082,7 @@ const App = {
             html += '<div class="heatmap-cell" style="visibility:hidden"></div>';
           } else {
             const dt = new Date(cell.key);
-            const title = `${dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — ${cell.count} session${cell.count !== 1 ? 's' : ''}`;
+            const title = `${this.formatDateFull(dt)} — ${cell.count} session${cell.count !== 1 ? 's' : ''}`;
             html += `<div class="heatmap-cell level-${cell.level}" title="${title}"></div>`;
           }
         });
@@ -5352,7 +6102,7 @@ const App = {
     const el = document.getElementById(targetId || 'up-about');
     const prefix = targetId ? targetId.replace('-about', '') : 'up';
     const bio = p.bio ? `<p class="up-about-bio">${esc(p.bio)}</p>` : (p.isOwnProfile ? '<p class="up-about-bio" style="color:var(--text-muted)">You haven\'t written a bio yet. <a href="javascript:void(0)" onclick="App.switchView(\'settings\')">Add a bio →</a></p>' : '<p class="up-about-bio" style="color:var(--text-muted)">This writer hasn\'t written a bio yet.</p>');
-    const joinDate = new Date(p.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const joinDate = this.formatDateFull(p.createdAt);
     const { level } = this.calcXPLevel ? this.calcXPLevel(p.xp || 0) : { level: p.level || 0 };
     // Format total writing time
     const totalSecs = p.totalWritingTime || 0;
@@ -5371,10 +6121,10 @@ const App = {
         <div class="up-about-detail"><strong>Writing Time</strong> ${timeStr}</div>
       </div>
       <div class="up-activity-stats" style="margin-top:16px">
-        <div class="up-stat-card"><div class="up-stat-emoji">&#x1F4DD;</div><div class="up-stat-value">${(p.totalWords || 0).toLocaleString()}</div><div class="up-stat-label">Total Words</div></div>
-        <div class="up-stat-card"><div class="up-stat-emoji">&#x270D;&#xFE0F;</div><div class="up-stat-value">${p.totalSessions || 0}</div><div class="up-stat-label">Sessions</div></div>
-        <div class="up-stat-card"><div class="up-stat-emoji">&#x1F525;</div><div class="up-stat-value">${p.streak || 0}</div><div class="up-stat-label">Day Streak</div></div>
-        <div class="up-stat-card"><div class="up-stat-emoji">&#x1F3C6;</div><div class="up-stat-value">${p.longestStreak || 0}</div><div class="up-stat-label">Best Streak</div></div>
+        <div class="up-stat-card up-stat-words"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${(p.totalWords || 0).toLocaleString()}</div><div class="up-stat-label">Total Words</div></div>
+        <div class="up-stat-card up-stat-sessions"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${p.totalSessions || 0}</div><div class="up-stat-label">Sessions</div></div>
+        <div class="up-stat-card up-stat-streak"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${p.streak || 0}</div><div class="up-stat-label">Day Streak</div></div>
+        <div class="up-stat-card up-stat-best"><div class="up-stat-icon" aria-hidden="true"></div><div class="up-stat-value">${p.longestStreak || 0}</div><div class="up-stat-label">Best Streak</div></div>
       </div>
       <div class="up-about-achievements">
         <h3 class="up-about-achievements-title">Achievements</h3>
@@ -5645,29 +6395,20 @@ const App = {
     '6m': { price: '8.99', period: '/6 months', label: '6 months', shortLabel: '6 Mo', stripeUzs: 112000, savings: 'Best value' }
   },
   _selectedDuration: '1m',
-  _defaultPaymePrices: { '1m': 24990, '3m': 59990, '6m': 99990 },
-  _paymeLogoUrl: 'https://cdn.payme.uz/logo/pb_color_logo_horizontal.svg',
+  _defaultLocalPrices: { '1m': 24990, '3m': 59990, '6m': 99990 },
 
   _formatSom(amount) {
     const n = Number(amount || 0);
     return n ? `${n.toLocaleString('en-US')} so'm` : 'Not available';
   },
 
-  _paymePrice(duration) {
-    return Number((this._payCfg && this._payCfg.uzs && this._payCfg.uzs[duration]) || this._defaultPaymePrices[duration] || 0);
-  },
-
-  _paymeValueLabel(duration) {
-    const d = this._stripePricing[duration] || {};
-    const payme = this._paymePrice(duration);
-    const delta = payme && d.stripeUzs ? Math.max(0, d.stripeUzs - payme) : 0;
-    if (!delta || delta < 100) return 'same value';
-    return `${this._formatSom(delta)} cheaper`;
+  _localPrice(duration) {
+    return Number((this._payCfg && this._payCfg.uzs && this._payCfg.uzs[duration]) || this._defaultLocalPrices[duration] || 0);
   },
 
   _paymentLogo(provider, extraClass = '') {
     if (provider === 'stripe') return `<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe ${extraClass}">`;
-    if (provider === 'payme') return `<img src="${this._paymeLogoUrl}" alt="Payme" class="pay-logo pay-logo-payme ${extraClass}" data-chip="payme">`;
+    if (provider === 'click') return `<img src="/img/click-logo.png?v=1" alt="Click" class="pay-logo pay-logo-click ${extraClass}" data-chip="click">`;
     return `<span class="pay-chip pay-chip-${provider} ${extraClass}">${provider}</span>`;
   },
 
@@ -5679,7 +6420,7 @@ const App = {
         const k = img.dataset.chip;
         const span = document.createElement('span');
         span.className = `pay-chip pay-chip-${k}`;
-        span.textContent = k === 'payme' ? 'Payme' : 'Click';
+        span.textContent = img.alt || k;
         img.replaceWith(span);
       });
     });
@@ -5687,22 +6428,18 @@ const App = {
 
   _renderUpgradePriceRows() {
     return Object.entries(this._stripePricing).map(([duration, d]) => {
-      const payme = this._paymePrice(duration);
-      return `<button type="button" class="upgrade-price-option${duration === this._selectedDuration ? ' active' : ''}" data-upgrade-duration="${duration}">
+      const local = this._localPrice(duration);
+      return `<button type="button" class="upgrade-price-option${duration === this._selectedDuration ? ' active' : ''}" data-upgrade-duration="${duration}" aria-pressed="${duration === this._selectedDuration}">
         <div class="upgrade-price-option-main">
           <strong>$${d.price}</strong>
           <span>${d.period}</span>
         </div>
         <div class="upgrade-price-option-payments">
-          <div class="upgrade-provider-price">
+          <div class="upgrade-payment-logos">
             ${this._paymentLogo('stripe')}
-            <span>${this._formatSom(d.stripeUzs)}</span>
+            ${this._paymentLogo('click')}
           </div>
-          <div class="upgrade-provider-price upgrade-provider-price-payme">
-            ${this._paymentLogo('payme')}
-            <span>${this._formatSom(payme)}</span>
-            <em>${this._paymeValueLabel(duration)}</em>
-          </div>
+          <strong class="upgrade-price-som">${this._formatSom(local)}</strong>
         </div>
       </button>`;
     }).join('');
@@ -5715,6 +6452,7 @@ const App = {
     const isStripe = this.user && (this.user.planSource === 'stripe' || this.user.planSource === 'trial');
 
     const freeFeatures = [
+      '3 writing sessions per day',
       'Timed sessions (30, 45 & 60 min)',
       'Dangerous mode (fixed timer)',
       'Streak tracking & tree growth',
@@ -5723,6 +6461,7 @@ const App = {
       'Document sharing'
     ];
     const proFeatures = [
+      'Unlimited writing sessions',
       'Everything in Free',
       'All timer options + custom',
       'Custom danger inactivity timer',
@@ -5736,8 +6475,13 @@ const App = {
       'Priority support'
     ];
 
+    const freeExcludedFeatures = proFeatures.filter(feature => ![
+      'Everything in Free', 'Larger word & editing limits',
+      'Username change 3x/month', 'Pro badge on leaderboard'
+    ].includes(feature));
+
     const expiryInfo = isPro && this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite'
-      ? ` · expires ${new Date(this.user.planExpiresAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}`
+      ? ` · expires ${this.formatDateFull(this.user.planExpiresAt)}`
       : (isPro && this.user.planExpiresAt === 'infinite' ? ' · Lifetime' : '');
 
     const canTrial = !isPro && !this.user.trialUsed;
@@ -5760,19 +6504,21 @@ const App = {
         <div class="upgrade-card-features">
           <h4>Features</h4>
           <ul>${freeFeatures.map(f => `<li>${f}</li>`).join('')}</ul>
+          <h4 class="upgrade-excluded-heading">Not included in Free</h4>
+          <ul aria-label="Pro-only features">${freeExcludedFeatures.map(f => `<li class="feature-unavailable">${f}</li>`).join('')}</ul>
         </div>
       </div>
 
       <div class="upgrade-card upgrade-card-featured${isPro ? ' upgrade-card-current' : ''}" style="animation-delay:0.2s">
         <div class="upgrade-card-head">
           <h3 class="upgrade-card-name">Pro</h3>
-          <p class="upgrade-card-desc">Enhanced features for serious, dedicated writers.</p>
+          <p class="upgrade-card-desc">Keep writing beyond the daily limit. Choose your own timers and keep your drafts organised.</p>
           ${isPro ? (() => {
             const u = this.user;
             const src = u.planSource === 'trial' ? 'Free Trial' : u.planSource === 'stripe' ? 'Stripe' : u.planSource === 'admin' ? 'Admin' : u.planSource === 'referral' ? 'Referral' : u.planSource || 'Unknown';
             const durLabel = u.planDuration === '6m' ? '6-month' : u.planDuration === '3m' ? '3-month' : u.planDuration === '1m' ? 'Monthly' : '';
-            const renewsAt = u.planExpiresAt && u.planExpiresAt !== 'infinite' ? new Date(u.planExpiresAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : null;
-            const startedAt = u.planStartedAt ? new Date(u.planStartedAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : null;
+            const renewsAt = u.planExpiresAt && u.planExpiresAt !== 'infinite' ? this.formatDateFull(u.planExpiresAt) : null;
+            const startedAt = u.planStartedAt ? this.formatDateFull(u.planStartedAt) : null;
             return `
           <div class="upgrade-pro-status">
             <div class="upgrade-pro-status-row"><span class="upgrade-pro-label">Plan</span><span class="upgrade-pro-value">${durLabel ? durLabel + ' Pro' : 'Pro'}</span></div>
@@ -5793,8 +6539,12 @@ const App = {
           ${isPro
             ? `<button class="upgrade-card-btn upgrade-card-btn-primary" disabled>Current plan${expiryInfo}</button>
                ${isStripe ? '<button class="upgrade-card-btn upgrade-manage-billing-btn" id="manage-billing-btn" style="margin-top:8px">Manage Billing</button>' : ''}`
-            : `<button class="upgrade-card-btn upgrade-card-btn-primary" id="purchase-plan-btn">Purchase plan</button>
-               ${canTrial ? '<div class="upgrade-trial-link" id="start-trial-link">or Start 7-day free trial</div>' : ''}`
+            : `<button class="upgrade-card-btn upgrade-card-btn-primary" id="purchase-plan-btn">Choose payment for ${dur.label}</button>
+               <p class="upgrade-billing-note">Stripe renews automatically. Click is a one-time payment for the selected period.</p>
+               ${canTrial ? `<div class="upgrade-trial-offer">
+                 <button type="button" class="upgrade-trial-link" id="start-trial-link" aria-describedby="upgrade-trial-terms">Try Pro free for 7 days</button>
+                 <p id="upgrade-trial-terms">Via Stripe · $0 today, then $${dur.price}${dur.period}. Renews automatically. Cancel in Manage Billing before day 7 to avoid the charge.</p>
+               </div>` : ''}`
           }
         </div>
         <div class="upgrade-card-divider"></div>
@@ -5817,6 +6567,7 @@ const App = {
       btn.addEventListener('click', () => {
         this._selectedDuration = btn.dataset.upgradeDuration;
         this.loadUpgrade();
+        el.querySelector(`[data-upgrade-duration="${this._selectedDuration}"]`)?.focus({ preventScroll: true });
       });
     });
 
@@ -5868,6 +6619,13 @@ const App = {
     const cfg = this._payCfg || { providers: {}, localEnabled: false };
     const p = cfg.providers || {};
 
+    const comparison = document.querySelector('#upgrade-plan-cards .upgrade-payment-comparison');
+    if (comparison) comparison.querySelectorAll('[data-upgrade-duration]').forEach(button => {
+      button.querySelector('.upgrade-price-som').textContent = this._formatSom(this._localPrice(button.dataset.upgradeDuration));
+    });
+    const trialOffer = document.querySelector('.upgrade-trial-offer');
+    if (trialOffer) trialOffer.hidden = p.stripe === false;
+
     // The old separate UZS panel is intentionally empty now. The purchase flow
     // chooses duration + provider inside the in-app payment modal.
     const el = document.getElementById('upgrade-payments');
@@ -5880,8 +6638,7 @@ const App = {
     if (logosEl) {
       const logos = [];
       if (p.stripe !== false) logos.push('<img src="/img/stripe.svg?v=1" alt="Stripe" class="pay-logo pay-logo-stripe">');
-      if (p.payme) logos.push(this._paymentLogo('payme'));
-      if (p.click) logos.push('<img src="/img/click.svg?v=1" alt="Click" class="pay-logo pay-logo-click" data-chip="click">');
+      if (p.click) logos.push(this._paymentLogo('click'));
       logosEl.innerHTML = `<div class="pricing-payments"><span class="pricing-payments-label">Secure payment via</span><div class="pricing-payments-logos">${logos.join('')}</div></div>`;
       this._bindPayLogoFallbacks(logosEl);
     }
@@ -5900,8 +6657,8 @@ const App = {
     const cfg = this._payCfg || { providers: {}, uzs: {} };
     const providers = cfg.providers || {};
     const hasStripe = providers.stripe !== false;
-    const hasPayme = !!providers.payme && !!cfg.localEnabled;
-    const selectedProvider = hasPayme ? 'payme' : 'stripe';
+    const hasClick = !!providers.click && !!cfg.localEnabled;
+    const selectedProvider = hasClick ? 'click' : hasStripe ? 'stripe' : null;
     const selectedDuration = this._selectedDuration || '1m';
 
     modal.innerHTML = `<div class="payment-choice-backdrop" data-close-payment-modal></div>
@@ -5910,7 +6667,7 @@ const App = {
         <div class="payment-choice-head">
           <span class="payment-choice-kicker">Choose your Pro plan</span>
           <h3 id="payment-choice-title">Select duration and payment method</h3>
-          <p>Choose Stripe for international cards or Payme for local UZS payment.</p>
+          <p>Choose Stripe for international cards or Click for local UZS payment.</p>
         </div>
         <div class="payment-choice-section">
           <label>Duration</label>
@@ -5918,7 +6675,6 @@ const App = {
             ${Object.entries(this._stripePricing).map(([duration, d]) => `<button type="button" class="payment-choice-duration${duration === selectedDuration ? ' active' : ''}" data-duration="${duration}">
               <strong>${d.shortLabel}</strong>
               <span>$${d.price} ${d.period}</span>
-              ${d.savings ? `<em>${d.savings}</em>` : ''}
             </button>`).join('')}
           </div>
         </div>
@@ -5929,33 +6685,68 @@ const App = {
               ${this._paymentLogo('stripe')}
               <span class="payment-choice-method-copy"><strong>Stripe</strong><small data-stripe-price></small></span>
             </button>` : ''}
-            ${hasPayme ? `<button type="button" class="payment-choice-method${selectedProvider === 'payme' ? ' active' : ''}" data-provider="payme">
-              ${this._paymentLogo('payme')}
-              <span class="payment-choice-method-copy"><strong>Payme</strong><small data-payme-price></small></span>
-              <em data-payme-value></em>
+            ${hasClick ? `<button type="button" class="payment-choice-method${selectedProvider === 'click' ? ' active' : ''}" data-provider="click">
+              ${this._paymentLogo('click')}
+              <span class="payment-choice-method-copy"><strong>Click</strong><small data-click-price></small></span>
             </button>` : ''}
           </div>
         </div>
+        <div class="payment-choice-summary" aria-live="polite" aria-atomic="true">
+          <div><span data-offer-label></span><strong data-offer-total></strong></div>
+          <p data-offer-terms></p>
+        </div>
         <button type="button" class="payment-choice-continue" data-payment-continue>Continue</button>
+        <p class="payment-choice-footnote">Review your order on the provider’s secure checkout before paying.</p>
       </div>`;
 
     const state = { duration: selectedDuration, provider: selectedProvider };
     const updatePrices = () => {
       const stripe = this._stripePricing[state.duration];
-      const payme = this._paymePrice(state.duration);
+      const local = this._localPrice(state.duration);
       const stripeLabel = modal.querySelector('[data-stripe-price]');
-      const paymeLabel = modal.querySelector('[data-payme-price]');
-      const paymeValue = modal.querySelector('[data-payme-value]');
-      if (stripeLabel) stripeLabel.textContent = `${this._formatSom(stripe.stripeUzs)} equivalent`;
-      if (paymeLabel) paymeLabel.textContent = `${this._formatSom(payme)} in UZS`;
-      if (paymeValue) paymeValue.textContent = this._paymeValueLabel(state.duration);
+      const clickLabel = modal.querySelector('[data-click-price]');
+      if (stripeLabel) stripeLabel.textContent = `$${stripe.price} ${stripe.period}`;
+      if (clickLabel) clickLabel.textContent = `${this._formatSom(local)} for ${stripe.label}`;
+      const isClick = state.provider === 'click';
+      const amount = isClick ? this._formatSom(local) : `$${stripe.price}`;
+      const next = modal.querySelector('[data-payment-continue]');
+      modal.querySelector('[data-offer-label]').textContent = `Pro · ${stripe.label}`;
+      modal.querySelector('[data-offer-total]').textContent = state.provider ? amount : 'Unavailable';
+      modal.querySelector('[data-offer-terms]').textContent = !state.provider
+        ? 'Payments are currently unavailable. Please try again later.'
+        : isClick
+          ? `One payment of ${amount} for ${{ '1m': 30, '3m': 90, '6m': 180 }[state.duration]} days of Pro. No automatic renewal.`
+          : `${amount} charged at checkout, then every ${stripe.label}. Cancel future renewals in Manage Billing; access continues until the paid period ends.`;
+      next.textContent = state.provider ? `Continue with ${isClick ? 'Click' : 'Stripe'} · ${amount}` : 'Payments unavailable';
+      next.disabled = !state.provider;
+      modal.querySelectorAll('[data-duration]').forEach(b => {
+        const option = this._stripePricing[b.dataset.duration];
+        b.setAttribute('aria-pressed', String(b.dataset.duration === state.duration));
+        b.querySelector('span').textContent = isClick
+          ? `${this._formatSom(this._localPrice(b.dataset.duration))} total`
+          : `$${option.price} ${option.period}`;
+      });
+      modal.querySelectorAll('[data-provider]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.provider === state.provider)));
     };
     updatePrices();
     this._bindPayLogoFallbacks(modal);
 
+    const closePaymentChoice = () => {
+      modal.classList.remove('active');
+      this.loadUpgrade();
+      document.getElementById('purchase-plan-btn')?.focus({ preventScroll: true });
+    };
     modal.querySelectorAll('[data-close-payment-modal]').forEach(node => {
-      node.addEventListener('click', () => modal.classList.remove('active'));
+      node.addEventListener('click', closePaymentChoice);
     });
+    modal.onkeydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); closePaymentChoice(); return; }
+      if (event.key !== 'Tab') return;
+      const controls = [...modal.querySelectorAll('button:not(:disabled)')];
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
     modal.querySelectorAll('.payment-choice-duration').forEach(btn => {
       btn.addEventListener('click', () => {
         state.duration = btn.dataset.duration;
@@ -5968,15 +6759,17 @@ const App = {
       btn.addEventListener('click', () => {
         state.provider = btn.dataset.provider;
         modal.querySelectorAll('.payment-choice-method').forEach(b => b.classList.toggle('active', b === btn));
+        updatePrices();
       });
     });
     modal.querySelector('[data-payment-continue]')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget;
-      if (state.provider === 'payme') await this._payWithProvider('payme', btn, state.duration);
+      if (state.provider === 'click') await this._payWithProvider('click', btn, state.duration);
       else await this._startCheckout(false, state.duration, btn);
     });
 
     modal.classList.add('active');
+    modal.querySelector('.payment-choice-close')?.focus({ preventScroll: true });
   },
 
   async _payWithProvider(provider, btn, duration = this._selectedDuration) {
@@ -6025,7 +6818,7 @@ const App = {
   },
 
   _renderSubscriptionHistory(data) {
-    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    const fmtDate = (iso) => iso ? this.formatDateFull(iso) : '—';
     const fmtAmount = (cents, currency) => {
       if (cents == null) return null;
       const sym = (currency || 'usd').toLowerCase() === 'usd' ? '$' : '';
@@ -6188,8 +6981,10 @@ const App = {
   },
 
   async _startCheckout(isTrial, duration = this._selectedDuration, triggerBtn = null) {
+    const initiatingButton = triggerBtn || document.getElementById(isTrial ? 'start-trial-link' : 'purchase-plan-btn');
+    const originalLabel = initiatingButton?.textContent;
     try {
-      const purchaseBtn = triggerBtn || document.getElementById('purchase-plan-btn');
+      const purchaseBtn = triggerBtn || document.getElementById(isTrial ? 'start-trial-link' : 'purchase-plan-btn');
       const trialLink = document.getElementById('start-trial-link');
       if (purchaseBtn) { purchaseBtn.disabled = true; purchaseBtn.textContent = 'Opening checkout...'; }
       if (trialLink) { trialLink.style.pointerEvents = 'none'; trialLink.style.opacity = '0.5'; }
@@ -6206,7 +7001,7 @@ const App = {
       const data = await res.json();
       if (!res.ok) {
         this.toast(data.error || 'Failed to start checkout', 'error');
-        if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = 'Purchase plan'; }
+        if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = originalLabel; }
         if (trialLink) { trialLink.style.pointerEvents = ''; trialLink.style.opacity = ''; }
         return;
       }
@@ -6225,7 +7020,7 @@ const App = {
         this._checkoutPollCount++;
         if (this._checkoutPollCount > 200) {
           clearInterval(this._checkoutPoller);
-          if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = 'Purchase plan'; }
+          if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = originalLabel; }
           return;
         }
         try {
@@ -6242,8 +7037,10 @@ const App = {
       }, 3000);
     } catch (err) {
       this.toast('Failed to start checkout. Please try again.', 'error');
-      const purchaseBtn = document.getElementById('purchase-plan-btn');
-      if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = 'Purchase plan'; }
+      const purchaseBtn = initiatingButton;
+      const trialLink = document.getElementById('start-trial-link');
+      if (trialLink) { trialLink.style.pointerEvents = ''; trialLink.style.opacity = ''; }
+      if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = originalLabel; }
     }
   },
 
@@ -6509,10 +7306,20 @@ const App = {
       const data = await API.getFriends(this._friendsPage, this._friendsSort);
       const friends = data.friends || [];
       this.friends = friends;
-      this._friendsTotalPages = data.totalPages || 1;
+      const limit = data.limit || 10;
+      const computedPages = Math.max(1, Math.ceil((data.total || 0) / limit));
+      this._friendsTotalPages = Math.min(data.totalPages || computedPages, computedPages);
+      if (data.page && data.page !== this._friendsPage) this._friendsPage = data.page;
+      if (friends.length === 0 && (data.total || 0) > 0 && this._friendsPage > this._friendsTotalPages) {
+        this._friendsPage = this._friendsTotalPages;
+        return this._loadFriendsPage();
+      }
+
+      const kickerEl = document.getElementById('friends-kicker');
+      if (kickerEl) kickerEl.textContent = data.total ? `${data.total} writer${data.total === 1 ? '' : 's'}` : 'See how your friends are progressing.';
 
       if (data.total === 0) {
-        container.innerHTML = `<div class="empty-state"><p>Add friends by their email above to start challenging them to duels.</p></div>`;
+        container.innerHTML = `<div class="empty-state"><p>Add friends by their email above to see their progress alongside yours.</p></div>`;
         return;
       }
 
@@ -6520,24 +7327,22 @@ const App = {
         const fl = this.calcXPLevel(f.xp || 0);
         const fPro = f.plan === 'premium' ? ' <span class="pro-inline-badge">PRO</span>' : '';
         const fHandle = f.username ? ` ${this.profileLink(f.username, null, 'friend-handle')}` : '';
+        const initial = this.escapeHtml((f.name || '?').charAt(0).toUpperCase());
         return `
-        <div class="doc-card friend-card">
-          <div class="doc-card-info">
-            <h4>${this.escapeHtml(f.name)}${fHandle}${fPro}</h4>
-            <div class="friend-stats">
-              <span class="friend-stat" title="Total words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>${(f.totalWords || 0).toLocaleString()}</span>
-              <span class="friend-stat" title="Streak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>${f.streak || 0}</span>
-              <span class="friend-stat" title="Level"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>Lv${fl.level} (${(f.xp || 0).toLocaleString()} XP)</span>
+        <div class="friend-row">
+          <div class="friend-row-who">
+            <div class="friend-row-avatar-wrap">
+              <div class="friend-row-avatar">${initial}</div>
+              <span class="friend-row-dot"></span>
+            </div>
+            <div class="friend-row-name-wrap">
+              <div class="friend-row-name">${this.escapeHtml(f.name)}${fPro}${fHandle}</div>
+              <div class="friend-row-level">Level ${fl.level}</div>
             </div>
           </div>
-          <div class="doc-card-actions">
-            <button class="doc-action-btn" onclick="App.challengeFriend('${f.id}')" title="Challenge to duel">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>
-            </button>
-            <button class="doc-action-btn delete" onclick="App.confirmRemoveFriend('${f.id}', '${this.escapeHtml(f.name)}')" title="Remove friend">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-            </button>
-          </div>
+          <div class="friend-row-streak">${f.streak || 0}&#x1F525;</div>
+          <div class="friend-row-words">${(f.totalWords || 0).toLocaleString()}</div>
+          <button class="dots" data-friend-menu="${f.id}" data-friend-name="${this.escapeHtml(f.name)}" title="View profile, unfriend">&#x22EF;</button>
         </div>`;
       }).join('');
 
@@ -6552,13 +7357,36 @@ const App = {
       }
 
       container.innerHTML = cards + pager;
+      container.querySelectorAll('[data-friend-menu]').forEach(btn => {
+        btn.onclick = (e) => { e.stopPropagation(); this.showFriendMenu(btn, btn.dataset.friendMenu, btn.dataset.friendName); };
+      });
     } catch {
       container.innerHTML = `<div class="empty-state"><p>Failed to load friends.</p></div>`;
     }
   },
 
+  showFriendMenu(anchorEl, friendId, friendName) {
+    document.querySelectorAll('.folder-context-menu').forEach(m => m.remove());
+    const menu = document.createElement('div');
+    menu.className = 'folder-context-menu';
+    menu.innerHTML = `<button data-action="remove" style="color:var(--danger)">Remove friend</button>`;
+    const rect = anchorEl.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.visibility = 'hidden';
+    menu.style.top = `${rect.bottom + 4}px`;
+    menu.style.right = `${window.innerWidth - rect.right}px`;
+    menu.style.left = 'auto';
+    document.body.appendChild(menu);
+    const menuH = menu.offsetHeight;
+    if (rect.bottom + 4 + menuH > window.innerHeight - 8) menu.style.top = `${Math.max(8, rect.top - menuH - 4)}px`;
+    menu.style.visibility = '';
+    const close = () => { menu.remove(); document.removeEventListener('click', close); };
+    setTimeout(() => document.addEventListener('click', close), 0);
+    menu.querySelector('[data-action="remove"]').onclick = (e) => { e.stopPropagation(); close(); this.confirmRemoveFriend(friendId, friendName); };
+  },
+
   _goFriendsPage(page) {
-    this._friendsPage = page;
+    this._friendsPage = Math.min(Math.max(1, page), this._friendsTotalPages || 1);
     this._loadFriendsPage();
   },
 
@@ -6635,14 +7463,24 @@ const App = {
     const container = document.getElementById('activity-feed');
     try {
       const activities = await API.getFriendsFeed();
-      if (!activities || activities.length === 0) {
-        container.innerHTML = `<div class="empty-state"><p>No activity yet. Your friends' milestones will appear here!</p></div>`;
+      const visibleActivities = (activities || []).filter(a => a.type !== 'duel_won');
+      if (!visibleActivities.length) {
+        this._stopActivityCycle();
+        this._activityFeedSignature = '';
+        container.innerHTML = `<div class="empty-state"><h3>No activity yet</h3><p>Your friends’ milestones will appear here.</p></div>`;
         return;
       }
-      container.innerHTML = activities.map(a => {
+      const signature = visibleActivities.map(a => a.id || `${a.userId}-${a.type}-${a.createdAt}`).join('|');
+      if (signature === this._activityFeedSignature && container.querySelector('.activity-item')) {
+        this._startActivityCycle();
+        return;
+      }
+      this._activityFeedSignature = signature;
+      container.innerHTML = visibleActivities.map(a => {
         const { icon, text } = this._formatActivity(a);
+        const id = this.escapeHtml(a.id || `${a.userId}-${a.type}-${a.createdAt}`);
         return `
-        <div class="activity-item">
+        <div class="activity-item" data-activity-id="${id}">
           <div class="activity-icon">${icon}</div>
           <div class="activity-content">
             <div class="activity-text">${text}</div>
@@ -6650,9 +7488,51 @@ const App = {
           </div>
         </div>`;
       }).join('');
+      this._startActivityCycle();
     } catch {
+      this._stopActivityCycle();
       container.innerHTML = `<div class="empty-state"><p>Failed to load activity.</p></div>`;
     }
+  },
+
+  _stopActivityCycle() {
+    if (this._activityCycleTimer) clearInterval(this._activityCycleTimer);
+    this._activityCycleTimer = null;
+  },
+
+  _startActivityCycle() {
+    const container = document.getElementById('activity-feed');
+    if (!container) return;
+    this._stopActivityCycle();
+    const tick = () => {
+      const items = Array.from(container.querySelectorAll('.activity-item'));
+      if (items.length < 2) return;
+      const firstRects = new Map(items.map(el => [el, el.getBoundingClientRect()]));
+      const incoming = items[items.length - 1];
+      container.insertBefore(incoming, items[0]);
+      const moved = Array.from(container.querySelectorAll('.activity-item'));
+      moved.forEach(el => {
+        const first = firstRects.get(el);
+        if (!first) return;
+        const last = el.getBoundingClientRect();
+        const dy = first.top - last.top;
+        el.style.transition = 'none';
+        if (el === incoming) {
+          el.style.transform = 'translateY(-14px) scale(.96)';
+          el.style.opacity = '0';
+        } else if (dy) {
+          el.style.transform = `translateY(${dy}px)`;
+        }
+      });
+      requestAnimationFrame(() => {
+        moved.forEach(el => {
+          el.style.transition = 'transform 560ms cubic-bezier(.2,.8,.2,1), opacity 420ms ease';
+          el.style.transform = '';
+          el.style.opacity = '';
+        });
+      });
+    };
+    this._activityCycleTimer = setInterval(tick, 4000);
   },
 
   _formatActivity(a) {
@@ -6664,7 +7544,6 @@ const App = {
       case 'word_milestone': return { icon: '📚', text: `${name} just hit ${(a.data.words || 0).toLocaleString()} total words!` };
       case 'streak_milestone': return { icon: '🔥', text: `${name} reached a ${a.data.streak}-day streak!` };
       case 'level_up': return { icon: '⭐', text: `${name} reached Level ${a.data.level}!` };
-      case 'duel_won': { const opp = `<strong style="color:#d4a017">${this.escapeHtml(a.data.opponentName || 'someone')}</strong>`; return { icon: '⚔️', text: `${name} won a duel vs ${opp}!` }; }
       case 'target_reached': return { icon: '🎯', text: `${name} hit their target of ${a.data.targetWords} words!` };
       default: return { icon: '📝', text: `${name} did something awesome!` };
     }
@@ -6680,7 +7559,7 @@ const App = {
     const days = Math.floor(hrs / 24);
     if (days === 1) return 'yesterday';
     if (days < 7) return `${days}d ago`;
-    return new Date(dateStr).toLocaleDateString();
+    return this.formatDateFull(dateStr);
   },
 
 
@@ -6757,6 +7636,7 @@ const App = {
           if (count > 0) { bellBadge.textContent = count; bellBadge.style.display = 'inline-flex'; }
           else { bellBadge.style.display = 'none'; }
         }
+        this._syncDashboardNotifButton(count);
       } catch {}
 
       // Community new-story green dot
@@ -6776,6 +7656,55 @@ const App = {
         if (latest.newCount > 0 && this.currentView !== 'stories') this._storiesDirty = true;
       } catch {}
     } catch {}
+  },
+
+  _showFolderProPrompt() {
+    let overlay = document.getElementById('folder-pro-prompt');
+    if (overlay?.classList.contains('active')) return;
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'folder-pro-prompt';
+      overlay.innerHTML = `<section class="folder-pro-dialog" role="dialog" aria-modal="true" aria-labelledby="folder-pro-title" aria-describedby="folder-pro-description">
+        <button type="button" class="folder-pro-close" aria-label="Close folder offer">&times;</button>
+        <span class="folder-pro-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M8 12h8M8 16h5"/></svg></span>
+        <p class="folder-pro-kicker">Included with Pro</p>
+        <h2 id="folder-pro-title">A place for every draft</h2>
+        <p id="folder-pro-description">Create folders to organise your sessions by project, topic or idea. Keep everything together with Pro.</p>
+        <div class="folder-pro-actions">
+          <button type="button" class="folder-pro-upgrade">Explore Pro</button>
+          <button type="button" class="folder-pro-dismiss">Not now</button>
+        </div>
+      </section>`;
+      document.body.appendChild(overlay);
+    }
+    const returnFocus = document.activeElement;
+    const workspace = document.querySelector('.app-container');
+    const wasInert = workspace?.inert;
+    const close = (restoreFocus = true) => {
+      overlay.classList.remove('active');
+      if (workspace) workspace.inert = wasInert;
+      if (restoreFocus && returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    };
+    overlay.querySelector('.folder-pro-close').onclick = () => close();
+    overlay.querySelector('.folder-pro-dismiss').onclick = () => close();
+    overlay.querySelector('.folder-pro-upgrade').onclick = () => {
+      close(false);
+      this.openPricing();
+      const heading = document.querySelector('#view-upgrade h1');
+      heading?.setAttribute('tabindex', '-1');
+      heading?.focus({ preventScroll: true });
+    };
+    overlay.onclick = event => { if (event.target === overlay) close(); };
+    overlay.onkeydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
+      if (event.key !== 'Tab') return;
+      const buttons = [...overlay.querySelectorAll('button')];
+      if (event.shiftKey && document.activeElement === buttons[0]) { event.preventDefault(); buttons.at(-1).focus(); }
+      else if (!event.shiftKey && document.activeElement === buttons.at(-1)) { event.preventDefault(); buttons[0].focus(); }
+    };
+    if (workspace) workspace.inert = true;
+    overlay.classList.add('active');
+    overlay.querySelector('.folder-pro-upgrade').focus({ preventScroll: true });
   },
 
   async createFolder() {
@@ -6803,6 +7732,7 @@ const App = {
       await API.createFolder(result, this.currentFolder);
       this.toast('Folder created', 'success');
       this._docsCacheDirty = true;
+      this._foldersCacheLoaded = false;
       this.loadDocuments(true);
     } catch (err) {
       this.toast(err.message || 'Failed to create folder', 'error');
@@ -6850,10 +7780,16 @@ const App = {
     menu.innerHTML = `
       ${isFailed ? '' : `<button data-action="move"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg> Move to folder</button>`}
       ${isFailed ? '' : `<button data-action="publish"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M5 19h14"/></svg> Publish to Stories</button>`}
-      ${isFailed ? '' : `<button data-action="pin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"/><path d="M4.93 10.93l2.83 2.83"/><path d="M19.07 10.93l-2.83 2.83"/><path d="M8 16h8"/><path d="M12 16v6"/><circle cx="12" cy="10" r="2"/></svg> ${doc.pinned ? 'Unpin' : 'Pin to top'}${!isPro ? ' <span style="color:#f59e0b;font-size:10px">PRO</span>' : ''}</button>`}
-      ${isFailed ? '' : `<button data-action="export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Export PDF${!isPro ? ' <span style="color:#f59e0b;font-size:10px">PRO</span>' : ''}</button>`}
-      ${isFailed ? '' : `<button data-action="export-md"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Markdown</button>`}
-      ${isFailed ? '' : `<button data-action="export-txt"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Text</button>`}
+      ${isFailed ? '' : `<button data-action="pin">${this._pinIconSvg('doc-menu-pin-icon')} ${doc.pinned ? 'Unpin' : 'Pin to top'}${!isPro ? ' <span style="color:var(--accent);font-size:10px">PRO</span>' : ''}</button>`}
+      ${isFailed ? '' : `<div class="folder-context-item doc-export-parent" data-action="export-parent" tabindex="0">
+        <span class="folder-context-item-main"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</span>
+        <span class="folder-context-arrow">›</span>
+        <div class="doc-export-submenu">
+          <button data-action="export-md" type="button">Markdown</button>
+          <button data-action="export-txt" type="button">Text</button>
+          <button data-action="export-pdf" type="button">PDF</button>
+        </div>
+      </div>`}
       ${isFailed ? '' : `<button data-action="share"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16,6 12,2 8,6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Share</button>`}
       <button data-action="delete" style="color:var(--danger)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete</button>
     `;
@@ -6890,10 +7826,12 @@ const App = {
           this._renderDocumentsView();
         } catch { this.toast('Failed to pin document', 'error'); }
       };
-      menu.querySelector('[data-action="export"]').onclick = async (e) => {
-        e.stopPropagation(); close();
-        if (!isPro) { this.toast('PDF export is a Pro feature. Markdown & text export are free.', 'warning'); this.openPricing(); return; }
-        this.exportDocPDF(doc.id);
+      menu.querySelector('[data-action="export-parent"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.currentTarget.classList.toggle('open');
+      });
+      menu.querySelector('[data-action="export-pdf"]').onclick = (e) => {
+        e.stopPropagation(); close(); this.exportDocPDF(doc.id);
       };
       menu.querySelector('[data-action="export-md"]').onclick = (e) => { e.stopPropagation(); close(); this.exportDocMarkdown(doc.id); };
       menu.querySelector('[data-action="export-txt"]').onclick = (e) => { e.stopPropagation(); close(); this.exportDocText(doc.id); };
@@ -6973,6 +7911,7 @@ const App = {
       await API.renameFolder(folderId, result);
       this.toast('Folder renamed', 'success');
       this._docsCacheDirty = true;
+      this._foldersCacheLoaded = false;
       this.loadDocuments(true);
     } catch (err) {
       this.toast(err.message || 'Failed to rename', 'error');
@@ -6987,6 +7926,7 @@ const App = {
       if (this.currentFolder === folderId) this.currentFolder = null;
       this.toast('Folder deleted', 'success');
       this._docsCacheDirty = true;
+      this._foldersCacheLoaded = false;
       this.loadDocuments(true);
     } catch {
       this.toast('Failed to delete folder', 'error');
@@ -7084,6 +8024,7 @@ const App = {
           }
           this.toast('Moved!', 'success');
           this._docsCacheDirty = true;
+          if (itemType === 'folder') this._foldersCacheLoaded = false;
           this.loadDocuments(true);
         } catch {
           this.toast('Failed to move', 'error');
@@ -7099,6 +8040,9 @@ const App = {
   },
 
   async moveDocToFolder(docId) {
+    if (!this._foldersCacheLoaded) {
+      await this.loadDocuments(true);
+    }
     if (this.folders.length === 0) {
       this.toast('Create a folder first', 'error');
       return;
@@ -7142,8 +8086,14 @@ const App = {
             : d.failReason === 'left' || d.failReason === 'abandoned'
             ? '<span class="session-left-tag">Left</span>'
             : d._failed ? '<span class="session-left-tag">Left</span>' : '';
-          const modeTag = d.mode === 'dangerous'
-            ? '<span class="session-danger-tag" style="background:rgba(239,68,68,0.08)">⚡ Danger</span>' : '';
+          const modeTag = (() => {
+            const modeMeta = this._getSessionModeMeta(d.mode);
+            return modeMeta.key === 'dangerous'
+              ? '<span class="session-danger-tag" style="background:rgba(239,68,68,0.08)">Dangerous</span>'
+              : modeMeta.key === 'legacy'
+              ? '<span class="doc-mode-badge doc-mode-legacy" style="margin-left:6px">LEGACY</span>'
+              : '';
+          })();
 
           const statusTag = d._adminDeactivated ? adminTag : d._failed ? failReason : modeTag;
 
@@ -7258,6 +8208,7 @@ const App = {
   _planFeaturesHTML() {
     const isPro = this.user && this.user.plan === 'premium';
     const freeFeatures = [
+      { label: '3 writing sessions per day', yes: true },
       { label: 'Timed sessions (30, 45 & 60 min)', yes: true },
       { label: 'Dangerous mode (fixed timer)', yes: true },
       { label: 'Streak tracking & tree', yes: true },
@@ -7275,6 +8226,7 @@ const App = {
       { label: 'Pro badge on leaderboard', yes: false },
     ];
     const proFeatures = [
+      { label: 'Unlimited writing sessions', yes: true },
       { label: 'Everything in Free', yes: true },
       { label: 'All timer options + custom "+"', yes: true },
       { label: 'Custom danger inactivity timer', yes: true },
@@ -7311,7 +8263,7 @@ const App = {
           <div class="pricing-uzs">~25,000 UZS</div>
         </div>
         <ul class="pricing-features">${proList}</ul>
-        ${isPro ? `<div class="pricing-current-badge">Current Plan${this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite' ? ' · expires ' + new Date(this.user.planExpiresAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : this.user.planExpiresAt === 'infinite' ? ' · ∞' : ''}</div>` : ''}
+        ${isPro ? `<div class="pricing-current-badge">Current Plan${this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite' ? ' · expires ' + this.formatDateFull(this.user.planExpiresAt) : this.user.planExpiresAt === 'infinite' ? ' · Lifetime' : ''}</div>` : ''}
       </div>`;
   },
 
@@ -7350,7 +8302,7 @@ const App = {
       if (!el.querySelector('.pro-lock-dynamic')) {
         const badge = document.createElement('span');
         badge.className = 'pro-lock-dynamic';
-        badge.style.cssText = 'position:absolute;top:-6px;right:-6px;font-size:8px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:1px 4px;border-radius:6px;pointer-events:none;z-index:2';
+        badge.style.cssText = 'position:absolute;top:-6px;right:-6px;font-size:8px;font-weight:700;background:var(--accent);color:#fff;padding:1px 4px;border-radius:6px;pointer-events:none;z-index:2';
         badge.textContent = 'PRO';
         el.appendChild(badge);
       }
@@ -7449,26 +8401,42 @@ const App = {
 
   openStreakPopup() {
     const overlay = document.getElementById('streak-popup-overlay');
-    const streak = this.user?.streak || 0;
-    const best = this.user?.longestStreak || 0;
+    if (overlay.classList.contains('active')) return;
+    const streak = Math.max(0, Number(this.user?.streak) || 0);
+    const best = Math.max(streak, Number(this.user?.longestStreak) || 0);
+    const target = [3, 7, 14, 30, 60, 100, 365].find(day => day > streak) || Math.ceil((streak + 1) / 100) * 100;
     document.getElementById('streak-popup-count').textContent = streak;
-    document.getElementById('streak-popup-best').textContent = `Best: ${best} days`;
-    // Dynamic motivational message
-    let msg = 'Start writing today to begin your streak!';
-    if (streak >= 100) msg = 'Absolutely legendary. You are a writing machine!';
-    else if (streak >= 60) msg = 'Two months strong! Nothing can stop you!';
-    else if (streak >= 30) msg = 'A full month! You\'re a writing legend!';
-    else if (streak >= 14) msg = 'Two weeks! Your dedication is inspiring!';
-    else if (streak >= 7) msg = 'A whole week! Keep the momentum going!';
-    else if (streak >= 3) msg = 'You\'re on fire! Don\'t break the chain!';
-    else if (streak >= 1) msg = 'Great start! Come back tomorrow to keep it going!';
-    document.getElementById('streak-popup-message').textContent = msg;
+    document.getElementById('streak-popup-best').textContent = `Personal best · ${best} day${best === 1 ? '' : 's'}`;
+    document.getElementById('streak-milestone-title').textContent = `Next milestone · ${target} days`;
+    const remaining = target - streak;
+    document.getElementById('streak-milestone-left').textContent = `${remaining} day${remaining === 1 ? '' : 's'} to go`;
+    overlay.style.setProperty('--streak-offset', String(100 * (1 - streak / target)));
+    document.getElementById('streak-popup-message').textContent = streak >= 7
+      ? 'A steady practice, built one day at a time.' : streak > 0
+        ? 'Every day you show up, your writing grows.' : 'A little writing today can start something good.';
+    this._streakReturnFocus = document.activeElement;
+    const workspace = document.querySelector('.app-container');
+    this._streakWorkspaceWasInert = workspace?.inert;
+    if (workspace) workspace.inert = true;
+    overlay.inert = false;
+    void overlay.offsetWidth;
     overlay.classList.add('active');
-    overlay.onclick = (e) => { if (e.target === overlay) this.closeStreakPopup(); };
+    overlay.querySelector('.streak-popup-close').focus({ preventScroll: true });
+    overlay.onclick = event => { if (event.target === overlay) this.closeStreakPopup(); };
+    overlay.onkeydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); this.closeStreakPopup(); }
+      else if (event.key === 'Tab') { event.preventDefault(); overlay.querySelector('.streak-popup-close').focus(); }
+    };
   },
 
   closeStreakPopup() {
-    document.getElementById('streak-popup-overlay').classList.remove('active');
+    const overlay = document.getElementById('streak-popup-overlay');
+    if (!overlay.classList.contains('active')) return;
+    overlay.classList.remove('active');
+    overlay.inert = true;
+    const workspace = document.querySelector('.app-container');
+    if (workspace) workspace.inert = this._streakWorkspaceWasInert || false;
+    if (this._streakReturnFocus?.isConnected) this._streakReturnFocus.focus({ preventScroll: true });
   },
 
   _showLevelUpQueue(levels) {
@@ -7544,7 +8512,29 @@ const App = {
     if (diff < 60000) return 'Just now';
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return this.formatDateFull(d);
+  },
+
+  _ordinalDay(day) {
+    const n = Number(day);
+    if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`;
+    const suffix = n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th';
+    return `${n}${suffix}`;
+  },
+
+  formatDateFull(value) {
+    if (!value) return '—';
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    const month = d.toLocaleString('en-US', { month: 'long' });
+    return `${this._ordinalDay(d.getDate())} ${month}, ${d.getFullYear()}`;
+  },
+
+  formatMonthYear(value) {
+    if (!value) return '—';
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    return `${d.toLocaleString('en-US', { month: 'long' })}, ${d.getFullYear()}`;
   },
 
   escapeHtml(str) {
@@ -7622,7 +8612,7 @@ const App = {
     if (!banner) {
       banner = document.createElement('div');
       banner.id = 'maintenance-banner';
-      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.2)';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:var(--accent);color:#fff;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.2)';
       document.body.prepend(banner);
     }
 
@@ -7652,27 +8642,79 @@ const App = {
 
   _applyTheme(theme) {
     const root = document.documentElement;
-    if (theme === 'test') theme = 'light'; // legacy: Test folded into Light
-    // 'test' = Writer's Desk structure layer — always on; color theme adds light/sepia (dark = none)
-    root.classList.remove('light', 'sepia');
-    root.classList.add('test');
-    if (theme === 'light') root.classList.add('light');
-    else if (theme === 'sepia') root.classList.add('sepia');
+    if (theme === 'test' || theme === 'sepia') theme = 'light'; // legacy: Test/Sepia folded into Light
+    root.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('iwrite_theme', theme);
     const btn = document.getElementById('theme-toggle-btn');
     if (!btn) return;
-    const labels = { dark: 'Light Mode', light: 'Sepia Mode', sepia: 'Dark Mode' };
+    const labels = { dark: 'Light Mode', light: 'Dark Mode' };
     btn.querySelector('.theme-icon-dark').style.display = theme === 'dark' ? '' : 'none';
     btn.querySelector('.theme-icon-light').style.display = theme !== 'dark' ? '' : 'none';
-    btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Light Mode';
+    btn.querySelector('.theme-toggle-label').textContent = labels[theme] || 'Dark Mode';
+    this._syncAppearanceUI?.();
+    this._syncToolsToggles?.();
   },
 
-  _cycleTheme() {
-    let current = localStorage.getItem('iwrite_theme') || 'dark';
-    if (current === 'test') current = 'light';
-    // dark → light → sepia → dark (all share the Writer's Desk structure)
-    const next = current === 'dark' ? 'light' : current === 'light' ? 'sepia' : 'dark';
-    this._applyTheme(next);
+  _applySidebarCollapsed(collapsed) {
+    const container = document.querySelector('.app-container');
+    if (!container || container.classList.contains('sidebar-collapsed') === !!collapsed) return;
+    const main = container.querySelector('.main-content');
+    const before = main?.getBoundingClientRect().left;
+    this._sidebarMotion?.cancel();
+    container.classList.toggle('sidebar-collapsed', !!collapsed);
+    if (!main || !container.classList.contains('shell-motion-ready') || innerWidth <= 768 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const delta = before - main.getBoundingClientRect().left;
+    if (Math.abs(delta) < 1) return;
+    main.style.willChange = 'transform';
+    const motion = this._sidebarMotion = main.animate([{ transform: `translateX(${delta}px)` }, { transform: 'translateX(0)' }], { duration: 220, easing: 'cubic-bezier(.2,0,0,1)' });
+    motion.finished.catch(() => {}).finally(() => {
+      if (this._sidebarMotion === motion) { this._sidebarMotion = null; main.style.willChange = ''; }
+    });
+  },
+
+  async _animateTheme(theme, trigger) {
+    const root = document.documentElement;
+    if (!this._themeWave && root.classList.contains('dark') === (theme === 'dark')) {
+      this._requestedTheme = null; this._applyTheme(theme); return;
+    }
+    const token = this._themeWaveToken = (this._themeWaveToken || 0) + 1;
+    this._requestedTheme = theme;
+    this._themeWave?.skipTransition();
+    this._themeWaveAnimation?.cancel();
+    root.classList.remove('theme-wave');
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this._applyTheme(theme);
+      this._requestedTheme = null;
+      return;
+    }
+    root.classList.add('theme-wave');
+    try {
+      const transition = this._themeWave = document.startViewTransition(() => {
+        if (token === this._themeWaveToken) this._applyTheme(theme);
+      });
+      await transition.ready;
+      if (token !== this._themeWaveToken) return;
+      // Fade composited snapshots instead of animating a full-screen clip mask.
+      const animation = this._themeWaveAnimation = root.animate([
+        { opacity: 0 },
+        { opacity: 1 }
+      ], { duration: 280, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' });
+      await animation.finished.catch(() => {});
+      await transition.finished.catch(() => {});
+    } catch {
+      if (token === this._themeWaveToken) this._applyTheme(theme);
+    } finally {
+      if (token === this._themeWaveToken) {
+        root.classList.remove('theme-wave');
+        this._themeWave = null; this._themeWaveAnimation = null; this._requestedTheme = null;
+      }
+    }
+  },
+
+  _cycleTheme(trigger) {
+    const current = this._requestedTheme || (document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    const source = trigger || (document.getElementById('editor-tools-menu')?.style.display !== 'none' ? document.getElementById('tools-theme-row') : document.getElementById('editor-container')?.classList.contains('active') ? document.getElementById('editor-tools-btn') : document.getElementById('theme-toggle-btn'));
+    return this._animateTheme(current === 'dark' ? 'light' : 'dark', source);
   },
 
   async openCommentHistory() {
@@ -7697,7 +8739,7 @@ const App = {
         <div style="padding:12px 0;border-bottom:1px solid var(--border-light)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span style="font-weight:600;font-size:13px">${this.escapeHtml(c.author || 'Unknown')}</span>
-            <span style="font-size:11px;color:var(--text-muted)">${new Date(c.resolvedAt || c.createdAt).toLocaleDateString()}</span>
+            <span style="font-size:11px;color:var(--text-muted)">${this.formatDateFull(c.resolvedAt || c.createdAt)}</span>
           </div>
           ${c.highlightedText ? `<div style="font-size:12px;color:var(--text-muted);font-style:italic;margin-bottom:4px">"${this.escapeHtml(c.highlightedText.substring(0, 80))}${c.highlightedText.length > 80 ? '...' : ''}"</div>` : ''}
           <div style="font-size:13px;color:var(--text-secondary)">${this.escapeHtml(c.text || '')}</div>
@@ -7713,19 +8755,35 @@ const App = {
   },
 
   showConfirm(message) {
+    this._dismissConfirm?.();
     return new Promise((resolve) => {
       const overlay = document.getElementById('confirm-overlay');
       const msgEl = document.getElementById('confirm-message');
+      const cancel = document.getElementById('confirm-cancel');
+      const ok = document.getElementById('confirm-ok');
+      const previousFocus = document.activeElement;
+      const finish = value => {
+        overlay.classList.remove('active');
+        document.removeEventListener('keydown', onKeyDown, true);
+        cancel.onclick = ok.onclick = null;
+        this._dismissConfirm = null;
+        if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+        resolve(value);
+      };
+      const onKeyDown = e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); finish(false); }
+        if (e.key === 'Tab') {
+          e.preventDefault(); e.stopImmediatePropagation();
+          (document.activeElement === cancel ? ok : cancel).focus();
+        }
+      };
       msgEl.textContent = message;
       overlay.classList.add('active');
-      document.getElementById('confirm-ok').onclick = () => {
-        overlay.classList.remove('active');
-        resolve(true);
-      };
-      document.getElementById('confirm-cancel').onclick = () => {
-        overlay.classList.remove('active');
-        resolve(false);
-      };
+      this._dismissConfirm = () => finish(false);
+      ok.onclick = () => finish(true);
+      cancel.onclick = () => finish(false);
+      document.addEventListener('keydown', onKeyDown, true);
+      cancel.focus({ preventScroll: true });
     });
   },
 
@@ -7808,7 +8866,7 @@ const App = {
 
   _fmtDate(dateStr) {
     if (!dateStr) return '\u2014';
-    return new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
+    return this.formatDateFull(dateStr);
   },
 
   _pctArrow(pct) {
@@ -8602,7 +9660,7 @@ const App = {
             <span class="ticket-type ticket-type--${t.type}">${t.type}</span>
             <strong class="ticket-subject">${this._esc(t.subject)}</strong>
             <span class="ticket-meta">
-              <span class="ticket-date">${new Date(t.createdAt).toLocaleDateString()}</span>
+              <span class="ticket-date">${this.formatDateFull(t.createdAt)}</span>
               <span class="ticket-status ticket-status--${statusClass}">${t.status}</span>
             </span>
           </div>
@@ -8844,11 +9902,10 @@ const App = {
       html: `<p>The leaderboard ranks writers by <strong>writing streak</strong> first, then total words.</p>
         <ul><li>The podium shows the top 3 writers with their current streak.</li><li>Usernames are displayed below names.</li><li>Your row is highlighted so you can see where you stand.</li><li>Keep your streak alive to climb the ranks!</li></ul>`
     },
-    'friends-duels': {
-      title: 'Friends & Duels',
-      html: `<p>Add friends by their email address to challenge them to writing duels.</p>
-        <ul><li><strong>Duels</strong> — a timed head-to-head battle. Most words written in the time limit wins.</li><li><strong>Adding friends</strong> — enter their email in the Friends tab. They'll appear in your friends list.</li></ul>
-        <p style="color:var(--text-muted);font-size:13px">Live duel matchmaking is coming soon.</p>`
+    'friends': {
+      title: 'Friends',
+      html: `<p>Add friends by their email address to see their progress alongside yours.</p>
+        <ul><li><strong>Adding friends</strong> — enter their email in the Friends tab. They'll appear in your friends list.</li><li><strong>Friends list</strong> — see each friend's level, streak, and total words at a glance.</li></ul>`
     },
     'sharing': {
       title: 'Sharing Documents',
@@ -9112,7 +10169,7 @@ const CommentSystem = {
         <div class="comment-bubble" data-id="${c.id}">
           <div class="comment-bubble-header">
             <span class="comment-bubble-author">${App.escapeHtml(c.author)}</span>
-            <span class="comment-bubble-date">${new Date(c.createdAt).toLocaleDateString()}</span>
+            <span class="comment-bubble-date">${this.formatDateFull(c.createdAt)}</span>
           </div>
           ${c.highlightedText ? `<div class="comment-bubble-quote">"${App.escapeHtml(c.highlightedText.substring(0, 80))}${c.highlightedText.length > 80 ? '...' : ''}"</div>` : ''}
           <div class="comment-bubble-text">${App.escapeHtml(c.text)}</div>

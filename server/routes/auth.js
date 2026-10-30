@@ -8,6 +8,7 @@ const multer = require('multer');
 const sharp = require('sharp');
 const crypto = require('crypto');
 const { findOne, insertOne, updateOne, pool } = require('../utils/storage');
+const { saveProfileMedia, deleteProfileMedia } = require('../utils/profile-media');
 const { generateToken, authenticate, checkSubscriptionExpiry } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 const { sendBrevoEmail } = require('../utils/brevo');
@@ -175,11 +176,16 @@ function buildPasswordResetEmail({ name, code }) {
 </html>`;
 }
 
-async function sendTransactionalEmail({ user, subject, htmlContent }) {
+async function sendTransactionalEmail({ user, subject, htmlContent, devCode }) {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.MAIL_FROM_EMAIL || process.env.BREVO_SENDER_EMAIL;
   const senderName = process.env.MAIL_FROM_NAME || process.env.BREVO_SENDER_NAME || 'iWrite4.me';
   if (!apiKey || !senderEmail) {
+    if (process.env.NODE_ENV !== 'production') {
+      // Local dev only — no Brevo configured, so just log instead of failing signup/reset.
+      console.log(`[dev-email] to=${user.email} subject="${subject}" code=${devCode}`);
+      return true;
+    }
     throw new Error('Brevo is not configured. Set BREVO_API_KEY and MAIL_FROM_EMAIL.');
   }
 
@@ -198,7 +204,8 @@ async function sendVerificationEmail(user, code) {
   return sendTransactionalEmail({
     user,
     subject: 'Your iWrite4.me verification code',
-    htmlContent: buildVerificationEmail({ name: user.name, code })
+    htmlContent: buildVerificationEmail({ name: user.name, code }),
+    devCode: code
   });
 }
 
@@ -206,7 +213,8 @@ async function sendPasswordResetEmail(user, code) {
   return sendTransactionalEmail({
     user,
     subject: 'Your iWrite4.me password reset code',
-    htmlContent: buildPasswordResetEmail({ name: user.name, code })
+    htmlContent: buildPasswordResetEmail({ name: user.name, code }),
+    devCode: code
   });
 }
 
@@ -856,20 +864,11 @@ router.post('/google', async (req, res) => {
 router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-    const avatarsDir = path.join(__dirname, '../data/avatars');
-    if (!fs.existsSync(avatarsDir)) fs.mkdirSync(avatarsDir, { recursive: true });
-
-    const filepath = path.join(avatarsDir, `${req.user.id}.jpg`);
-
-    await sharp(req.file.buffer)
+    const image = await sharp(req.file.buffer)
       .resize(480, 480, { fit: 'cover', position: 'center' })
       .jpeg({ quality: 70 })
-      .toFile(filepath);
-
-    const avatarUrl = `/uploads/avatars/${req.user.id}.jpg`;
-    const avatarUpdatedAt = Date.now();
-    const updated = await updateOne('users.json', u => u.id === req.user.id, { avatar: avatarUrl, avatarUpdatedAt });
+      .toBuffer();
+    const updated = await saveProfileMedia(req.user.id, 'avatar', `${req.user.id}.jpg`, image, Date.now());
     const { password: _, ...safeUser } = updated;
     res.json(safeUser);
   } catch (err) {
@@ -880,9 +879,11 @@ router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) =
 
 router.delete('/avatar', authenticate, async (req, res) => {
   try {
-    const filepath = path.join(__dirname, '../data/avatars', `${req.user.id}.jpg`);
-    if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-    const updated = await updateOne('users.json', u => u.id === req.user.id, { avatar: null, avatarUpdatedAt: null });
+    const updated = await deleteProfileMedia(req.user.id, 'avatar');
+    const legacyFile = path.join(__dirname, '../data/avatars', `${req.user.id}.jpg`);
+    try { if (fs.existsSync(legacyFile)) fs.unlinkSync(legacyFile); } catch (err) {
+      console.error('Failed to remove legacy avatar:', err);
+    }
     const { password: _, ...safeUser } = updated;
     res.json(safeUser);
   } catch (err) {
@@ -894,27 +895,13 @@ router.delete('/avatar', authenticate, async (req, res) => {
 router.post('/banner', authenticate, upload.single('banner'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const bannersDir = path.join(__dirname, '../data/banners');
-    if (!fs.existsSync(bannersDir)) fs.mkdirSync(bannersDir, { recursive: true });
-
-    // Delete ALL old banner files for this user (handles timestamped filenames)
-    const files = fs.readdirSync(bannersDir);
-    files.filter(f => f.startsWith(req.user.id)).forEach(f => {
-      try { fs.unlinkSync(path.join(bannersDir, f)); } catch (_) {}
-    });
-
-    // Use timestamped filename so every upload is a unique URL (defeats all caching layers)
     const ts = Date.now();
     const filename = `${req.user.id}-${ts}.jpg`;
-    const filepath = path.join(bannersDir, filename);
-    await sharp(req.file.buffer)
+    const image = await sharp(req.file.buffer)
       .resize(1200, 300, { fit: 'cover', position: 'center' })
       .jpeg({ quality: 75 })
-      .toFile(filepath);
-
-    const bannerUrl = `/uploads/banners/${filename}`;
-    const bannerUpdatedAt = ts;
-    const updated = await updateOne('users.json', u => u.id === req.user.id, { banner: bannerUrl, bannerUpdatedAt });
+      .toBuffer();
+    const updated = await saveProfileMedia(req.user.id, 'banner', filename, image, ts);
     const { password: _, ...safeUser } = updated;
     res.json(safeUser);
   } catch (err) {
@@ -925,14 +912,15 @@ router.post('/banner', authenticate, upload.single('banner'), async (req, res) =
 
 router.delete('/banner', authenticate, async (req, res) => {
   try {
-    // Delete all banner files for this user (handles timestamped filenames)
-    const bannersDir = path.join(__dirname, '../data/banners');
-    if (fs.existsSync(bannersDir)) {
-      fs.readdirSync(bannersDir).filter(f => f.startsWith(req.user.id)).forEach(f => {
-        try { fs.unlinkSync(path.join(bannersDir, f)); } catch (_) {}
-      });
+    const updated = await deleteProfileMedia(req.user.id, 'banner');
+    const legacyDir = path.join(__dirname, '../data/banners');
+    if (fs.existsSync(legacyDir)) {
+      for (const file of fs.readdirSync(legacyDir).filter(f => f.startsWith(req.user.id))) {
+        try { fs.unlinkSync(path.join(legacyDir, file)); } catch (err) {
+          console.error('Failed to remove legacy banner:', err);
+        }
+      }
     }
-    const updated = await updateOne('users.json', u => u.id === req.user.id, { banner: null, bannerUpdatedAt: null });
     const { password: _, ...safeUser } = updated;
     res.json(safeUser);
   } catch (err) {

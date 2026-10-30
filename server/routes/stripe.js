@@ -3,6 +3,8 @@ const Stripe = require('stripe');
 const { findOne, findMany, updateOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
+const { applyStripeRenewal } = require('../services/stripeRenewal');
+const { applyStripePaymentFailure } = require('../services/stripePaymentFailure');
 
 const router = express.Router();
 let stripeClient = null;
@@ -545,42 +547,24 @@ async function stripeWebhookHandler(req, res) {
             break;
           }
 
-          // Confirm the subscription is still active in Stripe before treating
-          // this as a paid renewal (defends against replayed/late webhooks).
-          let stripeStatus = null;
-          try {
-            const sub = await stripe.subscriptions.retrieve(subscriptionId);
-            stripeStatus = sub.status;
-          } catch (err) {
-            console.warn(`Webhook: could not retrieve subscription ${subscriptionId}:`, err.message);
-            break;
-          }
-          if (stripeStatus !== 'active' && stripeStatus !== 'trialing') {
-            console.warn(`Webhook: invoice.paid but subscription ${subscriptionId} status is ${stripeStatus}; skipping renewal`);
+          // Retry transient Stripe failures instead of acknowledging an unprocessed renewal.
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          if (sub.status !== 'active' && sub.status !== 'trialing') {
+            console.warn(`Webhook: invoice.paid but subscription ${subscriptionId} status is ${sub.status}; skipping renewal`);
             break;
           }
 
-          const duration = user.planDuration || '1m';
-          const now = new Date();
-          const currentExpiry = user.planExpiresAt ? new Date(user.planExpiresAt) : now;
-          const base = currentExpiry > now ? currentExpiry : now;
-          const newExpiresAt = new Date(base.getTime() + DURATION_DAYS[duration] * 86400000).toISOString();
-
-          await updateOne('users.json', u => u.id === user.id, {
-            planExpiresAt: newExpiresAt,
-            planPaymentFailed: false,
-            planPaymentAttempts: 0,
-            planSource: 'stripe',
-            trialEndingSoon: false,
-            trialEndingAt: null
-          });
-
+          // Serialize by user and record the invoice in the same transaction as the
+          // expiry update, so Stripe redeliveries cannot extend the plan twice.
+          const renewal = await applyStripeRenewal(invoice.id, subscriptionId);
+          if (renewal.status !== 'applied') break;
           logAction('stripe_subscription_renewed', {
-            duration,
-            subscriptionId
-          }, user.id);
+            duration: renewal.duration,
+            subscriptionId,
+            invoiceId: invoice.id
+          }, renewal.user.id);
+          try { require('../telegram').notifyStripeRenewal(renewal.user, { duration: renewal.duration, expiresAt: renewal.expiresAt }); } catch {}
 
-          try { require('../telegram').notifyStripeRenewal(user, { duration, expiresAt: newExpiresAt }); } catch {}
         }
 
         break;
@@ -634,27 +618,23 @@ async function stripeWebhookHandler(req, res) {
         const user = await findOne('users.json', u => u.stripeSubscriptionId === subscriptionId);
 
         if (user) {
-          const attempts = (user.planPaymentAttempts || 0) + 1;
-          await updateOne('users.json', u => u.id === user.id, {
-            planPaymentFailed: true,
-            planPaymentAttempts: attempts
-          });
+          const failure = await applyStripePaymentFailure(event.id, invoice, subscriptionId);
+          if (failure.status === 'skipped') break;
+          if (failure.status === 'applied') {
+            logAction('stripe_payment_failed', {
+              subscriptionId,
+              attemptCount: invoice.attempt_count,
+              ourAttempts: failure.attempts
+            }, user.id);
+            try { require('../telegram').notifyStripeFailed(user); } catch {}
+          }
 
-          logAction('stripe_payment_failed', {
-            subscriptionId,
-            attemptCount: invoice.attempt_count,
-            ourAttempts: attempts
-          }, user.id);
-
-          try { require('../telegram').notifyStripeFailed(user); } catch {}
-
-          // After 2nd failure, cancel subscription → user goes free
-          if (attempts >= 2) {
-            try {
-              await stripe.subscriptions.cancel(subscriptionId);
+          // A retry must also retry a failed cancellation without counting the
+          // same failure twice. Stripe cancellation is safe to request again.
+          if (failure.attempts >= 2) {
+            await stripe.subscriptions.cancel(subscriptionId);
+            if (failure.status === 'applied') {
               logAction('stripe_subscription_auto_cancelled', { subscriptionId, reason: 'payment_failed_twice' }, user.id);
-            } catch (err) {
-              console.error('Auto-cancel failed:', err);
             }
           }
         }
@@ -692,11 +672,12 @@ async function stripeWebhookHandler(req, res) {
         console.log(`Unhandled Stripe event: ${event.type}`);
     }
   } catch (err) {
-    // Log internal errors but return 200 to Stripe to prevent infinite retries
     console.error(`Webhook handler error for ${event.type}:`, err);
+    // Payment processing is idempotent; retry if a transient failure prevented it.
+    if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') return res.status(500).json({ error: 'Renewal processing failed' });
   }
 
-  // Always return 200 to Stripe (except for signature failures handled above)
+  // Acknowledge events processed or deliberately skipped above.
   res.json({ received: true });
 }
 

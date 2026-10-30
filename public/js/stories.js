@@ -25,13 +25,7 @@
 
   function formatStoryDate(value) {
     if (!value) return 'Unscheduled';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Unscheduled';
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return App.formatDateFull ? App.formatDateFull(value) : 'Unscheduled';
   }
 
   function initialsFor(name) {
@@ -179,7 +173,7 @@
       const active = !!options.active;
       const extraClass = options.className || '';
       return `
-        <span class="story-metric ${active ? 'active' : ''} ${extraClass}">
+        <span class="story-metric ${active ? 'active' : ''} ${extraClass}" role="img" aria-label="${Number(count) || 0} ${icon === 'view' ? 'views' : icon === 'heart' ? 'likes' : 'comments'}" title="${icon === 'view' ? 'Views' : icon === 'heart' ? 'Likes' : 'Comments'}">
           ${renderIcon(icon, { filled: active })}
           <span>${count || 0}</span>
         </span>
@@ -235,9 +229,7 @@
               <div class="doc-card-meta">
                 <span>${story.readTimeMinutes || 1} min read</span>
                 <span>${formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt)}</span>
-                <span>${story.viewCount || 0} views</span>
-                <span>${story.commentCount || 0} comments</span>
-                ${story.likeCount ? `<span>${story.likeCount} likes</span>` : ''}
+                ${['published', 'hidden'].includes(story.status) ? `${this.renderMetric('view', story.viewCount)}${this.renderMetric('heart', story.likeCount)}${this.renderMetric('comment', story.commentCount)}` : ''}
               </div>
               ${story.moderationNote ? `<div class="story-card-note">${esc(story.moderationNote)}</div>` : ''}
             </div>
@@ -261,9 +253,11 @@
       const list = this.storyTab === 'feed' ? this.storyList : this.getMineStories();
 
       if (!list.length) {
-        const emptyTitle = this.storyTab === 'feed' ? 'No stories yet' : 'Nothing in this section yet';
+        const emptyTitle = this.storyTab === 'feed'
+          ? (this.storySort === 'following' ? 'Not following anyone yet' : 'No stories yet')
+          : 'Nothing in this section yet';
         const emptyText = this.storyTab === 'feed'
-          ? 'Approved stories appear here.'
+          ? (this.storySort === 'following' ? 'Follow writers from their profile or the Most followed list to see their stories here.' : 'Approved stories appear here.')
           : this.storyMineFilter === 'drafts'
           ? 'Start a new story or publish one of your sessions.'
           : this.storyMineFilter === 'review'
@@ -384,7 +378,7 @@
       }
       // Show the loading card only on the first attempt (don't flash it on retries).
       if (attempt === 0 && !el.querySelector('.stories-popular-item')) {
-        el.innerHTML = `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3><div style="padding:8px 0;color:var(--text-muted);font-size:12px">Loading…</div></div>`;
+        el.innerHTML = `<div class="stories-popular-card"><h3>Most followed</h3><div class="stories-popular-empty">Loading…</div></div>`;
       }
       try {
         const list = await API.request('/follow/popular');
@@ -405,7 +399,11 @@
 
     _renderPopularWriters(list) {
       const el = document.getElementById('stories-popular');
-      if (!list || !list.length) { if (el) el.innerHTML = ''; return ''; }
+      if (!list || !list.length) {
+        const empty = `<div class="stories-popular-card"><h3>Most followed</h3><div class="stories-popular-empty">No writers to show yet — check back once more people join.</div></div>`;
+        if (el) el.innerHTML = empty;
+        return empty;
+      }
       const rows = list.map(u => {
         const initial = esc((u.name || u.username || '?').charAt(0).toUpperCase());
         const avatar = u.avatar
@@ -421,13 +419,41 @@
           <div class="stories-popular-followers">${followers}</div>
         </a>`;
       }).join('');
-      return `<div class="stories-popular-card"><h3>&#x1F31F; Popular writers</h3>${rows}</div>`;
+      return `<div class="stories-popular-card"><h3>Most followed</h3>${rows}</div>`;
+    },
+
+    async openCommunityStory(id) {
+      this.switchView('stories');
+      await this.selectStory(id);
+    },
+
+    async loadTopWeek() {
+      const el = document.getElementById('stories-top-week');
+      if (!el) return;
+      try {
+        const items = await API.getTopWeekStories();
+        if (!items || !items.length) { el.innerHTML = ''; return; }
+        const rows = items.map(t => `
+          <button type="button" class="stories-topweek-item" data-topweek-story="${esc(t.id)}">
+            <span class="stories-topweek-kind">${esc(t.kind)}</span>
+            <span class="stories-topweek-title">${esc(t.title)}</span>
+            <span class="stories-topweek-by">${esc(t.authorName)}</span>
+            <span class="stories-topweek-stats">${this.renderMetric('view', t.viewCount)}${this.renderMetric('heart', t.likeCount)}${this.renderMetric('comment', t.commentCount)}</span>
+          </button>`).join('');
+        el.innerHTML = `<div class="stories-popular-card"><h3>Top this week</h3>${rows}</div>`;
+        el.querySelectorAll('[data-topweek-story]').forEach(button => {
+          button.addEventListener('click', () => this.openCommunityStory(button.dataset.topweekStory));
+        });
+      } catch {
+        el.innerHTML = '';
+      }
     },
 
     async loadStories() {
       App._storiesLoaded = true;
       App._storiesDirty = false;
-      this.loadPopularWriters(); // populate the right-side "Popular writers" sidebar (cached)
+      this.loadPopularWriters(); // populate the right-side "Most followed" sidebar (cached)
+      this.loadTopWeek();
       const feedEl = document.getElementById('stories-feed');
       if (feedEl) {
         const skeletonCard = `<div class="story-skeleton-card"><div class="story-skeleton-line skeleton-author"></div><div class="story-skeleton-line skeleton-title"></div><div class="story-skeleton-line skeleton-excerpt"></div><div class="story-skeleton-line skeleton-excerpt-short"></div><div class="story-skeleton-line skeleton-meta"></div></div>`;
@@ -1210,6 +1236,61 @@
       }
     },
 
+    async openSessionStoryPicker() {
+      let dialog = document.getElementById('story-session-picker');
+      if (!dialog) {
+        dialog = document.createElement('dialog');
+        dialog.id = 'story-session-picker';
+        dialog.setAttribute('aria-labelledby', 'story-session-picker-title');
+        dialog.innerHTML = `<header class="session-picker-header"><div><h2 id="story-session-picker-title">Choose a session</h2><p>Copy your writing into a draft, then review it before publishing.</p></div><button type="button" class="session-picker-close" aria-label="Close">×</button></header><label class="session-picker-search"><span>Search saved sessions</span><input type="search" placeholder="Search your sessions" autofocus></label><div class="session-picker-results" aria-live="polite"></div><footer class="session-picker-pages"></footer>`;
+        document.body.appendChild(dialog);
+        dialog.querySelector('.session-picker-close').onclick = () => dialog.close();
+        dialog.addEventListener('click', event => {
+          const bounds = dialog.getBoundingClientRect();
+          if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) dialog.close();
+        });
+        dialog.querySelector('input').addEventListener('input', () => { this._sessionPickerPage = 1; this._renderSessionStoryPicker(); });
+      }
+      this._sessionPickerPage = 1;
+      this._sessionPickerDocuments = [];
+      dialog.querySelector('input').value = '';
+      dialog.querySelector('.session-picker-results').textContent = 'Loading sessions…';
+      dialog.querySelector('.session-picker-pages').replaceChildren();
+      if (!dialog.open) dialog.showModal();
+      const request = this._sessionPickerRequest = (this._sessionPickerRequest || 0) + 1;
+      try {
+        const documents = await API.getDocuments();
+        if (request !== this._sessionPickerRequest || !dialog.open) return;
+        this._sessionPickerDocuments = documents.filter(doc => !doc.deleted && !doc.failed && !doc.deactivatedByAdmin && doc.completed !== false)
+          .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+        this._renderSessionStoryPicker();
+      } catch {
+        if (request !== this._sessionPickerRequest || !dialog.open) return;
+        dialog.querySelector('.session-picker-results').innerHTML = '<div class="session-picker-empty">Couldn’t load sessions.<button type="button" data-session-picker-retry>Try again</button></div>';
+        dialog.querySelector('[data-session-picker-retry]').onclick = () => this.openSessionStoryPicker();
+      }
+    },
+
+    _renderSessionStoryPicker() {
+      const dialog = document.getElementById('story-session-picker');
+      if (!dialog) return;
+      const query = dialog.querySelector('input').value.trim().toLocaleLowerCase();
+      const documents = (this._sessionPickerDocuments || []).filter(doc => (doc.title || 'Untitled').toLocaleLowerCase().includes(query));
+      const pages = Math.max(1, Math.ceil(documents.length / 8));
+      const page = this._sessionPickerPage = Math.min(Math.max(this._sessionPickerPage || 1, 1), pages);
+      const start = (page - 1) * 8;
+      const list = dialog.querySelector('.session-picker-results');
+      list.innerHTML = documents.length ? documents.slice(start, start + 8).map(doc => `<button type="button" class="session-picker-option" data-session-id="${esc(doc.id)}"><span class="session-picker-doc-icon" aria-hidden="true">${renderIcon('edit')}</span><span class="session-picker-option-copy"><strong>${esc(doc.title || 'Untitled')}</strong><span>${Number(doc.wordCount || 0).toLocaleString()} words · ${formatStoryDate(doc.updatedAt || doc.createdAt)}</span></span><span class="session-picker-option-action">Create draft ${renderIcon('copy')}</span></button>`).join('') : `<div class="session-picker-empty">${query ? 'No matching sessions.' : 'No saved sessions yet.'}</div>`;
+      list.querySelectorAll('[data-session-id]').forEach(button => button.onclick = async () => {
+        if (this._creatingSessionDraft) return;
+        dialog.close();
+        await this.createStoryFromDocument(button.dataset.sessionId);
+      });
+      const footer = dialog.querySelector('.session-picker-pages');
+      footer.innerHTML = documents.length ? `<span>${start + 1}–${Math.min(start + 8, documents.length)} of ${documents.length} sessions</span><div><button type="button" data-picker-page="-1" ${page === 1 ? 'disabled' : ''} aria-label="Previous page">Previous</button><button type="button" data-picker-page="1" ${page === pages ? 'disabled' : ''} aria-label="Next page">Next</button></div>` : '';
+      footer.querySelectorAll('[data-picker-page]').forEach(button => button.onclick = () => { this._sessionPickerPage += Number(button.dataset.pickerPage); this._renderSessionStoryPicker(); list.scrollTop = 0; });
+    },
+
     async createStoryDraft() {
       try {
         const story = await API.createStory({
@@ -1228,6 +1309,8 @@
     },
 
     async createStoryFromDocument(documentId) {
+      if (this._creatingSessionDraft) return;
+      this._creatingSessionDraft = true;
       try {
         this.storyTab = 'mine';
         this.storyMineFilter = 'drafts';
@@ -1236,9 +1319,11 @@
         const story = await API.createStoryFromDocument(documentId);
         await this.loadStories();
         await this.selectStory(story.id, { openEditor: true });
-        App.toast('Session copied into Stories', 'success');
+        App.toast('Draft created. Review your writing before publishing.', 'success');
       } catch (err) {
         App.toast(err.message || 'Failed to create story from session', 'error');
+      } finally {
+        this._creatingSessionDraft = false;
       }
     },
 
@@ -1547,7 +1632,7 @@
     if (hrs < 24) return hrs + 'h ago';
     const days = Math.floor(hrs / 24);
     if (days < 7) return days + 'd ago';
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return App.formatDateFull ? App.formatDateFull(dateStr) : new Date(dateStr).toDateString();
   }
 
   function notifIcon(type) {
@@ -1571,15 +1656,17 @@
   }
 
   function renderNotifDropdown(notifs) {
-    const list = document.getElementById('stories-notif-list');
-    if (!list) return;
+    const lists = document.querySelectorAll('.stories-notif-list');
+    if (!lists.length) return;
     if (!notifs.length) {
-      list.innerHTML = '<div class="stories-notif-empty">No notifications yet</div>';
+      lists.forEach(list => {
+        list.innerHTML = '<div class="stories-notif-empty">No notifications yet</div>';
+      });
       return;
     }
     // Show last 10 (newest first, includes both read and unread)
     const shown = notifs.slice(0, 10);
-    list.innerHTML = shown.map(n => `
+    const html = shown.map(n => `
       <div class="stories-notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}" data-story-id="${n.storyId || ''}">
         ${notifIcon(n.type)}
         <div class="stories-notif-body">
@@ -1589,30 +1676,32 @@
         ${n.read ? '' : '<div class="stories-notif-unread-dot"></div>'}
       </div>
     `).join('');
+    lists.forEach(list => { list.innerHTML = html; });
 
     // Click a notification → mark read, navigate to story
-    list.querySelectorAll('.stories-notif-item').forEach(el => {
+    lists.forEach(list => list.querySelectorAll('.stories-notif-item').forEach(el => {
       el.addEventListener('click', async () => {
         const nid = el.dataset.notifId;
         const storyId = el.dataset.storyId;
         if (nid) {
           try { await API.markNotifsRead([nid]); } catch {}
-          el.classList.remove('unread');
-          const dot = el.querySelector('.stories-notif-unread-dot');
-          if (dot) dot.remove();
+          document.querySelectorAll('.stories-notif-item').forEach(item => {
+            if (item.dataset.notifId !== nid) return;
+            item.classList.remove('unread');
+            item.querySelector('.stories-notif-unread-dot')?.remove();
+          });
         }
         if (storyId) {
           closeNotifDropdown();
-          App.storySelectedId = storyId;
-          App.loadStoryDetail(storyId);
+          App.switchView('stories');
+          await App.selectStory(storyId);
         }
         syncNotifBadges();
       });
-    });
+    }));
   }
 
-  async function openNotifDropdown() {
-    const dropdown = document.getElementById('stories-notif-dropdown');
+  async function openNotifDropdown(dropdown) {
     if (!dropdown) { console.error('[Notif] dropdown element not found'); return; }
     try {
       console.log('[Notif] fetching notifications...');
@@ -1623,13 +1712,17 @@
       _cachedNotifs = [];
     }
     renderNotifDropdown(_cachedNotifs);
+    document.querySelectorAll('.stories-notif-dropdown').forEach(el => {
+      if (el !== dropdown) el.style.display = 'none';
+    });
     dropdown.style.display = 'block';
     _notifDropdownOpen = true;
   }
 
   function closeNotifDropdown() {
-    const dropdown = document.getElementById('stories-notif-dropdown');
-    if (dropdown) dropdown.style.display = 'none';
+    document.querySelectorAll('.stories-notif-dropdown').forEach(dropdown => {
+      dropdown.style.display = 'none';
+    });
     _notifDropdownOpen = false;
   }
 
@@ -1652,19 +1745,18 @@
     } catch {}
   }
 
-  // Bind bell button
-  const notifBtn = document.getElementById('stories-notif-btn');
-  if (notifBtn) {
+  // Bind notification buttons
+  document.querySelectorAll('#stories-notif-btn').forEach(notifBtn => {
     notifBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      const dropdown = notifBtn.closest('.stories-notif-wrapper')?.querySelector('.stories-notif-dropdown');
       if (_notifDropdownOpen) closeNotifDropdown();
-      else openNotifDropdown();
+      else openNotifDropdown(dropdown);
     });
-  }
+  });
 
   // Mark all read button
-  const markAllBtn = document.getElementById('stories-notif-mark-all');
-  if (markAllBtn) {
+  document.querySelectorAll('#stories-notif-mark-all').forEach(markAllBtn => {
     markAllBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       try { await API.markNotifsRead([]); } catch {}
@@ -1672,7 +1764,7 @@
       renderNotifDropdown(_cachedNotifs);
       syncNotifBadges();
     });
-  }
+  });
 
   // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
@@ -1682,7 +1774,8 @@
   });
 
   // Stop propagation inside dropdown so it doesn't close
-  const dropdown = document.getElementById('stories-notif-dropdown');
-  if (dropdown) dropdown.addEventListener('click', (e) => e.stopPropagation());
+  document.querySelectorAll('.stories-notif-dropdown').forEach(dropdown => {
+    dropdown.addEventListener('click', (e) => e.stopPropagation());
+  });
 
 })();

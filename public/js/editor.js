@@ -58,7 +58,7 @@ const Editor = {
         mode: this.mode,
         lastKeystroke: this.lastKeystroke,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content: this._serializeTabs()
       }));
     } catch {}
   },
@@ -85,6 +85,122 @@ const Editor = {
     }
   },
 
+  // ===== Tabs — multiple drafts/notes living inside the one session doc.
+  // Persisted in the single `content` field via an invisible HTML-comment
+  // marker between tabs, so no server schema change is needed and older
+  // single-tab documents load back in unchanged (no marker = one tab).
+  _tabMarkerRe: /<!--iwrite-tab:([^>]*?)-->/g,
+
+  _initTabs(html) {
+    const re = new RegExp(this._tabMarkerRe.source, 'g');
+    const parts = (html || '').split(re);
+    if (parts.length <= 1) {
+      this._tabs = [{ name: 'Draft', html: html || '' }];
+    } else {
+      this._tabs = [];
+      // parts[0] is whatever preceded the first marker (should be empty for
+      // documents we wrote ourselves, but keep it if a legacy doc has it).
+      if (parts[0]) this._tabs.push({ name: 'Draft', html: parts[0] });
+      for (let i = 1; i < parts.length; i += 2) {
+        this._tabs.push({ name: parts[i] || 'Draft', html: parts[i + 1] || '' });
+      }
+    }
+    this._activeTabIdx = 0;
+    this.textarea.innerHTML = this._tabs[0].html;
+    this._renderTabsList();
+  },
+
+  _serializeTabs() {
+    if (this._tabs && this._tabs[this._activeTabIdx]) this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    if (!this._tabs || this._tabs.length <= 1) return (this._tabs && this._tabs[0] && this._tabs[0].html) || this.textarea.innerHTML;
+    return this._tabs.map(t => `<!--iwrite-tab:${t.name}-->${t.html}`).join('');
+  },
+
+  _tabWordCount(html) {
+    const text = (html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ');
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  },
+
+  _renderTabsList() {
+    const list = document.getElementById('editor-tabs-list');
+    if (!list || !this._tabs) return;
+    const canDelete = this._tabs.length > 1;
+    list.innerHTML = this._tabs.map((t, i) => {
+      const words = i === this._activeTabIdx ? this.getWordCount() : this._tabWordCount(t.html);
+      return `<button class="editor-tab-row${i === this._activeTabIdx ? ' active' : ''}" data-tab-idx="${i}">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        <span class="editor-tab-name">${App.escapeHtml(t.name)}</span>
+        <span class="editor-tab-words">${words}</span>
+        ${canDelete ? `<span class="editor-tab-delete" role="button" data-tab-delete-idx="${i}" title="Delete tab"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>` : ''}
+      </button>`;
+    }).join('');
+  },
+
+  async _deleteTab(idx) {
+    if (!this._tabs || this._tabs.length <= 1 || !this._tabs[idx]) return;
+    const ok = await App.showConfirm(`Delete "${this._tabs[idx].name}"? This can't be undone.`);
+    if (!ok) return;
+    this._tabs.splice(idx, 1);
+    if (this._activeTabIdx >= this._tabs.length) this._activeTabIdx = this._tabs.length - 1;
+    else if (this._activeTabIdx > idx) this._activeTabIdx -= 1;
+    this.textarea.innerHTML = this._tabs[this._activeTabIdx].html;
+    this._renderTabsList();
+    this.updateWordCount();
+  },
+
+  _switchTab(idx) {
+    if (!this._tabs || idx === this._activeTabIdx || !this._tabs[idx]) return;
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    this._activeTabIdx = idx;
+    this.textarea.innerHTML = this._tabs[idx].html;
+    this._renderTabsList();
+    this.updateWordCount();
+    this.textarea.focus();
+  },
+
+  _addTab() {
+    if (!this._tabs) return;
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    this._tabs.push({ name: `Draft ${this._tabs.length + 1}`, html: '' });
+    this._activeTabIdx = this._tabs.length - 1;
+    this.textarea.innerHTML = '';
+    this._renderTabsList();
+    this.updateWordCount();
+    this.textarea.focus();
+  },
+
+  _syncTabName() {
+    if (!this._tabs || !this._tabs[this._activeTabIdx]) return;
+    if (this._tabs.length === 1) this._tabs[0].name = (this.titleInput.value || '').trim() || 'Draft';
+    this._renderTabsList();
+  },
+
+  _renameTab(idx) {
+    if (!this._tabs || !this._tabs[idx]) return;
+    const row = document.querySelector(`.editor-tab-row[data-tab-idx="${idx}"]`);
+    const nameEl = row && row.querySelector('.editor-tab-name');
+    if (!nameEl || row.querySelector('.editor-tab-rename-input')) return;
+    const current = this._tabs[idx].name;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'editor-tab-rename-input';
+    input.value = current;
+    input.maxLength = 40;
+    nameEl.replaceWith(input);
+    input.focus();
+    input.select();
+    const commit = () => {
+      this._tabs[idx].name = input.value.trim() || current;
+      this._renderTabsList();
+    };
+    input.addEventListener('blur', commit, { once: true });
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') input.blur();
+      else if (e.key === 'Escape') { input.value = current; input.blur(); }
+    });
+  },
+
   async start(duration, mode, opts = {}) {
     this.duration = duration;
     this.mode = mode;
@@ -94,6 +210,8 @@ const Editor = {
     this.isEditing = false;
     this.isDirty = false;
     this.targetWords = opts.targetWords || 0;
+    const targetWordsInput = document.getElementById('editor-target-words');
+    if (targetWordsInput) targetWordsInput.value = this.targetWords || '';
     this.sessionTopic = opts.topic || '';
     // Custom danger threshold (Pro feature)
     if (opts.dangerThreshold) this.dangerThreshold = opts.dangerThreshold;
@@ -105,9 +223,18 @@ const Editor = {
     if (typeof CommentSystem !== 'undefined') CommentSystem.destroy();
 
     try {
-      const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic, this.dangerVariant);
+      this._createRequestId = this._createRequestId || (window.crypto?.randomUUID?.() || null);
+      const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic, this.dangerVariant, this._createRequestId);
       this.documentId = doc.id;
-    } catch {
+      this._createRequestId = null;
+      App._pendingDocumentTitle = '';
+      App.refreshSessionQuota();
+    } catch (error) {
+      if (error.code === 'SESSION_DAILY_LIMIT') {
+        this._createRequestId = null;
+        App.showSessionQuotaLimit(error.quota);
+        return;
+      }
       App.toast('Failed to create document', 'error');
       return;
     }
@@ -139,9 +266,17 @@ const Editor = {
     this.textarea.innerHTML = '';
     this.textarea.contentEditable = 'true';
     this.textarea.focus();
+    this._baseWordCount = 0;
+    this._lastSavedAt = null;
+    this._tabs = [{ name: 'Draft', html: '' }];
+    this._activeTabIdx = 0;
+    this._renderTabsList();
+    this._lastMove = Date.now();
+    this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
     this.active = true;
     if (this._originalTabTitle == null) this._originalTabTitle = document.title;
-    document.title = '✍️ Writing in progress…';
+    document.title = 'Writing in progress…';
 
     // Show correct buttons for active session
     // In dangerous mode or duel mode, hide the Complete button — session ends only when time runs out
@@ -181,7 +316,7 @@ const Editor = {
     document.getElementById('status-bar').style.display = 'flex';
     this.titleInput.readOnly = false;
 
-    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous' : mode === 'zen' ? 'Zen' : mode === 'research' ? 'Research' : 'Time';
+    this.modeBadge.textContent = mode === 'dangerous' ? 'Dangerous Mode' : mode === 'zen' ? 'Zen Mode' : mode === 'research' ? 'Research Mode' : mode === 'duel' ? 'Duel Mode' : 'Time Mode';
     this.modeBadge.className = `editor-mode-badge ${mode}`;
     // Show session controls (swap add-time buttons for duel mode)
     document.getElementById('editor-timer').style.display = '';
@@ -196,10 +331,11 @@ const Editor = {
 
     if (mode === 'dangerous') {
       this.container.classList.add('dangerous-active');
-      this.dangerProgress.style.display = 'none';
+      this.dangerProgress.style.display = '';
       this._renderHearts();
       this.startDangerMode();
     } else {
+      this.dangerProgress.style.display = 'none';
       const h = document.getElementById('editor-hearts');
       if (h) h.style.display = 'none';
     }
@@ -246,14 +382,10 @@ const Editor = {
     this._heartbeatInterval = setInterval(() => this._sendHeartbeat(), 5000);
     this._sendHeartbeat();
 
-    // Show topic bar if set
-    const topicBar = document.getElementById('editor-topic-bar');
-    const topicText = document.getElementById('editor-topic-text');
-    topicText.value = this.sessionTopic || '';
-    topicBar.style.display = 'block';
-
     // Show target word count in status bar
     this._updateWordsRemaining();
+    this._syncTabName();
+    this.updateWordCount();
 
     // Duel mode: start polling opponent word count, sync timer from server
     this._duelInfo = null;
@@ -416,7 +548,7 @@ const Editor = {
   onKeydown: (e) => {
     // Typewriter sound — fire on character keys, space, enter, backspace
     if (Editor._typewriterSound && e.key && (e.key.length === 1 || e.key === 'Enter' || e.key === 'Backspace')) {
-      Editor._playTypeClick();
+      Editor._playTypeClick(e.key);
     }
     // Block new words at word limit (allow delete, backspace, arrows, shortcuts)
     if ((Editor.active || Editor.isEditing) && App.user) {
@@ -655,30 +787,17 @@ const Editor = {
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
     this.tabWarningTimer.textContent = this.tabGracePeriod;
-    document.title = `🔴 ${this.tabGracePeriod}s left. Come back!`;
+    document.title = `${this.tabGracePeriod}s left. Come back!`;
     this.tabCountdown = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = Math.max(0, this.tabGracePeriod - elapsed);
       this.tabWarningTimer.textContent = remaining;
-      document.title = `🔴 ${remaining}s left. Come back!`;
+      document.title = `${remaining}s left. Come back!`;
       if (remaining <= 0) {
         this.abandonSession();
       }
     }, 200);
   },
-
-  _tabReturnMessages: [
-    "\u{1F62D} Please don't do that again... I almost died",
-    "\u{1F631} I was this close to erasing everything!",
-    "\u{1F62B} You nearly killed your words. They're still shaking.",
-    "\u{1F494} My heart can't take this. Don't leave me again.",
-    "\u{1F300} Your writing almost vanished into the void.",
-    "\u{1F9F5} I held on by a thread. Please stay.",
-    "\u{1F62E}\u200D\u{1F4A8} That was way too close. Your words need you here.",
-    "\u{1F630} Don't leave me please... I'm scared of the dark.",
-    "\u{1F622} I thought you abandoned me forever.",
-    "\u{1F47B} Your words were about to become ghosts.",
-  ],
 
   onTabReturn() {
     // Accumulate paused time (zen mode)
@@ -689,10 +808,8 @@ const Editor = {
     if (this.tabCountdown && this.tabLeftTime) {
       const awaySeconds = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = this.tabGracePeriod - awaySeconds;
-      if (remaining > 0 && remaining <= this.tabGracePeriod) {
-        const msg = this._tabReturnMessages[Math.floor(Math.random() * this._tabReturnMessages.length)];
-        const color = remaining > 7 ? cssVar('--success') : remaining >= 4 ? '#facc15' : '#f87171';
-        App.toast(`<span style="font-weight:800;color:${color}">${remaining}s</span> left before deletion. ${msg}`, remaining <= 3 ? 'error' : 'warning');
+      if (this.active && !this.abandoned && remaining > 0 && remaining <= this.tabGracePeriod) {
+        App.toast('You’re back. Your writing is safe. Keep this tab open to continue.', 'success');
       }
     }
     if (this.tabCountdown) {
@@ -703,7 +820,7 @@ const Editor = {
     this._lastTabReturn = Date.now();
     // Tab countdown ended but session is still active — restore the session title
     if (this.active && !this.abandoned) {
-      document.title = '✍️ Writing in progress…';
+      document.title = 'Writing in progress…';
     }
     this.tabWarning.classList.remove('active');
     this.tabLeftTime = null;
@@ -736,7 +853,7 @@ const Editor = {
       localStorage.setItem(cacheKey, JSON.stringify({
         documentId: this.documentId,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         reason: 'tab_left',
         failedAt: new Date().toISOString()
       }));
@@ -793,7 +910,7 @@ const Editor = {
 
   startDangerMode() {
     this.dangerInterval = setInterval(() => {
-      if (!this.active) return;
+      if (!this.active || this._completing || this._isTimerExpired()) return;
       const elapsed = Date.now() - this.lastKeystroke;
       const total = this.dangerThreshold;
       const remaining = total - elapsed;
@@ -829,12 +946,11 @@ const Editor = {
         this.vignette.style.opacity = 0;
       }
 
+      const idleRatio = Math.min(elapsed / total, 1);
+      if (this.dangerProgressBar) this.dangerProgressBar.style.width = (idleRatio * 100) + '%';
+
       if (elapsed >= total) {
-        if (this.dangerVariant === 'chill') {
-          this.handleChillExpire();
-        } else {
-          this.failDangerMode();
-        }
+        this.handleDangerExpire();
       }
     }, 50);
   },
@@ -842,7 +958,6 @@ const Editor = {
   _renderHearts() {
     const wrap = document.getElementById('editor-hearts');
     if (!wrap) return;
-    if (this.dangerVariant !== 'chill') { wrap.style.display = 'none'; return; }
     wrap.style.display = '';
     const hearts = wrap.querySelectorAll('.heart');
     hearts.forEach((h, i) => {
@@ -851,8 +966,8 @@ const Editor = {
     });
   },
 
-  handleChillExpire() {
-    if (this._chillExpiring) return;
+  handleDangerExpire() {
+    if (this._chillExpiring || this._completing || this._isTimerExpired()) return;
     this._chillExpiring = true;
 
     // Out of hearts → classic fail
@@ -928,6 +1043,7 @@ const Editor = {
   },
 
   async failDangerMode() {
+    if (!this.active || this._completing || this._isTimerExpired()) return;
     this.cleanup();
     this.abandoned = true;
 
@@ -937,7 +1053,7 @@ const Editor = {
       localStorage.setItem(cacheKey, JSON.stringify({
         documentId: this.documentId,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         reason: 'typing_stopped',
         failedAt: new Date().toISOString()
       }));
@@ -990,7 +1106,43 @@ const Editor = {
 
   _timerMasked: false,
 
+  // Session-elapsed hairline at the very top of the viewport — one tone per
+  // mode, matching the mode picker/detail-panel colors.
+  _elapsedTone() {
+    return this.mode === 'dangerous' ? 'tone-danger' : this.mode === 'zen' ? 'tone-info' : this.mode === 'duel' ? 'tone-warning' : '';
+  },
+  _updateElapsedBar(pct) {
+    const fill = document.getElementById('editor-elapsed-fill');
+    if (!fill) return;
+    fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    fill.className = `editor-elapsed-fill ${this._elapsedTone()}`;
+  },
+
+  _updatePaceAndSaved() {
+    const paceEl = document.getElementById('editor-pace');
+    if (paceEl) {
+      if (this.mode === 'zen') {
+        paceEl.textContent = 'nothing measured';
+      } else {
+        const elapsedSec = (Date.now() - this.startTime - this._effectivePaused()) / 1000;
+        paceEl.textContent = elapsedSec < 45 ? '— wpm' : `${Math.round(((this.getWordCount() - (this._baseWordCount || 0)) / elapsedSec) * 60)} wpm`;
+      }
+    }
+    const savedEl = document.getElementById('editor-saved-line');
+    if (savedEl) {
+      if (this.mode === 'zen') {
+        savedEl.textContent = 'not saved to stats';
+      } else if (!this._lastSavedAt) {
+        savedEl.textContent = 'not saved yet';
+      } else {
+        const secsAgo = Math.floor((Date.now() - this._lastSavedAt) / 1000);
+        savedEl.textContent = secsAgo < 15 ? 'saved just now' : `saved ${secsAgo}s ago`;
+      }
+    }
+  },
+
   updateTimer() {
+    this._updatePaceAndSaved();
     if (this.duration === 0) {
       const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       const min = Math.floor(elapsed / 60);
@@ -998,15 +1150,17 @@ const Editor = {
       this.timerEl.textContent = this._timerMasked ? '**:**' : `${min}:${String(sec).padStart(2, '0')}`;
       this.timerEl.className = 'editor-timer';
       this._applyTimerVisibility();
+      this._updateElapsedBar(0);
       return;
     }
 
     // In duel mode, use server-synced endAt for timer (both sides see same clock)
-    let remaining;
+    let remaining, totalSeconds;
     if (this._duelEndAt) {
       remaining = Math.max(0, Math.ceil((this._duelEndAt - Date.now()) / 1000));
+      totalSeconds = this.duration * 60;
     } else {
-      const totalSeconds = this.duration * 60;
+      totalSeconds = this.duration * 60;
       const elapsed = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
       remaining = Math.max(0, totalSeconds - elapsed);
     }
@@ -1017,6 +1171,7 @@ const Editor = {
     this._applyTimerVisibility();
 
     this.timerEl.textContent = this._timerMasked ? '**:**' : `${min}:${String(sec).padStart(2, '0')}`;
+    this._updateElapsedBar(((totalSeconds - remaining) / totalSeconds) * 100);
 
     if (remaining <= 60) {
       this.timerEl.className = 'editor-timer danger';
@@ -1046,6 +1201,7 @@ const Editor = {
     const words = this.getWordCount();
     const el = document.getElementById('editor-word-count');
     if (el) el.textContent = `${words} word${words !== 1 ? 's' : ''}`;
+    this._renderTabsList();
 
     // Word limit for all users
     if ((this.active || this.isEditing) && App.user) {
@@ -1090,6 +1246,14 @@ const Editor = {
 
   getWordCount() {
     return (this.textarea.innerText || '').trim().split(/\s+/).filter(Boolean).length;
+  },
+
+  // Words across every tab, not just the one currently open — used wherever
+  // the whole session's output matters (XP, word limit, completion checks).
+  _totalWordCount() {
+    if (!this._tabs || this._tabs.length <= 1) return this.getWordCount();
+    this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
+    return this._tabs.reduce((sum, t, i) => sum + (i === this._activeTabIdx ? this.getWordCount() : this._tabWordCount(t.html)), 0);
   },
 
   // Ensure forfeit is sent even if user closes tab/browser
@@ -1318,8 +1482,9 @@ const Editor = {
     try {
       await API.updateDocument(this.documentId, {
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content: this._serializeTabs()
       });
+      this._lastSavedAt = Date.now();
       // Also save session state on each auto-save
       this._saveSessionState();
     } catch {}
@@ -1350,10 +1515,14 @@ const Editor = {
       // Show editor
       this.container.classList.add('active');
       this.titleInput.value = state.title;
-      this.textarea.innerHTML = state.content;
+      this._initTabs(state.content);
       this.textarea.contentEditable = 'true';
       this.textarea.focus();
       this.active = true;
+      this._baseWordCount = 0;
+      this._lastMove = Date.now();
+      this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
 
       // Show correct buttons and badges
       document.getElementById('editor-save-btn').style.display = this.mode === 'dangerous' ? 'none' : 'inline-flex';
@@ -1366,13 +1535,14 @@ const Editor = {
       if (addTimeEl) addTimeEl.style.display = this.mode === 'zen' ? 'none' : '';
       this.titleInput.readOnly = false;
 
-      this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous' : 'Normal';
+      this.modeBadge.textContent = this.mode === 'dangerous' ? 'Dangerous Mode' : this.mode === 'zen' ? 'Zen Mode' : this.mode === 'research' ? 'Research Mode' : this.mode === 'duel' ? 'Duel Mode' : 'Time Mode';
       this.modeBadge.className = `editor-mode-badge ${this.mode}`;
 
       // Setup mode-specific UI
       if (this.mode === 'dangerous') {
         this.container.classList.add('dangerous-active');
-        this.dangerProgress.style.display = 'none';
+        this.dangerProgress.style.display = '';
+        this._renderHearts();
         this.startDangerMode();
       }
 
@@ -1393,6 +1563,7 @@ const Editor = {
       this._startFocusCheck();
       if (this.mode !== 'dangerous') this.bindFormatting();
       this.updateWordCount();
+      this._syncTabName();
 
       this._fullscreenActive = false;
       this._blurCooldown = false;
@@ -1427,15 +1598,25 @@ const Editor = {
     // session resumed on page load awards XP many times over.
     if (this._completing) return;
     this._completing = true;
+    const sessionExpired = timerExpired || this._isTimerExpired();
+    if (sessionExpired) {
+      // Naming the finished document must never spend hearts or erase text.
+      this.active = false;
+      clearInterval(this.timerInterval);
+      clearInterval(this.dangerInterval);
+      clearInterval(this.tabCountdown);
+      this.vignette.classList.remove('active');
+      this.vignette.style.opacity = 0;
+    }
     // An expired session is over: drop its saved state now so a refresh mid-prompt
     // can't resume-and-complete it again (the "every refresh gives XP" bug).
-    if (timerExpired) this._clearSessionState();
+    if (sessionExpired) this._clearSessionState();
 
     // Check early complete limit (only when user clicks Complete, not when timer expires)
     // Bypass during maintenance — unlimited saves/copies
     // Bypass when word limit is reached — user can't write more, don't punish them
     const maintenanceActive = App._maintActive;
-    const atWordLimit = this.getWordCount() >= this.getWordLimit();
+    const atWordLimit = this._totalWordCount() >= this.getWordLimit();
     const isUnlimited = this.duration === 0;
     const isEarly = !timerExpired && !this._isTimerExpired() && !atWordLimit && !isUnlimited;
     if (isEarly && !maintenanceActive && this.mode !== 'zen') {
@@ -1458,11 +1639,11 @@ const Editor = {
     }
 
     // Task 10: If title is empty, prompt user to name it or keep as Untitled
-    if (this.getWordCount() > 0) {
+    if (this._totalWordCount() > 0) {
       const currentTitle = (this.titleInput.value || '').trim();
       if (!currentTitle) {
         const chosen = await App.promptTitle();
-        if (chosen === null) {
+        if (chosen === null && !sessionExpired) {
           // User cancelled the prompt — don't complete
           this._completing = false;
           return;
@@ -1475,8 +1656,10 @@ const Editor = {
     this._earlyComplete = (this.mode === 'zen' || isUnlimited) ? false : isEarly;
     this.cleanup();
 
-    const wordCount = this.getWordCount();
-    const duration = Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
+    const wordCount = this._totalWordCount();
+    const duration = sessionExpired && this.duration > 0
+      ? this.duration * 60
+      : Math.floor((Date.now() - this.startTime - this._effectivePaused()) / 1000);
 
     // If no words were written, silently discard — no XP, no streak, no stats
     if (wordCount === 0) {
@@ -1502,7 +1685,7 @@ const Editor = {
         wordCount, duration, xpEarned,
         earlyComplete: !!this._earlyComplete,
         title: this.titleInput.value,
-        content: this.textarea.innerHTML,
+        content: this._serializeTabs(),
         activeWritingSeconds: Math.round(this._activeWritingSeconds)
       });
     } catch {
@@ -1545,8 +1728,10 @@ const Editor = {
     }
 
     App._docsCacheDirty = true;
+    App.refreshSessionQuota();
     try { await App.loadDocuments(true); } catch {}
     this.showComplete(wordCount, duration, xpEarned, result.user);
+    SessionFeedback.show(result.document?.id);
     // Show admin-awarded PRO congrats after session wraps up
     setTimeout(() => App.checkPendingProCongrats(), 1200);
   },
@@ -1684,8 +1869,13 @@ const Editor = {
   // --- Words remaining / target ---
   _updateWordsRemaining() {
     const el = document.getElementById('editor-words-remaining');
+    const sep = document.getElementById('editor-words-remaining-sep');
     if (!el) return;
-    if (!this.targetWords) { el.style.display = 'none'; return; }
+    if (!this.targetWords) {
+      el.style.display = 'none';
+      if (sep) sep.style.display = 'none';
+      return;
+    }
     const words = this.getWordCount();
     const remaining = Math.max(0, this.targetWords - words);
     if (remaining > 0) {
@@ -1696,6 +1886,7 @@ const Editor = {
       el.style.color = 'var(--success)';
     }
     el.style.display = '';
+    if (sep) sep.style.display = '';
   },
 
   // --- Motivating notifications ---
@@ -1868,18 +2059,51 @@ const Editor = {
   // --- Writing preferences: focus mode, typewriter sounds, smart punctuation ---
   _focusMode: false,
   _typewriterSound: false,
+  _typewriterPack: 'synth',
   _smartPunct: true, // on by default — curly quotes/ellipsis are nice for prose
   _typeAudioCtx: null,
+  _typePackBuffers: {},
+  _typeSpriteElement: null,
+  _typeSpriteStopTimer: null,
+  _typePackDefs: {
+    'nk-cream': {
+      type: 'multi',
+      base: '/media/typewriter/nk-cream/',
+      files: {
+        Backspace: 'backspace.wav',
+        Enter: 'enter.wav',
+        ' ': 'space.wav',
+        default: ['a.wav', 'e.wav', 'i.wav', 'o.wav', 's.wav', 't.wav', 'n.wav', 'r.wav']
+      }
+    },
+    'cherrymx-black-pbt': {
+      type: 'sprite',
+      src: '/media/typewriter/cherrymx-black-pbt/sound.ogg',
+      slices: [[2078, 176], [9291, 164], [16515, 150], [22850, 160], [30598, 140], [33678, 163]]
+    },
+    'eg-oreo': {
+      type: 'sprite',
+      src: '/media/typewriter/eg-oreo/oreo.ogg',
+      slices: [[971, 142], [1276, 115], [6515, 120], [11171, 109], [14603, 116], [20804, 118]]
+    },
+    'cherrymx-black-abs': {
+      type: 'sprite',
+      src: '/media/typewriter/cherrymx-black-abs/sound.ogg',
+      slices: [[2894, 226], [12946, 191], [22245, 190], [31542, 170], [36902, 234], [45327, 165]]
+    }
+  },
 
   // Read persisted prefs and apply them. Called whenever the editor opens.
   loadWritingPrefs() {
-    let focus = false, typer = false, punct = true;
+    let focus = false, typer = false, punct = true, typePack = 'synth';
     try {
       focus = localStorage.getItem('iwrite_focus_mode') === '1';
       typer = localStorage.getItem('iwrite_typewriter_sound') === '1';
+      typePack = localStorage.getItem('iwrite_typewriter_pack') || 'synth';
       const sp = localStorage.getItem('iwrite_smart_punct');
       punct = sp === null ? true : sp === '1';
     } catch {}
+    this.setTypewriterPack(typePack);
     this.setFocusMode(focus);
     this.setTypewriterSound(typer);
     this.setSmartPunct(punct);
@@ -1913,6 +2137,7 @@ const Editor = {
       if (lbl) lbl.textContent = on ? 'On' : 'Off';
     }
     try { localStorage.setItem('iwrite_focus_mode', on ? '1' : '0'); } catch {}
+    App._syncToolsToggles?.();
     if (on) { this._playFocusActivateAnim(); this._updateFocusLine(); }
     else this._clearFocusLine();
   },
@@ -1972,10 +2197,82 @@ const Editor = {
     const cb = document.getElementById('pref-typewriter');
     if (cb) cb.checked = on;
     try { localStorage.setItem('iwrite_typewriter_sound', on ? '1' : '0'); } catch {}
+    this._syncTypewriterSwitchUI();
   },
-  // Synthesize a short typewriter-ish click via WebAudio (no asset / CSP needed).
-  _playTypeClick() {
+
+  setTypewriterPack(pack) {
+    this._typewriterPack = this._typePackDefs[pack] ? pack : 'synth';
+    try { localStorage.setItem('iwrite_typewriter_pack', this._typewriterPack); } catch {}
+    this._syncTypewriterSwitchUI();
+  },
+
+  setTypewriterSwitch(pack) {
+    if (pack === 'off') {
+      this.setTypewriterSound(false);
+      return;
+    }
+    this.setTypewriterPack(pack);
+    this.setTypewriterSound(true);
+  },
+
+  _syncTypewriterSwitchUI() {
+    const activePack = this._typewriterSound ? this._typewriterPack : 'off';
+    const select = document.getElementById('typewriter-pack-select');
+    if (select) select.value = activePack;
+    document.querySelectorAll('.typewriter-pack').forEach(btn => {
+      const active = btn.dataset.typePack === activePack;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+  },
+
+  _typeKeyFile(key) {
+    const pack = this._typePackDefs[this._typewriterPack];
+    if (!pack || pack.type !== 'multi') return null;
+    if (pack.files[key]) return pack.base + pack.files[key];
+    const normalized = (key || '').toLowerCase();
+    if (/^[a-z]$/.test(normalized)) return pack.base + normalized + '.wav';
+    const fallback = pack.files.default[Math.floor(Math.random() * pack.files.default.length)];
+    return pack.base + fallback;
+  },
+
+  _playTypeAsset(key) {
+    const pack = this._typePackDefs[this._typewriterPack];
+    if (!pack) return false;
+    try {
+      if (pack.type === 'multi') {
+        const src = this._typeKeyFile(key);
+        if (!src) return false;
+        const audio = this._typePackBuffers[src] || new Audio(src);
+        this._typePackBuffers[src] = audio;
+        audio.currentTime = 0;
+        audio.volume = 0.46;
+        audio.play().catch(() => {});
+        return true;
+      }
+      if (pack.type === 'sprite') {
+        const expectedSrc = new URL(pack.src, window.location.href).href;
+        const audio = this._typeSpriteElement?.src === expectedSrc ? this._typeSpriteElement : new Audio(pack.src);
+        this._typeSpriteElement = audio;
+        const slice = pack.slices[Math.floor(Math.random() * pack.slices.length)];
+        audio.pause();
+        audio.currentTime = slice[0] / 1000;
+        audio.volume = 0.45;
+        audio.play().catch(() => {});
+        clearTimeout(this._typeSpriteStopTimer);
+        this._typeSpriteStopTimer = setTimeout(() => {
+          try { audio.pause(); } catch {}
+        }, Math.max(45, slice[1] - 8));
+        return true;
+      }
+    } catch {}
+    return false;
+  },
+
+  // Synthesize a short typewriter-ish click when no switch pack is selected.
+  _playTypeClick(key) {
     if (!this._typewriterSound) return;
+    if (this._typewriterPack !== 'synth' && this._playTypeAsset(key)) return;
     try {
       let ctx = this._typeAudioCtx;
       if (!ctx) { ctx = this._typeAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -2020,11 +2317,13 @@ const Editor = {
   },
 
   // --- Audio system ---
-  // Built-in tracks use direct MP3 files (instant playback, no iframe)
+  // Original recordings are retained; reuse and warm media elements to avoid
+  // restarting remote redirects and buffering on each selection.
   _audioSources: {
     lofi1: 'https://archive.org/download/chill-lofi-music-relax-study/Leavv%20-%20Cloud%20Shapes.mp3',
     lofi2: 'https://archive.org/download/chill-lofi-music-relax-study/Tom%20Doolie%20-%20Land%20of%20Calm.mp3',
     brown: 'https://archive.org/download/brownnoise_202103/Smoothed%20Brown%20Noise.mp3',
+    pink: '/media/ambient/pink-noise.wav',
     hz40: 'https://archive.org/download/heightened-awareness-pure-gamma-waves-40-hz-mp-3-160-k/Heightened%20Awareness%20Pure%20Gamma%20Waves%20-%2040%20Hz%28MP3_160K%29.mp3',
     rain: 'https://archive.org/download/relaxingsounds/Rain%207%20%28Lightest%29%208h%20DripsOnTrees-no%20thunder.mp3',
     wind: 'https://archive.org/download/relaxingsounds/Wind%201%208h%20%28or%20Rapids%29%20Gentle%2CLowPitch%2CBrownNoise.mp3',
@@ -2036,85 +2335,191 @@ const Editor = {
   _ytAPIReady: false,
   _ytSeekInterval: null,
 
-  playAudio(key) {
-    // If same track, toggle pause/resume
-    if (this._activeAudioKey === key && this._audioElement) {
-      if (this._audioElement.paused) {
-        this._audioElement.play().catch(() => {});
-        this._audioPlaying = true;
-      } else {
-        this._audioElement.pause();
-        this._audioPlaying = false;
+  _audioPool: null,
+  _audioRequest: 0,
+  _audioLoading: false,
+
+  warmAudio(key) {
+    this._audioPool ||= new Map();
+    const keys = key ? [key] : Object.keys(this._audioSources);
+    keys.forEach(trackKey => {
+      if (!this._audioSources[trackKey]) return;
+      let audio = this._audioPool.get(trackKey);
+      if (!audio) {
+        audio = new Audio();
+        audio.preload = 'metadata';
+        audio.loop = true;
+        audio.src = this._audioSources[trackKey];
+        this._audioPool.set(trackKey, audio);
       }
+      // Fetch ahead only for the hovered/focused track, not every long recording.
+      if (key) audio.preload = 'auto';
+    });
+  },
+
+  playAudio(key) {
+    this.warmAudio(key);
+    const next = this._audioPool.get(key);
+    if (!next) return;
+    if (this._activeAudioKey === key && (this._audioLoading || !next.paused)) {
+      ++this._audioRequest;
+      next.pause();
+      this._audioLoading = false;
+      this._audioPlaying = false;
       this._updateTrackUI();
       return;
     }
-    this.stopAudio();
-    const src = this._audioSources[key];
-    if (!src) return;
+    if (this._activeAudioKey !== key) this.stopAudio();
+    const request = ++this._audioRequest;
     const track = document.querySelector(`.audio-track[data-audio="${key}"]`);
-    const vol = track ? track.querySelector('.audio-track-vol').value : 50;
-    this._audioElement = new Audio(src);
-    this._audioElement.loop = true;
-    this._audioElement.volume = vol / 100;
-    // No crossOrigin: plain cross-origin playback needs no CORS, and setting it would
-    // require CORS on every redirect hop. (No Web Audio analyser here that would need it.)
-    this._audioElement.play().catch((err) => {
-      App.toast('Could not play audio — try again', 'error');
-      console.warn('[audio] play failed', err);
-    });
-    this._audioPlaying = true;
+    next.volume = Number(track?.querySelector('.audio-track-vol')?.value ?? 50) / 100;
+    this._audioElement = next;
     this._activeAudioKey = key;
+    this._audioLoading = true;
+    this._audioPlaying = false;
     this._updateTrackUI();
+    next.play().then(() => {
+      if (request !== this._audioRequest) return;
+      this._audioLoading = false;
+      this._audioPlaying = true;
+      this._updateTrackUI();
+    }).catch(error => {
+      if (request !== this._audioRequest) return;
+      this._audioLoading = false;
+      this._audioPlaying = false;
+      this._updateTrackUI();
+      if (error.name !== 'AbortError') App.toast('Audio could not start. Please try again.', 'error');
+    });
   },
 
   // --- YouTube (custom links only) ---
-  _loadYTAPI() {
-    if (this._ytAPIReady || document.getElementById('yt-api-script')) return;
-    const tag = document.createElement('script');
-    tag.id = 'yt-api-script';
-    tag.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(tag);
-    window.onYouTubeIframeAPIReady = () => { Editor._ytAPIReady = true; };
+  _parseYouTubeId(url) {
+    try {
+      const parsed = new URL(url);
+      if (!['https:', 'http:'].includes(parsed.protocol)) return null;
+      const host = parsed.hostname.replace(/^www\./, '');
+      let id;
+      if (host === 'youtu.be') id = parsed.pathname.split('/')[1];
+      else if (['youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtube-nocookie.com'].includes(host)) {
+        const parts = parsed.pathname.split('/');
+        id = ['embed', 'shorts', 'live'].includes(parts[1]) ? parts[2] : parsed.searchParams.get('v');
+      }
+      return /^[a-zA-Z0-9_-]{11}$/.test(id || '') ? id : null;
+    } catch { return null; }
   },
 
-  playYouTube(url) {
+  _loadYTAPI() {
+    if (window.YT?.Player) { this._ytAPIReady = true; return Promise.resolve(); }
+    if (this._ytAPIPromise) return this._ytAPIPromise;
+    this._ytAPIPromise = new Promise((resolve, reject) => {
+      document.getElementById('yt-api-script')?.remove();
+      const tag = document.createElement('script');
+      const previous = window.onYouTubeIframeAPIReady;
+      const cleanup = () => {
+        clearTimeout(timeout);
+        tag.onerror = null;
+        if (window.onYouTubeIframeAPIReady === ready) window.onYouTubeIframeAPIReady = previous;
+      };
+      const fail = () => { cleanup(); tag.remove(); reject(new Error('YouTube could not load. Please try again.')); };
+      const ready = () => {
+        cleanup();
+        if (!window.YT?.Player) { tag.remove(); reject(new Error('YouTube could not load. Please try again.')); return; }
+        this._ytAPIReady = true;
+        if (typeof previous === 'function') { try { previous(); } catch {} }
+        resolve();
+      };
+      const timeout = setTimeout(fail, 15000);
+      window.onYouTubeIframeAPIReady = ready;
+      tag.id = 'yt-api-script';
+      tag.src = 'https://www.youtube.com/iframe_api';
+      tag.onerror = fail;
+      document.head.appendChild(tag);
+    }).catch(error => { this._ytAPIPromise = null; throw error; });
+    return this._ytAPIPromise;
+  },
+
+  _updateYTUI() {
+    const loading = this._activeAudioKey === 'youtube' && this._audioLoading;
+    const button = document.getElementById('audio-yt-play');
+    if (button) {
+      button.setAttribute('aria-busy', String(loading));
+      button.title = loading ? 'Cancel loading' : 'Play YouTube link';
+      button.setAttribute('aria-label', button.title);
+      button.innerHTML = loading
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>'
+        : '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
+    }
+    const status = document.getElementById('audio-yt-status');
+    if (status) { status.textContent = this._ytStatus || ''; status.hidden = !this._ytStatus; }
+  },
+
+  async playYouTube(url) {
+    const videoId = this._parseYouTubeId(url);
+    if (!videoId) {
+      this._ytStatus = 'Paste a valid YouTube video link.';
+      this._updateYTUI();
+      return;
+    }
+    if (this._activeAudioKey === 'youtube' && this._audioLoading && this._ytVideoId === videoId) { this.stopAudio(); return; }
     this.stopAudio();
-    let videoId = '';
+    const request = ++this._audioRequest;
+    this._ytVideoId = videoId;
+    this._activeAudioKey = 'youtube';
+    this._audioLoading = true;
+    this._ytStatus = 'Loading YouTube…';
+    this._updateTrackUI();
+    const current = () => request === this._audioRequest && this._activeAudioKey === 'youtube';
+    const fail = message => {
+      if (!current()) return;
+      this.stopAudio();
+      this._ytStatus = message;
+      this._updateYTUI();
+    };
     try {
-      const u = new URL(url);
-      if (u.hostname.includes('youtu.be')) videoId = u.pathname.slice(1);
-      else videoId = u.searchParams.get('v') || '';
-    } catch { return; }
-    if (!videoId) return;
-    this._loadYTAPI();
-    const vol = parseInt(document.getElementById('audio-yt-vol')?.value || 50);
-    const tryCreate = () => {
-      if (!this._ytAPIReady || typeof YT === 'undefined' || !YT.Player) {
-        setTimeout(tryCreate, 100);
-        return;
-      }
+      await this._loadYTAPI();
+      if (!current()) return;
       const container = document.getElementById('yt-player-container');
+      container.hidden = false;
       container.innerHTML = '<div id="yt-player-div"></div>';
-      this._ytPlayer = new YT.Player('yt-player-div', {
-        height: '1', width: '1', videoId,
-        playerVars: { autoplay: 1, loop: 1, playlist: videoId },
+      container.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+      this._ytStartTimeout = setTimeout(() => fail('YouTube is taking too long to respond. Please try again.'), 15000);
+      this._ytPlayer = new window.YT.Player('yt-player-div', {
+        height: '200', width: '100%', videoId,
+        playerVars: { autoplay: 1, loop: 1, playlist: videoId, playsinline: 1, origin: location.origin },
         events: {
-          onReady: (e) => {
-            e.target.setVolume(vol);
+          onReady: e => {
+            if (!current()) return;
+            clearTimeout(this._ytStartTimeout);
+            e.target.setVolume(Number(document.getElementById('audio-yt-vol')?.value ?? 50));
+            this._audioLoading = false;
+            this._ytStatus = 'Press play in the video if it does not start.';
+            const controls = document.getElementById('audio-yt-controls');
+            if (controls) controls.style.display = 'flex';
             this._startSeekSync();
-          }
+            this._updateTrackUI();
+            e.target.playVideo();
+          },
+          onStateChange: e => {
+            if (!current()) return;
+            this._audioLoading = e.data === 3;
+            this._audioPlaying = e.data === 1;
+            this._ytPaused = e.data === 2;
+            this._ytStatus = e.data === 1 ? 'Playing' : e.data === 3 ? 'Buffering…' : e.data === 2 ? 'Paused' : 'Press play in the video to start.';
+            this._updateTrackUI(); this._updateYTPauseIcon();
+          },
+          onAutoplayBlocked: () => {
+            if (!current()) return;
+            this._audioLoading = false; this._audioPlaying = false; this._ytPaused = true;
+            this._ytStatus = 'Press play in the video to start audio.';
+            this._updateTrackUI(); this._updateYTPauseIcon();
+          },
+          onError: e => fail([101, 150].includes(e.data)
+            ? 'This video cannot play here. Try another YouTube link.'
+            : e.data === 100 ? 'This video is unavailable. Try another link.'
+            : 'YouTube could not play this video. Please try again.')
         }
       });
-      this._audioPlaying = true;
-      this._ytPaused = false;
-      this._activeAudioKey = 'youtube';
-      const ctrl = document.getElementById('audio-yt-controls');
-      if (ctrl) ctrl.style.display = 'flex';
-      this._updateTrackUI();
-      this._updateYTPauseIcon();
-    };
-    tryCreate();
+    } catch (error) { fail(error.message || 'YouTube could not start. Please try again.'); }
   },
 
   _startSeekSync() {
@@ -2132,17 +2537,8 @@ const Editor = {
 
   _toggleYTPause() {
     if (!this._ytPlayer) return;
-    if (this._ytPaused) {
-      if (this._ytPlayer.playVideo) this._ytPlayer.playVideo();
-      this._audioPlaying = true;
-      this._ytPaused = false;
-    } else {
-      if (this._ytPlayer.pauseVideo) this._ytPlayer.pauseVideo();
-      this._audioPlaying = false;
-      this._ytPaused = true;
-    }
-    this._updateTrackUI();
-    this._updateYTPauseIcon();
+    if (this._ytPaused || !this._audioPlaying) this._ytPlayer.playVideo?.();
+    else this._ytPlayer.pauseVideo?.();
   },
 
   _updateYTPauseIcon() {
@@ -2158,20 +2554,26 @@ const Editor = {
   },
 
   stopAudio() {
-    // Stop MP3 audio
+    // Keep buffered recordings for instant replay and invalidate pending starts.
+    ++this._audioRequest;
+    this._audioLoading = false;
     if (this._audioElement) {
       this._audioElement.pause();
-      this._audioElement.src = '';
+      this._audioElement.preload = 'metadata';
+      try { this._audioElement.currentTime = 0; } catch {}
       this._audioElement = null;
     }
-    // Stop YouTube
+    // Stop YouTube, including any pending player startup.
+    clearTimeout(this._ytStartTimeout);
     clearInterval(this._ytSeekInterval);
+    this._ytStatus = '';
+    this._ytVideoId = null;
     if (this._ytPlayer) {
       if (this._ytPlayer.destroy) this._ytPlayer.destroy();
       this._ytPlayer = null;
     }
     const container = document.getElementById('yt-player-container');
-    if (container) container.innerHTML = '';
+    if (container) { container.innerHTML = ''; container.hidden = true; }
     this._audioPlaying = false;
     this._ytPaused = false;
     this._activeAudioKey = null;
@@ -2181,10 +2583,19 @@ const Editor = {
   },
 
   _updateTrackUI() {
+    this._updateYTUI();
     document.querySelectorAll('.audio-track').forEach(track => {
       const key = track.dataset.audio;
       const btn = track.querySelector('.audio-play-btn');
-      if (key === this._activeAudioKey && this._audioPlaying) {
+      const loading = key === this._activeAudioKey && this._audioLoading;
+      track.classList.toggle('loading', loading);
+      track.setAttribute('aria-busy', String(loading));
+      btn.title = loading ? 'Loading — click to cancel' : key === this._activeAudioKey && this._audioPlaying ? 'Pause' : 'Play';
+      btn.setAttribute('aria-label', `${btn.title} ${track.querySelector('.audio-track-name').textContent.trim()}`);
+      if (loading) {
+        track.classList.add('active');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 1-9 9"/></svg>';
+      } else if (key === this._activeAudioKey && this._audioPlaying) {
         track.classList.add('active');
         btn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
       } else if (key === this._activeAudioKey && !this._audioPlaying) {
@@ -2198,12 +2609,17 @@ const Editor = {
   },
 
   initAudio() {
-    this._loadYTAPI();
+    // Resolve headers/redirects while the app is idle, before a writer opens sound.
+    const prepareAudio = () => this.warmAudio();
+    if ('requestIdleCallback' in window) requestIdleCallback(prepareAudio, { timeout: 2000 });
+    else setTimeout(prepareAudio, 1000);
     document.querySelectorAll('.audio-track').forEach(track => {
       const key = track.dataset.audio;
       const playBtn = track.querySelector('.audio-play-btn');
       const volSlider = track.querySelector('.audio-track-vol');
       playBtn.addEventListener('click', () => Editor.playAudio(key));
+      track.addEventListener('pointerenter', () => Editor.warmAudio(key));
+      track.addEventListener('focusin', () => Editor.warmAudio(key));
       volSlider.addEventListener('input', () => {
         if (Editor._activeAudioKey === key && Editor._audioElement) {
           Editor._audioElement.volume = volSlider.value / 100;
@@ -2211,6 +2627,11 @@ const Editor = {
       });
     });
     const ytPlayBtn = document.getElementById('audio-yt-play');
+    if (ytPlayBtn) {
+      const prepareYouTube = () => this._loadYTAPI().catch(() => {});
+      ytPlayBtn.addEventListener('pointerenter', prepareYouTube);
+      ytPlayBtn.addEventListener('focus', prepareYouTube);
+    }
     if (ytPlayBtn) ytPlayBtn.addEventListener('click', () => {
       const isPro = App.user && App.user.plan === 'premium';
       if (!isPro) {
@@ -2243,6 +2664,7 @@ const Editor = {
   },
 
   cleanup() {
+    App._closeSessionPopovers?.();
     this.active = false;
     this._completing = false;
     if (this._originalTabTitle != null) {
@@ -2280,8 +2702,9 @@ const Editor = {
     clearInterval(this._focusCheckInterval);
     document.removeEventListener('selectionchange', this._onSelectionChange);
     document.getElementById('formatting-toolbar').style.display = 'none';
-    document.getElementById('editor-topic-bar').style.display = 'none';
     document.getElementById('selection-popup').style.display = 'none';
+    this.container.classList.remove('chrome-hidden');
+    document.getElementById('status-bar').classList.remove('chrome-hidden');
     const limitEl = document.getElementById('word-limit-indicator');
     if (limitEl) limitEl.style.display = 'none';
     this.stopAudio();
@@ -2346,9 +2769,11 @@ const Editor = {
     document.getElementById('status-bar').style.display = 'none';
   },
 
-  // ── Copy blocking during active sessions ──
+  // ── Copy blocking during active sessions ── copying is fully disabled
+  // during a live session, no Pro exception; only maintenance mode (an
+  // operational, not a plan-tier, concern) bypasses it.
   _copyAllowed() {
-    return App._maintActive || (App.user && App.user.plan === 'premium');
+    return App._maintActive;
   },
 
   _onCopyBlock(e) {

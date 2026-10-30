@@ -32,3 +32,16 @@ jobs:
       - name: Validate server entrypoint
         run: node --check server/index.js
 
+
+      - name: Validate session JavaScript
+        run: |
+          node --check public/js/app.js
+          node --check public/js/editor.js
+          node --check public/js/workspace-pages.js
+          node --check public/js/stories.js
+          node --check public/js/notification-policy.js
+          node --check public/js/paper-zoom.js
+          node --check public/js/api.js
+
+      - name: Run regression tests
+        run: node --test tests/*.test.js

@@ -10388,6 +10388,33 @@ body.editor-active .mobile-sidebar-toggle {
   margin-top: 36px;
 }
 
+#session-modal .session-quota {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-height: 42px;
+  margin-top: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+#session-modal .session-quota small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+#session-modal .modal-actions { margin-top: 10px; }
+
+.dashboard-session-quota {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .modal-actions .btn {
   flex: 1 1 0;
   min-width: 0;
@@ -10710,9 +10737,9 @@ body.editor-active .mobile-sidebar-toggle {
 }
 .upgrade-cards {
   display: grid;
-  grid-template-columns: minmax(280px, .82fr) minmax(360px, 1.18fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
-  max-width: 920px;
+  max-width: 782px;
   margin: 0 auto;
   padding: 0 24px 48px;
 }
@@ -19950,6 +19977,7 @@ body.landing.dream-landing .writer-notes-heading h2 {
 
 body.landing.dream-landing .writer-notes-rails {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
 }
 
@@ -19960,7 +19988,6 @@ body.landing.dream-landing .writer-notes-rail {
   align-items: center;
   gap: clamp(12px, 1.6vw, 22px);
   width: max-content;
-  min-width: calc(100vw + 1580px);
   will-change: transform;
 }
 
@@ -19979,6 +20006,7 @@ body.landing.dream-landing .writer-notes-rail.rail-low {
 body.landing.dream-landing .writer-note {
   --tilt: 0deg;
   display: grid;
+  flex: 0 0 auto;
   grid-template-columns: 38px minmax(0, 1fr);
   gap: 12px;
   min-height: 92px;
@@ -20058,24 +20086,11 @@ body.landing.dream-landing .writer-note p {
 body.landing.dream-landing .community-stats-section {
   position: relative;
   overflow: hidden;
-  min-height: clamp(320px, 34vw, 430px);
+  min-height: clamp(220px, 25vw, 300px);
   display: grid;
   place-items: center;
-  padding: clamp(72px, 8vw, 118px) 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(247, 250, 252, 0.46)),
-    url('/media/community-map-background.png') center / cover no-repeat,
-    #ffffff;
-}
-
-body.landing.dream-landing .community-stats-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.42;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.72));
+  padding: clamp(48px, 6vw, 70px) 24px clamp(32px, 4vw, 48px);
+  background: linear-gradient(180deg, #fff, #f8fafc);
 }
 
 body.landing.dream-landing .community-stats-inner {
@@ -20101,7 +20116,7 @@ body.landing.dream-landing .community-stats-inner h2 {
   font-size: clamp(28px, 3.2vw, 42px);
   font-weight: 360;
   letter-spacing: 0;
-  line-height: 1.3;
+  line-height: 1.68;
 }
 
 body.landing.dream-landing .community-stats-line {
@@ -20110,12 +20125,33 @@ body.landing.dream-landing .community-stats-line {
 
 body.landing.dream-landing .community-stats-inner h2 span {
   color: inherit;
-  font-weight: inherit;
+  font-weight: 700;
 }
 
 body.landing.dream-landing .community-stats-inner h2 .community-stats-line {
   color: #4f596d;
   font-weight: 360;
+}
+
+body.landing.dream-landing .community-stat-mark {
+  position: relative;
+  display: inline-block;
+  color: #4f596d;
+  font-weight: 360;
+  white-space: nowrap;
+}
+
+body.landing.dream-landing .community-stat-mark::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: calc(100% + 6px);
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #a9d4ff, #8fcfc7);
+  transform: translateX(-50%);
+  box-shadow: 0 0 16px rgba(169, 212, 255, .42);
 }
 
 @media (max-width: 900px) {
@@ -20190,8 +20226,8 @@ body.landing.dream-landing .community-stats-inner h2 .community-stats-line {
   }
 
   body.landing.dream-landing .community-stats-section {
-    min-height: 330px;
-    padding: 72px 18px;
+    min-height: 230px;
+    padding: 48px 18px 32px;
   }
 
   body.landing.dream-landing .community-stats-inner p {
@@ -20201,7 +20237,7 @@ body.landing.dream-landing .community-stats-inner h2 .community-stats-line {
   body.landing.dream-landing .community-stats-inner h2 {
     max-width: 292px;
     font-size: 25px;
-    line-height: 1.24;
+    line-height: 1.46;
   }
 
   body.landing.dream-landing .writer-owned-section {

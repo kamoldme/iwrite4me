@@ -1,0 +1,110 @@
+/* App-only typography and theme. Namespaced tokens do not restyle the editor. */
+body.glow-dashboard{
+ --ui-page:#050809;--ui-sidebar:#0a100e;--ui-surface:#101a14;--ui-raised:#19291f;--ui-field:#09110c;
+ --ui-ink:#f1f8f4;--ui-muted:#b8c7bf;--ui-edge:rgb(225 255 237 / .14);--ui-edge-soft:rgb(225 255 237 / .08);--ui-field-edge:#4a6352;
+ --ui-accent:#a4f1d0;--ui-primary:#b5f6d7;--ui-primary-hover:#d2ffe9;--ui-on-primary:#0b2114;
+ --ui-selected:#193027;--ui-selected-edge:#2d5140;--ui-hover:#21382b;--ui-backdrop:rgb(2 8 5 / .78);
+ --ui-danger:#ffad9c;--ui-warning:#f5d88f;--ui-info:#accfff;
+}
+html:not(.dark) body.glow-dashboard{
+ --ui-page:#f2f6f1;--ui-sidebar:#f7faf7;--ui-surface:#fff;--ui-raised:#edf3ed;--ui-field:#f7faf8;
+ --ui-ink:#203329;--ui-muted:#53675b;--ui-edge:#c8d8cc;--ui-edge-soft:#e0e8e2;--ui-field-edge:#91a798;
+ --ui-accent:#176647;--ui-primary:#1a6c4b;--ui-primary-hover:#125338;--ui-on-primary:#fff;
+ --ui-selected:#dff1e4;--ui-selected-edge:#8fbba0;--ui-hover:#e5f0e7;--ui-backdrop:rgb(25 46 33 / .4);
+ --ui-danger:#a9372e;--ui-warning:#895918;--ui-info:#245c91;
+}
+body.glow-dashboard .app-container{
+ --font-sans:'Instrument Sans',sans-serif;--font-display:'Archivo',sans-serif;--font-mono:'DM Mono',monospace;
+ font-family:var(--font-sans);font-size:14px;line-height:1.5;
+}
+body.glow-dashboard .app-container :is(h1,h2,h3,h4){font-family:'Archivo',sans-serif;font-weight:600;letter-spacing:-.02em;line-height:1.25;text-wrap:balance}
+body.glow-dashboard #view-dashboard #greeting-text{font-family:'Archivo',sans-serif;font-weight:500}
+body.glow-dashboard .app-container :is(button,input,textarea,select){font-family:'Instrument Sans',sans-serif}
+body.glow-dashboard .app-container :is(.dash-stat-label,.mp-config-label,.settings-section-title,.sessions-kicker){font-family:'Instrument Sans',sans-serif;letter-spacing:.015em}
+body.glow-dashboard .app-container :is(.doc-card-meta,.activity-time,.td-ach-count){font-family:'DM Mono',monospace;font-size:11px;line-height:1.6;letter-spacing:0}
+body.glow-dashboard #session-modal :is(.mp-title,.mode-detail-figure,.mode-card-figure){font-family:'Archivo',sans-serif;font-weight:600;letter-spacing:-.02em}
+
+/* Explicitly selected non-editor windows and menus, including dynamically mounted menus. */
+body.glow-dashboard.app-chrome-visible :is(
+ #goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,
+ #pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,.modal-overlay:not([id]),
+ .folder-context-menu,.doc-export-submenu,#dashboard-notif-dropdown,#stories-notif-dropdown,#duel-mm-lobby-popover
+){
+ --bg-primary:var(--ui-page);--bg-secondary:var(--ui-raised);--bg-card:var(--ui-surface);--bg-elevated:var(--ui-raised);--bg-card-hover:var(--ui-hover);
+ --text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);--accent:var(--ui-accent);--accent2:var(--ui-primary-hover);
+ --accent-soft:var(--ui-selected);--accent-glow:transparent;--border:var(--ui-edge);--border-light:var(--ui-edge-soft);--border-hover:var(--ui-field-edge);
+ --hover-bg:var(--ui-hover);--danger:var(--ui-danger);--danger-soft:var(--ui-raised);--success:var(--ui-accent);--info:var(--ui-info);
+ --font-sans:'Instrument Sans',sans-serif;--font-display:'Archivo',sans-serif;--font-mono:'DM Mono',monospace;
+ font-family:var(--font-sans);color:var(--ui-ink);
+}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#streak-popup-overlay,.modal-overlay:not([id])){background:var(--ui-backdrop);backdrop-filter:none;-webkit-backdrop-filter:none}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,.modal-overlay:not([id]))>.modal,
+body.glow-dashboard.app-chrome-visible :is(.pricing-modal,.payment-choice-dialog,#ann-modal,#help-popup,.streak-popup){
+ background:var(--ui-surface);color:var(--ui-ink);border:1px solid var(--ui-edge);border-radius:26px;box-shadow:0 20px 70px rgb(0 0 0 / .16);padding:32px;
+}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,.modal-overlay:not([id])) :is(h1,h2,h3,h4,.pricing-title){font-family:'Archivo',sans-serif;font-weight:600;letter-spacing:-.02em;color:var(--ui-ink);line-height:1.25}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,#ann-modal,#help-popup,#streak-popup-overlay,.modal-overlay:not([id])) :is(p,label,.modal-field){font-family:'Instrument Sans',sans-serif;line-height:1.6}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,.modal-overlay:not([id])) :is(input,select,textarea){font:400 14px/1.5 'Instrument Sans',sans-serif;color:var(--ui-ink);background:var(--ui-field);border:1px solid var(--ui-field-edge);border-radius:12px;padding:12px 14px;min-height:44px;box-shadow:none}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,.modal-overlay:not([id])) .btn{font:600 13px/1.4 'Instrument Sans',sans-serif;border-radius:13px;min-height:44px;padding:12px 18px;box-shadow:none;letter-spacing:0}
+body.glow-dashboard.app-chrome-visible :is(#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#profile-complete-overlay,#follow-list-overlay,#pricing-overlay,#payment-choice-modal,.modal-overlay:not([id])) .btn-primary{background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent}
+body.glow-dashboard.app-chrome-visible :is(.folder-context-menu,.doc-export-submenu,#dashboard-notif-dropdown,#stories-notif-dropdown,#duel-mm-lobby-popover){background:var(--ui-surface);border:1px solid var(--ui-edge);border-radius:16px;padding:6px;box-shadow:0 12px 36px rgb(0 0 0 / .16);color:var(--ui-ink)}
+body.glow-dashboard.app-chrome-visible :is(.folder-context-menu,.doc-export-submenu) :is(button,.folder-context-item){font:500 13px/1.5 'Instrument Sans',sans-serif;min-height:40px;padding:10px 12px;border-radius:10px;gap:10px;color:var(--ui-ink);background:transparent}
+body.glow-dashboard.app-chrome-visible :is(.folder-context-menu,.doc-export-submenu) :is(button,.folder-context-item):hover{background:var(--ui-hover)}
+body.glow-dashboard.app-chrome-visible :is(#dashboard-notif-dropdown,#stories-notif-dropdown) :is(button,a,.dashboard-notif-item,.stories-notif-item){font-family:'Instrument Sans',sans-serif;color:var(--ui-ink);border-radius:10px}
+body.glow-dashboard.app-chrome-visible :is(.folder-context-menu,.doc-export-submenu,#dashboard-notif-dropdown,#stories-notif-dropdown,#goal-modal,#duel-modal,#share-type-modal,#daily-limit-modal,#confirm-remove-friend-modal,#pricing-overlay,#payment-choice-modal) :is(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px}
+/* Typed app selects retain native keyboard and platform popup behavior. */
+body.glow-dashboard .app-container select{background-color:var(--ui-field);color:var(--ui-ink);border-color:var(--ui-field-edge);border-radius:10px;font-size:13px;min-height:36px}
+body.glow-dashboard .app-container select option{background:var(--ui-surface);color:var(--ui-ink)}
+
+/* Light counterpart of the supplied mint / amber / iris widget direction. */
+html:not(.dark) body.glow-dashboard .app-container[data-glow-dashboard="true"]{
+ --glow-page:#f2f6f1;--glow-ink:#203329;--glow-dim:#53675b;--glow-edge:#c8d8cc;--glow-green:#237956;--glow-emerald:#328d63;--glow-orange:#a45f23;
+ --bg-primary:#f2f6f1;--bg-card:#fff;--bg-secondary:#edf3ed;--bg-elevated:#e7f0e8;--text-primary:#203329;--text-secondary:#53675b;--text-muted:#53675b;--accent:#176647;--accent-soft:#dff1e4;--border:#c8d8cc;--border-light:#e0e8e2;
+}
+html:not(.dark) body.glow-dashboard #view-dashboard{--text-primary:#203329;--text-secondary:#53675b;--text-muted:#53675b}
+html:not(.dark) body.glow-dashboard .app-container[data-glow-dashboard="true"] .main-content{background:#f2f6f1;color:#203329}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-activity{background:#fafffc;box-shadow:0 12px 36px rgb(32 83 52 / .05)}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-range{background:#e0f0e5;border-color:#9cbda7;color:#205d40}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-range select{color:#205d40}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-range option{background:#fff;color:#203329}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-chart-footer,#glow-point-readout){color:#365a45}
+html:not(.dark) body.glow-dashboard #view-dashboard #glow-chart circle{fill:#237956}
+html:not(.dark) body.glow-dashboard #view-dashboard #glow-chart circle:last-child{fill:#fff;stroke:#237956;stroke-width:3px}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-document,.td-reflection-card,.heatmap-section,.tree-container){background:#fff;box-shadow:none}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-doc-icon,.glow-doc-arrow){color:#527b61}
+html:not(.dark) body.glow-dashboard #view-dashboard #glow-all-docs{background:#e8f2eb;color:#176647}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-card{background:radial-gradient(ellipse at 50% 60%,#f5dec2,transparent 70%),#fff8ef;box-shadow:none}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-goal-label,.td-progress-head,.td-progress-count,.glow-goal-percent>span){color:#765232}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-dial-tick{stroke:#cbb89f}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-dial-tick.lit{stroke:#a45f23}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-dial-knob circle:last-child{fill:#805227}
+html:not(.dark) body.glow-dashboard #view-dashboard #td-edit-goal-btn{background:#f4e1ca;border-color:#bc926b;color:#694322}
+html:not(.dark) body.glow-dashboard #view-dashboard .dash-panel-tabs{background:radial-gradient(ellipse at 50% 45%,#e7d9f2,transparent 80%),#faf5fd;box-shadow:none}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.glow-rhythm-heading p,.glow-rhythm-readout,.dash-panel-pane-title,.td-ach-desc,.td-ach-count){color:#6c507d}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-rhythm-bar{background:linear-gradient(#b75490,#8c65bd)}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-rhythm-bar[aria-pressed="true"]{background:#683c8a}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-ring-fill{stroke:#805b9f}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-ring-track{stroke:#ddcfe8}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-ring-icon{color:#633d7d}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(.td-ach-arrow,.td-newprompt-btn){background:#fff;color:#493a51}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-dot{background:#d7c4e4}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-ach-dot.active{background:#805b9f}
+html:not(.dark) body.glow-dashboard #view-dashboard .heatmap-cell[data-level="0"]{background:#e0e9e2}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-start-btn{background:#1a6c4b;color:#fff;border-color:transparent}
+html:not(.dark) body.glow-dashboard #view-dashboard :is(button,select,[tabindex]):focus-visible{outline-color:#176647}
+@media(hover:hover){html:not(.dark) body.glow-dashboard #view-dashboard .glow-document:hover{background:#eaf4ed;border-color:#88aa92}html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-start-btn:hover{background:#125338}html:not(.dark) body.glow-dashboard #view-dashboard #glow-all-docs:hover{background:#d8ebde}}
+@media(prefers-reduced-motion:no-preference){body.glow-dashboard.app-chrome-visible :is(.folder-context-menu,#dashboard-notif-dropdown.active){animation:app-menu-enter 150ms cubic-bezier(.2,0,0,1)}@keyframes app-menu-enter{from{opacity:.6;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard.app-chrome-visible :is(.folder-context-menu,#dashboard-notif-dropdown){animation:none!important}}
+body.glow-dashboard .app-container .sidebar .sidebar-nav-item.active{background:var(--ui-selected);border-color:var(--ui-selected-edge);color:var(--ui-accent)}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal :is(.payment-choice-duration,.payment-choice-method){background:var(--ui-field);border-color:var(--ui-edge);color:var(--ui-ink);border-radius:14px;font-family:'Instrument Sans',sans-serif}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal :is(.payment-choice-duration.active,.payment-choice-method.active){background:var(--ui-selected);border-color:var(--ui-accent)}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-submit{background:var(--ui-primary);color:var(--ui-on-primary);border-radius:14px;font-family:'Instrument Sans',sans-serif}
+/* Shared app pages inherit the same palette; the editor is a sibling and keeps its own. */
+body.glow-dashboard .app-container{
+ --bg-primary:var(--ui-page);--bg-secondary:var(--ui-sidebar);--bg-card:var(--ui-surface);--bg-elevated:var(--ui-raised);--bg-card-hover:var(--ui-hover);
+ --text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);--border:var(--ui-edge);--border-light:var(--ui-edge-soft);--border-hover:var(--ui-field-edge);
+ --accent:var(--ui-accent);--accent2:var(--ui-primary-hover);--accent-soft:var(--ui-selected);--accent-glow:transparent;--hover-bg:var(--ui-hover);--danger:var(--ui-danger);--info:var(--ui-info);
+}
+body.glow-dashboard #view-dashboard :is(.glow-section-head h2,.glow-rhythm-heading h2,.glow-activity h2,.td-reflection-card h3){font-family:'Archivo',sans-serif;letter-spacing:-.02em}
+body.glow-dashboard.ui-theme-switch .app-container *,
+body.glow-dashboard.ui-theme-switch :is(#session-modal,#goal-modal,#pricing-overlay,#daily-limit-modal,#payment-choice-modal) *{transition:none!important}
