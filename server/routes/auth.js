@@ -426,6 +426,7 @@ router.post('/verify-email', async (req, res) => {
     if (user.emailVerified) {
       const token = generateToken(user);
       const { password: _, ...safeUser } = user;
+      safeUser.hasPassword = Boolean(user.password);
       return res.json({ token, user: safeUser });
     }
     if (!user.emailVerificationCodeHash || !user.emailVerificationExpiresAt) {
@@ -452,6 +453,7 @@ router.post('/verify-email', async (req, res) => {
     });
     const token = generateToken(verifiedUser);
     const { password: _, ...safeUser } = verifiedUser;
+    safeUser.hasPassword = Boolean(verifiedUser.password);
     res.json({ token, user: safeUser });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -508,6 +510,7 @@ router.post('/login', async (req, res) => {
     const acceptedUser = await markTermsAcceptedIfMissing(user);
     const token = generateToken(acceptedUser);
     const { password: _, ...safeUser } = acceptedUser;
+    safeUser.hasPassword = Boolean(acceptedUser.password);
     res.json({ token, user: safeUser });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -538,6 +541,7 @@ router.get('/me', authenticate, checkSubscriptionExpiry, async (req, res) => {
   }
 
   const { password: _, ...safeUser } = user;
+  safeUser.hasPassword = Boolean(user.password);
   // If subscription just expired during this request, notify the frontend
   if (req.subscriptionExpired) {
     safeUser.subscriptionJustExpired = true;
@@ -609,6 +613,7 @@ router.patch('/me', authenticate, async (req, res) => {
 
     const updated = await updateOne('users.json', u => u.id === req.user.id, updates);
     const { password: _, ...safeUser } = updated;
+    safeUser.hasPassword = Boolean(updated.password);
     res.json(safeUser);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -620,7 +625,7 @@ router.post('/change-password', authenticate, async (req, res) => {
     const user = await findOne('users.json', u => u.id === req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    if (user.provider === 'google') {
+    if (!user.password) {
       return res.status(400).json({ error: 'Google accounts cannot change password' });
     }
 
@@ -657,7 +662,7 @@ router.post('/request-password-reset', async (req, res) => {
     if (emailError) return res.status(400).json({ error: emailError });
 
     const user = await findOne('users.json', u => normalizeEmail(u.email) === email);
-    if (!user || !user.password || user.provider === 'google') {
+    if (!user || !user.password) {
       return res.json({ ok: true });
     }
 
@@ -694,7 +699,7 @@ router.post('/reset-password', async (req, res) => {
     if (!newPassword || !confirmPassword) return res.status(400).json({ error: 'New password and confirmation are required.' });
 
     const user = await findOne('users.json', u => normalizeEmail(u.email) === email);
-    if (!user || !user.password || user.provider === 'google') {
+    if (!user || !user.password) {
       return res.status(400).json({ error: 'Password reset is not available for this account.' });
     }
     if (!user.passwordResetCodeHash || !user.passwordResetExpiresAt) {
@@ -730,6 +735,7 @@ router.post('/reset-password', async (req, res) => {
     });
     const token = generateToken(updated);
     const { password: _, ...safeUser } = updated;
+    safeUser.hasPassword = Boolean(updated.password);
     res.json({ token, user: safeUser });
   } catch (err) {
     console.error('[auth] reset password failed:', err.message);
@@ -867,6 +873,7 @@ router.post('/google', async (req, res) => {
     user = await markTermsAcceptedIfMissing(user);
     const token = generateToken(user);
     const { password: _, ...safeUser } = user;
+    safeUser.hasPassword = Boolean(user.password);
     res.json({ token, user: safeUser, isNewUser });
   } catch (err) {
     console.error('Google OAuth error:', err);
