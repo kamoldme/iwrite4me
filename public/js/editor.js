@@ -799,19 +799,6 @@ const Editor = {
     }, 200);
   },
 
-  _tabReturnMessages: [
-    "\u{1F62D} Please don't do that again... I almost died",
-    "\u{1F631} I was this close to erasing everything!",
-    "\u{1F62B} You nearly killed your words. They're still shaking.",
-    "\u{1F494} My heart can't take this. Don't leave me again.",
-    "\u{1F300} Your writing almost vanished into the void.",
-    "\u{1F9F5} I held on by a thread. Please stay.",
-    "\u{1F62E}\u200D\u{1F4A8} That was way too close. Your words need you here.",
-    "\u{1F630} Don't leave me please... I'm scared of the dark.",
-    "\u{1F622} I thought you abandoned me forever.",
-    "\u{1F47B} Your words were about to become ghosts.",
-  ],
-
   onTabReturn() {
     // Accumulate paused time (zen mode)
     if (this._pauseStart) {
@@ -821,10 +808,8 @@ const Editor = {
     if (this.tabCountdown && this.tabLeftTime) {
       const awaySeconds = Math.floor((Date.now() - this.tabLeftTime) / 1000);
       const remaining = this.tabGracePeriod - awaySeconds;
-      if (remaining > 0 && remaining <= this.tabGracePeriod) {
-        const msg = this._tabReturnMessages[Math.floor(Math.random() * this._tabReturnMessages.length)];
-        const color = remaining > 7 ? cssVar('--success') : remaining >= 4 ? '#facc15' : '#f87171';
-        App.toast(`<span style="font-weight:800;color:${color}">${remaining}s</span> left before deletion. ${msg}`, remaining <= 3 ? 'error' : 'warning');
+      if (this.active && !this.abandoned && remaining > 0 && remaining <= this.tabGracePeriod) {
+        App.toast('You’re back. Your writing is safe. Keep this tab open to continue.', 'success');
       }
     }
     if (this.tabCountdown) {

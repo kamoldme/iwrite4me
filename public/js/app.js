@@ -1513,7 +1513,7 @@ const App = {
       });
     }
     const researchClose = document.getElementById('research-drawer-close');
-    if (researchClose) researchClose.addEventListener('click', () => this._closeResearch());
+    if (researchClose) researchClose.addEventListener('click', () => { this._closeResearch(); document.getElementById('editor-tools-btn').focus(); });
     document.querySelectorAll('.research-tab').forEach(t => {
       t.addEventListener('click', () => this._switchResearchTab(t.dataset.rtab));
     });
@@ -1596,6 +1596,7 @@ const App = {
         document.getElementById('editor-focus-dropdown').style.display = 'none';
         if (willOpen) syncToolsMenu();
         toolsMenu.style.display = willOpen ? 'block' : 'none';
+        toolsBtn.setAttribute('aria-expanded', String(willOpen));
       });
       toolsMenu.addEventListener('click', (e) => e.stopPropagation());
       document.addEventListener('click', () => { toolsMenu.style.display = 'none'; });
@@ -1700,9 +1701,47 @@ const App = {
       const addTimeOpen = document.getElementById('add-time-confirm').style.display !== 'none';
       const focusOpen = document.getElementById('editor-focus-dropdown').style.display !== 'none';
       const audioOpen = document.getElementById('editor-audio-dropdown').style.display !== 'none';
-      if (menuOpen || addTimeOpen || focusOpen || audioOpen) return;
+      if (menuOpen || addTimeOpen || focusOpen || audioOpen || editorContainer.contains(document.activeElement) && document.activeElement.closest('button,input,select,textarea')) return;
       if (Date.now() - (Editor._lastMove || 0) > 2600) setChromeHidden(true);
     }, 600);
+
+    audioDrop.querySelectorAll('.audio-track').forEach(track => {
+      const name = track.querySelector('.audio-track-name').textContent.trim();
+      track.querySelector('input[type=range]')?.setAttribute('aria-label', `${name} volume`);
+      track.querySelector('.audio-play-btn')?.setAttribute('aria-label', `Play or pause ${name}`);
+    });
+    const sessionPopovers = [toolsMenu, audioDrop, document.getElementById('editor-focus-dropdown')].filter(Boolean);
+    const positionSessionPopovers = () => {
+      const rect = toolsBtn.getBoundingClientRect();
+      sessionPopovers.forEach(panel => {
+        const placement = { top: `${rect.bottom + 8}px`, right: `${Math.max(12, window.innerWidth - rect.right)}px`, maxHeight: `${Math.max(160, window.innerHeight - rect.bottom - 24)}px` };
+        Object.entries(placement).forEach(([key, value]) => { if (panel.style[key] !== value) panel.style[key] = value; });
+      });
+      toolsBtn.setAttribute('aria-expanded', String(toolsMenu.style.display !== 'none'));
+    };
+    sessionPopovers.forEach(panel => {
+      new MutationObserver(positionSessionPopovers).observe(panel, { attributes: true, attributeFilter: ['style'] });
+      panel.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+          event.preventDefault(); event.stopPropagation();
+          panel.style.display = 'none'; toolsBtn.focus();
+        }
+        if (panel === toolsMenu && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) && !event.target.matches('input')) {
+          event.preventDefault();
+          const items = [...panel.querySelectorAll('button')].filter(el => el.getClientRects().length);
+          const index = items.indexOf(document.activeElement);
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+          items[next]?.focus();
+        }
+      });
+    });
+    toolsBtn.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown') { event.preventDefault(); if (toolsMenu.style.display === 'none') toolsBtn.click(); toolsMenu.querySelector('button')?.focus(); }
+    });
+    window.addEventListener('resize', positionSessionPopovers);
+    document.getElementById('research-drawer').addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.stopPropagation(); this._closeResearch(); toolsBtn.focus(); }
+    });
 
     // Restore saved font preference
     const savedFont = localStorage.getItem('iwrite_editor_font') || 'sans';
@@ -3126,9 +3165,8 @@ const App = {
     if (rail && rail.getBoundingClientRect().width > this._tabsRailDefaultWidth) {
       this._resetTabsRailWidth();
     }
-    const offset = 67;
-    drawer.style.top = offset + 'px';
-    drawer.style.height = 'calc(100vh - 50px)';
+    clearTimeout(this._researchCloseTimer);
+    drawer.inert = false;
     drawer.classList.add('open');
     drawer.classList.add('docked');
     const editorEl = document.getElementById('editor-container');
@@ -3143,6 +3181,7 @@ const App = {
     if (drawer) {
       drawer.classList.remove('open');
       drawer.classList.remove('docked');
+      drawer.inert = true;
       // Defer clearing inline top/height until after the slide-out transition completes
       // so the drawer's geometry stays stable during the animation.
       clearTimeout(this._researchCloseTimer);
@@ -3161,6 +3200,7 @@ const App = {
     this._currentResearchTab = tab;
     document.querySelectorAll('.research-tab').forEach(t => {
       t.classList.toggle('active', t.dataset.rtab === tab);
+      t.setAttribute('aria-pressed', String(t.dataset.rtab === tab));
     });
     document.querySelectorAll('.research-pane').forEach(p => {
       p.style.display = p.dataset.rpane === tab ? '' : 'none';
@@ -3370,7 +3410,7 @@ const App = {
     if (!chat) return;
     const history = this._loadAIChatHistory();
     if (!history.length) {
-      chat.innerHTML = '<div class="research-chat-empty">Ask anything. History stays during this session.</div>';
+      chat.innerHTML = '<div class="research-chat-empty">Ask a question, clarify an idea, or explore a topic. This conversation stays during your session.</div>';
       return;
     }
     chat.innerHTML = history.slice().reverse().map(m => {
