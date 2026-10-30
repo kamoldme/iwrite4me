@@ -782,13 +782,12 @@ router.post('/:id/forfeit', async (req, res) => {
 // POST /:id/beacon-forfeit — sendBeacon-compatible forfeit (token in body, no auth header)
 router.post('/:id/beacon-forfeit', async (req, res) => {
   try {
-    const jwt = require('jsonwebtoken');
-    const { SECRET } = require('../middleware/auth');
+    const { verifyToken } = require('../middleware/auth');
     const { token } = req.body;
     if (!token) return res.status(401).json({ error: 'Token required' });
 
     let user;
-    try { user = jwt.verify(token, SECRET); } catch { return res.status(401).json({ error: 'Invalid token' }); }
+    try { user = verifyToken(token); } catch { return res.status(401).json({ error: 'Invalid token' }); }
 
     const duel = await findOne('duels.json', d => d.id === req.params.id);
     if (!duel) return res.status(404).json({ error: 'Duel not found' });

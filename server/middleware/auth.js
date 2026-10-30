@@ -12,6 +12,21 @@ function generateToken(user) {
   );
 }
 
+// Revoke administrator tokens issued before a security event without logging
+// out writers. Empty means no revocation has been configured.
+const rawAdminCutoff = process.env.ADMIN_TOKEN_VALID_AFTER;
+const adminCutoff = rawAdminCutoff ? Number(rawAdminCutoff) : 0;
+if (rawAdminCutoff && (!Number.isSafeInteger(adminCutoff) || adminCutoff < 1)) {
+  throw new Error('ADMIN_TOKEN_VALID_AFTER must be a positive Unix timestamp');
+}
+function verifyToken(token) {
+  const user = jwt.verify(token, SECRET);
+  if (user.role === 'admin' && adminCutoff && (!Number.isInteger(user.iat) || user.iat <= adminCutoff)) {
+    throw new Error('Administrator token has been revoked');
+  }
+  return user;
+}
+
 function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -19,7 +34,7 @@ function authenticate(req, res, next) {
   }
   try {
     const token = header.split(' ')[1];
-    req.user = jwt.verify(token, SECRET);
+    req.user = verifyToken(token);
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
@@ -87,4 +102,4 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { generateToken, authenticate, checkSubscriptionExpiry, sweepExpiredSubscriptions, requireAdmin, SECRET };
+module.exports = { generateToken, verifyToken, authenticate, checkSubscriptionExpiry, sweepExpiredSubscriptions, requireAdmin, SECRET };

@@ -261,9 +261,9 @@ app.set('activeUsers', activeUsers); // share with routes
 app.use('/api', (req, res, next) => {
   if (req.headers.authorization) {
     try {
-      const jwt = require('jsonwebtoken');
+      const { verifyToken } = require('./middleware/auth');
       const token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'iwrite-dev-secret-change-in-production');
+      const decoded = verifyToken(token);
       if (decoded.id) {
             const existing = activeUsers.get(decoded.id);
             if (existing) {
@@ -578,8 +578,8 @@ app.get('/api/leaderboard', async (req, res) => {
     const auth = req.headers.authorization || '';
     if (auth.startsWith('Bearer ')) {
       try {
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(auth.split(' ')[1], process.env.JWT_SECRET || 'iwrite-dev-secret-change-in-production');
+        const { verifyToken } = require('./middleware/auth');
+        const decoded = verifyToken(auth.split(' ')[1]);
         userId = decoded.id || null;
       } catch {}
     }

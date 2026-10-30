@@ -1,8 +1,7 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { findOne, findMany, insertOne, updateOne, deleteOne } = require('../utils/storage');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
 const ALLOWED_STORY_TAGS = new Set(['p', 'br', 'h1', 'h2', 'h3', 'blockquote', 'ul', 'ol', 'li', 'strong', 'b', 'em', 'i', 'u', 'a', 'code', 'pre']);
@@ -142,7 +141,7 @@ function getOptionalViewer(req) {
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return null;
   try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'iwrite-dev-secret-change-in-production');
+    return verifyToken(token);
   } catch {
     return null;
   }
