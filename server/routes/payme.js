@@ -17,7 +17,8 @@ const crypto = require('crypto');
 const { findOne, findMany, insertOne, updateOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
-const { DURATION_DAYS, UZS_PRICES, somToTiyin, grantPremiumPass } = require('../utils/premium');
+const { DURATION_DAYS, UZS_PRICES, somToTiyin } = require('../utils/premium');
+const { createPayme, performPayme, cancelPayme } = require('../services/localPayments');
 
 const router = express.Router();
 const APP_URL = process.env.APP_URL || 'https://iwrite4.me';
@@ -122,54 +123,32 @@ async function checkPerform(params, reply, fail) {
 async function createTransaction(params, reply, fail) {
   const order = await findOrderByAccount(params);
   if (!order) return fail(rpcError(-31050, 'Order not found', ACCOUNT_FIELD));
-  if (params.amount !== order.amountTiyin) return fail(rpcError(-31001, 'Invalid amount'));
-
-  if (order.paymeTransId) {
-    if (order.paymeTransId === params.id) {
-      return reply({ create_time: order.paymeCreateTime, transaction: order.id, state: order.paymeState });
-    }
-    return fail(rpcError(-31050, 'Order is already in another transaction', ACCOUNT_FIELD));
-  }
-  if (order.state === 'paid') return fail(rpcError(-31051, 'Order already paid', ACCOUNT_FIELD));
-
-  const createTime = Date.now();
-  await updateOne('payment-transactions.json', t => t.id === order.id, {
-    paymeTransId: params.id, paymeTime: params.time, paymeCreateTime: createTime,
-    paymeState: STATE.CREATED, state: 'created'
-  });
-  return reply({ create_time: createTime, transaction: order.id, state: STATE.CREATED });
+  const result = await createPayme(order.id, params);
+  if (result.status === 'missing') return fail(rpcError(-31050, 'Order not found', ACCOUNT_FIELD));
+  if (result.status === 'amount') return fail(rpcError(-31001, 'Invalid amount'));
+  if (result.status === 'paid') return fail(rpcError(-31051, 'Order already paid', ACCOUNT_FIELD));
+  if (result.status !== 'created') return fail(rpcError(-31008, 'Unable to create in current state'));
+  return reply({ create_time: result.order.paymeCreateTime, transaction: result.order.id, state: result.order.paymeState });
 }
 
 async function performTransaction(params, reply, fail) {
   const order = await findOrderByTxn(params);
   if (!order) return fail(rpcError(-31003, 'Transaction not found'));
-  if (order.paymeState === STATE.PERFORMED) {
-    return reply({ transaction: order.id, perform_time: order.paymePerformTime, state: STATE.PERFORMED });
-  }
-  if (order.paymeState !== STATE.CREATED) return fail(rpcError(-31008, 'Unable to perform in current state'));
-
-  const performTime = Date.now();
-  await grantPremiumPass(order.userId, order.duration, 'payme', {
-    lastPaymentProvider: 'payme', lastPaymentAt: new Date().toISOString()
-  });
-  await updateOne('payment-transactions.json', t => t.id === order.id, {
-    paymeState: STATE.PERFORMED, paymePerformTime: performTime, state: 'paid', paidAt: new Date().toISOString()
-  });
-  logAction('payme_payment_verified', { duration: order.duration, amount: order.amount, orderId: order.id }, order.userId);
-  return reply({ transaction: order.id, perform_time: performTime, state: STATE.PERFORMED });
+  const result = await performPayme(order.id, params.id);
+  if (result.status === 'missing') return fail(rpcError(-31003, 'Transaction not found'));
+  if (result.status !== 'completed' && result.status !== 'paid') return fail(rpcError(-31008, 'Unable to perform in current state'));
+  if (result.status === 'completed') logAction('payme_payment_verified', { duration: result.order.duration, amount: result.order.amount, orderId: result.order.id }, result.order.userId);
+  return reply({ transaction: result.order.id, perform_time: result.order.paymePerformTime, state: STATE.PERFORMED });
 }
 
 async function cancelTransaction(params, reply, fail) {
   const order = await findOrderByTxn(params);
   if (!order) return fail(rpcError(-31003, 'Transaction not found'));
-  const cancelTime = order.paymeCancelTime || Date.now();
-  const newState = order.paymeState === STATE.PERFORMED ? STATE.CANCELLED_AFTER_PERFORM : STATE.CANCELLED;
-  // NOTE: cancelling an already-performed pass is effectively a refund. We record it and
-  // leave premium in place; revoking a granted pass is handled manually by an admin for now.
-  await updateOne('payment-transactions.json', t => t.id === order.id, {
-    paymeState: newState, paymeCancelTime: cancelTime, paymeCancelReason: params.reason, state: 'cancelled'
-  });
-  return reply({ transaction: order.id, cancel_time: cancelTime, state: newState });
+  const result = await cancelPayme(order.id, params.id, params.reason);
+  if (result.status === 'missing') return fail(rpcError(-31003, 'Transaction not found'));
+  if (result.status !== 'cancelled') return fail(rpcError(-31008, 'Unable to cancel in current state'));
+  // Refunds after fulfillment retain the existing manual entitlement review policy.
+  return reply({ transaction: result.order.id, cancel_time: result.order.paymeCancelTime, state: result.order.paymeState });
 }
 
 async function checkTransaction(params, reply, fail) {

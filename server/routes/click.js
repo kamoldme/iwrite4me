@@ -15,10 +15,11 @@
 
 const express = require('express');
 const crypto = require('crypto');
-const { findOne, insertOne, updateOne } = require('../utils/storage');
+const { insertOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
-const { DURATION_DAYS, UZS_PRICES, grantPremiumPass } = require('../utils/premium');
+const { DURATION_DAYS, UZS_PRICES } = require('../utils/premium');
+const { prepareClick, completeClick } = require('../services/localPayments');
 
 const router = express.Router();
 const APP_URL = process.env.APP_URL || 'https://iwrite4.me';
@@ -105,29 +106,21 @@ router.post('/prepare', async (req, res) => {
   if (!signOk(b, c.secretKey)) {
     return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, error: ERR.SIGN_FAIL, error_note: 'SIGN CHECK FAILED' });
   }
-  const txn = await findOne('payment-transactions.json', t => t.id === b.merchant_trans_id && t.provider === 'click');
-  if (!txn) return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, error: ERR.ORDER_NOT_FOUND, error_note: 'Order not found' });
-  if (txn.state === 'paid') return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, error: ERR.ALREADY_PAID, error_note: 'Already paid' });
-  if (Math.abs(parseFloat(b.amount) - txn.amount) > 0.01) {
-    return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, error: ERR.BAD_AMOUNT, error_note: 'Incorrect amount' });
+  if (String(b.action) !== '0' || String(b.service_id) !== String(c.serviceId)) {
+    return res.json({ error: ERR.BAD_REQUEST, error_note: 'Invalid action or service' });
   }
-
-  // Numeric prepare id Click will echo back in Complete.
-  const merchantPrepareId = Date.now();
-  await updateOne('payment-transactions.json', t => t.id === txn.id, {
-    state: 'prepared',
-    clickTransId: b.click_trans_id,
-    merchantPrepareId,
-    preparedAt: new Date().toISOString()
-  });
-
-  res.json({
-    click_trans_id: b.click_trans_id,
-    merchant_trans_id: b.merchant_trans_id,
-    merchant_prepare_id: merchantPrepareId,
-    error: ERR.SUCCESS,
-    error_note: 'Success'
-  });
+  try {
+    const result = await prepareClick(b.merchant_trans_id, b);
+    const common = { click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id };
+    if (result.status === 'missing') return res.json({ ...common, error: ERR.ORDER_NOT_FOUND, error_note: 'Order not found' });
+    if (result.status === 'amount') return res.json({ ...common, error: ERR.BAD_AMOUNT, error_note: 'Incorrect amount' });
+    if (result.status === 'paid') return res.json({ ...common, error: ERR.ALREADY_PAID, error_note: 'Already paid' });
+    if (result.status !== 'prepared') return res.json({ ...common, error: ERR.TXN_CANCELLED, error_note: 'Order cannot be prepared' });
+    return res.json({ ...common, merchant_prepare_id: result.order.merchantPrepareId, error: ERR.SUCCESS, error_note: 'Success' });
+  } catch (err) {
+    console.error('Click prepare error:', err.message);
+    return res.json({ error: ERR.FAILED_UPDATE, error_note: 'Could not prepare payment' });
+  }
 });
 
 // ── 3. Complete (server-to-server) → grant premium ────────────────────────────
@@ -139,40 +132,23 @@ router.post('/complete', async (req, res) => {
   if (!signOk(b, c.secretKey)) {
     return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, error: ERR.SIGN_FAIL, error_note: 'SIGN CHECK FAILED' });
   }
-  const txn = await findOne('payment-transactions.json', t => t.id === b.merchant_trans_id && t.provider === 'click');
-  if (!txn) return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, error: ERR.TXN_NOT_FOUND, error_note: 'Transaction not found' });
-  if (String(b.merchant_prepare_id) !== String(txn.merchantPrepareId)) {
-    return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, error: ERR.TXN_NOT_FOUND, error_note: 'Prepare id mismatch' });
+  if (String(b.action) !== '1' || String(b.service_id) !== String(c.serviceId)) {
+    return res.json({ error: ERR.BAD_REQUEST, error_note: 'Invalid action or service' });
   }
-
-  // Click signals a failure/cancel with a negative `error`.
-  if (parseInt(b.error, 10) < 0) {
-    await updateOne('payment-transactions.json', t => t.id === txn.id, { state: 'cancelled', cancelledAt: new Date().toISOString() });
-    return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, merchant_confirm_id: txn.merchantPrepareId, error: ERR.TXN_CANCELLED, error_note: 'Cancelled' });
-  }
-  if (txn.state === 'paid') {
-    return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, merchant_confirm_id: txn.merchantPrepareId, error: ERR.ALREADY_PAID, error_note: 'Already paid' });
-  }
-
   try {
-    await grantPremiumPass(txn.userId, txn.duration, 'click', {
-      lastPaymentProvider: 'click',
-      lastPaymentAt: new Date().toISOString()
-    });
-    await updateOne('payment-transactions.json', t => t.id === txn.id, { state: 'paid', paidAt: new Date().toISOString() });
-    logAction('click_payment_verified', { duration: txn.duration, amount: txn.amount, orderId: txn.id }, txn.userId);
+    const result = await completeClick(b.merchant_trans_id, b);
+    const common = { click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id };
+    if (result.status === 'missing' || result.status === 'invalid') return res.json({ ...common, error: ERR.TXN_NOT_FOUND, error_note: 'Transaction not found or invalid' });
+    if (result.status === 'amount') return res.json({ ...common, error: ERR.BAD_AMOUNT, error_note: 'Incorrect amount' });
+    const response = { ...common, merchant_confirm_id: result.order.merchantPrepareId };
+    if (result.status === 'paid') return res.json({ ...response, error: ERR.ALREADY_PAID, error_note: 'Already paid' });
+    if (result.status === 'cancelled') return res.json({ ...response, error: ERR.TXN_CANCELLED, error_note: 'Cancelled' });
+    logAction('click_payment_verified', { duration: result.order.duration, amount: result.order.amount, orderId: result.order.id }, result.order.userId);
+    return res.json({ ...response, error: ERR.SUCCESS, error_note: 'Success' });
   } catch (err) {
-    logAction('click_grant_error', { orderId: txn.id, message: err.message }, txn.userId);
+    console.error('Click complete error:', err.message);
     return res.json({ click_trans_id: b.click_trans_id, merchant_trans_id: b.merchant_trans_id, error: ERR.FAILED_UPDATE, error_note: 'Could not grant premium' });
   }
-
-  res.json({
-    click_trans_id: b.click_trans_id,
-    merchant_trans_id: b.merchant_trans_id,
-    merchant_confirm_id: txn.merchantPrepareId,
-    error: ERR.SUCCESS,
-    error_note: 'Success'
-  });
 });
 
 module.exports = router;
