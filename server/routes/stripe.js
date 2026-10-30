@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 const { applyStripeRenewal } = require('../services/stripeRenewal');
 const { applyStripePaymentFailure } = require('../services/stripePaymentFailure');
+const { checkoutGrant } = require('../services/stripeCheckout');
 
 const router = express.Router();
 let stripeClient = null;
@@ -172,19 +173,17 @@ router.get('/verify-session', authenticate, async (req, res) => {
       expand: ['subscription']
     });
 
-    if (session.payment_status !== 'paid' && !session.subscription?.trial_end) {
-      return res.json({ success: false, status: session.payment_status });
-    }
-
     const userId = session.metadata?.userId;
     if (!userId || userId !== req.user.id) {
       return res.status(403).json({ error: 'Session does not belong to this user' });
     }
-
     const user = await findOne('users.json', u => u.id === userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const subscription = typeof session.subscription === 'object'
+      ? session.subscription
+      : (session.subscription ? await stripe.subscriptions.retrieve(session.subscription) : null);
+    const grant = checkoutGrant(session, subscription);
+    if (!grant) return res.json({ success: false, status: session.payment_status });
 
     // Idempotency: if already processed, skip
     const subscriptionId = typeof session.subscription === 'string'
@@ -198,11 +197,7 @@ router.get('/verify-session', authenticate, async (req, res) => {
     // Apply the subscription
     const duration = session.metadata?.duration || '1m';
     const now = new Date();
-    const subscription = typeof session.subscription === 'object'
-      ? session.subscription
-      : await stripe.subscriptions.retrieve(session.subscription);
-
-    const isTrial = subscription.trial_end && subscription.trial_end > Math.floor(Date.now() / 1000);
+    const isTrial = grant.isTrial;
     const expiresAt = isTrial
       ? new Date(subscription.trial_end * 1000).toISOString()
       : new Date(now.getTime() + DURATION_DAYS[duration] * 86400000).toISOString();
@@ -460,7 +455,8 @@ async function stripeWebhookHandler(req, res) {
 
   try {
     switch (event.type) {
-      case 'checkout.session.completed': {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded': {
         const session = event.data.object;
         const userId = session.metadata?.userId;
         if (!userId) {
@@ -484,7 +480,12 @@ async function stripeWebhookHandler(req, res) {
 
         // Retrieve subscription to check trial status
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const isTrial = subscription.trial_end && subscription.trial_end > Math.floor(Date.now() / 1000);
+        const grant = checkoutGrant(session, subscription);
+        if (!grant) {
+          console.warn(`Webhook: checkout not eligible for access (status ${session.payment_status}, subscription ${subscription.status})`);
+          break;
+        }
+        const isTrial = grant.isTrial;
         const duration = session.metadata?.duration || '1m';
         const now = new Date();
         const expiresAt = isTrial
@@ -674,7 +675,7 @@ async function stripeWebhookHandler(req, res) {
   } catch (err) {
     console.error(`Webhook handler error for ${event.type}:`, err);
     // Payment processing is idempotent; retry if a transient failure prevented it.
-    if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') return res.status(500).json({ error: 'Renewal processing failed' });
+    if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed' || event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') return res.status(500).json({ error: 'Renewal processing failed' });
   }
 
   // Acknowledge events processed or deliberately skipped above.

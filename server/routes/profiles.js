@@ -1,5 +1,5 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../middleware/auth');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
@@ -14,7 +14,7 @@ function getOptionalViewer(req) {
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return null;
   try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'iwrite-dev-secret-change-in-production');
+    return verifyToken(token);
   } catch {
     return null;
   }

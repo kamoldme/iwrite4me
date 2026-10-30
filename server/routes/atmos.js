@@ -30,7 +30,9 @@ function cfg() {
     storeId: process.env.ATMOS_STORE_ID
   };
 }
-function atmosReady() { const c = cfg(); return !!(c.key && c.secret && c.storeId); }
+// Keep Atmos disabled until its callback signature/status verification is implemented.
+// Credentials alone must never activate the unauthenticated fulfillment path.
+function atmosReady() { return false; }
 
 // OAuth token (client credentials), cached until ~1 min before expiry.
 let _token = null, _tokenExp = 0;

@@ -2,7 +2,7 @@
 // Sends real-time updates about registrations, subscriptions, moderation, etc.
 // Requires env vars: TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID
 
-const TelegramBot = require('node-telegram-bot-api');
+const { TelegramBot } = require('node-telegram-bot-api');
 
 let bot = null;
 let chatId = null;
@@ -107,7 +107,7 @@ function init(activeUsersMap) {
           await bot.answerCallbackQuery(query.id, { text: 'Sending full story...' });
           for (const chunk of chunks) {
             await bot.sendMessage(query.message.chat.id, chunk, {
-              reply_to_message_id: query.message.message_id
+              reply_parameters: { message_id: query.message.message_id }
             });
           }
           return;
@@ -172,12 +172,12 @@ function init(activeUsersMap) {
         const { findOne, findMany, updateOne } = require('./utils/storage');
         const user = await findOne('users.json', u => u.username === usernameMatch[1]);
         if (!user) {
-          bot.sendMessage(chatId, '⚠️ Could not find user', { reply_to_message_id: msg.message_id });
+          bot.sendMessage(chatId, '⚠️ Could not find user', { reply_parameters: { message_id: msg.message_id } });
           return;
         }
         const tickets = await findMany('support.json', t => t.userId === user.id && t.status === 'open');
         if (!tickets.length) {
-          bot.sendMessage(chatId, '⚠️ No open tickets from this user', { reply_to_message_id: msg.message_id });
+          bot.sendMessage(chatId, '⚠️ No open tickets from this user', { reply_parameters: { message_id: msg.message_id } });
           return;
         }
         // Match by subject in original message
@@ -194,7 +194,7 @@ function init(activeUsersMap) {
           updatedAt: new Date().toISOString()
         });
         bot.sendMessage(chatId, `✅ Reply sent to @${esc(user.username)} on ticket "${esc(ticket.subject)}"`, {
-          reply_to_message_id: msg.message_id,
+          reply_parameters: { message_id: msg.message_id },
           parse_mode: 'HTML'
         });
         return;
@@ -204,7 +204,7 @@ function init(activeUsersMap) {
       const { findOne, updateOne } = require('./utils/storage');
       const ticket = await findOne('support.json', t => t.id === ticketIdMatch[1]);
       if (!ticket) {
-        bot.sendMessage(chatId, '⚠️ Ticket not found', { reply_to_message_id: msg.message_id });
+        bot.sendMessage(chatId, '⚠️ Ticket not found', { reply_parameters: { message_id: msg.message_id } });
         return;
       }
       await updateOne('support.json', t => t.id === ticket.id, {
@@ -215,7 +215,7 @@ function init(activeUsersMap) {
       });
       const user = await findOne('users.json', u => u.id === ticket.userId);
       bot.sendMessage(chatId, `✅ Reply sent to @${esc(user ? user.username : '?')} on ticket "${esc(ticket.subject)}"`, {
-        reply_to_message_id: msg.message_id,
+        reply_parameters: { message_id: msg.message_id },
         parse_mode: 'HTML'
       });
     });
@@ -341,7 +341,7 @@ async function sendStatsCard() {
 
 function send(text, opts = {}) {
   if (!bot || !chatId) return;
-  bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true, ...opts }).catch(err => {
+  bot.sendMessage(chatId, text, { parse_mode: 'HTML', link_preview_options: { is_disabled: true }, ...opts }).catch(err => {
     console.error('[Telegram] Send error:', err.message);
   });
 }
