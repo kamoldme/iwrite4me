@@ -633,3 +633,8 @@ body.glow-dashboard.app-chrome-visible #streak-popup-overlay .streak-popup-best{
 body.glow-dashboard .app-container.sidebar-collapsed #sidebar #sidebar-new-session{width:29px;min-width:29px;max-width:29px;height:29px;min-height:29px;max-height:29px;padding:5px;border-radius:8px;}
 body.glow-dashboard.app-chrome-visible #streak-popup-overlay .streak-popup{min-width:0;}
 body.glow-dashboard.app-chrome-visible #streak-popup-overlay .streak-popup-count{text-shadow:none;}
+
+/* Show the Free plan's limits as part of the comparison. */
+body.glow-dashboard #view-upgrade .upgrade-card-features .upgrade-excluded-heading{margin:24px 0 14px;padding-top:20px;border-top:1px solid var(--ui-edge);font:500 12px/1.5 'Instrument Sans',sans-serif;color:var(--ui-muted);}
+body.glow-dashboard #view-upgrade .upgrade-card-features li.feature-unavailable{color:var(--ui-muted);}
+body.glow-dashboard #view-upgrade .upgrade-card-features li.feature-unavailable::before{content:'×';background:var(--ui-raised);color:var(--ui-muted)!important;font:600 14px/1 'Instrument Sans',sans-serif;}
