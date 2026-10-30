@@ -173,3 +173,12 @@ body.glow-dashboard #editor-container .danger-progress-bar{border-radius:0;backg
 body.glow-dashboard #editor-container .editor-toolbar .editor-hearts{display:flex;gap:5px;padding:0 8px;margin:0;border:0;background:none;}
 @media(max-width:600px){body.glow-dashboard #editor-container .editor-paper-stage{margin:16px auto 40px;}body.glow-dashboard #editor-container .editor-paper-zoom{gap:0;}body.glow-dashboard #editor-container .editor-paper-zoom button{min-width:24px;padding:0 4px;}}
 @media(prefers-reduced-motion:reduce){body.glow-dashboard #editor-container .editor-paper-zoom{transition:none;}}
+/* Add-time confirmation is a message followed by compact, aligned actions. */
+body.glow-dashboard #editor-container #add-time-confirm{box-sizing:border-box;flex-direction:column;align-items:stretch;gap:0;top:calc(100% + 8px);width:280px;max-width:calc(100vw - 32px);padding:16px;}
+body.glow-dashboard #editor-container #add-time-confirm .add-time-confirm-text{width:100%;margin:0;color:var(--ui-ink);font:400 14px/1.5 'Instrument Sans',sans-serif;white-space:normal;}
+body.glow-dashboard #editor-container #add-time-confirm .add-time-confirm-actions{display:flex;align-items:center;gap:8px;width:100%;margin:16px 0 0;}
+body.glow-dashboard #editor-container #add-time-confirm .btn{display:inline-flex;align-items:center;justify-content:center;flex:1 1 0;box-sizing:border-box;width:auto;min-width:0;height:36px;min-height:36px;max-height:36px;aspect-ratio:auto;padding:8px 12px;border:1px solid var(--ui-edge);border-radius:9px!important;background:var(--ui-field);color:var(--ui-ink);box-shadow:none!important;font:600 13px/1.4 'Instrument Sans',sans-serif;white-space:nowrap;letter-spacing:0;text-transform:none;}
+body.glow-dashboard #editor-container #add-time-confirm .btn-primary{background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent;}
+body.glow-dashboard #editor-container .editor-timer-toggle{justify-content:center;width:44px;min-width:44px;height:36px;padding:6px 10px;flex:none;}
+body.glow-dashboard #editor-container .editor-add-time-btn{min-width:48px;height:36px;padding:6px 10px;font:600 13px/1 'DM Mono',monospace;white-space:nowrap;}
+@media(hover:hover){body.glow-dashboard #editor-container #add-time-confirm .btn-primary:hover{background:var(--ui-primary-hover);}body.glow-dashboard #editor-container #add-time-confirm .btn-ghost:hover{background:var(--ui-hover);}}

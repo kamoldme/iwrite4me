@@ -28,10 +28,12 @@
       if (!Number.isFinite(next)) return;
       const old = zoom / 100;
       const centerX = (desk.scrollLeft + desk.clientWidth / 2 - stage.offsetLeft) / old;
-      const centerY = (desk.scrollTop + desk.clientHeight / 2 - stage.offsetTop) / old;
       zoom = next; render();
       desk.scrollLeft = stage.offsetLeft + centerX * zoom / 100 - desk.clientWidth / 2;
-      desk.scrollTop = stage.offsetTop + centerY * zoom / 100 - desk.clientHeight / 2;
+      // Start at the paper's top edge, below any visible formatting controls.
+      const formatting = desk.querySelector('#formatting-toolbar');
+      const inset = formatting?.getClientRects().length ? formatting.offsetHeight : 0;
+      desk.scrollTop = Math.max(0, stage.offsetTop - inset);
     };
     document.getElementById('paper-zoom-out').onclick = () => App.setPaperZoom(zoom - 10);
     document.getElementById('paper-zoom-in').onclick = () => App.setPaperZoom(zoom + 10);
