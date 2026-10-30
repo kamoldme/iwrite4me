@@ -1857,8 +1857,7 @@ const App = {
 
     document.getElementById('create-folder-btn').addEventListener('click', () => {
       if (this.user && this.user.plan !== 'premium') {
-        this.toast('Folders are a Pro feature. Upgrade to Pro!', 'info');
-        this.openPricing();
+        this._showFolderProPrompt();
         return;
       }
       this.createFolder();
@@ -7610,6 +7609,55 @@ const App = {
         if (latest.newCount > 0 && this.currentView !== 'stories') this._storiesDirty = true;
       } catch {}
     } catch {}
+  },
+
+  _showFolderProPrompt() {
+    let overlay = document.getElementById('folder-pro-prompt');
+    if (overlay?.classList.contains('active')) return;
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'folder-pro-prompt';
+      overlay.innerHTML = `<section class="folder-pro-dialog" role="dialog" aria-modal="true" aria-labelledby="folder-pro-title" aria-describedby="folder-pro-description">
+        <button type="button" class="folder-pro-close" aria-label="Close folder offer">&times;</button>
+        <span class="folder-pro-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/><path d="M8 12h8M8 16h5"/></svg></span>
+        <p class="folder-pro-kicker">Included with Pro</p>
+        <h2 id="folder-pro-title">A place for every draft</h2>
+        <p id="folder-pro-description">Create folders to organise your sessions by project, topic or idea. Keep everything together with Pro.</p>
+        <div class="folder-pro-actions">
+          <button type="button" class="folder-pro-upgrade">Explore Pro</button>
+          <button type="button" class="folder-pro-dismiss">Not now</button>
+        </div>
+      </section>`;
+      document.body.appendChild(overlay);
+    }
+    const returnFocus = document.activeElement;
+    const workspace = document.querySelector('.app-container');
+    const wasInert = workspace?.inert;
+    const close = (restoreFocus = true) => {
+      overlay.classList.remove('active');
+      if (workspace) workspace.inert = wasInert;
+      if (restoreFocus && returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+    };
+    overlay.querySelector('.folder-pro-close').onclick = () => close();
+    overlay.querySelector('.folder-pro-dismiss').onclick = () => close();
+    overlay.querySelector('.folder-pro-upgrade').onclick = () => {
+      close(false);
+      this.openPricing();
+      const heading = document.querySelector('#view-upgrade h1');
+      heading?.setAttribute('tabindex', '-1');
+      heading?.focus({ preventScroll: true });
+    };
+    overlay.onclick = event => { if (event.target === overlay) close(); };
+    overlay.onkeydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); return; }
+      if (event.key !== 'Tab') return;
+      const buttons = [...overlay.querySelectorAll('button')];
+      if (event.shiftKey && document.activeElement === buttons[0]) { event.preventDefault(); buttons.at(-1).focus(); }
+      else if (!event.shiftKey && document.activeElement === buttons.at(-1)) { event.preventDefault(); buttons[0].focus(); }
+    };
+    if (workspace) workspace.inert = true;
+    overlay.classList.add('active');
+    overlay.querySelector('.folder-pro-upgrade').focus({ preventScroll: true });
   },
 
   async createFolder() {

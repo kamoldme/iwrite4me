@@ -126,3 +126,7 @@ The library rail now contains All plus the actual folders (including nested fold
 The existing ten-file pagination is now visible even on a single populated page, with the item range, total and page count. Temporary 23-file fixtures verified first/second/last pages, Previous, folder switching, search, hidden-document exclusion and returning to All. Free/Pro creation routes were tested with callbacks intercepted, without creating or deleting stored data. Both themes passed at 1440px (36 checks) and 800px (32 checks).
 
 Dashboard daily quota is on the same desktop row as today's word/goal progress, below online presence. Narrow layouts stack the header. Landing and writing editor hashes remain intact. No backend or production changes.
+
+## Folder Pro prompt — October 30
+
+Free-account folder creation now opens a contextual dialog instead of an imperative toast followed by an automatic pricing redirect. The prompt explains folder organisation, identifies Pro inclusion and offers Explore Pro or Not now. Close, backdrop and Escape dismiss; focus returns to the invoking control. Tab stays within the dialog and the background workspace is inert while open. Only Explore Pro opens plans and transfers focus to its heading. Premium accounts retain the existing create-folder flow. Both themes use semantic tokens and 28px dialog geometry; no animation or external asset is needed.
