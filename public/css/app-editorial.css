@@ -23,7 +23,7 @@ body.glow-dashboard .workspace-v2 :is(.workspace-page-intro,.sessions-kicker,.fr
 /* Fixed icon column and flexible label column: long names never push the icon or badge. */
 body.glow-dashboard .app-container .sidebar-v2 .sidebar-nav {padding:0 12px 12px;gap:14px;}
 body.glow-dashboard .app-container .sidebar-v2 .sidebar-logo-btn .logo-mark {object-fit:contain;border-radius:0;background:none;}
-html.dark body.glow-dashboard .app-container .sidebar-v2 .sidebar-logo-btn .logo-mark {filter:invert(1);}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-logo-btn .logo-mark {filter:none;}
 body.glow-dashboard .app-container .sidebar-v2 .sidebar-group {min-width:0;width:100%;}
 body.glow-dashboard .app-container .sidebar-v2 :is(.sidebar-compose,.sidebar-nav-item) {box-sizing:border-box;width:100%;min-width:0;flex:none;gap:10px;padding:9px 10px;border-radius:8px;min-height:40px;}
 body.glow-dashboard .app-container .sidebar-v2 .sidebar-nav-item {font-size:14px;}
