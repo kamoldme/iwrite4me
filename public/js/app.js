@@ -8368,26 +8368,42 @@ const App = {
 
   openStreakPopup() {
     const overlay = document.getElementById('streak-popup-overlay');
-    const streak = this.user?.streak || 0;
-    const best = this.user?.longestStreak || 0;
+    if (overlay.classList.contains('active')) return;
+    const streak = Math.max(0, Number(this.user?.streak) || 0);
+    const best = Math.max(streak, Number(this.user?.longestStreak) || 0);
+    const target = [3, 7, 14, 30, 60, 100, 365].find(day => day > streak) || Math.ceil((streak + 1) / 100) * 100;
     document.getElementById('streak-popup-count').textContent = streak;
-    document.getElementById('streak-popup-best').textContent = `Best: ${best} days`;
-    // Dynamic motivational message
-    let msg = 'Start writing today to begin your streak!';
-    if (streak >= 100) msg = 'Absolutely legendary. You are a writing machine!';
-    else if (streak >= 60) msg = 'Two months strong! Nothing can stop you!';
-    else if (streak >= 30) msg = 'A full month! You\'re a writing legend!';
-    else if (streak >= 14) msg = 'Two weeks! Your dedication is inspiring!';
-    else if (streak >= 7) msg = 'A whole week! Keep the momentum going!';
-    else if (streak >= 3) msg = 'You\'re on fire! Don\'t break the chain!';
-    else if (streak >= 1) msg = 'Great start! Come back tomorrow to keep it going!';
-    document.getElementById('streak-popup-message').textContent = msg;
+    document.getElementById('streak-popup-best').textContent = `Personal best · ${best} day${best === 1 ? '' : 's'}`;
+    document.getElementById('streak-milestone-title').textContent = `Next milestone · ${target} days`;
+    const remaining = target - streak;
+    document.getElementById('streak-milestone-left').textContent = `${remaining} day${remaining === 1 ? '' : 's'} to go`;
+    overlay.style.setProperty('--streak-offset', String(100 * (1 - streak / target)));
+    document.getElementById('streak-popup-message').textContent = streak >= 7
+      ? 'A steady practice, built one day at a time.' : streak > 0
+        ? 'Every day you show up, your writing grows.' : 'A little writing today can start something good.';
+    this._streakReturnFocus = document.activeElement;
+    const workspace = document.querySelector('.app-container');
+    this._streakWorkspaceWasInert = workspace?.inert;
+    if (workspace) workspace.inert = true;
+    overlay.inert = false;
+    void overlay.offsetWidth;
     overlay.classList.add('active');
-    overlay.onclick = (e) => { if (e.target === overlay) this.closeStreakPopup(); };
+    overlay.querySelector('.streak-popup-close').focus({ preventScroll: true });
+    overlay.onclick = event => { if (event.target === overlay) this.closeStreakPopup(); };
+    overlay.onkeydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); this.closeStreakPopup(); }
+      else if (event.key === 'Tab') { event.preventDefault(); overlay.querySelector('.streak-popup-close').focus(); }
+    };
   },
 
   closeStreakPopup() {
-    document.getElementById('streak-popup-overlay').classList.remove('active');
+    const overlay = document.getElementById('streak-popup-overlay');
+    if (!overlay.classList.contains('active')) return;
+    overlay.classList.remove('active');
+    overlay.inert = true;
+    const workspace = document.querySelector('.app-container');
+    if (workspace) workspace.inert = this._streakWorkspaceWasInert || false;
+    if (this._streakReturnFocus?.isConnected) this._streakReturnFocus.focus({ preventScroll: true });
   },
 
   _showLevelUpQueue(levels) {
