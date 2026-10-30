@@ -115,13 +115,13 @@
     const left = view.querySelector('.friends-left'), activity = view.querySelector('.friends-right');
     left.id = 'workspace-friends-directory'; activity.id = 'workspace-friends-activity';
     left.classList.add('workspace-panel'); activity.classList.add('workspace-panel');
-    const tabs = tabPanels([{ key: 'friends', label: 'Friends & requests', panel: left }, { key: 'activity', label: 'Activity', panel: activity }], 'Friends workspace');
-    const finder = box('workspace-friend-finder', [make('h2', '', 'Find your people'), make('p', '', 'Connect with writers and follow their progress.'), $('friends-add-toggle-btn'), $('friends-add-row')], 'aside');
+    left.prepend(make('h2', 'friends-panel-title', 'Friends & requests'));
+    view.querySelector('.friends-header').append($('friends-add-toggle-btn'));
     const body = view.querySelector('.friends-split-layout'); body.replaceChildren(left, activity);
-    view.append(box('workspace-friends-layout', [finder, box('workspace-friends-main', [tabs.nav, body])]));
+    view.append($('friends-add-row'), box('workspace-friends-layout', [body]));
     const syncEmpty = () => {
       const p = $('friends-list').querySelector('.empty-state p');
-      if (p?.textContent.includes('by their email above')) p.textContent = 'Use Add a friend to connect with another writer.';
+      if (p?.textContent.includes('by their email above')) p.innerHTML = '<strong>No friends yet</strong><span>Use Add a friend at the top right to connect with another writer.</span>';
     };
     new MutationObserver(syncEmpty).observe($('friends-list'), { childList: true, subtree: true, characterData: true }); syncEmpty();
   }

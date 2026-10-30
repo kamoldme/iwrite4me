@@ -551,6 +551,7 @@ app.get('/api/leaderboard', async (req, res) => {
           streak: liveStreak(u),
           minutesWritten,
           referralCount: u.referralCount || 0,
+          createdAt: u.createdAt || null,
           avatar: u.avatar || null,
           avatarUpdatedAt: u.avatarUpdatedAt || null,
           plan: u.plan || 'free'

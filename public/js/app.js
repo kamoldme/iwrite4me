@@ -2698,11 +2698,19 @@ const App = {
     return { key: 'legacy', label: 'LEGACY', className: 'legacy', glyphClass: 'legacy' };
   },
 
+  _sessionModeIcon(mode) {
+    const paths = {
+      normal: '<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',
+      dangerous: '<path d="M13 3c1 5-4 5-2 9 1-1 2-2 2-4 4 3 5 6 3 9a5 5 0 0 1-8-6c-1 4 1 5 2 5"/>',
+      zen: '<path d="M19 4C9 3 4 8 6 14c4 7 15 3 13-10Z"/><path d="M5 20 15 9"/>',
+      duel: '<path d="m4 3 17 17M3 4l1-1h3l13 13-4 4L3 7V4Zm17-1L3 20m18-16-1-1h-3l-4 4M8 16l-4 4m12-4 4 4"/>',
+      legacy: '<path d="M6 3h9l3 3v15H6Z"/><path d="M9 10h6M9 14h6"/>'
+    };
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[mode] || paths.legacy}</svg>`;
+  },
+
   _sessionFolderGlyph(modeGlyphClass) {
-    return `<svg class="doc-folder-glyph doc-folder-glyph-${modeGlyphClass}" width="30" height="26" viewBox="0 0 30 26" fill="none" aria-hidden="true">
-      <path class="doc-folder-glyph-back" d="M2 4a2 2 0 012-2h7l2 2.5h11a2 2 0 012 2V22a2 2 0 01-2 2H4a2 2 0 01-2-2V4z"/>
-      <path class="doc-folder-glyph-front" d="M1 9a2 2 0 012-2h24a2 2 0 012 2l-1.6 12.5A2 2 0 0125.4 23H4.6a2 2 0 01-1.98-1.5L1 9z"/>
-    </svg>`;
+    return `<span class="session-folder-mark" aria-hidden="true"><svg class="doc-folder-glyph" width="34" height="30" viewBox="0 0 30 26" fill="none"><path class="doc-folder-glyph-back" d="M2 4a2 2 0 012-2h7l2 2.5h11a2 2 0 012 2V22a2 2 0 01-2 2H4a2 2 0 01-2-2V4z"/><path class="doc-folder-glyph-front" d="M1 9a2 2 0 012-2h24a2 2 0 012 2l-1.6 12.5A2 2 0 0125.4 23H4.6a2 2 0 01-1.98-1.5L1 9z"/></svg><span class="session-folder-mode">${this._sessionModeIcon(modeGlyphClass)}</span></span>`;
   },
 
   _pinIconSvg(extraClass = '') {
@@ -2746,13 +2754,13 @@ const App = {
       const isFailed = doc.deletedBySystem;
       const modeMeta = this._getSessionModeMeta(doc.mode);
       const modeGlyphClass = modeMeta.glyphClass;
-      const leadingIcon = doc.pinned ? this._pinIconSvg('doc-pin-icon-card') : this._sessionFolderGlyph(modeGlyphClass);
+      const leadingIcon = this._sessionFolderGlyph(modeGlyphClass);
       return `
       <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}">
         <div class="doc-card-info">
           ${leadingIcon}
           <div class="doc-card-text">
-            <h4>${this.escapeHtml(doc.title)} ${isFailed ? '<span class="badge badge-failed">FAILED</span>' : ''}</h4>
+            <h4>${doc.pinned ? this._pinIconSvg('doc-pin-inline') : ''}${this.escapeHtml(doc.title)} ${isFailed ? '<span class="badge badge-failed">FAILED</span>' : ''}</h4>
             <div class="doc-card-meta">
               <span>${doc.wordCount || 0} words</span>
               <span>${this.formatDate(doc.updatedAt)}</span>
@@ -2761,7 +2769,7 @@ const App = {
           </div>
         </div>
         <div class="doc-card-right">
-          <span class="doc-mode-badge doc-mode-${modeMeta.className}">${modeMeta.label}</span>
+          <span class="doc-mode-badge doc-mode-${modeMeta.className}" role="img" aria-label="${modeMeta.label}" title="${modeMeta.label}">${this._sessionModeIcon(modeGlyphClass)}</span>
           <button class="doc-card-menu-btn" data-doc-id="${doc.id}" title="Options">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
           </button>
@@ -2989,7 +2997,7 @@ const App = {
     if (bottomBar) bottomBar.style.display = mode ? '' : 'none';
     const startBtn = document.getElementById('modal-start');
     if (startBtn) {
-      startBtn.textContent = mode === 'dangerous' ? 'I accept the risk — begin' : mode === 'duel' ? 'Find an opponent' : 'START WRITING';
+      startBtn.textContent = mode === 'dangerous' ? 'I accept the risk — begin' : mode === 'duel' ? 'Find opponent' : 'START WRITING';
       startBtn.classList.toggle('btn-danger-solid', mode === 'dangerous');
     }
     this._renderSessionQuota(this._sessionQuota);
@@ -3003,7 +3011,7 @@ const App = {
     const summaryEl = document.getElementById('mp-summary');
     if (goalEl) {
       if (mode === 'zen') {
-        goalEl.textContent = 'Zen sessions do not count toward the daily goal — that is the point.';
+        goalEl.textContent = '';
       } else if (mode === 'duel') {
         goalEl.textContent = '';
       } else {
@@ -3020,7 +3028,7 @@ const App = {
     if (summaryEl) {
       const modeLabel = { zen: 'ZEN', normal: 'NORMAL', dangerous: 'DANGEROUS', duel: 'DUEL' }[mode] || mode.toUpperCase();
       const minutes = this.sessionDuration || 0;
-      summaryEl.textContent = mode === 'duel' ? modeLabel : minutes === 0 ? `${modeLabel} · UNLIMITED` : `${modeLabel} · ${minutes} MIN`;
+      summaryEl.textContent = mode === 'duel' ? '' : mode === 'zen' ? 'ZEN · UNLIMITED' : minutes === 0 ? `${modeLabel} · UNLIMITED` : `${modeLabel} · ${minutes} MIN`;
     }
     // Duel has no duration controls or goal line; keep quota and start visible.
     const bottomLeft = document.getElementById('mp-bottom-left');
@@ -3650,7 +3658,7 @@ const App = {
 
   _sessionStartLabel() {
     return this.sessionMode === 'dangerous' ? 'I accept the risk — begin'
-      : this.sessionMode === 'duel' ? 'Find an opponent' : 'START WRITING';
+      : this.sessionMode === 'duel' ? 'Find opponent' : 'START WRITING';
   },
 
   _renderSessionQuota(quota) {
@@ -4323,11 +4331,8 @@ const App = {
     }
   },
 
-  // Board shows a single dynamic metric column per active tab (Overall=XP,
-  // Streak, Time spent, Referrals) with medal ranks in-row — no separate
-  // podium — matching the real "iWrite Dashboard v1 (approved)" design.
-  // The backend returns one page plus signed-in user's summary ranks so the
-  // browser does not download the full leaderboard just to render page 1.
+  // Overall compares each writer's public stats; focused tabs show one metric.
+  // Pagination and the signed-in user's ranks are supplied by the API.
   _renderLeaderboard(payload) {
     const rowsEl = document.getElementById('leaderboard-rows');
     const isTime = this._lbTab === 'time';
@@ -4397,12 +4402,14 @@ const App = {
         ? this._formatWritingTime(entry.minutesWritten)
         : isStreaks
           ? `${entry.streak || 0} day${entry.streak === 1 ? '' : 's'}`
-          : `${(entry.xp || 0).toLocaleString()} XP`;
+          : (entry.xp || 0).toLocaleString();
 
+    const head = document.querySelector('#leaderboard-container .lb-board-head');
+    head.innerHTML = `<span>Rank</span><span>Writer</span><span class="lb-board-metric-th" id="lb-metric-label">${metricLabel}</span>${isOverall ? '<span>Time spent</span><span>Words</span><span>Streak</span><span>Referrals</span><span>Joined</span>' : ''}`;
     rowsEl.innerHTML = data.map((entry, i) => {
       const absRank = (entry.rank || (pageOffset + i + 1)) - 1;
       const isTop3 = absRank < 3;
-      const rankLabel = absRank === 0 ? '&#x1F947;' : absRank === 1 ? '&#x1F948;' : absRank === 2 ? '&#x1F949;' : String(absRank + 1);
+      const rankLabel = `<span class="lb-rank-emblem"${isTop3 ? ' data-podium="' + (absRank + 1) + '"' : ''}>${absRank + 1}</span>`;
       const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
       const nameCell = entry.username
         ? this.profileLink(entry.username, this.escapeHtml(entry.name), 'lb-name-link')
@@ -4418,6 +4425,7 @@ const App = {
             </div>
           </div>
           <div class="lb-row-metric">${metricValue(entry)}</div>
+          ${isOverall ? `<div class="lb-extra">${this._formatWritingTime(entry.minutesWritten)}</div><div class="lb-extra">${(entry.totalWords || 0).toLocaleString()}</div><div class="lb-extra">${entry.streak || 0} days</div><div class="lb-extra">${entry.referralCount || 0}</div><div class="lb-extra">${entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'}</div>` : ''}
         </div>`;
     }).join('');
 
@@ -4433,7 +4441,7 @@ const App = {
     const noteEl = document.getElementById('lb-your-note');
     if (rankEl) rankEl.textContent = overall?.rank ? `#${overall.rank}` : '—';
     if (ofEl) ofEl.textContent = overall?.rank ? `of ${(overall.total || total).toLocaleString()}` : '';
-    if (noteEl) noteEl.textContent = overall?.rank ? this._lbPlaceNote(overall.rank - 1) : 'Complete a session to get ranked.';
+    if (noteEl) noteEl.textContent = overall?.rank ? `Top ${Math.max(1, Math.ceil(overall.rank / Math.max(1, overall.total || total) * 100))}% of writers` : 'Complete a session to get ranked.';
 
     const breakdownRow = (label, item, fmt) => `<div class="lb-rail-row"><span>${label}</span><span class="lb-rail-row-value">${item?.rank ? '#' + item.rank + ' · ' + fmt(item) : '—'}</span></div>`;
     const breakdownEl = document.getElementById('lb-rail-breakdown');
@@ -7420,7 +7428,7 @@ const App = {
       if (!visibleActivities.length) {
         this._stopActivityCycle();
         this._activityFeedSignature = '';
-        container.innerHTML = `<div class="empty-state"><p>No activity yet. Your friends' milestones will appear here!</p></div>`;
+        container.innerHTML = `<div class="empty-state"><h3>No activity yet</h3><p>Your friends’ milestones will appear here.</p></div>`;
         return;
       }
       const signature = visibleActivities.map(a => a.id || `${a.userId}-${a.type}-${a.createdAt}`).join('|');
