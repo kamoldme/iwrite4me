@@ -173,7 +173,7 @@
       const active = !!options.active;
       const extraClass = options.className || '';
       return `
-        <span class="story-metric ${active ? 'active' : ''} ${extraClass}">
+        <span class="story-metric ${active ? 'active' : ''} ${extraClass}" role="img" aria-label="${Number(count) || 0} ${icon === 'view' ? 'views' : icon === 'heart' ? 'likes' : 'comments'}" title="${icon === 'view' ? 'Views' : icon === 'heart' ? 'Likes' : 'Comments'}">
           ${renderIcon(icon, { filled: active })}
           <span>${count || 0}</span>
         </span>
@@ -424,6 +424,11 @@
       return `<div class="stories-popular-card"><h3>Most followed</h3>${rows}</div>`;
     },
 
+    async openCommunityStory(id) {
+      this.switchView('stories');
+      await this.selectStory(id);
+    },
+
     async loadTopWeek() {
       const el = document.getElementById('stories-top-week');
       if (!el) return;
@@ -431,12 +436,16 @@
         const items = await API.getTopWeekStories();
         if (!items || !items.length) { el.innerHTML = ''; return; }
         const rows = items.map(t => `
-          <div class="stories-topweek-item">
-            <div class="stories-topweek-kind">${esc(t.kind)}</div>
-            <div class="stories-topweek-title">${esc(t.title)}</div>
-            <div class="stories-topweek-by">${esc(t.authorName)} &middot; ${esc(t.metric)}</div>
-          </div>`).join('');
+          <button type="button" class="stories-topweek-item" data-topweek-story="${esc(t.id)}">
+            <span class="stories-topweek-kind">${esc(t.kind)}</span>
+            <span class="stories-topweek-title">${esc(t.title)}</span>
+            <span class="stories-topweek-by">${esc(t.authorName)}</span>
+            <span class="stories-topweek-stats">${this.renderMetric('view', t.viewCount)}${this.renderMetric('heart', t.likeCount)}${this.renderMetric('comment', t.commentCount)}</span>
+          </button>`).join('');
         el.innerHTML = `<div class="stories-popular-card"><h3>Top this week</h3>${rows}</div>`;
+        el.querySelectorAll('[data-topweek-story]').forEach(button => {
+          button.addEventListener('click', () => this.openCommunityStory(button.dataset.topweekStory));
+        });
       } catch {
         el.innerHTML = '';
       }

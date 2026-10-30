@@ -4409,7 +4409,7 @@ const App = {
     rowsEl.innerHTML = data.map((entry, i) => {
       const absRank = (entry.rank || (pageOffset + i + 1)) - 1;
       const isTop3 = absRank < 3;
-      const rankLabel = `<span class="lb-rank-emblem"${isTop3 ? ' data-podium="' + (absRank + 1) + '"' : ''}>${absRank + 1}</span>`;
+      const rankLabel = `<span class="lb-rank-emblem"${isTop3 ? ' data-podium="' + (absRank + 1) + '" role="img" aria-label="Rank ' + (absRank + 1) + '"' : ''}>${isTop3 ? ['🥇', '🥈', '🥉'][absRank] : absRank + 1}</span>`;
       const isMe = this.user && (entry.id === this.user.id || entry.name === this.user.name);
       const nameCell = entry.username
         ? this.profileLink(entry.username, this.escapeHtml(entry.name), 'lb-name-link')
@@ -5953,18 +5953,24 @@ const App = {
       return;
     }
     el.innerHTML = p.stories.map(s => `
-      <div class="up-story-card" onclick="window.location.hash='stories';setTimeout(()=>Stories.openStory&&Stories.openStory('${esc(s.id)}'),100)">
+      <article class="up-story-card" tabindex="0" role="link" data-profile-story="${esc(s.id)}" aria-label="Read ${esc(s.title)}">
         <h3 class="up-story-title">${esc(s.title)}</h3>
         <p class="up-story-excerpt">${esc(s.excerpt || '')}</p>
         <div class="up-story-meta">
           <span>${this.formatDateFull(s.publishedAt || s.updatedAt)}</span>
           <span>${s.readTimeMinutes || 1} min read</span>
-          <span>👁 ${(s.viewCount || 0).toLocaleString()}</span>
-          <span>❤ ${s.likeCount || 0}</span>
-          <span>💬 ${s.commentCount || 0}</span>
+          ${this.renderMetric('view', s.viewCount)}
+          ${this.renderMetric('heart', s.likeCount)}
+          ${this.renderMetric('comment', s.commentCount)}
         </div>
-      </div>
+      </article>
     `).join('');
+    el.querySelectorAll('[data-profile-story]').forEach(card => {
+      card.addEventListener('click', () => this.openCommunityStory(card.dataset.profileStory));
+      card.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); this.openCommunityStory(card.dataset.profileStory); }
+      });
+    });
   },
 
   async _renderProfileActivity(p, targetId) {
