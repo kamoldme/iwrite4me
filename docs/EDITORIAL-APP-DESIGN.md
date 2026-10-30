@@ -106,3 +106,15 @@ Reference: [Jaimin's paywall article](https://x.com/jaimintf/status/211513594372
 - Disabled payment continuation when no provider is available; the trial offer respects Stripe availability. Server-returned UZS prices refresh the comparison.
 
 Validation: 66 focused browser assertions across light/dark, three durations, both provider selections, trial eligibility, current subscriber controls, dialog keyboard behavior, HTTP/network failures and unavailable providers. Provider availability/account states were temporary in-memory QA fixtures; no payments were submitted or configuration changed. Visually inspected the comparison and payment dialog, including 800px width. Staging's real payment providers remain disabled. Existing unrelated resource 500 and YouTube CSP errors remain outside this change. Landing and editor baseline hashes are unchanged.
+
+## Geometry and density corrections — October 30
+
+The shared 28px override had accidentally rounded a one-sided library divider and compact menus. Keep 28px for independent cards/panels/dialogs; rails are square, while payment options, settings plan strips, upload wells and compact menus use 12px. This supersedes the earlier blanket-radius rule. Avoid rounding structural separators or applying full-card geometry to small controls.
+
+- Library empty states have separate heading/body/action spacing (10px and 18px) and bounded reading width.
+- Profile facts use an unboxed label/value grid; four compact statistic cards form one row when the content area has 680px. Below that they become two columns. Achievement text wraps, uses readable sizes and stays opaque even before earning; icons/selected surfaces retain state distinction.
+- Settings media panels align to their content heights. Empty banners use a 44px text area; uploaded banners retain their image preview and Remove action. No file storage or upload behavior changed.
+- Sidebar uses the landing mark and Nunito 900 wordmark as one line, without the tagline; collapse behavior remains.
+- Picker duration buttons, quota/reset and start share a desktop row. Removed “How long,” retaining accessible duration group names. Below 1200px durations occupy their own row, with quota and start together. All four modes retain quotas, locks and actions.
+
+Focused checks cover both themes, library filters and empty state spacing, empty/populated banner states, compact profile cards, all four picker modes, timer locks, Escape, loaded logo and sidebar collapse. Ten destinations were inspected for overflow and rounded separators at desktop and 800px in both themes. No actual writing session, upload, deletion or payment was submitted. Changes remain staging-only and exclude the landing and writing editor.
