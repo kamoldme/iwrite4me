@@ -32,7 +32,8 @@
     const view = $('view-documents'); view.classList.add('workspace-v2', 'workspace-library');
     const header = view.querySelector('.docs-header');
     const rail = make('aside', 'workspace-library-rail'); rail.setAttribute('aria-label', 'Browse sessions');
-    const folderIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>';
+    const libraryIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4v16M8 4v16M13 4v16M17 4l4 16M3 8h10M3 16h10"/></svg>';
+    const collectionIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5"/></svg>';
     const folderAdd = $('create-folder-btn');
     const folderList = $('folder-list');
     folderList.setAttribute('aria-label', 'Your folders');
@@ -40,8 +41,8 @@
     folderAdd.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
     folderAdd.setAttribute('aria-label', 'Create folder (Pro)');
     rail.append(make('h2', '', 'Your library'), $('docs-filter-pills'), box('workspace-folder-heading', [box('workspace-folder-label', [], 'span'), folderAdd]), folderList, make('p', 'workspace-folder-hint', 'Create folders with Pro to organise your writing.'));
-    rail.querySelector('.workspace-folder-label').innerHTML = folderIcon + '<span>Folders</span>';
-    rail.querySelector('h2').innerHTML = folderIcon + '<span>Your library</span>';
+    rail.querySelector('.workspace-folder-label').innerHTML = collectionIcon + '<span>Folders</span>';
+    rail.querySelector('h2').innerHTML = libraryIcon + '<span>Your library</span>';
     const tools = box('workspace-library-tools', [view.querySelector('.session-search-wrap')]);
     const toggle = make('div', 'workspace-view-toggle'); toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Session layout');
     const displayButtons = ['grid', 'list'].map(type => {
