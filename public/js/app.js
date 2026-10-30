@@ -1712,6 +1712,7 @@ const App = {
       track.querySelector('.audio-play-btn')?.setAttribute('aria-label', `Play or pause ${name}`);
     });
     this._closeSessionPopovers = () => {
+      this._dismissConfirm?.();
       ['editor-tools-menu', 'editor-audio-dropdown', 'editor-focus-dropdown', 'add-time-confirm', 'selection-popup'].forEach(id => {
         const panel = document.getElementById(id);
         if (panel) panel.style.display = 'none';
@@ -8804,19 +8805,35 @@ const App = {
   },
 
   showConfirm(message) {
+    this._dismissConfirm?.();
     return new Promise((resolve) => {
       const overlay = document.getElementById('confirm-overlay');
       const msgEl = document.getElementById('confirm-message');
+      const cancel = document.getElementById('confirm-cancel');
+      const ok = document.getElementById('confirm-ok');
+      const previousFocus = document.activeElement;
+      const finish = value => {
+        overlay.classList.remove('active');
+        document.removeEventListener('keydown', onKeyDown, true);
+        cancel.onclick = ok.onclick = null;
+        this._dismissConfirm = null;
+        if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+        resolve(value);
+      };
+      const onKeyDown = e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); finish(false); }
+        if (e.key === 'Tab') {
+          e.preventDefault(); e.stopImmediatePropagation();
+          (document.activeElement === cancel ? ok : cancel).focus();
+        }
+      };
       msgEl.textContent = message;
       overlay.classList.add('active');
-      document.getElementById('confirm-ok').onclick = () => {
-        overlay.classList.remove('active');
-        resolve(true);
-      };
-      document.getElementById('confirm-cancel').onclick = () => {
-        overlay.classList.remove('active');
-        resolve(false);
-      };
+      this._dismissConfirm = () => finish(false);
+      ok.onclick = () => finish(true);
+      cancel.onclick = () => finish(false);
+      document.addEventListener('keydown', onKeyDown, true);
+      cancel.focus({ preventScroll: true });
     });
   },
 

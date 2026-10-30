@@ -10,8 +10,14 @@
     let zoom = 100, frame = 0;
     const render = () => {
       if (!desk.clientWidth) return;
-      const width = Math.min(794, Math.max(200, desk.clientWidth - (innerWidth <= 600 ? 24 : 48)));
+      const pageless = container.classList.contains('pageless-mode');
+      const availableWidth = Math.max(200, desk.clientWidth - (innerWidth <= 600 ? 24 : 48));
+      const width = pageless ? availableWidth : Math.min(794, availableWidth);
       const set = (element, key, value) => { if (element.style[key] !== value) element.style[key] = value; };
+      const formatting = desk.querySelector('#formatting-toolbar');
+      const inset = formatting?.getClientRects().length ? formatting.offsetHeight : 0;
+      const minHeight = `${Math.max(200, desk.clientHeight - inset - 40)}px`;
+      if (paper.style.getPropertyValue('--pageless-height') !== minHeight) paper.style.setProperty('--pageless-height', minHeight);
       set(paper, 'width', `${width}px`);
       set(paper, 'transform', `scale(${zoom / 100})`);
       set(stage, 'width', `${width * zoom / 100}px`);
@@ -36,6 +42,15 @@
       const gap = parseFloat(getComputedStyle(stage).marginTop) || 0;
       desk.scrollTop = Math.max(0, stage.offsetTop - inset - gap);
     };
+    App.setPageless = enabled => {
+      container.classList.toggle('pageless-mode', !!enabled);
+      localStorage.setItem('iwrite_pageless', enabled ? '1' : '0');
+      document.getElementById('tools-pageless-row').setAttribute('aria-checked', String(!!enabled));
+      document.getElementById('tools-pageless-toggle').classList.toggle('on', !!enabled);
+      App.setPaperZoom(100);
+    };
+    document.getElementById('tools-pageless-row').onclick = () => App.setPageless(!container.classList.contains('pageless-mode'));
+    App.setPageless(localStorage.getItem('iwrite_pageless') === '1');
     document.getElementById('paper-zoom-out').onclick = () => App.setPaperZoom(zoom - 10);
     document.getElementById('paper-zoom-in').onclick = () => App.setPaperZoom(zoom + 10);
     document.getElementById('paper-zoom-reset').onclick = () => App.setPaperZoom(100);

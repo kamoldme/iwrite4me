@@ -35,7 +35,7 @@ body.glow-dashboard #editor-container.has-docked-research{right:0;}
 body.glow-dashboard #editor-container.has-docked-research .editor-toolbar{margin-right:0;}
 body.glow-dashboard #editor-container.has-docked-research .editor-body{padding-right:var(--research-width);}
 body.glow-dashboard #editor-container .editor-writing-desk{flex:1;min-width:0;min-height:0;overflow:auto;scrollbar-gutter:stable;display:flex;flex-direction:column;align-items:center;position:relative;background:var(--ui-page);}
-body.glow-dashboard #editor-container .editor-format-bar{position:sticky;top:0;z-index:10;flex:none;align-self:stretch;min-height:46px;padding:6px 16px;background:var(--ui-surface);border-color:var(--ui-edge);flex-wrap:wrap;}
+body.glow-dashboard #editor-container .editor-format-bar{position:sticky;top:0;left:0;z-index:10;flex:none;align-self:stretch;box-sizing:border-box;width:100%;min-width:0;min-height:46px;padding:6px 16px;background:var(--ui-surface);border-color:var(--ui-edge);flex-wrap:wrap;}
 body.glow-dashboard #editor-container .editor-area{flex:none;box-sizing:border-box;width:calc(100% - 48px);max-width:794px;min-height:1123px;margin:28px auto 64px;border-radius:0;padding:72px clamp(24px,5vw,72px) 96px;overflow:visible;box-shadow:0 2px 4px rgb(0 0 0/.03),0 12px 36px rgb(0 0 0/.04);background-color:var(--ui-surface);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888477' opacity='.035' filter='url(%23n)' d='M0 0h140v140H0z'/%3E%3C/svg%3E");}
 body.glow-dashboard #editor-container .editor-textarea{min-height:950px;}
 body.glow-dashboard #editor-container .editor-tabs-rail{z-index:11;padding-top:24px;}
@@ -64,12 +64,20 @@ body.glow-dashboard #editor-audio-dropdown .audio-section-label{font:600 11px/1.
 body.glow-dashboard #editor-audio-dropdown .typewriter-select-wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 body.glow-dashboard #editor-audio-dropdown .typewriter-select-label{font-size:13px;color:var(--ui-ink);}
 body.glow-dashboard #editor-audio-dropdown .typewriter-pack-select{min-width:116px;max-width:150px;min-height:36px;padding:6px;border:1px solid var(--ui-edge);border-radius:8px;background:var(--ui-field);color:var(--ui-ink);font:500 12px 'Instrument Sans',sans-serif;}
-body.glow-dashboard #editor-audio-dropdown .audio-track{display:grid;grid-template-columns:32px minmax(80px,1fr) 80px;align-items:center;gap:10px;min-height:44px;padding:4px 0;}
+body.glow-dashboard #editor-audio-dropdown .audio-track{display:grid;grid-template-columns:32px minmax(0,1fr) 80px;align-items:center;gap:12px;box-sizing:border-box;min-height:52px;padding:10px 12px;margin-block:4px;border-radius:10px;}
 body.glow-dashboard #editor-audio-dropdown .audio-track-name{font-size:13px;color:var(--ui-ink);}
 body.glow-dashboard #editor-audio-dropdown :is(.audio-play-btn,.audio-ctrl-btn){display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--ui-edge);border-radius:9px;background:var(--ui-raised);color:var(--ui-accent);}
 body.glow-dashboard #editor-audio-dropdown .audio-play-btn.playing{background:var(--ui-primary);color:var(--ui-on-primary);}
 body.glow-dashboard #editor-audio-dropdown input[type=range]{width:100%;accent-color:var(--ui-accent);}
 body.glow-dashboard #editor-audio-dropdown .audio-yt-input{min-width:0;min-height:36px;background:var(--ui-field);border-color:var(--ui-edge);color:var(--ui-ink);}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-status{margin:12px 0 0;font:400 12px/1.5 'Instrument Sans',sans-serif;color:var(--ui-muted);overflow-wrap:anywhere;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-player{margin-top:12px;width:100%;min-height:200px;background:#000;border-radius:8px;overflow:hidden;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-player iframe{display:block;width:100%;height:200px;border:0;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-player[hidden]{display:none;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-controls{align-items:center;gap:10px;min-width:0;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-controls .audio-play-btn{flex:0 0 32px;}
+body.glow-dashboard #editor-audio-dropdown .audio-yt-seek{flex:1 1 0;min-width:0;width:0;accent-color:var(--ui-accent);}
+body.glow-dashboard #editor-audio-dropdown #audio-yt-vol{flex:0 0 72px;width:72px;min-width:0;}
 body.glow-dashboard #editor-focus-dropdown .focus-drop-header{color:var(--ui-accent);border-color:var(--ui-selected-edge);background:var(--ui-selected);}
 body.glow-dashboard #editor-focus-dropdown .focus-drop-desc{color:var(--ui-muted)!important;}
 body.glow-dashboard #editor-focus-dropdown .focus-big-toggle{background:var(--ui-raised)!important;border-color:var(--ui-edge)!important;color:var(--ui-ink);}
@@ -109,7 +117,7 @@ body.glow-dashboard #danger-countdown .danger-countdown-sub{font:400 14px/1.6 'I
 body.glow-dashboard #duel-countdown-overlay h2{font:600 22px/1.3 'Archivo',sans-serif;letter-spacing:0;color:var(--ui-ink);}
 body.glow-dashboard #duel-countdown-overlay :is(.duel-countdown-vs,.duel-countdown-duration){color:var(--ui-muted);font-size:14px;}
 body.glow-dashboard #duel-countdown-overlay .duel-countdown-rules{background:var(--ui-raised);border-color:var(--ui-edge);border-radius:12px;padding:16px;margin:20px 0;font-size:13px;color:var(--ui-ink);}
-@media(max-width:1100px){body.glow-dashboard #editor-container.has-docked-research .editor-body{padding-right:0;}body.glow-dashboard #editor-container #research-drawer{box-shadow:-8px 0 24px rgb(0 0 0/.08);}}
+@media(max-width:1100px){body.glow-dashboard #editor-container{--research-width:280px;}body.glow-dashboard #editor-container.has-docked-research .editor-body{padding-right:var(--research-width);}body.glow-dashboard #editor-container #research-drawer{box-shadow:none;}}
 @media(max-width:600px){body.glow-dashboard #editor-container .editor-area{width:calc(100% - 24px);margin:16px auto 40px;min-height:calc((100vw - 24px)*1.414);padding:36px 24px 64px;}body.glow-dashboard #editor-container .editor-textarea{min-height:500px;}body.glow-dashboard #editor-container .editor-toolbar{padding:10px 12px;}body.glow-dashboard #editor-container .editor-format-bar{padding:6px 8px;gap:2px;}body.glow-dashboard :is(.session-notice-card,.danger-countdown-inner,.duel-countdown-content){padding:24px;}}
 @media(prefers-reduced-motion:reduce){body.glow-dashboard #editor-container :is(.editor-body,#research-drawer,.chrome-el),body.glow-dashboard :is(#tab-warning,#danger-countdown,#duel-countdown-overlay){transition:none!important;animation:none!important;}}
 body.glow-dashboard #title-prompt-modal{background:var(--ui-backdrop,rgb(16 28 20/.46));backdrop-filter:none;}
@@ -182,3 +190,16 @@ body.glow-dashboard #editor-container #add-time-confirm .btn-primary{background:
 body.glow-dashboard #editor-container .editor-timer-toggle{justify-content:center;width:44px;min-width:44px;height:36px;padding:6px 10px;flex:none;}
 body.glow-dashboard #editor-container .editor-add-time-btn{min-width:48px;height:36px;padding:6px 10px;font:600 13px/1 'DM Mono',monospace;white-space:nowrap;}
 @media(hover:hover){body.glow-dashboard #editor-container #add-time-confirm .btn-primary:hover{background:var(--ui-primary-hover);}body.glow-dashboard #editor-container #add-time-confirm .btn-ghost:hover{background:var(--ui-hover);}}
+/* Confirmations are also used during a session, when app chrome is hidden. */
+body.glow-dashboard #confirm-overlay{background:var(--ui-backdrop)!important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+body.glow-dashboard #confirm-overlay .confirm-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 32px));max-width:440px;padding:24px;border:1px solid var(--ui-edge);border-radius:14px!important;background:var(--ui-surface);color:var(--ui-ink);box-shadow:0 16px 48px rgb(0 0 0/.16);text-align:left;}
+body.glow-dashboard #confirm-overlay .confirm-message{margin:0 0 24px;color:var(--ui-ink);font:500 16px/1.6 'Instrument Sans',sans-serif;overflow-wrap:anywhere;}
+body.glow-dashboard #confirm-overlay .confirm-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;}
+body.glow-dashboard #confirm-overlay .btn{display:inline-flex;align-items:center;justify-content:center;min-width:88px;min-height:40px;padding:10px 16px;border:1px solid var(--ui-edge);border-radius:9px!important;box-shadow:none;font:600 14px/1.4 'Instrument Sans',sans-serif;letter-spacing:0;text-transform:none;}
+body.glow-dashboard #confirm-overlay .btn-ghost{background:var(--ui-field);color:var(--ui-ink);}
+body.glow-dashboard #confirm-overlay .btn-primary{background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent;}
+body.glow-dashboard #confirm-overlay button:focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px;}
+/* A continuous writing surface, without page edges or an A4 minimum height. */
+body.glow-dashboard #editor-container.pageless-mode .editor-paper-stage{margin-block:20px;}
+body.glow-dashboard #editor-container.pageless-mode .editor-area{min-height:var(--pageless-height,400px);padding:32px clamp(24px,5vw,72px);background-color:transparent;background-image:none;box-shadow:none;border:0;}
+body.glow-dashboard #editor-container.pageless-mode .editor-textarea{min-height:calc(var(--pageless-height,400px) - 64px);}
