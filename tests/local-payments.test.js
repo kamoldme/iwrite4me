@@ -2,7 +2,7 @@ const test=require('node:test'); const assert=require('node:assert/strict');cons
 test('local payment callbacks serialize grants, retries, cancellation and validation', {skip:process.env.RUN_STAGING_DB_TESTS!=='1'}, async()=>{
  assert.equal(process.env.STAGING_MODE,'1'); const {pool}=require('../server/utils/storage');assert.equal((await pool.query('select current_database() as name')).rows[0].name,'iwrite_staging');
  process.env.CLICK_SERVICE_ID='123';process.env.CLICK_MERCHANT_ID='merchant';process.env.CLICK_SECRET_KEY='test-click-secret';process.env.PAYME_MERCHANT_ID='test';process.env.PAYME_KEY='test-payme-secret';process.env.ATMOS_CONSUMER_KEY='test';process.env.ATMOS_CONSUMER_SECRET='test';process.env.ATMOS_STORE_ID='test';
- const express=require('express'),app=express();app.use(express.json());app.use('/click',require('../server/routes/click'));app.use('/payme',require('../server/routes/payme'));app.use('/atmos',require('../server/routes/atmos'));
+ const express=require('express'),app=express();app.use(express.json());app.use('/click',require('../server/routes/click'));app.use('/payme',require('../server/routes/payme'));app.use('/atmos',require('../server/routes/atmos'));app.use('/payments',require('../server/routes/payments'));
  const server=await new Promise(r=>{const s=app.listen(0,'127.0.0.1',()=>r(s))});const base=`http://127.0.0.1:${server.address().port}`;
  const user=crypto.randomUUID(), click=crypto.randomUUID(),cancel=crypto.randomUUID(),payme=crypto.randomUUID(),payme2=crypto.randomUUID();let ids=[click,cancel,payme,payme2];
  async function insertOrder(id,provider,extra={}){let x={id,provider,userId:user,duration:'1m',amount:1000,amountTiyin:100000,state:'pending',...extra};await pool.query('insert into payment_transactions(id,data) values($1,$2)',[id,JSON.stringify(x)])}
@@ -13,6 +13,7 @@ test('local payment callbacks serialize grants, retries, cancellation and valida
  try {
   await pool.query('insert into users(id,data) values($1,$2)',[user,JSON.stringify({id:user,email:`test-${user}@example.invalid`,plan:'free'})]);for(const id of [click,cancel])await insertOrder(id,'click');for(const id of [payme,payme2])await insertOrder(id,'payme');
   let invalid=await fetch(base+'/click/prepare',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...clickData(click,1,0),sign_string:'incorrect'})});assert.equal((await invalid.json()).error,-1);
+  assert.equal((await (await fetch(base+'/payments/config')).json()).providers.atmos,false);
   const atmos=await fetch(base+'/atmos/callback',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});assert.equal(atmos.status,503);
   assert.equal((await clickCall('prepare',clickData(click,1,0,'bad'))).error,-2);
   const prep=await Promise.all(Array.from({length:4},()=>clickCall('prepare',clickData(click,1,0))));assert(prep.every(x=>x.error===0));assert.equal(new Set(prep.map(x=>x.merchant_prepare_id)).size,1);

@@ -12,7 +12,8 @@ router.get('/config', (req, res) => {
     stripe: !!process.env.STRIPE_SECRET_KEY,
     click: !!(process.env.CLICK_SERVICE_ID && process.env.CLICK_MERCHANT_ID && process.env.CLICK_SECRET_KEY),
     payme: !!(process.env.PAYME_MERCHANT_ID && process.env.PAYME_KEY),
-    atmos: !!(process.env.ATMOS_CONSUMER_KEY && process.env.ATMOS_CONSUMER_SECRET && process.env.ATMOS_STORE_ID)
+    // Atmos stays unavailable until authenticated callback verification exists.
+    atmos: false
   };
   // A UZS price is only meaningful for the local providers.
   const uzs = { '1m': UZS_PRICES['1m'], '3m': UZS_PRICES['3m'], '6m': UZS_PRICES['6m'] };
