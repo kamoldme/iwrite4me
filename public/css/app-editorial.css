@@ -477,3 +477,7 @@ body.glow-dashboard .folder-pro-upgrade{background:var(--ui-primary);color:var(-
 body.glow-dashboard .folder-pro-dismiss{background:transparent;color:var(--ui-muted);}
 body.glow-dashboard #folder-pro-prompt button:focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px;}
 @media(hover:hover){body.glow-dashboard .folder-pro-upgrade:hover{background:var(--ui-primary-hover);}body.glow-dashboard :is(.folder-pro-dismiss,.folder-pro-close):hover{background:var(--ui-hover);color:var(--ui-ink);}}
+
+/* Avatar frames must follow the photo crop and upload overlay. */
+body.glow-dashboard #view-settings.workspace-v2 .profile-avatar-circle{border-radius:50%;aspect-ratio:1;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-avatar-circle :is(img,.profile-avatar-overlay){border-radius:inherit;}
