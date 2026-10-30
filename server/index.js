@@ -50,6 +50,7 @@ app.use(helmet({
         "'unsafe-eval'",
         'https://www.googletagmanager.com',
         'https://www.google-analytics.com',
+        'https://static.cloudflareinsights.com',
         'https://accounts.google.com',
         'https://apis.google.com',
         'https://js.stripe.com',
@@ -66,6 +67,10 @@ app.use(helmet({
       connectSrc: [
         "'self'",
         'https://www.google-analytics.com',
+        'https://www.googletagmanager.com',
+        'https://*.google-analytics.com',
+        'https://www.google.com',
+        'https://cloudflareinsights.com',
         'https://accounts.google.com',
         'https://api.stripe.com'
       ],

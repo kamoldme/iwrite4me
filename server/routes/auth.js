@@ -744,6 +744,9 @@ router.post('/google', async (req, res) => {
     if (!credential) {
       return res.status(400).json({ error: 'Credential is required' });
     }
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(503).json({ error: 'Google sign-in is not configured.' });
+    }
 
     // Verify the credential with Google
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -752,6 +755,10 @@ router.post('/google', async (req, res) => {
       audience: process.env.GOOGLE_CLIENT_ID
     });
     const payload = ticket.getPayload();
+    if (!payload || typeof payload.sub !== 'string' || !payload.sub ||
+        payload.email_verified !== true || validateEmail(normalizeEmail(payload.email))) {
+      return res.status(401).json({ error: 'Google did not provide a verified email address.' });
+    }
     const googleId = payload.sub;
     const email = normalizeEmail(payload.email);
     const name = payload.name;
@@ -762,7 +769,13 @@ router.post('/google', async (req, res) => {
     // If not found by googleId, try email
     if (!user) {
       user = await findOne('users.json', u => normalizeEmail(u.email) === email);
-      if (user && !user.googleId) {
+      if (user && user.googleId) {
+        return res.status(409).json({ error: 'This email is linked to a different Google account. Sign in with the original account.' });
+      }
+      if (user && !(email.endsWith('@gmail.com') || payload.hd)) {
+        return res.status(409).json({ error: 'Sign in with your password to access this account.' });
+      }
+      if (user) {
         // Link Google to existing email account
         await updateOne('users.json', u => u.id === user.id, {
           googleId,
