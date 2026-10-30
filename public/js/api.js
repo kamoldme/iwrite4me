@@ -506,11 +506,12 @@ const API = {
   },
 
   async getNotifications() {
-    return this.request('/stories/notifications');
+    return NotificationPolicy.filter(await this.request('/stories/notifications'));
   },
 
   async getUnreadNotifCount() {
-    return this.request('/stories/notifications/unread-count');
+    const items = await this.getNotifications();
+    return { count: items.filter(item => !item.read).length };
   },
 
   async markNotifsRead(ids = []) {

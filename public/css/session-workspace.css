@@ -154,3 +154,22 @@ body.glow-dashboard #editor-audio-dropdown .audio-separator{display:none;}
 body.glow-dashboard #editor-audio-dropdown .audio-track.active .audio-play-btn{background:var(--ui-primary);color:var(--ui-on-primary);border-color:transparent;}
 body.glow-dashboard #editor-audio-dropdown .audio-track.loading .audio-play-btn{background:var(--ui-raised);color:var(--ui-accent);}
 @media(prefers-reduced-motion:no-preference){body.glow-dashboard #editor-audio-dropdown .audio-track.loading .audio-play-btn svg{animation:session-audio-loading 800ms linear infinite;}@keyframes session-audio-loading{to{transform:rotate(360deg);}}}
+/* Paper viewport zoom: only the page is transformed; its stage owns scrolling. */
+body.glow-dashboard #editor-container .editor-writing-desk{align-items:stretch;}
+body.glow-dashboard #editor-container .editor-paper-stage{position:relative;flex:none;align-self:flex-start;margin:28px auto 64px;}
+body.glow-dashboard #editor-container .editor-paper-stage .editor-area{max-width:none;margin:0;transform-origin:top left;}
+body.glow-dashboard #editor-container .editor-paper-zoom{display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--ui-edge);border-radius:10px;transition:opacity 180ms ease;}
+body.glow-dashboard #editor-container .editor-paper-zoom button{display:grid;place-items:center;min-width:28px;height:28px;padding:0 6px;border:0;border-radius:7px;background:none;color:var(--ui-muted);font:500 13px/1 'DM Mono',monospace;cursor:pointer;}
+body.glow-dashboard #editor-container .editor-paper-zoom button:disabled{opacity:.35;cursor:default;}
+body.glow-dashboard #editor-container .editor-paper-zoom button:not(:disabled):hover{color:var(--ui-accent);background:var(--ui-selected);}
+body.glow-dashboard #editor-container.chrome-hidden .editor-paper-zoom{opacity:0;pointer-events:none;}
+body.glow-dashboard #danger-countdown{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+body.glow-dashboard #danger-countdown .danger-countdown-label{padding:0;border:0;border-radius:0;background:none;}
+/* Danger feedback belongs to the navigation edge, with hearts in the toolbar. */
+body.glow-dashboard #editor-container .danger-progress{position:relative;top:auto;left:auto;right:auto;flex:none;height:3px;min-height:3px;padding:0;margin:0;gap:0;background:var(--ui-edge-soft);z-index:31;}
+body.glow-dashboard #editor-container.dangerous-active .danger-progress{padding:0;margin:0;}
+body.glow-dashboard #editor-container .danger-progress-track{height:3px;border:0;border-radius:0;background:var(--ui-edge-soft);}
+body.glow-dashboard #editor-container .danger-progress-bar{border-radius:0;background:var(--ui-danger);}
+body.glow-dashboard #editor-container .editor-toolbar .editor-hearts{display:flex;gap:5px;padding:0 8px;margin:0;border:0;background:none;}
+@media(max-width:600px){body.glow-dashboard #editor-container .editor-paper-stage{margin:16px auto 40px;}body.glow-dashboard #editor-container .editor-paper-zoom{gap:0;}body.glow-dashboard #editor-container .editor-paper-zoom button{min-width:24px;padding:0 4px;}}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard #editor-container .editor-paper-zoom{transition:none;}}

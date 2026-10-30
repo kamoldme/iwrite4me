@@ -229,9 +229,7 @@
               <div class="doc-card-meta">
                 <span>${story.readTimeMinutes || 1} min read</span>
                 <span>${formatStoryDate(story.publishedAt || story.updatedAt || story.createdAt)}</span>
-                <span>${story.viewCount || 0} views</span>
-                <span>${story.commentCount || 0} comments</span>
-                ${story.likeCount ? `<span>${story.likeCount} likes</span>` : ''}
+                ${['published', 'hidden'].includes(story.status) ? `${this.renderMetric('view', story.viewCount)}${this.renderMetric('heart', story.likeCount)}${this.renderMetric('comment', story.commentCount)}` : ''}
               </div>
               ${story.moderationNote ? `<div class="story-card-note">${esc(story.moderationNote)}</div>` : ''}
             </div>
@@ -1238,6 +1236,61 @@
       }
     },
 
+    async openSessionStoryPicker() {
+      let dialog = document.getElementById('story-session-picker');
+      if (!dialog) {
+        dialog = document.createElement('dialog');
+        dialog.id = 'story-session-picker';
+        dialog.setAttribute('aria-labelledby', 'story-session-picker-title');
+        dialog.innerHTML = `<header class="session-picker-header"><div><h2 id="story-session-picker-title">Choose a session</h2><p>Copy your writing into a draft, then review it before publishing.</p></div><button type="button" class="session-picker-close" aria-label="Close">×</button></header><label class="session-picker-search"><span>Search saved sessions</span><input type="search" placeholder="Search your sessions" autofocus></label><div class="session-picker-results" aria-live="polite"></div><footer class="session-picker-pages"></footer>`;
+        document.body.appendChild(dialog);
+        dialog.querySelector('.session-picker-close').onclick = () => dialog.close();
+        dialog.addEventListener('click', event => {
+          const bounds = dialog.getBoundingClientRect();
+          if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) dialog.close();
+        });
+        dialog.querySelector('input').addEventListener('input', () => { this._sessionPickerPage = 1; this._renderSessionStoryPicker(); });
+      }
+      this._sessionPickerPage = 1;
+      this._sessionPickerDocuments = [];
+      dialog.querySelector('input').value = '';
+      dialog.querySelector('.session-picker-results').textContent = 'Loading sessions…';
+      dialog.querySelector('.session-picker-pages').replaceChildren();
+      if (!dialog.open) dialog.showModal();
+      const request = this._sessionPickerRequest = (this._sessionPickerRequest || 0) + 1;
+      try {
+        const documents = await API.getDocuments();
+        if (request !== this._sessionPickerRequest || !dialog.open) return;
+        this._sessionPickerDocuments = documents.filter(doc => !doc.deleted && !doc.failed && !doc.deactivatedByAdmin && doc.completed !== false)
+          .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+        this._renderSessionStoryPicker();
+      } catch {
+        if (request !== this._sessionPickerRequest || !dialog.open) return;
+        dialog.querySelector('.session-picker-results').innerHTML = '<div class="session-picker-empty">Couldn’t load sessions.<button type="button" data-session-picker-retry>Try again</button></div>';
+        dialog.querySelector('[data-session-picker-retry]').onclick = () => this.openSessionStoryPicker();
+      }
+    },
+
+    _renderSessionStoryPicker() {
+      const dialog = document.getElementById('story-session-picker');
+      if (!dialog) return;
+      const query = dialog.querySelector('input').value.trim().toLocaleLowerCase();
+      const documents = (this._sessionPickerDocuments || []).filter(doc => (doc.title || 'Untitled').toLocaleLowerCase().includes(query));
+      const pages = Math.max(1, Math.ceil(documents.length / 8));
+      const page = this._sessionPickerPage = Math.min(Math.max(this._sessionPickerPage || 1, 1), pages);
+      const start = (page - 1) * 8;
+      const list = dialog.querySelector('.session-picker-results');
+      list.innerHTML = documents.length ? documents.slice(start, start + 8).map(doc => `<button type="button" class="session-picker-option" data-session-id="${esc(doc.id)}"><span class="session-picker-doc-icon" aria-hidden="true">${renderIcon('edit')}</span><span class="session-picker-option-copy"><strong>${esc(doc.title || 'Untitled')}</strong><span>${Number(doc.wordCount || 0).toLocaleString()} words · ${formatStoryDate(doc.updatedAt || doc.createdAt)}</span></span><span class="session-picker-option-action">Create draft ${renderIcon('copy')}</span></button>`).join('') : `<div class="session-picker-empty">${query ? 'No matching sessions.' : 'No saved sessions yet.'}</div>`;
+      list.querySelectorAll('[data-session-id]').forEach(button => button.onclick = async () => {
+        if (this._creatingSessionDraft) return;
+        dialog.close();
+        await this.createStoryFromDocument(button.dataset.sessionId);
+      });
+      const footer = dialog.querySelector('.session-picker-pages');
+      footer.innerHTML = documents.length ? `<span>${start + 1}–${Math.min(start + 8, documents.length)} of ${documents.length} sessions</span><div><button type="button" data-picker-page="-1" ${page === 1 ? 'disabled' : ''} aria-label="Previous page">Previous</button><button type="button" data-picker-page="1" ${page === pages ? 'disabled' : ''} aria-label="Next page">Next</button></div>` : '';
+      footer.querySelectorAll('[data-picker-page]').forEach(button => button.onclick = () => { this._sessionPickerPage += Number(button.dataset.pickerPage); this._renderSessionStoryPicker(); list.scrollTop = 0; });
+    },
+
     async createStoryDraft() {
       try {
         const story = await API.createStory({
@@ -1256,6 +1309,8 @@
     },
 
     async createStoryFromDocument(documentId) {
+      if (this._creatingSessionDraft) return;
+      this._creatingSessionDraft = true;
       try {
         this.storyTab = 'mine';
         this.storyMineFilter = 'drafts';
@@ -1264,9 +1319,11 @@
         const story = await API.createStoryFromDocument(documentId);
         await this.loadStories();
         await this.selectStory(story.id, { openEditor: true });
-        App.toast('Session copied into Stories', 'success');
+        App.toast('Draft created. Review your writing before publishing.', 'success');
       } catch (err) {
         App.toast(err.message || 'Failed to create story from session', 'error');
+      } finally {
+        this._creatingSessionDraft = false;
       }
     },
 

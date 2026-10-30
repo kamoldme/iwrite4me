@@ -1092,8 +1092,8 @@ const App = {
 
     // Theme toggle — restore the saved theme (default: light)
     this._applyTheme(localStorage.getItem('iwrite_theme') || 'light');
-    document.getElementById('theme-toggle-btn').addEventListener('click', () => {
-      this._cycleTheme();
+    document.getElementById('theme-toggle-btn').addEventListener('click', event => {
+      this._cycleTheme(event.currentTarget);
     });
 
     // Sidebar collapse (desktop rail, 248px <-> 68px) — logo click or chevron toggles.
@@ -1133,8 +1133,8 @@ const App = {
       const collapseToggleBtn = document.getElementById('appearance-collapse-toggle');
       if (collapseToggleBtn) collapseToggleBtn.classList.toggle('on', localStorage.getItem('iwrite_sidebar_rail_collapsed') === '1');
     };
-    document.getElementById('appearance-light-btn')?.addEventListener('click', () => { this._applyTheme('light'); syncAppearanceUI(); });
-    document.getElementById('appearance-dark-btn')?.addEventListener('click', () => { this._applyTheme('dark'); syncAppearanceUI(); });
+    document.getElementById('appearance-light-btn')?.addEventListener('click', event => this._animateTheme('light', event.currentTarget));
+    document.getElementById('appearance-dark-btn')?.addEventListener('click', event => this._animateTheme('dark', event.currentTarget));
     document.getElementById('appearance-collapse-toggle')?.addEventListener('click', () => {
       const collapsed = !document.querySelector('.app-container').classList.contains('sidebar-collapsed');
       this._applySidebarCollapsed(collapsed);
@@ -1155,7 +1155,7 @@ const App = {
 
     // Community hero — delegate to the existing New Story control
     const communityPublishBtn = document.getElementById('community-hero-publish-btn');
-    if (communityPublishBtn) communityPublishBtn.addEventListener('click', () => document.getElementById('new-story-btn')?.click());
+    if (communityPublishBtn) communityPublishBtn.addEventListener('click', () => this.openSessionStoryPicker());
     const dashboardNotifBtn = document.getElementById('dashboard-notif-btn');
     if (dashboardNotifBtn) dashboardNotifBtn.addEventListener('click', (e) => this.toggleDashboardNotifications(e));
 
@@ -3047,7 +3047,7 @@ const App = {
     if (bottomBar) bottomBar.style.display = mode ? '' : 'none';
     const startBtn = document.getElementById('modal-start');
     if (startBtn) {
-      startBtn.textContent = mode === 'dangerous' ? 'I accept the risk — begin' : mode === 'duel' ? 'Find opponent' : 'START WRITING';
+      startBtn.textContent = mode === 'duel' ? 'Find opponent' : 'START WRITING';
       startBtn.classList.toggle('btn-danger-solid', mode === 'dangerous');
     }
     this._renderSessionQuota(this._sessionQuota);
@@ -3708,8 +3708,7 @@ const App = {
   },
 
   _sessionStartLabel() {
-    return this.sessionMode === 'dangerous' ? 'I accept the risk — begin'
-      : this.sessionMode === 'duel' ? 'Find opponent' : 'START WRITING';
+    return this.sessionMode === 'duel' ? 'Find opponent' : 'START WRITING';
   },
 
   _renderSessionQuota(quota) {
@@ -4102,13 +4101,13 @@ const App = {
     countEl.textContent = count.toLocaleString();
   },
 
-  async toggleDashboardNotifications(e) {
+  async toggleDashboardNotifications(e, refresh = false) {
     e?.preventDefault?.();
     e?.stopPropagation?.();
     const btn = document.getElementById('dashboard-notif-btn');
     if (!btn) return;
     const dropdown = this._ensureDashboardNotifDropdown();
-    if (dropdown.classList.contains('active')) {
+    if (dropdown.classList.contains('active') && !refresh) {
       this.closeDashboardNotifications();
       return;
     }
@@ -4116,12 +4115,15 @@ const App = {
     const rect = btn.getBoundingClientRect();
     dropdown.style.top = `${Math.round(rect.bottom + 10)}px`;
     dropdown.style.right = `${Math.max(12, Math.round(window.innerWidth - rect.right))}px`;
-    dropdown.innerHTML = '<div class="dashboard-notif-loading">Loading notifications...</div>';
+    const request = this._dashboardNotifRequest = (this._dashboardNotifRequest || 0) + 1;
+    if (!refresh) dropdown.innerHTML = '<div class="dashboard-notif-loading">Loading notifications...</div>';
+    dropdown.inert = false;
     dropdown.classList.add('active');
+    btn.setAttribute('aria-expanded', 'true');
 
     try {
       const [annRes, notifRes] = await Promise.allSettled([
-        fetch('/api/announcements?archive=1', {
+        fetch('/api/announcements', {
           headers: { 'Authorization': `Bearer ${API.getToken()}` }
         }),
         API.getNotifications()
@@ -4130,7 +4132,11 @@ const App = {
       let notifications = [];
       if (annRes.status === 'fulfilled' && annRes.value.ok) announcements = await annRes.value.json();
       if (notifRes.status === 'fulfilled' && Array.isArray(notifRes.value)) notifications = notifRes.value;
+      if (request !== this._dashboardNotifRequest || !dropdown.classList.contains('active')) return;
       const items = this._mergeDashboardNotifications(announcements, notifications);
+      clearTimeout(this._dashboardNotifExpiryTimer);
+      const expires = NotificationPolicy.nextExpiry(items);
+      if (expires) this._dashboardNotifExpiryTimer = setTimeout(() => this.toggleDashboardNotifications(undefined, true), Math.max(10, expires - Date.now() + 1));
       dropdown.innerHTML = this._renderDashboardNotifDropdown(items);
       this._syncDashboardNotifButton(items.filter(item => !item.read).length);
       dropdown.querySelectorAll('[data-dashboard-ann-id]').forEach(row => {
@@ -4165,7 +4171,8 @@ const App = {
         });
       });
     } catch {
-      dropdown.innerHTML = '<div class="dashboard-notif-empty">Failed to load notifications.</div>';
+      if (request !== this._dashboardNotifRequest) return;
+      dropdown.innerHTML = '<div class="dashboard-notif-empty">Couldn’t load notifications.</div>';
     }
   },
 
@@ -4175,6 +4182,12 @@ const App = {
     dropdown = document.createElement('div');
     dropdown.id = 'dashboard-notif-dropdown';
     dropdown.className = 'dashboard-notif-dropdown';
+    dropdown.inert = true;
+    dropdown.setAttribute('aria-label', 'Notifications');
+    document.getElementById('dashboard-notif-btn')?.setAttribute('aria-expanded', 'false');
+    dropdown.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.stopPropagation(); this.closeDashboardNotifications(); document.getElementById('dashboard-notif-btn')?.focus(); }
+    });
     document.body.appendChild(dropdown);
     dropdown.addEventListener('click', e => e.stopPropagation());
     if (!this._dashboardNotifOutsideBound) {
@@ -4182,6 +4195,11 @@ const App = {
       document.addEventListener('click', e => {
         if (!e.target.closest('#dashboard-notif-dropdown') && !e.target.closest('#dashboard-notif-btn')) {
           this.closeDashboardNotifications();
+        }
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && dropdown.classList.contains('active')) {
+          this.closeDashboardNotifications(); document.getElementById('dashboard-notif-btn')?.focus();
         }
       });
       window.addEventListener('resize', () => this.closeDashboardNotifications());
@@ -4196,7 +4214,12 @@ const App = {
   },
 
   closeDashboardNotifications() {
-    document.getElementById('dashboard-notif-dropdown')?.classList.remove('active');
+    this._dashboardNotifRequest = (this._dashboardNotifRequest || 0) + 1;
+    clearTimeout(this._dashboardNotifExpiryTimer);
+    const dropdown = document.getElementById('dashboard-notif-dropdown');
+    dropdown?.classList.remove('active');
+    if (dropdown) dropdown.inert = true;
+    document.getElementById('dashboard-notif-btn')?.setAttribute('aria-expanded', 'false');
   },
 
   _syncDashboardNotifButton(unreadCount = 0) {
@@ -4227,7 +4250,7 @@ const App = {
       storyId: n.storyId || '',
       fromUserId: n.fromUserId || ''
     }));
-    return [...notifItems, ...annItems]
+    return NotificationPolicy.filter([...notifItems, ...annItems])
       .sort((a, b) => {
         if ((a.read ? 1 : 0) !== (b.read ? 1 : 0)) return (a.read ? 1 : 0) - (b.read ? 1 : 0);
         return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
@@ -4260,7 +4283,7 @@ const App = {
 
   _renderDashboardNotifDropdown(items) {
     if (!items || items.length === 0) {
-      return `<div class="dashboard-notif-head"><strong>Notifications</strong><span data-dashboard-unread-count>0 unread</span></div><div class="dashboard-notif-empty">No notifications yet.</div>`;
+      return `<div class="dashboard-notif-head"><strong>Notifications</strong><span data-dashboard-unread-count>0 unread</span></div><div class="dashboard-notif-empty">No notifications.</div>`;
     }
     const fmtDate = iso => iso ? this._timeAgo(iso) : '';
     const unreadCount = items.filter(item => !item.read).length;
@@ -8683,17 +8706,67 @@ const App = {
 
   _applySidebarCollapsed(collapsed) {
     const container = document.querySelector('.app-container');
-    if (!container) return;
+    if (!container || container.classList.contains('sidebar-collapsed') === !!collapsed) return;
+    const main = container.querySelector('.main-content');
+    const before = main?.getBoundingClientRect().left;
+    this._sidebarMotion?.cancel();
     container.classList.toggle('sidebar-collapsed', !!collapsed);
-    // Visibility and label transitions are owned by the shell stylesheet.
-    // Keep the DOM mounted so rapid reversals can retarget smoothly.
+    if (!main || !container.classList.contains('shell-motion-ready') || innerWidth <= 768 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const delta = before - main.getBoundingClientRect().left;
+    if (Math.abs(delta) < 1) return;
+    main.style.willChange = 'transform';
+    const motion = this._sidebarMotion = main.animate([{ transform: `translateX(${delta}px)` }, { transform: 'translateX(0)' }], { duration: 220, easing: 'cubic-bezier(.2,0,0,1)' });
+    motion.finished.catch(() => {}).finally(() => {
+      if (this._sidebarMotion === motion) { this._sidebarMotion = null; main.style.willChange = ''; }
+    });
   },
 
-  _cycleTheme() {
-    let current = localStorage.getItem('iwrite_theme') || 'light';
-    if (current === 'test' || current === 'sepia') current = 'light';
-    const next = current === 'dark' ? 'light' : 'dark';
-    this._applyTheme(next);
+  async _animateTheme(theme, trigger) {
+    const root = document.documentElement;
+    if (!this._themeWave && root.classList.contains('dark') === (theme === 'dark')) {
+      this._requestedTheme = null; this._applyTheme(theme); return;
+    }
+    const token = this._themeWaveToken = (this._themeWaveToken || 0) + 1;
+    this._requestedTheme = theme;
+    this._themeWave?.skipTransition();
+    this._themeWaveAnimation?.cancel();
+    root.classList.remove('theme-wave');
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this._applyTheme(theme);
+      this._requestedTheme = null;
+      return;
+    }
+    const bounds = trigger?.getBoundingClientRect();
+    const x = bounds ? bounds.left + bounds.width / 2 : innerWidth / 2;
+    const y = bounds ? bounds.top + bounds.height / 2 : innerHeight / 2;
+    const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    root.classList.add('theme-wave');
+    try {
+      const transition = this._themeWave = document.startViewTransition(() => {
+        if (token === this._themeWaveToken) this._applyTheme(theme);
+      });
+      await transition.ready;
+      if (token !== this._themeWaveToken) return;
+      const animation = this._themeWaveAnimation = root.animate([
+        { clipPath: `circle(0px at ${x}px ${y}px)` },
+        { clipPath: `circle(${radius}px at ${x}px ${y}px)` }
+      ], { duration: 1400, easing: 'cubic-bezier(.2,0,0,1)', pseudoElement: '::view-transition-new(root)' });
+      await animation.finished.catch(() => {});
+      await transition.finished.catch(() => {});
+    } catch {
+      if (token === this._themeWaveToken) this._applyTheme(theme);
+    } finally {
+      if (token === this._themeWaveToken) {
+        root.classList.remove('theme-wave');
+        this._themeWave = null; this._themeWaveAnimation = null; this._requestedTheme = null;
+      }
+    }
+  },
+
+  _cycleTheme(trigger) {
+    const current = this._requestedTheme || (document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    const source = trigger || (document.getElementById('editor-tools-menu')?.style.display !== 'none' ? document.getElementById('tools-theme-row') : document.getElementById('editor-container')?.classList.contains('active') ? document.getElementById('editor-tools-btn') : document.getElementById('theme-toggle-btn'));
+    return this._animateTheme(current === 'dark' ? 'light' : 'dark', source);
   },
 
   async openCommentHistory() {
