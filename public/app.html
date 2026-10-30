@@ -33,7 +33,7 @@
   <link rel="stylesheet" href="/css/staging-surfaces.css?v=3">
   <link rel="stylesheet" href="/css/sidebar-redesign.css?v=2">
   <link rel="stylesheet" href="/css/workspace-pages.css?v=3">
-  <link rel="stylesheet" href="/css/app-editorial.css?v=3">
+  <link rel="stylesheet" href="/css/app-editorial.css?v=4">
 </head>
 <body class="glow-dashboard">
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
@@ -347,23 +347,23 @@
 
           <div class="dashboard-stats-row">
             <div class="dash-stat-card dash-stat-words">
-              <div class="dash-stat-emoji" aria-hidden="true"></div>
+              <div class="dash-stat-emoji" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h6"/></svg></div>
               <div class="dash-stat-value" id="total-words">0</div>
               <div class="dash-stat-label">Session Words</div>
             </div>
             <div class="dash-stat-card dash-stat-sessions" style="cursor:pointer" onclick="App.switchView('documents')" title="View all sessions">
-              <div class="dash-stat-emoji" aria-hidden="true"></div>
+              <div class="dash-stat-emoji" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="17" rx="3"/><path d="M8 2v4M16 2v4M4 10h16m-12 5 3 3 5-5"/></svg></div>
               <div class="dash-stat-value" id="total-sessions">0</div>
               <div class="dash-stat-label">Sessions Done</div>
             </div>
             <div class="dash-stat-card dash-stat-streak" style="cursor:pointer" onclick="App.openStreakPopup()">
-              <div class="dash-stat-emoji" aria-hidden="true"></div>
+              <div class="dash-stat-emoji" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3c1 5-4 5-2 9 1-2 3-2 4-4 4 4 5 8 1 12-5 4-12 0-11-5 0-3 3-5 3-7 0 3 2 3 2 3-1-4 2-6 3-8Z"/></svg></div>
               <div class="dash-stat-value" id="current-streak">0</div>
               <div class="dash-stat-label">Day Streak</div>
               <div class="dash-stat-sub" id="longest-streak-text">Best: 0</div>
             </div>
             <div class="dash-stat-card dash-stat-xp">
-              <div class="dash-stat-emoji" aria-hidden="true"></div>
+              <div class="dash-stat-emoji" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1Z"/></svg></div>
               <div class="dash-stat-value" id="total-xp">0</div>
               <div class="dash-stat-label">Total XP</div>
             </div>
@@ -415,7 +415,8 @@
                 </div>
               </div>
               <div class="dash-panel-tabs">
-                <div class="glow-rhythm-heading"><span class="glow-rhythm-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8v8M8 4v16M12 7v10M16 2v20M20 8v8"/></svg></span><div><h2>Writing rhythm</h2><p id="glow-rhythm-caption">Your saved sessions</p></div></div>
+                <div class="glow-rhythm-heading"><span class="glow-rhythm-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 18h16M5 14l5-5 4 3 5-8"/></svg></span><div><h2>Session momentum</h2><p id="glow-rhythm-caption">Your saved sessions</p></div></div>
+                <p class="session-chart-average"><strong id="glow-rhythm-average">0</strong><span>avg. words / session</span></p>
                 <div class="glow-rhythm-bars" id="glow-rhythm-bars" role="group" aria-label="Recent saved sessions"></div><p class="glow-rhythm-readout" id="glow-rhythm-readout"></p>
                 <div class="dash-panel-pane" id="dash-pane-achievements">
                   <div class="td-card-head">
@@ -1487,7 +1488,7 @@
           <!-- RIGHT PANEL: live mode lore + mode-specific real config
                (add new modes by tagging sections with data-for-mode). -->
           <div class="mp-detail" id="session-config-panel">
-            <div class="mode-detail-panel" id="mode-detail-panel">
+            <div class="mode-detail-panel" id="mode-detail-panel" tabindex="0" aria-label="Writing mode details">
               <div class="mode-detail-tag" id="mode-detail-tag"></div>
               <h3 class="mode-detail-figure" id="mode-detail-figure"></h3>
               <div class="mode-detail-kicker" id="mode-detail-kicker"></div>
@@ -1549,8 +1550,14 @@
         <!-- Bottom bar: duration chips + summary/start — matches the design's
              separate "How long" section below the grid+detail row. -->
         <section class="mp-bottom" id="mp-bottom">
-          <div class="mp-bottom-left" id="mp-bottom-left">
+          <div class="mp-duration-heading">
             <div class="mp-config-label" id="mp-duration-label">How long</div>
+            <div class="session-quota" id="session-quota" aria-live="polite">
+              <span id="session-quota-message">Checking today's sessions…</span>
+              <small id="session-quota-reset"></small>
+            </div>
+          </div>
+          <div class="mp-bottom-left" id="mp-bottom-left">
             <div class="time-presets" id="time-presets" data-for-mode="normal">
               <button class="time-preset" data-minutes="5">5 min</button>
               <button class="time-preset" data-minutes="15">15 min</button>
@@ -1575,10 +1582,6 @@
             <div class="mp-goal-line" id="mp-goal-line"></div>
           </div>
           <div class="mp-bottom-right">
-            <div class="session-quota" id="session-quota" aria-live="polite">
-              <span id="session-quota-message">Checking today's sessions…</span>
-              <small id="session-quota-reset"></small>
-            </div>
             <div class="mp-summary" id="mp-summary"></div>
             <button class="mp-start-btn" id="modal-start">Begin writing</button>
           </div>
@@ -1903,7 +1906,7 @@
   <script src="/js/editor.js?v=danger-finish-1"></script>
   <script src="/js/app.js?v=staging-chrome-2"></script>
   <script src="/js/stories.js?v=21"></script>
-  <script src="/js/glow-widgets.js?v=3"></script>
+  <script src="/js/glow-widgets.js?v=4"></script>
   <script src="/js/staging-chrome.js?v=6"></script>
   <script src="/js/workspace-pages.js?v=4"></script>
   <script>

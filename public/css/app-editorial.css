@@ -70,17 +70,15 @@ html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-start-btn {font-s
 html:not(.dark) body.glow-dashboard #view-dashboard .glow-document {border-radius:10px;min-height:76px;padding:16px;background:var(--ui-surface);}
 html:not(.dark) body.glow-dashboard #view-dashboard .glow-doc-copy>span {font-size:12px;color:var(--ui-muted);}
 html:not(.dark) body.glow-dashboard #view-dashboard .dash-row-top {grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:start;gap:20px;}
-html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-card {min-height:0;height:238px;aspect-ratio:auto;padding:24px;}
-html:not(.dark) body.glow-dashboard #view-dashboard #glow-dial {inset:auto 24px 74px;height:7px;background:var(--ui-raised);border-radius:4px;overflow:hidden;}
-html:not(.dark) body.glow-dashboard #view-dashboard #glow-dial svg {display:none;}
-html:not(.dark) body.glow-dashboard #view-dashboard #glow-dial::after {content:'';display:block;height:100%;width:var(--goal-progress,0%);background:var(--ui-accent);border-radius:inherit;}
-html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-text {padding:24px;align-items:flex-start;text-align:left;}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-card {min-height:440px;height:440px;aspect-ratio:auto;padding:0;border-radius:28px;background:radial-gradient(ellipse at 50% 57%,#e2efdd 0%,#f1f6ed 45%,#fff 78%);box-shadow:0 8px 24px rgb(37 73 43 / .04);}
 html:not(.dark) body.glow-dashboard #view-dashboard .glow-goal-label {font:600 17px/1.4 'Archivo',sans-serif;color:var(--ui-ink);}
-html:not(.dark) body.glow-dashboard #view-dashboard .glow-goal-percent {top:68px;left:24px;right:auto;font-size:38px;font-weight:500;letter-spacing:-.03em;}
-html:not(.dark) body.glow-dashboard #view-dashboard .glow-goal-percent>span {color:var(--ui-muted);}
-html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-count {top:117px;left:24px;right:auto;color:var(--ui-muted);font-size:13px;}
-html:not(.dark) body.glow-dashboard #view-dashboard .td-progress-head {bottom:24px;left:24px;right:110px;color:var(--ui-muted);font-size:12px;line-height:1.5;}
-html:not(.dark) body.glow-dashboard #view-dashboard #td-edit-goal-btn {bottom:17px;right:18px;min-height:36px;border-radius:7px;padding:8px 12px;background:none;border-color:var(--ui-edge);color:var(--ui-ink);font-size:13px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-goal-percent {color:#254d36;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-goal-percent>span {color:#566f58;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-dial-tick {stroke:#c9d7c7;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-dial-tick.lit {stroke:#4d7b4e;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-dial-knob circle:first-child {fill:#528052;opacity:.17;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-dial-knob circle:last-child {fill:#39663f;}
+html:not(.dark) body.glow-dashboard #view-dashboard #td-edit-goal-btn {background:#e5efdf;color:#315638;border-color:#b7cbb0;}
 html:not(.dark) body.glow-dashboard #view-dashboard .td-reflection-card {grid-column:1;grid-row:2;padding:22px 24px;margin:0;}
 html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky {background:none;box-shadow:none;transform:none;padding:12px 0 0;}
 html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky p {font:400 19px/1.55 Georgia,serif;color:var(--ui-ink);}
@@ -261,3 +259,57 @@ body.glow-dashboard #view-stories.workspace-v2 .community-avatar-fallback{displa
 body.glow-dashboard .app-container :is(.pro-badge-inline,.pro-nav-badge,.lb-pro-badge,.pro-inline-badge,.profile-plan-badge.pro,.plan-badge.pro .plan-badge-pill){background:var(--ui-primary)!important;color:var(--ui-on-primary)!important;}
 @media(max-width:1100px){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-feed-panel{grid-template-columns:1fr;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-rail{grid-column:1;grid-row:2;position:static;display:grid;grid-template-columns:1fr 1fr;border-left:0;border-top:1px solid var(--ui-edge);padding:24px 0 0;}}
 @media(max-width:960px){body.glow-dashboard #view-upgrade .upgrade-cards{grid-template-columns:1fr!important;}body.glow-dashboard #view-upgrade .upgrade-hero{padding:56px 0 32px;}}
+
+/* Session history is a dated chart, not an audio waveform. */
+body.glow-dashboard #view-dashboard .dash-panel-tabs{--session-line:#a9bfff;background:#10151d;border-radius:28px;box-shadow:none;padding:26px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dash-panel-tabs{--session-line:#526ca4;background:#fff;border-radius:28px;}
+body.glow-dashboard #view-dashboard .glow-rhythm-heading .glow-rhythm-mark{width:40px;height:40px;background:rgb(128 158 237 / .12);color:var(--session-line);border-radius:12px;box-shadow:none;}
+body.glow-dashboard #view-dashboard .glow-rhythm-heading h2{font:600 19px/1.3 'Archivo',sans-serif;color:var(--ui-ink);}
+body.glow-dashboard #view-dashboard .glow-rhythm-heading p{color:var(--ui-muted);font-size:12px;}
+body.glow-dashboard #view-dashboard .session-chart-average{display:flex;align-items:baseline;gap:10px;margin:12px 0 0;color:var(--ui-muted);font:400 12px/1.5 'Instrument Sans',sans-serif;}
+body.glow-dashboard #view-dashboard .session-chart-average strong{font-size:32px;font-weight:550;letter-spacing:-.03em;color:var(--ui-ink);font-variant-numeric:tabular-nums;}
+body.glow-dashboard #view-dashboard #glow-rhythm-bars{position:relative;display:block;height:190px;width:100%;margin:12px 0 0;color:var(--session-line);}
+body.glow-dashboard #view-dashboard #glow-rhythm-bars>svg{width:100%;height:100%;display:block;overflow:visible;}
+body.glow-dashboard #view-dashboard #glow-rhythm-bars svg text{fill:var(--ui-muted);font:11px 'Instrument Sans',sans-serif;}
+body.glow-dashboard #view-dashboard .session-chart-grid{stroke:var(--ui-edge);stroke-width:1;stroke-dasharray:3 5;vector-effect:non-scaling-stroke;}
+body.glow-dashboard #view-dashboard .session-chart-point{position:absolute;transform:translate(-50%,-50%);width:24px;min-width:0;height:24px;padding:0;border:0;border-radius:50%;background:none;color:var(--session-line);cursor:pointer;display:grid;place-items:center;}
+body.glow-dashboard #view-dashboard .session-chart-point::before{content:'';width:6px;height:6px;background:var(--session-line);border:2px solid var(--ui-surface);border-radius:50%;}
+body.glow-dashboard #view-dashboard .session-chart-point[aria-pressed=true]::before{width:10px;height:10px;background:var(--ui-surface);border-color:var(--session-line);box-shadow:0 0 0 4px rgb(128 158 237 / .14);}
+body.glow-dashboard #view-dashboard .session-chart-point:focus-visible{outline:2px solid var(--session-line);outline-offset:2px;}
+body.glow-dashboard #view-dashboard .session-chart-dates{position:absolute;left:9.3%;right:9.3%;bottom:0;display:flex;justify-content:space-between;gap:12px;color:var(--ui-muted);font-size:11px;pointer-events:none;}
+body.glow-dashboard #view-dashboard .glow-rhythm-readout{font:400 12px/1.5 'Instrument Sans',sans-serif;color:var(--ui-muted);margin:12px 0 22px;}
+body.glow-dashboard #view-dashboard .session-chart-empty{margin:0;padding:54px 20px;text-align:center;border:1px dashed var(--ui-edge);border-radius:12px;color:var(--ui-muted);font-size:14px;}
+body.glow-dashboard #view-dashboard #dash-pane-achievements{border-top:1px solid var(--ui-edge);padding-top:18px;}
+/* Numerals lead; small bespoke icons distinguish the four existing metrics. */
+body.glow-dashboard #view-dashboard .dashboard-stats-row{gap:12px;padding:0;border:0;}
+body.glow-dashboard #view-dashboard .dashboard-stats-row .dash-stat-card{--stat-color:#a5d7b6;display:grid;grid-template-columns:minmax(0,1fr) 38px;grid-template-rows:auto auto 18px;align-content:start;align-items:center;column-gap:8px;row-gap:10px;padding:20px;min-height:150px;border:1px solid var(--ui-edge);border-radius:16px;background:var(--ui-surface);box-shadow:none;}
+body.glow-dashboard #view-dashboard .dashboard-stats-row .dash-stat-sessions{--stat-color:#a9bfff;}
+body.glow-dashboard #view-dashboard .dashboard-stats-row .dash-stat-streak{--stat-color:#f1bd82;}
+body.glow-dashboard #view-dashboard .dashboard-stats-row .dash-stat-xp{--stat-color:#d1b3ed;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-stats-row .dash-stat-card{--stat-color:#38724c;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-stats-row .dash-stat-sessions{--stat-color:#526ca4;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-stats-row .dash-stat-streak{--stat-color:#9b641f;}
+html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-stats-row .dash-stat-xp{--stat-color:#81529a;}
+body.glow-dashboard #view-dashboard .dash-stat-card .dash-stat-emoji{display:grid;place-items:center;grid-column:2;grid-row:1/3;align-self:start;width:38px;height:38px;margin:0;border-radius:12px;background:color-mix(in srgb,var(--stat-color) 12%,transparent);color:var(--stat-color);filter:none;}
+body.glow-dashboard #view-dashboard .dash-stat-emoji svg{width:23px;height:23px;}
+body.glow-dashboard #view-dashboard .dash-stat-card .dash-stat-value{grid-column:1/-1;grid-row:2;font:550 clamp(32px,3.2vw,44px)/1.1 'Instrument Sans',sans-serif;color:var(--ui-ink);letter-spacing:-.04em;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere;}
+body.glow-dashboard #view-dashboard .dash-stat-card .dash-stat-label{grid-column:1;grid-row:1;font-size:13px;color:var(--ui-muted);}
+body.glow-dashboard #view-dashboard .dash-stat-card .dash-stat-sub{grid-column:1/-1;grid-row:3;font-size:12px;color:var(--stat-color);}
+@media(max-width:1100px){body.glow-dashboard #view-dashboard .dashboard-stats-row{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+/* Keep allowance beside the duration heading and reserve one row for all tab timers. */
+body.glow-dashboard #session-modal .mp-bottom{row-gap:14px;}
+body.glow-dashboard #session-modal .mp-duration-heading{grid-column:1/-1;justify-self:stretch;display:flex;align-items:center;flex-wrap:wrap;gap:8px 24px;}
+body.glow-dashboard #session-modal .mp-duration-heading .mp-config-label{margin:0;}
+body.glow-dashboard #session-modal .session-quota{margin:0;min-height:0;align-items:flex-start;text-align:left;gap:1px;}
+body.glow-dashboard #session-modal #tab-timer-presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding-top:8px;}
+body.glow-dashboard #session-modal #tab-timer-presets .time-preset{min-width:0;width:100%;min-height:38px;padding:8px 3px;font-size:12px;white-space:nowrap;}
+body.glow-dashboard #session-modal .timer-pro-badge{background:var(--ui-primary)!important;color:var(--ui-on-primary)!important;}
+body.glow-dashboard #session-modal #tab-timer-presets .timer-pro-badge{right:2px!important;font-size:8px!important;}
+/* Keep timer controls reachable on short laptop screens; scroll the explanation above them. */
+@media(max-height:850px) and (min-width:801px){
+ body.glow-dashboard #session-modal .mp-detail{overflow:visible;}
+ body.glow-dashboard #session-modal .mode-detail-panel{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:thin;}
+ body.glow-dashboard #session-modal .mp-detail>.config-section{flex:0 0 auto;}
+}
+body.glow-dashboard #session-modal .mode-detail-panel:focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px;}

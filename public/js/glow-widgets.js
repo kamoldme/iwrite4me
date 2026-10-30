@@ -94,21 +94,46 @@
   }
   function renderRhythm() {
     const sessions = docs().slice().sort((a, b) => dateOf(a) - dateOf(b)).slice(-20);
+    const plot = $('glow-rhythm-bars');
     const max = Math.max(...sessions.map(words), 1);
-    setText('glow-rhythm-caption', sessions.length ? `Your last ${sessions.length} saved sessions` : 'Your next session starts the rhythm');
-    $('glow-rhythm-bars').replaceChildren(...sessions.map((doc, i) => {
-      const bar = document.createElement('button'); bar.type = 'button'; bar.className = 'glow-rhythm-bar';
-      bar.style.setProperty('--bar-height', `${Math.max(8, words(doc) / max * 72)}px`);
+    const average = sessions.length ? Math.round(sessions.reduce((sum, doc) => sum + words(doc), 0) / sessions.length) : 0;
+    setText('glow-rhythm-caption', sessions.length ? `Words in your last ${sessions.length} saved sessions` : 'Your saved sessions will appear here');
+    setText('glow-rhythm-average', average.toLocaleString());
+    plot.replaceChildren();
+    if (!sessions.length) {
+      const empty = document.createElement('p'); empty.className = 'session-chart-empty';
+      empty.textContent = 'Save a session to begin your graph.'; plot.append(empty);
+      setText('glow-rhythm-readout', 'No saved sessions yet'); return;
+    }
+    const points = sessions.map((doc, i) => [48 + (sessions.length === 1 ? 210 : i * 420 / (sessions.length - 1)), 156 - words(doc) / max * 126]);
+    const line = smoothPath(points);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 516 190'); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = `<defs><linearGradient id="session-chart-area" x1="0" y1="0" x2="0" y2="1"><stop stop-color="currentColor" stop-opacity=".18"/><stop offset="1" stop-color="currentColor" stop-opacity=".02"/></linearGradient></defs>${[30,93,156].map(y => `<path class="session-chart-grid" d="M48 ${y}H468"/>`).join('')}<text x="2" y="34">${max.toLocaleString()}</text><text x="2" y="160">0</text><path d="${line} L${points.at(-1)[0]},156 L${points[0][0]},156Z" fill="url(#session-chart-area)"/><path d="${line}" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke"/>`;
+    plot.append(svg);
+    const buttons = sessions.map((doc, i) => {
+      const point = document.createElement('button'); point.type = 'button'; point.className = 'session-chart-point';
+      point.style.left = `${points[i][0] / 516 * 100}%`; point.style.top = `${points[i][1] / 190 * 100}%`;
       const label = `${shortDate(dateOf(doc))} · ${words(doc).toLocaleString()} words`;
-      bar.setAttribute('aria-label', label); bar.title = label;
+      point.setAttribute('aria-label', label);
       const select = () => {
         setText('glow-rhythm-readout', label);
-        $('glow-rhythm-bars').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === bar)));
+        plot.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === point)));
       };
-      bar.addEventListener('pointerenter', select); bar.addEventListener('focus', select); bar.addEventListener('click', select);
-      bar.setAttribute('aria-pressed', String(i === sessions.length - 1)); return bar;
-    }));
-    setText('glow-rhythm-readout', sessions.length ? `${shortDate(dateOf(sessions.at(-1)))} · ${words(sessions.at(-1)).toLocaleString()} words` : 'No saved sessions yet');
+      point.addEventListener('pointerenter', select); point.addEventListener('focus', select); point.addEventListener('click', select);
+      point.addEventListener('keydown', event => {
+        if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? sessions.length - 1 : Math.max(0, Math.min(sessions.length - 1, i + (event.key === 'ArrowLeft' ? -1 : 1)));
+        buttons[next].focus();
+      });
+      point.setAttribute('aria-pressed', String(i === sessions.length - 1)); return point;
+    });
+    plot.append(...buttons);
+    const dates = document.createElement('div'); dates.className = 'session-chart-dates';
+    for (const doc of [sessions[0], sessions.at(-1)]) { const date = document.createElement('span'); date.textContent = shortDate(dateOf(doc)); dates.append(date); }
+    plot.append(dates);
+    setText('glow-rhythm-readout', `${shortDate(dateOf(sessions.at(-1)))} · ${words(sessions.at(-1)).toLocaleString()} words`);
   }
   const ticks = Array.from({ length: 49 }, (_, i) => {
     const angle = (-135 + 270 * i / 48) * Math.PI / 180;
