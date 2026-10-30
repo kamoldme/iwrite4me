@@ -3,12 +3,13 @@
 .auth-intro { flex: 1 1 50%; position: relative; display: grid; place-items: center; min-width: 0; overflow: hidden; background: #f2f1e9; }
 .auth-illustrations { position: absolute; inset: 0; overflow: hidden; }
 .auth-illustration { position: absolute; inset: -5px; background-size: cover; background-position: center bottom; filter: blur(1.2px); opacity: 0; animation: auth-illustration-swipe 18s ease-in-out infinite; }
-.auth-illustration:nth-child(2) { animation-delay: 6s; }
-.auth-illustration:nth-child(3) { animation-delay: 12s; }
+.auth-illustration:nth-child(2) { animation-delay: -12s; }
+.auth-illustration:nth-child(3) { animation-delay: -6s; }
 @keyframes auth-illustration-swipe {
-  0% { opacity: 0; transform: translateX(2%); }
-  5%, 28% { opacity: 1; transform: translateX(0); }
-  34%, 100% { opacity: 0; transform: translateX(-2%); }
+  0%, 27% { opacity: 1; transform: translateX(0); }
+  33% { opacity: 0; transform: translateX(-2%); }
+  94% { opacity: 0; transform: translateX(2%); }
+  100% { opacity: 1; transform: translateX(0); }
 }
 .auth-intro-logo { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 15px; color: #203450; text-decoration: none; font: 800 clamp(32px, 3.4vw, 48px)/1 'Nunito', sans-serif; }
 .auth-intro-logo img { width: clamp(42px, 4.3vw, 58px); height: auto; }
