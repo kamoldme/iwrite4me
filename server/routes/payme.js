@@ -147,7 +147,11 @@ async function cancelTransaction(params, reply, fail) {
   const result = await cancelPayme(order.id, params.id, params.reason);
   if (result.status === 'missing') return fail(rpcError(-31003, 'Transaction not found'));
   if (result.status !== 'cancelled') return fail(rpcError(-31008, 'Unable to cancel in current state'));
-  // Refunds after fulfillment retain the existing manual entitlement review policy.
+  if (result.order.entitlementReviewRequired) {
+    console.error('[payme] Refunded order requires entitlement review:', result.order.id);
+  }
+  // Overlapping or legacy entitlements are flagged for review rather than
+  // risking the removal of a separate purchase.
   return reply({ transaction: result.order.id, cancel_time: result.order.paymeCancelTime, state: result.order.paymeState });
 }
 

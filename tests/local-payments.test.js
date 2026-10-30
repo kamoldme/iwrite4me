@@ -26,6 +26,12 @@ test('local payment callbacks serialize grants, retries, cancellation and valida
   const raceId='race-'+user;const collision=await Promise.all([raceA,raceB].map(order_id=>rpc('CreateTransaction',{id:raceId,time:Date.now(),amount:100000,account:{order_id}})));assert.equal(collision.filter(x=>x.result?.state===1).length,1);assert.equal(collision.filter(x=>x.error).length,1);
   let performs=await Promise.all(Array.from({length:5},()=>rpc('PerformTransaction',{id:params.id})));assert(performs.every(x=>x.result?.state===2));assert.equal(new Set(performs.map(x=>x.result.perform_time)).size,1);
   const firstCancel=await rpc('CancelTransaction',{id:params.id,reason:1}),secondCancel=await rpc('CancelTransaction',{id:params.id,reason:1});assert.equal(firstCancel.result.state,-2);assert.equal(secondCancel.result.cancel_time,firstCancel.result.cancel_time);assert((await rpc('PerformTransaction',{id:params.id})).error);
-  const u=(await pool.query('select data from users where id=$1',[user])).rows[0].data;const days=(new Date(u.planExpiresAt)-Date.now())/86400000;assert(days>59.9 && days<=60.01);
+  const u=(await pool.query('select data from users where id=$1',[user])).rows[0].data;const days=(new Date(u.planExpiresAt)-Date.now())/86400000;assert(days>29.9 && days<=30.01);
+  const reversed=(await pool.query('select data from payment_transactions where id=$1',[payme])).rows[0].data;assert(reversed.entitlementReversedAt);assert(!reversed.entitlementReviewRequired);
+  const secondId='review-'+user;assert((await rpc('CreateTransaction',{...params,id:secondId,account:{order_id:payme2}})).result);assert((await rpc('PerformTransaction',{id:secondId})).result);
+  await pool.query("update users set data=jsonb_set(data, '{planSource}', to_jsonb('admin'::text)) where id=$1",[user]);
+  assert.equal((await rpc('CancelTransaction',{id:secondId,reason:1})).result.state,-2);
+  const review=(await pool.query('select data from payment_transactions where id=$1',[payme2])).rows[0].data;assert.equal(review.entitlementReviewRequired,true);
+  assert.equal((await pool.query('select data from users where id=$1',[user])).rows[0].data.planSource,'admin');
  } finally {await new Promise(r=>server.close(r));await new Promise(r=>setTimeout(r,150));await pool.query("delete from logs where data->>'userId'=$1",[user]);await pool.query('delete from payment_transactions where id=any($1::uuid[])',[ids]);await pool.query('delete from users where id=$1',[user]);await pool.end();}
 });

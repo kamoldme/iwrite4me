@@ -30,6 +30,8 @@ async function grant(client,order,provider,now) {
   const expiresAt=user.planExpiresAt==='infinite' ? 'infinite' : new Date(base.getTime()+days*86400000).toISOString();
   const updates={plan:'premium',planDuration:order.duration,planStartedAt:now.toISOString(),planExpiresAt:expiresAt,planSource:provider,planPaymentFailed:false,planPaymentAttempts:0,lastPaymentProvider:provider,lastPaymentAt:now.toISOString()};
   await client.query('UPDATE users SET data=data || $2::jsonb WHERE id=$1',[order.userId,JSON.stringify(updates)]);
+  const keys = Object.keys(updates);
+  return { before: Object.fromEntries(keys.map(key => [key, user[key] ?? null])), after: updates };
 }
 async function prepareClick(orderId,request) {
   return withOrder(orderId,'click',async(client,order)=>{
@@ -75,8 +77,8 @@ async function performPayme(orderId,transactionId) {
     if(order.paymeTransId!==transactionId) return {status:'missing'};
     if(order.paymeState===2) return {status:'paid',order};
     if(order.paymeState!==1) return {status:'invalid'};
-    const now=new Date(),time=now.getTime();await grant(client,order,'payme',now);
-    const changes={paymeState:2,paymePerformTime:time,state:'paid',paidAt:now.toISOString()};
+    const now=new Date(),time=now.getTime();const entitlement=await grant(client,order,'payme',now);
+    const changes={paymeState:2,paymePerformTime:time,state:'paid',paidAt:now.toISOString(),entitlement};
     await updateOrder(client,order.id,changes);return {status:'completed',order:{...order,...changes}};
   });
 }
@@ -86,6 +88,22 @@ async function cancelPayme(orderId,transactionId,reason) {
     if(order.paymeState===-1 || order.paymeState===-2) return {status:'cancelled',order};
     if(order.paymeState!==1 && order.paymeState!==2) return {status:'invalid'};
     const changes={paymeState:order.paymeState===2?-2:-1,paymeCancelTime:Date.now(),paymeCancelReason:reason,state:'cancelled'};
+    if (order.paymeState === 2) {
+      const result = await client.query('SELECT data FROM users WHERE id=$1 FOR UPDATE', [order.userId]);
+      const user = result.rows[0]?.data, saved = order.entitlement;
+      // Restore only if no subsequent operation has changed the grant. Older
+      // orders and overlapping purchases require review to protect paid time.
+      if (user && saved?.before && saved?.after && Object.keys(saved.after).every(key => (user[key] ?? null) === (saved.after[key] ?? null))) {
+        const previous = { ...saved.before };
+        if (previous.plan === 'premium' && previous.planExpiresAt && previous.planExpiresAt !== 'infinite' && new Date(previous.planExpiresAt) <= new Date()) {
+          previous.plan = 'free';
+        }
+        await client.query('UPDATE users SET data=data || $2::jsonb WHERE id=$1', [order.userId, JSON.stringify(previous)]);
+        changes.entitlementReversedAt = new Date().toISOString();
+      } else {
+        changes.entitlementReviewRequired = true;
+      }
+    }
     await updateOrder(client,order.id,changes);return {status:'cancelled',order:{...order,...changes}};
   });
 }
