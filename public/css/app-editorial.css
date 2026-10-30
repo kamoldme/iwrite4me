@@ -481,3 +481,64 @@ body.glow-dashboard #folder-pro-prompt button:focus-visible{outline:2px solid va
 /* Avatar frames must follow the photo crop and upload overlay. */
 body.glow-dashboard #view-settings.workspace-v2 .profile-avatar-circle{border-radius:50%;aspect-ratio:1;}
 body.glow-dashboard #view-settings.workspace-v2 .profile-avatar-circle :is(img,.profile-avatar-overlay){border-radius:inherit;}
+
+/* Friends: header action, directory and activity visible together. */
+body.glow-dashboard #view-friends.workspace-v2 .friends-header{display:flex;align-items:center;justify-content:space-between;gap:24px;}
+body.glow-dashboard #view-friends #friends-add-toggle-btn{border-radius:14px;min-height:44px;flex:none;}
+body.glow-dashboard #view-friends .workspace-friends-layout{display:block;}
+body.glow-dashboard #view-friends .friends-split-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:28px;align-items:stretch;}
+body.glow-dashboard #view-friends :is(.friends-panel-title,.friends-right-label){font:600 18px/1.4 'Archivo',sans-serif;color:var(--ui-ink);margin:0 0 20px;}
+body.glow-dashboard #view-friends #workspace-friends-activity{padding:0 0 0 28px;border-left:1px solid var(--ui-edge);}
+body.glow-dashboard #view-friends #friends-list:has(.empty-state){display:flex;min-height:240px;align-items:center;justify-content:center;}
+body.glow-dashboard #view-friends #activity-feed:has(.empty-state){display:flex;align-items:center;justify-content:center;min-height:280px;}
+body.glow-dashboard #view-friends :is(#friends-list,#activity-feed) .empty-state{background:none;padding:24px;text-align:center;max-width:340px;}
+body.glow-dashboard #view-friends .empty-state p{display:flex;flex-direction:column;gap:10px;line-height:1.6;}
+body.glow-dashboard #view-friends .empty-state strong{color:var(--ui-ink);font-weight:600;}
+body.glow-dashboard #view-friends #friends-add-row{margin:0 0 24px;}
+body.glow-dashboard #view-friends #friend-email-input{flex:1 1 240px;}
+/* Equal height media panels are an intentional settings pair. */
+body.glow-dashboard #view-settings .workspace-settings-media{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;}
+body.glow-dashboard #view-settings .workspace-settings-media>:is(.profile-section,.profile-avatar-section){align-self:stretch;height:auto;margin:0;}
+body.glow-dashboard #view-settings .profile-section:has(#profile-banner-preview){display:flex;flex-direction:column;}
+body.glow-dashboard #view-settings .profile-section:has(#profile-banner-preview)>div:last-child{margin-top:auto;padding-top:16px;}
+body.glow-dashboard #view-upgrade .sub-history-btn{line-height:1;}
+body.glow-dashboard #view-upgrade .sub-history-btn :is(svg,span){display:inline-flex;align-items:center;justify-content:center;flex:none;vertical-align:middle;line-height:1;}
+/* One green folder family, with a mode glyph instead of colour-coded labels. */
+body.glow-dashboard #view-documents .session-folder-mark{position:relative;display:block;width:34px;height:30px;color:var(--ui-accent);flex:none;}
+body.glow-dashboard #view-documents .session-folder-mark .doc-folder-glyph-back{fill:var(--ui-accent);}
+body.glow-dashboard #view-documents .session-folder-mark .doc-folder-glyph-front{fill:var(--ui-selected-edge);}
+body.glow-dashboard #view-documents .session-folder-mode{position:absolute;bottom:1px;right:-2px;display:grid;place-items:center;width:18px;height:18px;background:var(--ui-surface);border-radius:50%;color:var(--ui-accent);}
+body.glow-dashboard #view-documents .session-folder-mode svg{width:14px;height:14px;}
+body.glow-dashboard #view-documents :is(.doc-mode-badge,.doc-mode-badge.doc-mode-time,.doc-mode-badge.doc-mode-dangerous,.doc-mode-badge.doc-mode-zen,.doc-mode-badge.doc-mode-duel){display:grid;place-items:center;width:28px;height:28px;padding:5px;border-radius:8px;background:var(--ui-selected);color:var(--ui-accent);border:0;}
+body.glow-dashboard #view-documents .doc-mode-badge svg{width:18px;height:18px;}
+body.glow-dashboard #view-documents:is([data-library-layout=grid],[data-library-layout=list]) #all-docs .doc-card{display:grid;grid-template-columns:34px minmax(0,1fr) 28px 24px;grid-template-rows:auto auto;align-content:center;align-items:center;gap:8px 12px;min-height:98px;height:auto;padding:18px;}
+body.glow-dashboard #view-documents #all-docs :is(.doc-card-info,.doc-card-text,.doc-card-right){display:contents;}
+body.glow-dashboard #view-documents #all-docs .session-folder-mark{grid-column:1;grid-row:1/3;}
+body.glow-dashboard #view-documents #all-docs .doc-card h4{grid-column:2;grid-row:1;margin:0;font-size:14px;line-height:1.4;min-width:0;overflow-wrap:anywhere;}
+body.glow-dashboard #view-documents #all-docs .doc-card-meta{grid-column:2/4;grid-row:2;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;line-height:1.5;}
+body.glow-dashboard #view-documents #all-docs .doc-mode-badge{grid-column:3;grid-row:1;}
+body.glow-dashboard #view-documents #all-docs .doc-card-menu-btn{grid-column:4;grid-row:1/3;}
+/* Overall has comparable columns. Metric-specific boards remain focused. */
+body.glow-dashboard #view-leaderboard #lb-your-rank{font-size:64px;line-height:1;letter-spacing:-.045em;font-weight:500;font-variant-numeric:tabular-nums;}
+body.glow-dashboard #view-leaderboard #lb-your-note{display:inline-block;width:fit-content;border:1px solid var(--ui-selected-edge);border-radius:8px;padding:6px 10px;color:var(--ui-accent);font-size:12px;}
+body.glow-dashboard #view-leaderboard .lb-board-card{overflow-x:auto;}
+body.glow-dashboard #view-leaderboard.lb-tab-overall :is(.lb-board-head,.lb-row){grid-template-columns:48px minmax(190px,1fr) repeat(5,minmax(76px,.5fr)) 94px;min-width:950px;gap:16px;}
+body.glow-dashboard #view-leaderboard .lb-extra{font:400 12px/1.5 'Instrument Sans',sans-serif;color:var(--ui-muted);text-align:right;font-variant-numeric:tabular-nums;}
+body.glow-dashboard #view-leaderboard .lb-board-head>span:nth-child(n+3){text-align:right;}
+body.glow-dashboard #view-leaderboard .lb-rank-emblem{display:grid;place-items:center;width:34px;height:34px;font:600 16px/1 'Instrument Sans',sans-serif;}
+body.glow-dashboard #view-leaderboard .lb-rank-emblem[data-podium]{border:1px solid var(--ui-accent);border-radius:50%;background:var(--ui-selected);color:var(--ui-accent);box-shadow:0 0 0 4px var(--ui-surface),0 0 0 5px var(--ui-selected-edge);}
+body.glow-dashboard #view-leaderboard .lb-row:has([data-podium="1"]){background:var(--ui-selected);border-left:3px solid var(--ui-accent);}
+body.glow-dashboard #view-leaderboard .lb-row:has([data-podium="2"]),body.glow-dashboard #view-leaderboard .lb-row:has([data-podium="3"]){border-left:3px solid var(--ui-selected-edge);}
+body.glow-dashboard #session-modal .mp-bottom[data-mode=zen] .mp-summary{grid-column:2;grid-row:1;text-align:right;align-self:center;}
+body.glow-dashboard #session-modal .mp-bottom[data-mode=zen]>.session-quota{grid-column:1;}
+body.glow-dashboard #session-modal .mp-bottom[data-mode=duel] .mp-summary{display:none;}
+body.glow-dashboard #session-modal .mp-bottom[data-mode=duel] #modal-start{min-height:44px;height:44px;max-height:44px;}
+@media(max-width:1200px){body.glow-dashboard #session-modal .mp-bottom[data-mode=zen] .mp-summary{grid-column:1;grid-row:1;text-align:left;}}
+@media(max-width:1000px){body.glow-dashboard #view-friends .friends-split-layout{grid-template-columns:1fr;}body.glow-dashboard #view-friends #workspace-friends-activity{padding:24px 0 0;border-left:0;border-top:1px solid var(--ui-edge);}}
+@media(max-width:900px){body.glow-dashboard #view-settings .workspace-settings-media{grid-template-columns:1fr;}}
+body.glow-dashboard #view-documents .doc-pin-inline{display:inline-block;width:14px;height:14px;vertical-align:middle;margin-right:5px;color:var(--ui-accent);}
+body.glow-dashboard #view-friends :is(#workspace-friends-directory,#workspace-friends-activity){display:flex;flex-direction:column;padding:24px;border:1px solid var(--ui-edge);border-radius:28px;background:var(--ui-surface);}
+body.glow-dashboard #view-friends #workspace-friends-directory .friends-table-card{flex:1;}
+body.glow-dashboard #view-friends #activity-feed:has(.empty-state){flex:1;min-height:240px;}
+body.glow-dashboard #view-friends #activity-feed>.empty-state{border:0;border-radius:0;box-shadow:none;}
+body.glow-dashboard #view-friends .empty-state strong{font-size:17px;line-height:1.35;}
