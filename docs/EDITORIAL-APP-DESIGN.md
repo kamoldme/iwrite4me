@@ -82,3 +82,15 @@ Applied to the existing iWrite dashboard:
 This is a focused refinement of the current design, not a layout reset. No new metrics, simulated activity, dependencies or backend behavior were introduced. Production, landing and the writing editor remain outside the change.
 
 Verified on staging: both themes at 1440, 1024 and 800px; shared corners and column alignment including long reflection text; chart empty/single/20-session data, pointer/keyboard inspection; goal states/editing and picker controls; achievement paging and completed/incomplete SVG states; blank versus populated notification visibility. Updated secondary text measures 5.83:1 against the light session panel and 10.14:1 against the dark panel. JavaScript syntax, whitespace, protected asset hashes and editor-markup isolation checks pass. This is a scoped dashboard verification, not a full-platform accessibility certification.
+
+## Appllama guidance — October 30
+
+Sources: [Appllama](https://appllama.io/) and [Appllama skills](https://github.com/Appllama/appllama-skills). Installed `appllama-app-design-skill` v1.3.0 and `appllama-usage` v1.1.0 in the local Codex skills directory. The research connector is not connected: this pass uses the public catalog and the skill text, and does not claim a paid-library benchmark study.
+
+Adopt the principles that fit this web product: semantic theme tokens, a single action accent, deliberate shape/spacing scales, one label per intent, consistent line icons, visible focus, usable targets, real data and complete interaction states. Native-only Expo/React Native APIs and simulator requirements are not dependencies or a reason to migrate the existing stack. Browser interaction checks replace native simulator checks here; no mobile frame-rate claim is made.
+
+Keep the approved 28px panel radius, 12px primary-action radius, existing smaller fields and circular indicators. Amber remains a deliberate exception for the specifically requested goal/streak treatment; mode illustrations retain their existing identities. The landing, active editor and backend remain excluded.
+
+This pass resolves verified inconsistencies: dashboard/sidebar/library and normal/Zen picker actions now use “Start writing” (uppercase where already requested), their primary colors and hover colors use shared tokens, and keyboard focus on the activity table is visible in either theme. The explicit danger acknowledgment and opponent search retain their distinct wording. Achievement arrows use matching SVGs and 44px targets, with expanded pagination-dot hit areas. No session is started by these design checks.
+
+Verification: both themes at 1440px and 800px; shared primary colors and ≥4.5:1 button text contrast; ≥3:1 focus outline contrast; 44px achievement-arrow targets; activity table open/close; all four picker labels and Escape dismissal; library action, shared panel corners and aligned columns. Protected landing/editor hashes and editor HTML region are unchanged. The existing sidebar collapse geometry is checked separately from the expanded state.
