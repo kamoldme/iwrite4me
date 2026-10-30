@@ -22,6 +22,8 @@ body.glow-dashboard .workspace-v2:not(.stories-mode-read):not(.stories-mode-comp
 body.glow-dashboard .workspace-v2 :is(.workspace-page-intro,.sessions-kicker,.friends-kicker) {font-size:14px;}
 /* Fixed icon column and flexible label column: long names never push the icon or badge. */
 body.glow-dashboard .app-container .sidebar-v2 .sidebar-nav {padding:0 12px 12px;gap:14px;}
+body.glow-dashboard .app-container .sidebar-v2 .sidebar-logo-btn .logo-mark {object-fit:contain;border-radius:0;background:none;}
+html.dark body.glow-dashboard .app-container .sidebar-v2 .sidebar-logo-btn .logo-mark {filter:invert(1);}
 body.glow-dashboard .app-container .sidebar-v2 .sidebar-group {min-width:0;width:100%;}
 body.glow-dashboard .app-container .sidebar-v2 :is(.sidebar-compose,.sidebar-nav-item) {box-sizing:border-box;width:100%;min-width:0;flex:none;gap:10px;padding:9px 10px;border-radius:8px;min-height:40px;}
 body.glow-dashboard .app-container .sidebar-v2 .sidebar-nav-item {font-size:14px;}
@@ -231,19 +233,20 @@ html:not(.dark) body.glow-dashboard #view-dashboard .online-dot{box-shadow:none;
 @media(prefers-reduced-motion:reduce){body.glow-dashboard.app-chrome-visible :is(#history-modal,#sub-history-modal){transition:none;}}
 /* Subscription choices follow the same task-page grid; prices and actions are unchanged. */
 body.glow-dashboard #view-upgrade{max-width:1120px;margin-inline:auto;}
-body.glow-dashboard #view-upgrade .upgrade-hero{text-align:left;padding:0 150px 24px 0;margin-bottom:24px;border-bottom:1px solid var(--ui-edge);}
+body.glow-dashboard #view-upgrade .upgrade-hero{text-align:center;padding:48px 24px 32px;margin-bottom:0;border-bottom:0;}
 body.glow-dashboard #view-upgrade .upgrade-title{font:600 30px/1.2 'Archivo',sans-serif;letter-spacing:-.025em;color:var(--ui-ink);margin:0 0 12px;}
-body.glow-dashboard #view-upgrade .upgrade-subtitle{font:400 15px/1.6 'Instrument Sans',sans-serif;color:var(--ui-muted);margin:0;max-width:64ch;}
-body.glow-dashboard #view-upgrade .upgrade-pay-logos .pricing-payments{align-items:flex-start;}
+body.glow-dashboard #view-upgrade .upgrade-subtitle{font:400 15px/1.6 'Instrument Sans',sans-serif;color:var(--ui-muted);margin:0 auto;max-width:64ch;}
+body.glow-dashboard #view-upgrade .upgrade-pay-logos .pricing-payments{align-items:center;}
 body.glow-dashboard #view-upgrade .upgrade-pay-logos:has(.pricing-payments-logos:empty){display:none;}
 /* Override the legacy redesign's important two-column grid only on this app page. */
-body.glow-dashboard #view-upgrade .upgrade-cards{max-width:none;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)!important;gap:24px;align-items:start;padding:0 0 32px;}
+body.glow-dashboard #view-upgrade .upgrade-cards{max-width:1000px;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:24px;align-items:stretch;padding:0 0 48px;}
 body.glow-dashboard #view-upgrade .upgrade-card{background:var(--ui-surface);border:1px solid var(--ui-edge);border-radius:12px;box-shadow:none;padding:24px;animation:none;transform:none;}
 body.glow-dashboard #view-upgrade .upgrade-card-featured{border-color:var(--ui-selected-edge);}
 body.glow-dashboard #view-upgrade .upgrade-card-name{font-size:21px;color:var(--ui-ink);}
 body.glow-dashboard #view-upgrade .upgrade-card-desc{font-size:14px;line-height:1.6;color:var(--ui-muted);}
 body.glow-dashboard #view-upgrade .upgrade-card-features li{font-size:14px;line-height:1.6;margin-bottom:10px;}
 body.glow-dashboard #view-upgrade :is(.upgrade-card-btn,.sub-history-btn){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;border-radius:8px;font:550 14px/1.4 'Instrument Sans',sans-serif;box-shadow:none;}
+body.glow-dashboard #view-upgrade .upgrade-card-btn-primary{background:var(--ui-primary);color:var(--ui-on-primary);}
 body.glow-dashboard #view-upgrade .sub-history-btn{top:0;right:0;padding:9px 14px;background:var(--ui-surface);color:var(--ui-ink);border:1px solid var(--ui-edge);}
 body.glow-dashboard #view-upgrade .upgrade-price-option{border-radius:8px;min-width:0;padding:14px;background:var(--ui-field);border-color:var(--ui-edge);}
 body.glow-dashboard #view-upgrade .upgrade-price-option.active{background:var(--ui-selected);border-color:var(--ui-accent);}
@@ -257,4 +260,4 @@ body.glow-dashboard #view-stories.workspace-v2 .community-avatar-fallback{displa
 /* The legacy badge palette uses important declarations; keep contrast within app chrome. */
 body.glow-dashboard .app-container :is(.pro-badge-inline,.pro-nav-badge,.lb-pro-badge,.pro-inline-badge,.profile-plan-badge.pro,.plan-badge.pro .plan-badge-pill){background:var(--ui-primary)!important;color:var(--ui-on-primary)!important;}
 @media(max-width:1100px){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-feed-panel{grid-template-columns:1fr;}body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-rail{grid-column:1;grid-row:2;position:static;display:grid;grid-template-columns:1fr 1fr;border-left:0;border-top:1px solid var(--ui-edge);padding:24px 0 0;}}
-@media(max-width:960px){body.glow-dashboard #view-upgrade .upgrade-cards{grid-template-columns:1fr!important;}body.glow-dashboard #view-upgrade .upgrade-hero{padding-right:0;padding-top:56px;}}
+@media(max-width:960px){body.glow-dashboard #view-upgrade .upgrade-cards{grid-template-columns:1fr!important;}body.glow-dashboard #view-upgrade .upgrade-hero{padding:56px 0 32px;}}
