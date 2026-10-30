@@ -5636,7 +5636,7 @@ const App = {
       .map(id => document.getElementById(id))
       .filter(Boolean);
     const pwBtn = document.getElementById('change-password-btn');
-    const isGoogleAccount = this.user.provider === 'google';
+    const isGoogleAccount = Boolean(this.user.googleId && !this.user.hasPassword);
     if (pwSection) pwSection.style.display = '';
     if (pwCopy) {
       pwCopy.textContent = isGoogleAccount

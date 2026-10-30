@@ -7,6 +7,7 @@ test('Google sign-in cannot take over a different or non-authoritative email acc
   const { pool } = require('../server/utils/storage');
   assert.equal((await pool.query('select current_database() as name')).rows[0].name, 'iwrite_staging');
   const { OAuth2Client } = require('google-auth-library');
+  const bcrypt = require('bcryptjs');
   process.env.GOOGLE_CLIENT_ID = 'test-client.apps.googleusercontent.com';
   const original = OAuth2Client.prototype.verifyIdToken;
   let payload;
@@ -23,11 +24,16 @@ test('Google sign-in cannot take over a different or non-authoritative email acc
     return response.status;
   }
   try {
-    await pool.query('insert into users(id,data) values($1,$2),($3,$4)', [id, JSON.stringify({ id, email, googleId:'original-google-id', role:'user', acceptedTermsAt:'2026-01-01T00:00:00Z' }), otherId, JSON.stringify({ id:otherId, email:otherEmail, role:'user', acceptedTermsAt:'2026-01-01T00:00:00Z' })]);
+    const password = await bcrypt.hash('original-safe-password', 4);
+    const resetHash = crypto.createHash('sha256').update('123456').digest('hex');
+    await pool.query('insert into users(id,data) values($1,$2),($3,$4)', [id, JSON.stringify({ id, email, password, googleId:'original-google-id', provider:'google', role:'user', acceptedTermsAt:'2026-01-01T00:00:00Z', passwordResetCodeHash:resetHash, passwordResetExpiresAt:new Date(Date.now()+60000).toISOString() }), otherId, JSON.stringify({ id:otherId, email:otherEmail, role:'user', acceptedTermsAt:'2026-01-01T00:00:00Z' })]);
     assert.equal(await signIn({ sub:'different-google-id', email, email_verified:true }), 409);
     assert.equal(await signIn({ sub:'original-google-id', email, email_verified:false }), 401);
     assert.equal(await signIn({ sub:'new-google-id', email:otherEmail, email_verified:true }), 409);
     assert.equal(await signIn({ sub:'original-google-id', email, email_verified:true }), 200);
+    const reset = await fetch(base + '/auth/reset-password', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({email,code:'123456',newPassword:'replacement-safe-password',confirmPassword:'replacement-safe-password'})});
+    assert.equal(reset.status, 200);
+    assert.equal((await reset.json()).user.hasPassword, true);
     const rows = await pool.query('select data from users where id=any($1::uuid[])', [[id, otherId]]);
     assert.equal(rows.rows.find(x => x.data.id === id).data.googleId, 'original-google-id');
     assert.equal(rows.rows.find(x => x.data.id === otherId).data.googleId, undefined);
