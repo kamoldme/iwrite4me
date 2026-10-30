@@ -106,3 +106,11 @@ Verification: 58 browser assertions passed at each of 1440×1000 and 800×900, c
 The +5-minute confirmation places its question above two compact 36px actions. The timer visibility button is 44px wide and the +5m label is 13px. Zoom changes align the paper's top beneath visible formatting controls while preserving horizontal centering.
 
 Verification: 32 browser assertions passed at each of 1440×1000 and 800×900, covering both themes, popup and toolbar geometry, Cancel and the existing add-five-minute handler, top anchoring with formatting shown/hidden, zoom out and unchanged authored content/font and toolbar height. Checks used a saved preview document with simulated timer controls and intercepted add-time calls, without starting a live session. Light and dark screenshots were inspected; nine existing audio/notification tests and JavaScript syntax checks pass.
+
+## Paper spacing, lighter theme transition and search surface
+
+Paper zoom preserves the stage's existing CSS top margin (28px on desktop, 16px at the compact breakpoint) below the formatting bar or navbar. Both zoom directions and percentage reset keep that gap after scrolling.
+
+Theme changes now fade the new composited snapshot over 280ms instead of expanding a full-screen circular clip over 1.4 seconds. The group has no extra animation; per-element color transitions remain suppressed during the switch. Rapid reversal, reduced-motion and unsupported-browser fallbacks are retained. Light-mode session search uses the white surface token while dark mode retains its existing forest fill.
+
+Verification: 46 browser assertions passed at each of 1440×1000 and 800×900, covering both themes, white/dark search fill and focus indication, actual +/−/reset clicks from a scrolled paper with formatting visible and hidden, preserved margin/content/font/toolbar geometry, the real 280ms opacity-only View Transition, rapid reversal and reduced-motion/unsupported fallbacks. Screenshots of the paper gap and white search were inspected. JavaScript syntax and whitespace checks pass. No live session was started or saved, and production was not changed.
