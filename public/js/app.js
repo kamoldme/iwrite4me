@@ -186,57 +186,7 @@ const App = {
     document.getElementById('auth-view').style.display = 'flex';
     document.getElementById('app-view').style.display = 'none';
     this.bindAuthEvents();
-    this.initAuthCarousel();
     this.initGoogleSignIn();
-    Monsters.init();
-  },
-
-  initAuthCarousel() {
-    const panel = document.querySelector('.auth-visual-panel');
-    const slides = Array.from(document.querySelectorAll('.auth-visual-slide'));
-    const dots = Array.from(document.querySelectorAll('.auth-visual-dots [data-auth-slide]'));
-    const bgLayers = Array.from(document.querySelectorAll('.auth-visual-bg-layer'));
-    if (!panel || !slides.length) return;
-
-    const setSlide = (index) => {
-      const next = ((index % slides.length) + slides.length) % slides.length;
-      const current = Number(panel.dataset.authSlide || 0);
-      slides.forEach((slide, i) => slide.classList.toggle('active', i === next));
-      dots.forEach((dot, i) => dot.classList.toggle('active', i === next));
-      bgLayers.forEach((layer, i) => {
-        layer.classList.toggle('active', i === next);
-        if (i === current && i !== next) {
-          layer.classList.add('leaving');
-          window.setTimeout(() => layer.classList.remove('leaving'), 560);
-        } else if (i !== next) {
-          layer.classList.remove('leaving');
-        }
-      });
-      panel.dataset.authSlide = String(next);
-    };
-
-    if (!this._authCarouselBound) {
-      this._authCarouselBound = true;
-      dots.forEach(dot => {
-        dot.addEventListener('click', () => {
-          const index = Number(dot.dataset.authSlide || 0);
-          setSlide(index);
-          if (this._authCarouselTimer) clearInterval(this._authCarouselTimer);
-          this._authCarouselTimer = setInterval(() => {
-            const current = Number(panel.dataset.authSlide || 0);
-            setSlide(current + 1);
-          }, 4800);
-        });
-      });
-    }
-
-    setSlide(Number(panel.dataset.authSlide || 0));
-    if (!this._authCarouselTimer) {
-      this._authCarouselTimer = setInterval(() => {
-        const current = Number(panel.dataset.authSlide || 0);
-        setSlide(current + 1);
-      }, 4800);
-    }
   },
 
   async initGoogleSignIn() {

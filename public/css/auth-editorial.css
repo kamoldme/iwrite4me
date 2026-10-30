@@ -1,0 +1,26 @@
+/* Authentication uses the same paper, ink and moss palette as the workspace. */
+.auth-container { min-height: 100dvh; background: #f5f4ef; }
+.auth-intro { flex: 1 1 50%; display: flex; align-items: flex-end; padding: clamp(48px, 7vw, 100px); color: #f8f8f2; background: #263e35; }
+.auth-intro-content { max-width: 480px; }
+.auth-intro-brand { margin: 0 0 32px; font: 600 15px 'Instrument Sans', sans-serif; }
+.auth-intro h1 { margin: 0 0 20px; font: 500 clamp(36px, 4vw, 58px)/1.1 'Archivo', sans-serif; letter-spacing: -.025em; text-wrap: balance; }
+.auth-intro-content > p:last-child { margin: 0; color: #dce7df; font: 400 17px/1.6 'Instrument Sans', sans-serif; }
+.auth-form-panel { flex: 1 1 50%; min-width: 0; min-height: 100dvh; padding: 80px 48px 48px; background: #f5f4ef; }
+.auth-card { max-width: 420px; }
+.auth-card .auth-card-logo { justify-content: flex-start; margin-bottom: 32px; }
+.auth-mode-tabs { gap: 0; padding: 0; margin-bottom: 36px; border: 0; border-bottom: 1px solid #d8ddd6; border-radius: 0; background: transparent; }
+.auth-mode-tabs button { min-height: 46px; border-radius: 0; color: #59685e; font-weight: 600; }
+.auth-mode-tabs button.active { border-bottom: 2px solid #315b43; background: transparent; color: #203b2b; }
+.auth-card h2 { font-family: 'Archivo', sans-serif; font-size: 32px; font-weight: 600; }
+.auth-card .auth-sub { margin-bottom: 28px; color: #526158; font-size: 15px; }
+.auth-card .auth-field input { min-height: 48px; border: 1px solid #cbd2ca; border-radius: 8px; background: #fff; }
+.auth-card .auth-field input::placeholder { color: #69796e; opacity: 1; }
+.auth-card .auth-field input:focus { border-color: #315b43; box-shadow: 0 0 0 3px rgba(49,91,67,.2); }
+.auth-submit-btn { min-height: 48px; border-radius: 8px; background: #315b43; border-color: #315b43; box-shadow: none; font-size: 15px; font-weight: 600; text-transform: none; }
+.auth-submit-btn:hover:not(:disabled) { background: #244936; border-color: #244936; transform: none; }
+.auth-divider { margin: 24px 0; color: #59685e; }
+.auth-divider:has(+ .google-signin-btn:empty) { display: none; }
+.auth-switch, .auth-consent, .verification-copy { color: #526158; }
+.auth-container :focus-visible { outline: 2px solid #315b43; outline-offset: 3px; }
+.auth-container ::selection { background: #c8ddcb; color: #172d20; }
+@media (max-width: 900px) { .auth-intro { display: none; } .auth-form-panel { width: 100%; padding: 80px 24px 40px; } }
