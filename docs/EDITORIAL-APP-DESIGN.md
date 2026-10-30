@@ -21,13 +21,13 @@ Installed UI Skills routing, Interface Design, Better UI and Impeccable informed
 - Archivo for headings, Instrument Sans for controls/body, Georgia for Community excerpts and reflection prompts. Existing authored story and writing typography remains intact.
 - 30px page titles, 25px article titles, 14–15px controls/body, 12–13px metadata; secondary text uses a solid color, not faded opacity.
 - Sidebar: 240px expanded, 68px rail; fixed icon column, flexible ellipsized labels, consistent full-width buttons. Existing collapse motion and reduced-motion behavior retained.
-- Task surfaces use 8–12px radii, modest borders and no decorative card glow. Empty states are compact and aligned with the content.
+- Cards, panels, picker tiles and app windows share the 28px surface radius from Session momentum. Small controls use 8–12px radii; circular avatars, indicators and flat article/table rows keep their functional geometry. Surfaces use modest borders and no decorative card glow. Empty states are compact and aligned with the content.
 - Sessions use denser cards or the existing list option. Friends has a horizontal search/add area. Settings groups media above account fields. Support separates the inbox and composer. Privacy keeps its contents navigation. Plans use a responsive two-column comparison that stacks below 960px.
 - Non-editor windows share typography, controls and surface tokens. History drawers translate completely off-screen, including their shadow, when closed. Existing menu/dialog actions remain.
 
 ## Implementation boundary
 
-`app-editorial.css` is a final app-only layer. Theme-specific dashboard rules retain the amber dark dial and provide a separate sage light palette. Changes to `workspace-pages.js` move the existing discovery rail after the feed, provide keyboard activation for article cards, and replace the subscription-history emoji with a small SVG. The daily-goal renderer supplies one CSS progress value.
+`app-editorial.css` provides app-only styling; `app-surfaces.css` is the final shared geometry layer. Theme-specific dashboard rules retain the amber dark dial and provide a separate sage light palette. Changes to `workspace-pages.js` move the existing discovery rail after the feed, provide keyboard activation for article cards, and replace the subscription-history emoji with a small SVG. The daily-goal renderer supplies one CSS progress value.
 
 Community photos that fail to load use name initials locally; working photos and stored profile data are unchanged. Pro badges use the action/background contrast pair in each theme.
 
@@ -55,3 +55,13 @@ These are focused functional and visual checks, not a claim of a full accessibil
 - The picker places allowance/reset text beside “How long” in a shared heading. Keeping it outside the mode-specific duration container preserves visibility in Zen and Duel. Tab-timer presets, including the custom control, share five equal columns; Pro restrictions remain unchanged. On short laptop screens, the explanation scrolls independently so timer controls stay visible.
 - Browser checks cover empty/zero/single/20-session charts, document exclusions, averages, pointer and keyboard selection, 0/50/100% dial states, editing the goal and all four picker modes in both themes. Fixtures were in-memory only and restored afterward.
 - Visual checks at 1440×1000, 1024×900 and 800×900; picker checks also at 1280×720. All five tab controls stay aligned and visible on the short laptop layout. Protected landing/editor hashes and editor markup match the baseline.
+
+## Shared surfaces and landing logo — October 30
+
+`--app-panel-radius: 28px` controls app cards, panels, menus and non-editor dialogs in both themes. Explicit surface selectors avoid rounding controls, chart marks or flat content separators. Radius-only priority handles legacy theme/inline rules without changing their behavior.
+
+The dashboard uses a real flex stack for goal/reflection opposite the session panel. Both columns stretch to the same grid row, so their top/bottom edges stay aligned even with longer reflection text. Below 960px they stack naturally; the activity/tree row also stretches to a common bottom edge when side by side.
+
+The sidebar and phone-gate mark use `/media/iwrite-logo.png`, matching the live landing page. The sidebar no longer inverts the asset in dark mode.
+
+Verified in both themes at 1440, 1024 and 800px: shared dashboard radii, matching desktop column edges, long-reflection expansion, stacked narrow layout, goal/picker window corners, no horizontal overflow and an unfiltered loaded logo. A surface inventory covered the ten main app destinations. Protected landing/editor assets and editor markup remain unchanged.

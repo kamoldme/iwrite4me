@@ -1,0 +1,74 @@
+/* Shared app surface geometry. Editor and landing selectors are deliberately excluded. */
+body.glow-dashboard { --app-panel-radius:28px; }
+
+/* Radius-only priority normalizes older theme, breakpoint and inline overrides.
+   Flat article/table rows and small controls retain their own geometry. */
+body.glow-dashboard .app-container :is(
+  .glow-activity, .glow-document, .td-progress-card, .td-reflection-card,
+  .dash-panel-tabs, .dash-stat-card, .heatmap-section, .tree-container,
+  .doc-card, .empty-state, .workspace-library-rail, .story-doc-card,
+  .lb-rail-card, .lb-board-card, .friends-table-card, .workspace-friend-finder,
+  .workspace-profile-identity, .up-banner, .up-about-stats, .up-stat-card,
+  .up-story-card, .up-section, .profile-section, .profile-avatar-section,
+  .upgrade-card, .upgrade-price-option, .settings-plan-row, .support-form, .support-image-drop
+) { border-radius:var(--app-panel-radius)!important; }
+
+body.glow-dashboard.app-chrome-visible :is(
+  #goal-modal, #duel-modal, #share-type-modal, #daily-limit-modal,
+  #confirm-remove-friend-modal, #profile-complete-overlay, #follow-list-overlay,
+  .modal-overlay:not([id])
+) > .modal,
+body.glow-dashboard.app-chrome-visible :is(
+  .pricing-modal, .payment-choice-dialog, .confirm-dialog, .streak-popup,
+  #ann-modal, #help-popup, .folder-context-menu, .doc-export-submenu,
+  #dashboard-notif-dropdown, #stories-notif-dropdown, #duel-mm-lobby-popover
+),
+body.glow-dashboard.app-chrome-visible #delete-account-modal > div,
+body.glow-dashboard.app-chrome-visible #session-modal :is(.mp-shell,.mode-option)
+{ border-radius:var(--app-panel-radius)!important; }
+
+/* One real stack opposite one full-height panel, rather than independent grid rows. */
+body.glow-dashboard .app-container .main-content #view-dashboard .dash-row-top {
+  grid-template-columns: minmax(0,1fr) minmax(0,1.25fr);
+  grid-template-rows:auto;
+  align-items:stretch;
+  gap:20px;
+}
+body.glow-dashboard .app-container .main-content #view-dashboard .dash-row-top > .td-mid-stack {
+  display:flex;
+  flex-direction:column;
+  grid-column:1;
+  grid-row:1;
+  align-self:stretch;
+  min-width:0;
+  gap:20px;
+}
+body.glow-dashboard .app-container .main-content #view-dashboard .td-mid-stack > .td-progress-card {
+  flex:0 0 440px;
+  height:440px;
+  min-height:440px;
+}
+body.glow-dashboard .app-container .main-content #view-dashboard .td-mid-stack > .td-reflection-card {
+  flex:1 0 auto;
+  margin:0;
+  align-self:stretch;
+}
+body.glow-dashboard .app-container .main-content #view-dashboard .dash-row-top > .dash-panel-tabs {
+  grid-column:2;
+  grid-row:1;
+  min-height:0;
+  height:auto;
+  align-self:stretch;
+}
+body.glow-dashboard .app-container .main-content #view-dashboard .dash-row-bottom {
+  align-items:stretch;
+}
+body.glow-dashboard .app-container .main-content #view-dashboard .dash-row-bottom > :is(.heatmap-section,.tree-container) {
+  height:auto;
+  margin-block:0;
+  align-self:stretch;
+}
+@media(max-width:960px) {
+  body.glow-dashboard .app-container .main-content #view-dashboard .dash-row-top { grid-template-columns:1fr; }
+  body.glow-dashboard .app-container .main-content #view-dashboard .dash-row-top > .dash-panel-tabs { grid-column:1;grid-row:2; }
+}
