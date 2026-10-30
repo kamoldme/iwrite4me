@@ -2725,7 +2725,7 @@ const App = {
         <div class="empty-state">
           <h3>${emptyMsg.title}</h3>
           <p>${emptyMsg.sub}</p>
-          <button class="btn btn-primary btn-small" onclick="App.openSessionModal()">New Session</button>
+          <button class="btn btn-primary btn-small" onclick="App.openSessionModal()">Start writing</button>
         </div>`;
       return;
     }
@@ -2989,7 +2989,7 @@ const App = {
     if (bottomBar) bottomBar.style.display = mode ? '' : 'none';
     const startBtn = document.getElementById('modal-start');
     if (startBtn) {
-      startBtn.textContent = mode === 'dangerous' ? 'I accept the risk — begin' : mode === 'duel' ? 'Find an opponent' : 'Begin writing';
+      startBtn.textContent = mode === 'dangerous' ? 'I accept the risk — begin' : mode === 'duel' ? 'Find an opponent' : 'START WRITING';
       startBtn.classList.toggle('btn-danger-solid', mode === 'dangerous');
     }
     this._renderSessionQuota(this._sessionQuota);
@@ -3650,7 +3650,7 @@ const App = {
 
   _sessionStartLabel() {
     return this.sessionMode === 'dangerous' ? 'I accept the risk — begin'
-      : this.sessionMode === 'duel' ? 'Find an opponent' : 'Begin writing';
+      : this.sessionMode === 'duel' ? 'Find an opponent' : 'START WRITING';
   },
 
   _renderSessionQuota(quota) {

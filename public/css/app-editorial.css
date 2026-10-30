@@ -329,3 +329,26 @@ body.glow-dashboard #view-dashboard .td-ach-ring-icon svg {width:14px;height:14p
 body.glow-dashboard #view-dashboard .td-ach-dot.active {background:var(--ui-accent);}
 body.glow-dashboard .app-container #view-dashboard .td-ach-dot:not(.active) {background:var(--ui-field-edge);}
 body.glow-dashboard.app-chrome-visible #in-app-banner:empty {display:none;}
+
+/* Appllama's semantic-control rules, adapted to the existing web app. */
+body.glow-dashboard .app-container :is(#view-dashboard #new-doc-btn,#view-documents #new-doc-btn-3,.sidebar-v2 .sidebar-compose),
+body.glow-dashboard.app-chrome-visible #session-modal .mp-start-btn:not(.btn-danger-solid) {
+  background:var(--ui-primary);color:var(--ui-on-primary);border:1px solid transparent;
+  border-radius:12px;box-shadow:none;min-height:44px;
+}
+@media(hover:hover){
+  body.glow-dashboard .app-container :is(#view-dashboard #new-doc-btn,#view-documents #new-doc-btn-3,.sidebar-v2 .sidebar-compose):hover,
+  body.glow-dashboard.app-chrome-visible #session-modal .mp-start-btn:not(.btn-danger-solid):hover {
+    background:var(--ui-primary-hover);color:var(--ui-on-primary);box-shadow:none;
+  }
+}
+body.glow-dashboard .app-container :is(#view-dashboard #new-doc-btn,#view-documents #new-doc-btn-3,.sidebar-v2 .sidebar-compose):focus-visible,
+body.glow-dashboard #view-dashboard :is(.glow-chart-data summary,.td-ach-arrow,.td-ach-dot):focus-visible {
+  outline:2px solid var(--ui-accent);outline-offset:3px;
+}
+body.glow-dashboard #view-dashboard .glow-chart-data summary {min-height:44px;line-height:44px;}
+body.glow-dashboard #view-dashboard .td-ach-nav {gap:8px;}
+body.glow-dashboard #view-dashboard .td-ach-arrow {width:44px;height:44px;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+body.glow-dashboard #view-dashboard .td-ach-arrow svg {width:18px;height:18px;}
+body.glow-dashboard #view-dashboard .td-ach-dot {position:relative;}
+body.glow-dashboard #view-dashboard .td-ach-dot::after {content:'';position:absolute;inset:-9px -3px;}
