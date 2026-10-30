@@ -215,6 +215,7 @@ const App = {
       // Try One Tap auto-sign-in first (silent for returning users)
       window.google.accounts.id.prompt();
 
+      const googleButtonWidth = Math.min(360, Math.max(200, Math.floor(document.querySelector('.auth-card')?.getBoundingClientRect().width || 320)));
       document.querySelectorAll('.google-signin-btn').forEach(button => {
         button.innerHTML = '';
         window.google.accounts.id.renderButton(button, {
@@ -223,7 +224,7 @@ const App = {
           size: 'large',
           shape: 'pill',
           text: 'continue_with',
-          width: 360
+          width: googleButtonWidth
         });
       });
     } catch (err) {
