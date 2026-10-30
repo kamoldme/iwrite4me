@@ -219,10 +219,11 @@ const App = {
         button.innerHTML = '';
         window.google.accounts.id.renderButton(button, {
           type: 'standard',
-          theme: 'outline',
+          theme: 'filled_black',
           size: 'large',
-          shape: 'rectangular',
-          width: 320
+          shape: 'pill',
+          text: 'continue_with',
+          width: 360
         });
       });
     } catch (err) {
@@ -2757,7 +2758,7 @@ const App = {
       const modeGlyphClass = modeMeta.glyphClass;
       const leadingIcon = this._sessionFolderGlyph(modeGlyphClass);
       return `
-      <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}">
+      <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}" data-session-mode="${modeMeta.key}">
         <div class="doc-card-info">
           ${leadingIcon}
           <div class="doc-card-text">
@@ -8666,7 +8667,7 @@ const App = {
     const delta = before - main.getBoundingClientRect().left;
     if (Math.abs(delta) < 1) return;
     main.style.willChange = 'transform';
-    const motion = this._sidebarMotion = main.animate([{ transform: `translateX(${delta}px)` }, { transform: 'translateX(0)' }], { duration: 220, easing: 'cubic-bezier(.2,0,0,1)' });
+    const motion = this._sidebarMotion = main.animate([{ transform: `translateX(${delta}px)` }, { transform: 'translateX(0)' }], { duration: 200, easing: 'cubic-bezier(.2,0,0,1)' });
     motion.finished.catch(() => {}).finally(() => {
       if (this._sidebarMotion === motion) { this._sidebarMotion = null; main.style.willChange = ''; }
     });
@@ -8687,6 +8688,10 @@ const App = {
       this._requestedTheme = null;
       return;
     }
+    const bounds = trigger?.getBoundingClientRect();
+    const x = bounds ? bounds.left + bounds.width / 2 : innerWidth / 2;
+    const y = bounds ? bounds.top + bounds.height / 2 : innerHeight / 2;
+    const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
     root.classList.add('theme-wave');
     try {
       const transition = this._themeWave = document.startViewTransition(() => {
@@ -8694,11 +8699,11 @@ const App = {
       });
       await transition.ready;
       if (token !== this._themeWaveToken) return;
-      // Fade composited snapshots instead of animating a full-screen clip mask.
+      // Reveal the new snapshot from the control, keeping live layout static.
       const animation = this._themeWaveAnimation = root.animate([
-        { opacity: 0 },
-        { opacity: 1 }
-      ], { duration: 280, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' });
+        { clipPath: `circle(0px at ${x}px ${y}px)` },
+        { clipPath: `circle(${radius}px at ${x}px ${y}px)` }
+      ], { duration: 560, easing: 'cubic-bezier(.2,0,0,1)', pseudoElement: '::view-transition-new(root)' });
       await animation.finished.catch(() => {});
       await transition.finished.catch(() => {});
     } catch {
