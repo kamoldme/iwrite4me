@@ -642,3 +642,61 @@ body.glow-dashboard #view-documents .workspace-library-rail>h2{display:flex;alig
 body.glow-dashboard #view-documents .workspace-folder-label{gap:10px;}
 body.glow-dashboard #view-documents :is(.workspace-library-rail>h2,.workspace-folder-label) svg{width:20px;height:20px;flex:none;color:var(--ui-accent);}
 body.glow-dashboard #view-documents[data-library-layout=list] #all-docs .doc-card{min-height:76px;padding:14px 18px;row-gap:4px;}
+
+/* Consistent library controls and clearer separation of rank and percentile. */
+body.glow-dashboard #view-documents :is(.session-search-wrap,.workspace-view-toggle){box-sizing:border-box;height:40px;min-height:40px;}
+body.glow-dashboard #view-documents .session-search{height:40px;min-height:40px;padding-block:0;}
+body.glow-dashboard #view-documents .workspace-view-toggle button{padding-block:0;}
+body.glow-dashboard #view-documents #create-folder-btn>svg{width:14px;height:14px;}
+body.glow-dashboard #view-leaderboard #lb-your-note{margin-inline-start:20px;}
+body.glow-dashboard.app-chrome-visible #dashboard-notif-dropdown{display:block;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-4px);animation:none;transition:opacity 120ms ease-out,transform 120ms ease-out,visibility 0s linear 120ms;}
+body.glow-dashboard.app-chrome-visible #dashboard-notif-dropdown.active{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition-delay:0s;animation:none;}
+body.glow-dashboard #dashboard-notif-dropdown .dashboard-notif-empty{display:grid;place-items:center;min-height:160px;margin:0;padding:24px;color:var(--ui-muted);font:400 14px/1.5 'Instrument Sans',sans-serif;}
+/* The page takes its final layout once; only its visual offset animates. */
+body.glow-dashboard .app-container .main-content{transition:none!important;}
+body.glow-dashboard .app-container .sidebar{contain:layout paint;}
+html.theme-wave::view-transition-old(root),html.theme-wave::view-transition-new(root){animation:none;mix-blend-mode:normal;}
+html.theme-wave::view-transition-old(root){z-index:0;}
+html.theme-wave::view-transition-new(root){z-index:1;}
+html.theme-wave::view-transition-group(root){animation-duration:1.4s;}
+html.theme-wave *,html.theme-wave *::before,html.theme-wave *::after{transition:none!important;}
+@media(max-width:600px){body.glow-dashboard #view-leaderboard #lb-your-note{margin-inline-start:0;}}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard.app-chrome-visible #dashboard-notif-dropdown{transition:none!important;transform:none;}}
+/* Drafts are a compact writing list with a predictable action column. */
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-mine-list{display:flex;flex-direction:column;gap:12px;max-width:none;margin:0;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-doc-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;min-height:96px;margin:0;padding:18px 20px;border-radius:16px;}
+body.glow-dashboard #view-stories .story-doc-card .doc-card-info{display:flex;align-items:center;gap:14px;min-width:0;}
+body.glow-dashboard #view-stories .story-doc-card .doc-card-text{min-width:0;}
+body.glow-dashboard #view-stories .story-doc-card h4{font:600 15px/1.4 'Instrument Sans',sans-serif;margin:0 0 8px;overflow-wrap:anywhere;color:var(--ui-ink);}
+body.glow-dashboard #view-stories .story-doc-card .doc-card-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font:400 12px/1.5 'Instrument Sans',sans-serif;color:var(--ui-muted);}
+body.glow-dashboard #view-stories .story-doc-card .doc-icon{width:32px;height:36px;flex:0 0 32px;background:transparent;color:var(--ui-accent);}
+body.glow-dashboard #view-stories .story-doc-card .story-card-right{gap:16px;}
+body.glow-dashboard #view-stories .story-card-actions{display:flex;gap:6px;}
+body.glow-dashboard #view-stories .story-card-actions button{width:34px;height:34px;border-radius:9px;}
+body.glow-dashboard #view-stories .story-status-badge{font:500 11px/1.4 'Instrument Sans',sans-serif;letter-spacing:.02em;padding:5px 8px;border-radius:6px;}
+body.glow-dashboard #view-stories .story-status-badge.muted{color:var(--ui-muted);background:var(--ui-raised);}
+body.glow-dashboard #story-session-picker{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(680px,calc(100vw - 40px));max-height:calc(100dvh - 64px);padding:24px;border:1px solid var(--ui-edge);border-radius:24px;background:var(--ui-surface);color:var(--ui-ink);box-shadow:0 20px 64px rgb(0 0 0/.18);font:400 14px/1.5 'Instrument Sans',sans-serif;overflow:auto;overscroll-behavior:contain;}
+body.glow-dashboard #story-session-picker::backdrop{background:var(--ui-backdrop);backdrop-filter:blur(6px);}
+body.glow-dashboard #story-session-picker .session-picker-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:20px;}
+body.glow-dashboard #story-session-picker h2{font:600 24px/1.25 'Archivo',sans-serif;margin:0 0 10px;color:var(--ui-ink);}
+body.glow-dashboard #story-session-picker p{margin:0;color:var(--ui-muted);font-size:13px;line-height:1.6;}
+body.glow-dashboard #story-session-picker .session-picker-close{display:grid;place-items:center;flex:none;width:32px;height:32px;border:1px solid var(--ui-edge);border-radius:9px;background:var(--ui-raised);color:var(--ui-muted);font-size:22px;cursor:pointer;}
+body.glow-dashboard #story-session-picker input{box-sizing:border-box;width:100%;height:42px;padding:10px 12px;margin-bottom:16px;border:1px solid var(--ui-field-edge);border-radius:10px;background:var(--ui-field);color:var(--ui-ink);font:400 14px 'Instrument Sans',sans-serif;}
+body.glow-dashboard #story-session-picker .session-picker-results{display:flex;flex-direction:column;gap:8px;max-height:50dvh;overflow:auto;overscroll-behavior:contain;}
+body.glow-dashboard #story-session-picker .session-picker-option{display:flex;align-items:center;gap:14px;min-height:70px;padding:14px;border:1px solid var(--ui-edge);border-radius:12px;background:var(--ui-surface);color:var(--ui-ink);text-align:left;cursor:pointer;}
+body.glow-dashboard #story-session-picker .session-picker-doc-icon{display:grid;place-items:center;flex:none;width:28px;color:var(--ui-accent);}
+body.glow-dashboard #story-session-picker .session-picker-option-copy{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}
+body.glow-dashboard #story-session-picker .session-picker-option-copy strong{font:600 14px/1.4 'Instrument Sans',sans-serif;overflow-wrap:anywhere;}
+body.glow-dashboard #story-session-picker .session-picker-option-copy>span{font-size:12px;color:var(--ui-muted);}
+body.glow-dashboard #story-session-picker .session-picker-option-action{display:flex;align-items:center;gap:8px;flex:none;font-size:12px;color:var(--ui-accent);}
+body.glow-dashboard #story-session-picker .session-picker-pages{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px;font-size:12px;color:var(--ui-muted);}
+body.glow-dashboard #story-session-picker .session-picker-pages>div{display:flex;gap:8px;}
+body.glow-dashboard #story-session-picker .session-picker-pages button,body.glow-dashboard #story-session-picker [data-session-picker-retry]{min-height:36px;padding:8px 12px;border:1px solid var(--ui-edge);border-radius:9px;background:var(--ui-raised);color:var(--ui-ink);font:500 12px 'Instrument Sans',sans-serif;cursor:pointer;}
+body.glow-dashboard #story-session-picker button:disabled{opacity:.4;cursor:default;}
+body.glow-dashboard #story-session-picker .session-picker-empty{display:grid;place-items:center;gap:16px;padding:32px 16px;color:var(--ui-muted);}
+body.glow-dashboard #story-session-picker :is(button,input):focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px;}
+body:has(#story-session-picker[open]){overflow:hidden;}
+@media(hover:hover){body.glow-dashboard #story-session-picker .session-picker-option:hover{background:var(--ui-selected);border-color:var(--ui-selected-edge);}}
+@media(max-width:700px){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-doc-card{grid-template-columns:1fr;gap:12px;padding:16px;}body.glow-dashboard #view-stories .story-card-right{justify-content:flex-end;}body.glow-dashboard #story-session-picker .session-picker-option-action{font-size:0;gap:0;}body.glow-dashboard #story-session-picker{padding:20px;}body.glow-dashboard #story-session-picker .session-picker-pages{flex-wrap:wrap;}}
+
+body.glow-dashboard #story-session-picker .session-picker-search>span{display:block;margin-bottom:8px;color:var(--ui-muted);font:500 12px/1.4 'Instrument Sans',sans-serif;}
