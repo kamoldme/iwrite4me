@@ -352,3 +352,19 @@ body.glow-dashboard #view-dashboard .td-ach-arrow {width:44px;height:44px;min-wi
 body.glow-dashboard #view-dashboard .td-ach-arrow svg {width:18px;height:18px;}
 body.glow-dashboard #view-dashboard .td-ach-dot {position:relative;}
 body.glow-dashboard #view-dashboard .td-ach-dot::after {content:'';position:absolute;inset:-9px -3px;}
+
+/* Paywall: keep the offer, renewal and next action together. */
+body.glow-dashboard #view-upgrade .upgrade-billing-note,
+body.glow-dashboard #view-upgrade .upgrade-trial-offer p{margin:12px 0 0;font:400 13px/1.6 'Instrument Sans',sans-serif;color:var(--ui-muted);text-align:left;}
+body.glow-dashboard #view-upgrade .upgrade-trial-offer{margin-top:20px;padding-top:20px;border-top:1px solid var(--ui-edge);}
+body.glow-dashboard #view-upgrade button.upgrade-trial-link{display:block;width:100%;min-height:44px;margin:0;padding:10px 14px;border:1px solid var(--ui-field-edge);border-radius:12px;background:var(--ui-surface);color:var(--ui-accent);font:600 14px/1.4 'Instrument Sans',sans-serif;cursor:pointer;}
+body.glow-dashboard #view-upgrade #purchase-plan-btn{min-height:48px;border-radius:12px;}
+body.glow-dashboard #view-upgrade :is(button,a):focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px;}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-summary{margin-top:24px;padding-top:20px;border-top:1px solid var(--ui-edge);color:var(--ui-ink);}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-summary>div{display:flex;justify-content:space-between;align-items:baseline;gap:16px;font:500 14px/1.4 'Instrument Sans',sans-serif;}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-summary strong{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-summary p{margin:10px 0 0;color:var(--ui-muted);font-size:13px;line-height:1.6;}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-continue{min-height:48px;margin-top:16px;border-radius:12px;background:var(--ui-primary);color:var(--ui-on-primary);font:600 14px/1.4 'Instrument Sans',sans-serif;}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-footnote{font-size:12px;color:var(--ui-muted);text-align:center;margin:12px 0 0;}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal .payment-choice-close{width:44px;height:44px;color:var(--ui-muted);}
+body.glow-dashboard.app-chrome-visible #payment-choice-modal :is(.payment-choice-duration,.payment-choice-method):hover{transform:none;}

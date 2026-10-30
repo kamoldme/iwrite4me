@@ -6388,7 +6388,7 @@ const App = {
   _renderUpgradePriceRows() {
     return Object.entries(this._stripePricing).map(([duration, d]) => {
       const local = this._localPrice(duration);
-      return `<button type="button" class="upgrade-price-option${duration === this._selectedDuration ? ' active' : ''}" data-upgrade-duration="${duration}">
+      return `<button type="button" class="upgrade-price-option${duration === this._selectedDuration ? ' active' : ''}" data-upgrade-duration="${duration}" aria-pressed="${duration === this._selectedDuration}">
         <div class="upgrade-price-option-main">
           <strong>$${d.price}</strong>
           <span>${d.period}</span>
@@ -6464,7 +6464,7 @@ const App = {
       <div class="upgrade-card upgrade-card-featured${isPro ? ' upgrade-card-current' : ''}" style="animation-delay:0.2s">
         <div class="upgrade-card-head">
           <h3 class="upgrade-card-name">Pro</h3>
-          <p class="upgrade-card-desc">Enhanced features for serious, dedicated writers.</p>
+          <p class="upgrade-card-desc">Keep writing beyond the daily limit. Choose your own timers and keep your drafts organised.</p>
           ${isPro ? (() => {
             const u = this.user;
             const src = u.planSource === 'trial' ? 'Free Trial' : u.planSource === 'stripe' ? 'Stripe' : u.planSource === 'admin' ? 'Admin' : u.planSource === 'referral' ? 'Referral' : u.planSource || 'Unknown';
@@ -6491,8 +6491,12 @@ const App = {
           ${isPro
             ? `<button class="upgrade-card-btn upgrade-card-btn-primary" disabled>Current plan${expiryInfo}</button>
                ${isStripe ? '<button class="upgrade-card-btn upgrade-manage-billing-btn" id="manage-billing-btn" style="margin-top:8px">Manage Billing</button>' : ''}`
-            : `<button class="upgrade-card-btn upgrade-card-btn-primary" id="purchase-plan-btn">Purchase plan</button>
-               ${canTrial ? '<div class="upgrade-trial-link" id="start-trial-link">or Start 7-day free trial</div>' : ''}`
+            : `<button class="upgrade-card-btn upgrade-card-btn-primary" id="purchase-plan-btn">Choose payment for ${dur.label}</button>
+               <p class="upgrade-billing-note">Stripe renews automatically. Click is a one-time payment for the selected period.</p>
+               ${canTrial ? `<div class="upgrade-trial-offer">
+                 <button type="button" class="upgrade-trial-link" id="start-trial-link" aria-describedby="upgrade-trial-terms">Try Pro free for 7 days</button>
+                 <p id="upgrade-trial-terms">Via Stripe · $0 today, then $${dur.price}${dur.period}. Renews automatically. Cancel in Manage Billing before day 7 to avoid the charge.</p>
+               </div>` : ''}`
           }
         </div>
         <div class="upgrade-card-divider"></div>
@@ -6515,6 +6519,7 @@ const App = {
       btn.addEventListener('click', () => {
         this._selectedDuration = btn.dataset.upgradeDuration;
         this.loadUpgrade();
+        el.querySelector(`[data-upgrade-duration="${this._selectedDuration}"]`)?.focus({ preventScroll: true });
       });
     });
 
@@ -6566,6 +6571,13 @@ const App = {
     const cfg = this._payCfg || { providers: {}, localEnabled: false };
     const p = cfg.providers || {};
 
+    const comparison = document.querySelector('#upgrade-plan-cards .upgrade-payment-comparison');
+    if (comparison) comparison.querySelectorAll('[data-upgrade-duration]').forEach(button => {
+      button.querySelector('.upgrade-price-som').textContent = this._formatSom(this._localPrice(button.dataset.upgradeDuration));
+    });
+    const trialOffer = document.querySelector('.upgrade-trial-offer');
+    if (trialOffer) trialOffer.hidden = p.stripe === false;
+
     // The old separate UZS panel is intentionally empty now. The purchase flow
     // chooses duration + provider inside the in-app payment modal.
     const el = document.getElementById('upgrade-payments');
@@ -6598,7 +6610,7 @@ const App = {
     const providers = cfg.providers || {};
     const hasStripe = providers.stripe !== false;
     const hasClick = !!providers.click && !!cfg.localEnabled;
-    const selectedProvider = hasClick ? 'click' : 'stripe';
+    const selectedProvider = hasClick ? 'click' : hasStripe ? 'stripe' : null;
     const selectedDuration = this._selectedDuration || '1m';
 
     modal.innerHTML = `<div class="payment-choice-backdrop" data-close-payment-modal></div>
@@ -6615,7 +6627,6 @@ const App = {
             ${Object.entries(this._stripePricing).map(([duration, d]) => `<button type="button" class="payment-choice-duration${duration === selectedDuration ? ' active' : ''}" data-duration="${duration}">
               <strong>${d.shortLabel}</strong>
               <span>$${d.price} ${d.period}</span>
-              ${d.savings ? `<em>${d.savings}</em>` : ''}
             </button>`).join('')}
           </div>
         </div>
@@ -6632,7 +6643,12 @@ const App = {
             </button>` : ''}
           </div>
         </div>
+        <div class="payment-choice-summary" aria-live="polite" aria-atomic="true">
+          <div><span data-offer-label></span><strong data-offer-total></strong></div>
+          <p data-offer-terms></p>
+        </div>
         <button type="button" class="payment-choice-continue" data-payment-continue>Continue</button>
+        <p class="payment-choice-footnote">Review your order on the provider’s secure checkout before paying.</p>
       </div>`;
 
     const state = { duration: selectedDuration, provider: selectedProvider };
@@ -6642,14 +6658,47 @@ const App = {
       const stripeLabel = modal.querySelector('[data-stripe-price]');
       const clickLabel = modal.querySelector('[data-click-price]');
       if (stripeLabel) stripeLabel.textContent = `$${stripe.price} ${stripe.period}`;
-      if (clickLabel) clickLabel.textContent = `${this._formatSom(local)} in UZS`;
+      if (clickLabel) clickLabel.textContent = `${this._formatSom(local)} for ${stripe.label}`;
+      const isClick = state.provider === 'click';
+      const amount = isClick ? this._formatSom(local) : `$${stripe.price}`;
+      const next = modal.querySelector('[data-payment-continue]');
+      modal.querySelector('[data-offer-label]').textContent = `Pro · ${stripe.label}`;
+      modal.querySelector('[data-offer-total]').textContent = state.provider ? amount : 'Unavailable';
+      modal.querySelector('[data-offer-terms]').textContent = !state.provider
+        ? 'Payments are currently unavailable. Please try again later.'
+        : isClick
+          ? `One payment of ${amount} for ${{ '1m': 30, '3m': 90, '6m': 180 }[state.duration]} days of Pro. No automatic renewal.`
+          : `${amount} charged at checkout, then every ${stripe.label}. Cancel future renewals in Manage Billing; access continues until the paid period ends.`;
+      next.textContent = state.provider ? `Continue with ${isClick ? 'Click' : 'Stripe'} · ${amount}` : 'Payments unavailable';
+      next.disabled = !state.provider;
+      modal.querySelectorAll('[data-duration]').forEach(b => {
+        const option = this._stripePricing[b.dataset.duration];
+        b.setAttribute('aria-pressed', String(b.dataset.duration === state.duration));
+        b.querySelector('span').textContent = isClick
+          ? `${this._formatSom(this._localPrice(b.dataset.duration))} total`
+          : `$${option.price} ${option.period}`;
+      });
+      modal.querySelectorAll('[data-provider]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.provider === state.provider)));
     };
     updatePrices();
     this._bindPayLogoFallbacks(modal);
 
+    const closePaymentChoice = () => {
+      modal.classList.remove('active');
+      this.loadUpgrade();
+      document.getElementById('purchase-plan-btn')?.focus({ preventScroll: true });
+    };
     modal.querySelectorAll('[data-close-payment-modal]').forEach(node => {
-      node.addEventListener('click', () => modal.classList.remove('active'));
+      node.addEventListener('click', closePaymentChoice);
     });
+    modal.onkeydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); closePaymentChoice(); return; }
+      if (event.key !== 'Tab') return;
+      const controls = [...modal.querySelectorAll('button:not(:disabled)')];
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
     modal.querySelectorAll('.payment-choice-duration').forEach(btn => {
       btn.addEventListener('click', () => {
         state.duration = btn.dataset.duration;
@@ -6662,6 +6711,7 @@ const App = {
       btn.addEventListener('click', () => {
         state.provider = btn.dataset.provider;
         modal.querySelectorAll('.payment-choice-method').forEach(b => b.classList.toggle('active', b === btn));
+        updatePrices();
       });
     });
     modal.querySelector('[data-payment-continue]')?.addEventListener('click', async (e) => {
@@ -6671,6 +6721,7 @@ const App = {
     });
 
     modal.classList.add('active');
+    modal.querySelector('.payment-choice-close')?.focus({ preventScroll: true });
   },
 
   async _payWithProvider(provider, btn, duration = this._selectedDuration) {
@@ -6882,8 +6933,10 @@ const App = {
   },
 
   async _startCheckout(isTrial, duration = this._selectedDuration, triggerBtn = null) {
+    const initiatingButton = triggerBtn || document.getElementById(isTrial ? 'start-trial-link' : 'purchase-plan-btn');
+    const originalLabel = initiatingButton?.textContent;
     try {
-      const purchaseBtn = triggerBtn || document.getElementById('purchase-plan-btn');
+      const purchaseBtn = triggerBtn || document.getElementById(isTrial ? 'start-trial-link' : 'purchase-plan-btn');
       const trialLink = document.getElementById('start-trial-link');
       if (purchaseBtn) { purchaseBtn.disabled = true; purchaseBtn.textContent = 'Opening checkout...'; }
       if (trialLink) { trialLink.style.pointerEvents = 'none'; trialLink.style.opacity = '0.5'; }
@@ -6900,7 +6953,7 @@ const App = {
       const data = await res.json();
       if (!res.ok) {
         this.toast(data.error || 'Failed to start checkout', 'error');
-        if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = 'Purchase plan'; }
+        if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = originalLabel; }
         if (trialLink) { trialLink.style.pointerEvents = ''; trialLink.style.opacity = ''; }
         return;
       }
@@ -6919,7 +6972,7 @@ const App = {
         this._checkoutPollCount++;
         if (this._checkoutPollCount > 200) {
           clearInterval(this._checkoutPoller);
-          if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = 'Purchase plan'; }
+          if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = originalLabel; }
           return;
         }
         try {
@@ -6936,8 +6989,10 @@ const App = {
       }, 3000);
     } catch (err) {
       this.toast('Failed to start checkout. Please try again.', 'error');
-      const purchaseBtn = document.getElementById('purchase-plan-btn');
-      if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = 'Purchase plan'; }
+      const purchaseBtn = initiatingButton;
+      const trialLink = document.getElementById('start-trial-link');
+      if (trialLink) { trialLink.style.pointerEvents = ''; trialLink.style.opacity = ''; }
+      if (purchaseBtn) { purchaseBtn.disabled = false; purchaseBtn.textContent = originalLabel; }
     }
   },
 

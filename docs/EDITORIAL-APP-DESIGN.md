@@ -94,3 +94,15 @@ Keep the approved 28px panel radius, 12px primary-action radius, existing smalle
 This pass resolves verified inconsistencies: dashboard/sidebar/library and normal/Zen picker actions now use “Start writing” (uppercase where already requested), their primary colors and hover colors use shared tokens, and keyboard focus on the activity table is visible in either theme. The explicit danger acknowledgment and opponent search retain their distinct wording. Achievement arrows use matching SVGs and 44px targets, with expanded pagination-dot hit areas. No session is started by these design checks.
 
 Verification: both themes at 1440px and 800px; shared primary colors and ≥4.5:1 button text contrast; ≥3:1 focus outline contrast; 44px achievement-arrow targets; activity table open/close; all four picker labels and Escape dismissal; library action, shared panel corners and aligned columns. Protected landing/editor hashes and editor HTML region are unchanged. The existing sidebar collapse geometry is checked separately from the expanded state.
+
+## Paywall offer clarity — October 30
+
+Reference: [Jaimin's paywall article](https://x.com/jaimintf/status/2115135943720255985), “HOW to make your paywall look & feel 10X better.” Read via its public article payload because X returned 403. Applied clear benefits, upfront terms, consistent selection and easy dismissal; no conversion-uplift claims or fabricated social proof.
+
+- Retained the Free/Pro comparison, all features, three durations, prices, History and Manage Billing.
+- The page action names the selected duration. Eligible trials have a keyboard-accessible button and explicit $0 today / seven days / selected renewal charge / cancellation terms.
+- The payment window shows a full-amount summary beside the next action, and updates duration prices, provider, total and terms together. Stripe is recurring; Click grants 30/90/180-day passes with no auto-renewal, matching server code. Removed unsupported “Popular” and “Best value” labels from the chooser.
+- Added pressed states, focus retention, a dialog focus loop, Escape and return focus. Checkout failures restore the actual initiating control, including the trial button.
+- Disabled payment continuation when no provider is available; the trial offer respects Stripe availability. Server-returned UZS prices refresh the comparison.
+
+Validation: 66 focused browser assertions across light/dark, three durations, both provider selections, trial eligibility, current subscriber controls, dialog keyboard behavior, HTTP/network failures and unavailable providers. Provider availability/account states were temporary in-memory QA fixtures; no payments were submitted or configuration changed. Visually inspected the comparison and payment dialog, including 800px width. Staging's real payment providers remain disabled. Existing unrelated resource 500 and YouTube CSP errors remain outside this change. Landing and editor baseline hashes are unchanged.
