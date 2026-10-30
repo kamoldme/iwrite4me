@@ -664,7 +664,7 @@ html.theme-wave *,html.theme-wave *::before,html.theme-wave *::after{transition:
 @media(prefers-reduced-motion:reduce){body.glow-dashboard.app-chrome-visible #dashboard-notif-dropdown{transition:none!important;transform:none;}}
 /* Drafts are a compact writing list with a predictable action column. */
 body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-mine-list{display:flex;flex-direction:column;gap:12px;max-width:none;margin:0;}
-body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-doc-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;min-height:96px;margin:0;padding:18px 20px;border-radius:16px;}
+body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-doc-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;min-height:84px;margin:0;padding:18px 20px;border-radius:14px!important;}
 body.glow-dashboard #view-stories .story-doc-card .doc-card-info{display:flex;align-items:center;gap:14px;min-width:0;}
 body.glow-dashboard #view-stories .story-doc-card .doc-card-text{min-width:0;}
 body.glow-dashboard #view-stories .story-doc-card h4{font:600 15px/1.4 'Instrument Sans',sans-serif;margin:0 0 8px;overflow-wrap:anywhere;color:var(--ui-ink);}
