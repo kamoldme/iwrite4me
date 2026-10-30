@@ -1549,6 +1549,7 @@ const App = {
       e.stopPropagation();
       const willOpen = audioDrop.style.display === 'none';
       if (willOpen) {
+        Editor.warmAudio();
         const focusDD = document.getElementById('editor-focus-dropdown');
         if (focusDD) focusDD.style.display = 'none';
         const r = document.getElementById('editor-tools-btn').getBoundingClientRect();
@@ -1710,11 +1711,21 @@ const App = {
       track.querySelector('input[type=range]')?.setAttribute('aria-label', `${name} volume`);
       track.querySelector('.audio-play-btn')?.setAttribute('aria-label', `Play or pause ${name}`);
     });
+    this._closeSessionPopovers = () => {
+      ['editor-tools-menu', 'editor-audio-dropdown', 'editor-focus-dropdown', 'add-time-confirm', 'selection-popup'].forEach(id => {
+        const panel = document.getElementById(id);
+        if (panel) panel.style.display = 'none';
+      });
+      toolsBtn.setAttribute('aria-expanded', 'false');
+    };
+    new MutationObserver(() => {
+      if (!editorContainer.classList.contains('active')) this._closeSessionPopovers();
+    }).observe(editorContainer, { attributes: true, attributeFilter: ['class'] });
     const sessionPopovers = [toolsMenu, audioDrop, document.getElementById('editor-focus-dropdown')].filter(Boolean);
     const positionSessionPopovers = () => {
       const rect = toolsBtn.getBoundingClientRect();
       sessionPopovers.forEach(panel => {
-        const placement = { top: `${rect.bottom + 8}px`, right: `${Math.max(12, window.innerWidth - rect.right)}px`, maxHeight: `${Math.max(160, window.innerHeight - rect.bottom - 24)}px` };
+        const placement = { left: 'auto', top: `${rect.bottom + 8}px`, right: `${Math.max(12, window.innerWidth - rect.right)}px`, maxHeight: `${Math.max(160, window.innerHeight - rect.bottom - 24)}px` };
         Object.entries(placement).forEach(([key, value]) => { if (panel.style[key] !== value) panel.style[key] = value; });
       });
       toolsBtn.setAttribute('aria-expanded', String(toolsMenu.style.display !== 'none'));
@@ -3843,6 +3854,7 @@ const App = {
   },
 
   showSessionFailed(reason) {
+    this._closeSessionPopovers?.();
     document.getElementById('sf-reason').textContent = reason;
     document.getElementById('session-failed').classList.add('active');
   },

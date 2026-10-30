@@ -33,9 +33,9 @@
   <link rel="stylesheet" href="/css/staging-surfaces.css?v=3">
   <link rel="stylesheet" href="/css/sidebar-redesign.css?v=2">
   <link rel="stylesheet" href="/css/workspace-pages.css?v=3">
-  <link rel="stylesheet" href="/css/app-editorial.css?v=19">
+  <link rel="stylesheet" href="/css/app-editorial.css?v=20">
   <link rel="stylesheet" href="/css/app-surfaces.css?v=2">
-  <link rel="stylesheet" href="/css/session-workspace.css?v=3">
+  <link rel="stylesheet" href="/css/session-workspace.css?v=5">
 </head>
 <body class="glow-dashboard">
   <!-- Desktop-only gate: the writing app needs a real keyboard + screen. Shown on phones. -->
@@ -1154,7 +1154,7 @@
               <div class="menu-row menu-row-static" id="tools-target-words-row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
                 <span class="menu-row-label">Target words</span>
-                <input type="number" id="editor-target-words" class="menu-row-input" min="0" max="50000" placeholder="e.g. 500">
+                <input type="number" id="editor-target-words" class="menu-row-input" min="0" max="50000" placeholder="##">
               </div>
               <button class="menu-row" id="tools-comment-history-row" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
@@ -1443,12 +1443,8 @@
 
     <!-- TAB WARNING -->
     <div class="tab-warning" id="tab-warning" role="alert">
-      <div class="session-notice-card">
-        <span class="session-notice-eyebrow">Session protection</span>
-        <h2>Keep this tab open</h2>
-        <p>Return before the countdown ends to keep your writing. Staying away will end this session and delete its unsaved text.</p>
-        <div class="session-countdown-value"><span class="tab-warning-timer" id="tab-warning-timer">10</span><span>seconds remaining</span></div>
-        <span class="session-notice-footnote">The countdown stops when you return.</span>
+      <div class="session-notice-card" aria-label="Time left to return before this session ends and unsaved writing is deleted">
+        <div class="session-countdown-value"><span class="tab-warning-timer" id="tab-warning-timer">10</span><span>seconds</span></div>
       </div>
     </div>
 
@@ -1908,12 +1904,12 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/feedback.js?v=optional-feedback-2"></script>
-  <script src="/js/editor.js?v=session-notices-2"></script>
-  <script src="/js/app.js?v=staging-chrome-14"></script>
+  <script src="/js/editor.js?v=session-notices-4"></script>
+  <script src="/js/app.js?v=staging-chrome-16"></script>
   <script src="/js/stories.js?v=22"></script>
   <script src="/js/glow-widgets.js?v=5"></script>
   <script src="/js/staging-chrome.js?v=6"></script>
-  <script src="/js/workspace-pages.js?v=6"></script>
+  <script src="/js/workspace-pages.js?v=7"></script>
   <script>
     fetch('/api/version').then(r => r.json()).then(d => {
       const el = document.getElementById('version-tag');

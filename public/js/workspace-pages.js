@@ -41,6 +41,7 @@
     folderAdd.setAttribute('aria-label', 'Create folder (Pro)');
     rail.append(make('h2', '', 'Your library'), $('docs-filter-pills'), box('workspace-folder-heading', [box('workspace-folder-label', [], 'span'), folderAdd]), folderList, make('p', 'workspace-folder-hint', 'Create folders with Pro to organise your writing.'));
     rail.querySelector('.workspace-folder-label').innerHTML = folderIcon + '<span>Folders</span>';
+    rail.querySelector('h2').innerHTML = folderIcon + '<span>Your library</span>';
     const tools = box('workspace-library-tools', [view.querySelector('.session-search-wrap')]);
     const toggle = make('div', 'workspace-view-toggle'); toggle.setAttribute('role', 'group'); toggle.setAttribute('aria-label', 'Session layout');
     const displayButtons = ['grid', 'list'].map(type => {
