@@ -56,6 +56,10 @@ async function initDB() {
     )
   `);
   await pool.query('ALTER TABLE session_daily_usage ADD COLUMN IF NOT EXISTS limit_notified BOOLEAN NOT NULL DEFAULT FALSE');
+  await pool.query(`CREATE TABLE IF NOT EXISTS stripe_renewal_invoices (
+    invoice_id TEXT PRIMARY KEY,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users ((data->>'email'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_googleid ON users ((data->>'googleId'))`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_documents_userid ON documents ((data->>'userId'))`);
