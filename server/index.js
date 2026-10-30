@@ -53,7 +53,9 @@ app.use(helmet({
         'https://accounts.google.com',
         'https://apis.google.com',
         'https://js.stripe.com',
-        'https://cdnjs.cloudflare.com'
+        'https://cdnjs.cloudflare.com',
+        'https://www.youtube.com',
+        'https://s.ytimg.com'
       ],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
