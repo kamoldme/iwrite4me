@@ -700,3 +700,38 @@ body:has(#story-session-picker[open]){overflow:hidden;}
 @media(max-width:700px){body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-doc-card{grid-template-columns:1fr;gap:12px;padding:16px;}body.glow-dashboard #view-stories .story-card-right{justify-content:flex-end;}body.glow-dashboard #story-session-picker .session-picker-option-action{font-size:0;gap:0;}body.glow-dashboard #story-session-picker{padding:20px;}body.glow-dashboard #story-session-picker .session-picker-pages{flex-wrap:wrap;}}
 
 body.glow-dashboard #story-session-picker .session-picker-search>span{display:block;margin-bottom:8px;color:var(--ui-muted);font:500 12px/1.4 'Instrument Sans',sans-serif;}
+/* Picker actions share Arena's 44px height across every writing mode. */
+body.glow-dashboard #session-modal .mp-bottom :is(.time-preset,#modal-start){box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:44px;min-height:44px;max-height:44px;padding-block:8px;}
+/* Matchmaking uses the same neutral surfaces and semantic action colors as /app. */
+body.glow-dashboard #view-duels{
+ --bg-primary:var(--ui-page);--bg-secondary:var(--ui-raised);--bg-tertiary:var(--ui-field);--bg-card:var(--ui-surface);--bg-elevated:var(--ui-raised);
+ --text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);--border:var(--ui-edge);--border-hover:var(--ui-selected-edge);
+ --accent:var(--ui-accent);--accent-soft:var(--ui-selected);--success:var(--ui-accent);--danger:var(--ui-danger);--warning:var(--ui-warning);--hover-bg:var(--ui-hover);
+ --font-display:'Archivo',sans-serif;--font-sans:'Instrument Sans',sans-serif;--font-main:'Instrument Sans',sans-serif;--font-mono:'DM Mono',monospace;
+ color:var(--ui-ink);font-family:'Instrument Sans',sans-serif;
+}
+body.glow-dashboard #view-duels .view-title{color:var(--ui-ink);font-family:'Archivo',sans-serif;}
+body.glow-dashboard #view-duels :is(.view-subtitle,.duel-mm-sub,.duel-mm-waiting-meta,.duel-mm-waiting-timeout,.empty-state){color:var(--ui-muted);}
+body.glow-dashboard #view-duels .duel-matchmaking{background:var(--ui-surface);border-color:var(--ui-edge);border-radius:28px;box-shadow:none;}
+body.glow-dashboard #view-duels :is(.duel-mm-title,.duel-mm-waiting-text,.duel-section-title){color:var(--ui-ink);}
+body.glow-dashboard #view-duels .duel-mm-spinner{border-color:var(--ui-edge);border-top-color:var(--ui-accent);}
+body.glow-dashboard #view-duels :is(.duel-mm-duration,.duel-mm-custom-input){border-color:var(--ui-edge);background:var(--ui-field);color:var(--ui-ink);}
+body.glow-dashboard #view-duels .duel-mm-dur-btn{color:var(--ui-muted);border-radius:8px;}
+body.glow-dashboard #view-duels .duel-mm-dur-btn.active{background:var(--ui-selected);color:var(--ui-accent);box-shadow:none;}
+body.glow-dashboard #view-duels :is(#new-duel-btn,#duel-mm-find-btn,.duel-mm-lobby-join-btn){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;background:var(--ui-primary)!important;color:var(--ui-on-primary)!important;border:1px solid transparent;border-radius:12px;box-shadow:none!important;text-shadow:none;transform:none;font:600 14px/1.4 'Instrument Sans',sans-serif;}
+body.glow-dashboard #view-duels #new-duel-btn svg{color:inherit;margin:0!important;flex:none;}
+body.glow-dashboard #view-duels :is(#new-duel-btn,#duel-mm-find-btn,.duel-mm-lobby-join-btn)::before,body.glow-dashboard #view-duels :is(#new-duel-btn,#duel-mm-find-btn,.duel-mm-lobby-join-btn)::after{content:none!important;display:none!important;animation:none!important;}
+body.glow-dashboard #view-duels :is(.duel-mm-cancel-btn,.duel-history-doc-btn){min-height:40px;padding:9px 16px;background:var(--ui-field);color:var(--ui-ink);border:1px solid var(--ui-edge);border-radius:10px;box-shadow:none;}
+body.glow-dashboard #view-duels .duel-mm-pulse{background:var(--ui-selected);color:var(--ui-accent);border-color:var(--ui-selected-edge);box-shadow:none;}
+body.glow-dashboard #view-duels :is(.duel-mm-pulse-dot,.duel-mm-pro-badge,.duel-mm-lobby-pro){background:var(--ui-selected);color:var(--ui-accent);box-shadow:none;}
+body.glow-dashboard #view-duels .duel-mm-pulse-dot{background:var(--ui-accent);}
+body.glow-dashboard #view-duels .duel-mm-lobby-wait{color:var(--ui-accent);}
+body.glow-dashboard #view-duels :is(.duel-mm-lobby-popover,.duel-mm-lobby-row,.duel-history-card){background:var(--ui-surface);border-color:var(--ui-edge);box-shadow:none;}
+body.glow-dashboard #view-duels .duel-history-card.won{border-left-color:var(--ui-accent);}
+body.glow-dashboard #view-duels .duel-history-card.lost{border-left-color:var(--ui-danger);}
+body.glow-dashboard #view-duels :is(button,input):focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px;}
+@media(hover:hover){body.glow-dashboard #view-duels :is(#new-duel-btn,#duel-mm-find-btn,.duel-mm-lobby-join-btn):hover{background:var(--ui-primary-hover)!important;box-shadow:none!important;transform:none;}body.glow-dashboard #view-duels .duel-mm-cancel-btn:hover{background:var(--ui-hover);border-color:var(--ui-danger);color:var(--ui-danger);}}
+body.glow-dashboard #view-duels .dashboard-header h1{color:var(--ui-ink);}
+body.glow-dashboard #view-duels .dashboard-header p{color:var(--ui-muted);}
+body.glow-dashboard #view-duels #new-duel-btn{padding:10px 18px!important;min-height:44px;border-radius:12px!important;animation:none!important;background-image:none!important;letter-spacing:0;text-transform:none;}
+@media(prefers-reduced-motion:reduce){body.glow-dashboard #view-duels .duel-mm-spinner{animation:none;}}
