@@ -118,3 +118,11 @@ The shared 28px override had accidentally rounded a one-sided library divider an
 - Picker duration buttons, quota/reset and start share a desktop row. Removed “How long,” retaining accessible duration group names. Below 1200px durations occupy their own row, with quota and start together. All four modes retain quotas, locks and actions.
 
 Focused checks cover both themes, library filters and empty state spacing, empty/populated banner states, compact profile cards, all four picker modes, timer locks, Escape, loaded logo and sidebar collapse. Ten destinations were inspected for overflow and rounded separators at desktop and 800px in both themes. No actual writing session, upload, deletion or payment was submitted. Changes remain staging-only and exclude the landing and writing editor.
+
+## Folder-first library and visible paging — October 30
+
+The library rail now contains All plus the actual folders (including nested folders), folder counts, options and a labelled folder-plus action. Removed mode/pinned/folders filter tabs from this rail as requested. All lists every visible document across folders, rather than only unfiled documents. Selecting a folder shows its direct files; breadcrumbs, nesting, rename/move/delete options and the existing Pro create-folder guard remain. Empty folders retain a useful empty state.
+
+The existing ten-file pagination is now visible even on a single populated page, with the item range, total and page count. Temporary 23-file fixtures verified first/second/last pages, Previous, folder switching, search, hidden-document exclusion and returning to All. Free/Pro creation routes were tested with callbacks intercepted, without creating or deleting stored data. Both themes passed at 1440px (36 checks) and 800px (32 checks).
+
+Dashboard daily quota is on the same desktop row as today's word/goal progress, below online presence. Narrow layouts stack the header. Landing and writing editor hashes remain intact. No backend or production changes.

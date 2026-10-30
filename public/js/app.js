@@ -1115,6 +1115,7 @@ const App = {
         if (!pill) return;
         filterPillsEl.querySelectorAll('.docs-filter-pill').forEach(p => p.classList.toggle('active', p === pill));
         this._docsFilter = pill.dataset.docsFilter;
+        if (this._docsFilter === 'all') this.currentFolder = null;
         this._docsPage = 1;
         if (this._docsFilter === 'folders' && !this._foldersCacheLoaded) this.loadDocuments(true);
         else this._renderDocumentsView();
@@ -2519,7 +2520,10 @@ const App = {
     if (folderBtn) {
       const isPro = this.user && this.user.plan === 'premium';
       folderBtn.title = isPro ? 'Create Folder' : 'Folders — Pro Feature';
-      folderBtn.style.opacity = isPro ? '' : '0.5';
+      folderBtn.style.opacity = '';
+      folderBtn.setAttribute('aria-label', isPro ? 'Create folder' : 'Create folder (Pro)');
+      const folderHint = document.querySelector('.workspace-folder-hint');
+      if (folderHint) folderHint.textContent = isPro ? 'Use + to create a folder.' : 'Create folders with Pro to organise your writing.';
     }
 
     // Only show non-failed, non-admin-deactivated docs in main list
@@ -2574,17 +2578,21 @@ const App = {
     // Render folders for current level (Pro only for free users)
     const folderContainer = document.getElementById('folder-list');
     const isPro = this.user && this.user.plan === 'premium';
-    const childFolders = this.folders.filter(f => (f.parentFolder || null) === this.currentFolder);
+    const childFolders = this.folders;
+    document.querySelector('[data-docs-filter=all]')?.classList.toggle('active', !this.currentFolder);
     const activeFilter = this._docsFilter || 'all';
     folderContainer?.classList.toggle('folder-list-compact', childFolders.length > 5);
     if (childFolders.length > 0) {
       folderContainer.innerHTML = childFolders.map(f => {
         const count = this.countDocsInFolder(f.id, visibleDocs);
-        return `<div class="folder-card" data-folder-id="${f.id}">
+        const depth = Math.min(3, Math.max(0, this.getFolderPath(f.id).length - 1));
+        return `<div class="folder-card${this.currentFolder === f.id ? ' active' : ''}" data-folder-id="${f.id}" style="--folder-depth:${depth}">
+          <button type="button" class="workspace-folder-open" data-open-folder="${f.id}" aria-pressed="${this.currentFolder === f.id}">
           <span class="folder-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></span>
           <span class="folder-card-name">${this.escapeHtml(f.name)}</span>
           <span class="folder-card-count">${count}</span>
-          <button class="folder-card-menu" data-folder-menu="${f.id}" title="Options">⋯</button>
+          </button>
+          <button class="folder-card-menu" data-folder-menu="${f.id}" title="Folder options" aria-label="Options for ${this.escapeHtml(f.name)}">⋯</button>
         </div>`;
       }).join('');
 
@@ -2608,13 +2616,13 @@ const App = {
             <strong>No folders here</strong>
             <span>${this.currentFolder ? 'This folder has no child folders yet.' : 'Create a folder and it will stay visible here.'}</span>
           </div>`
-        : '';
+        : '<p class="workspace-folder-empty">No folders yet</p>';
     }
 
-    // Filter docs by current folder
+    // All includes documents inside folders as well as the root.
     let folderDocs = this.currentFolder
       ? visibleDocs.filter(d => d.folder === this.currentFolder)
-      : visibleDocs.filter(d => !d.folder);
+      : visibleDocs;
 
     // Apply search filter (title only)
     if (this._searchQuery) {
@@ -2710,13 +2718,6 @@ const App = {
   renderDocumentList(containerId, docs) {
     const container = document.getElementById(containerId);
     if (docs.length === 0) {
-      // Don't show "No documents yet" if there are child folders at this level
-      const childFolders = this.folders.filter(f => (f.parentFolder || null) === this.currentFolder);
-      const hasFolders = childFolders.length > 0;
-      if (hasFolders && containerId === 'all-docs') {
-        container.innerHTML = '';
-        return;
-      }
       // Inside a folder, say "No documents in this folder"
       const emptyMsg = this.currentFolder
         ? { title: 'No documents in this folder', sub: 'Move documents here or start a new session.' }
@@ -2770,18 +2771,18 @@ const App = {
     }).join('');
 
     // Add pagination controls if more than one page
-    if (isPaginated && totalPages > 1) {
-      html += `<div class="docs-pagination">
+    if (isPaginated) {
+      html += `<nav class="docs-pagination" aria-label="Session pages">
         <button class="docs-pagination-btn" id="docs-prev" ${page <= 1 ? 'disabled' : ''}>← Prev</button>
-        <span class="docs-pagination-info">${page} / ${totalPages}</span>
+        <span class="docs-pagination-info" aria-live="polite">${(page - 1) * this._docsPerPage + 1}–${Math.min(page * this._docsPerPage, docs.length)} of ${docs.length} · Page ${page} of ${totalPages}</span>
         <button class="docs-pagination-btn" id="docs-next" ${page >= totalPages ? 'disabled' : ''}>Next →</button>
-      </div>`;
+      </nav>`;
     }
 
     container.innerHTML = html;
 
     // Bind pagination buttons
-    if (isPaginated && totalPages > 1) {
+    if (isPaginated) {
       const prevBtn = document.getElementById('docs-prev');
       const nextBtn = document.getElementById('docs-next');
       if (prevBtn) prevBtn.onclick = () => { this._docsPage--; this._renderDocumentsView(); };
