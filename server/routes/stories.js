@@ -330,7 +330,7 @@ router.get('/top-week', async (req, res) => {
       if (!recent.length) return null;
       const top = [...recent].sort((a, b) => (b[metric] || 0) - (a[metric] || 0))[0];
       if (!top || !top[metric]) return null;
-      return { kind: label, title: top.title, authorName: top.authorName, authorUsername: top.authorUsername, metric: fmt(top[metric]) };
+      return { id: top.id, kind: label, title: top.title, authorName: top.authorName, authorUsername: top.authorUsername, metric: fmt(top[metric]), viewCount: top.viewCount || 0, likeCount: top.likeCount || 0, commentCount: top.commentCount || 0 };
     };
     const entries = [
       pick('viewCount', 'Most viewed', n => `${n.toLocaleString()} views`),

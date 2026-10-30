@@ -1,0 +1,27 @@
+/* First session design pass: shared colors and chrome, with authored type,
+   timing, danger feedback, progress, focus and visibility behavior retained. */
+body.glow-dashboard #editor-container{
+ --bg-primary:var(--ui-page);--bg-secondary:var(--ui-surface);--bg-card:var(--ui-surface);--bg-elevated:var(--ui-raised);--hover-bg:var(--ui-hover);
+ --text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);--border:var(--ui-edge);--accent:var(--ui-accent);--accent-soft:var(--ui-selected);
+ background:var(--ui-page);color:var(--ui-ink);
+}
+body.glow-dashboard #editor-container .editor-toolbar{background:var(--ui-surface);border-color:var(--ui-edge);padding:12px 24px;color:var(--ui-ink);font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container .editor-title-input{color:var(--ui-ink);font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container :is(.editor-title-input,.editor-textarea)::placeholder{color:var(--ui-muted);}
+body.glow-dashboard #editor-container .editor-textarea:empty:before{color:var(--ui-muted);}
+body.glow-dashboard #editor-container .editor-timer{font-family:'DM Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+body.glow-dashboard #editor-container :is(.editor-back-btn,.tool,.editor-add-time-btn,.editor-timer-toggle){min-height:36px;border-radius:10px;border:1px solid var(--ui-edge);background:var(--ui-surface);color:var(--ui-muted);box-shadow:none;}
+body.glow-dashboard #editor-container :is(.editor-mode-badge.normal,.editor-mode-badge.zen,.editor-mode-badge.duel){color:var(--ui-accent);border-color:var(--ui-selected-edge);background:var(--ui-selected)!important;letter-spacing:.03em;font:500 11px/1.4 'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container .editor-tabs-rail{background:var(--ui-surface);border-color:var(--ui-edge);font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container .editor-tab-row{border-radius:10px;color:var(--ui-muted);}
+body.glow-dashboard #editor-container .editor-tab-row.active{background:var(--ui-selected);color:var(--ui-accent);border-color:var(--ui-selected-edge);}
+body.glow-dashboard #editor-container .editor-area{margin:24px;border:1px solid var(--ui-edge);border-radius:28px;background:var(--ui-surface);color:var(--ui-ink);padding:40px 32px 96px;}
+body.glow-dashboard #editor-container .editor-textarea{color:var(--ui-ink);}
+body.glow-dashboard #editor-container :is(.tools-menu,.editor-focus-dropdown,.editor-font-menu,.editor-prefs-menu,.editor-tab-menu,.add-time-confirm){border:1px solid var(--ui-edge);border-radius:16px;background:var(--ui-surface);color:var(--ui-ink);box-shadow:0 12px 32px rgb(0 0 0/.12);font-family:'Instrument Sans',sans-serif;}
+body.glow-dashboard #editor-container :is(.menu-row,.editor-pref-row){color:var(--ui-ink);}
+body.glow-dashboard #editor-container :is(button,input,select):focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px;}
+body.glow-dashboard #editor-container #status-bar{color:var(--ui-muted);background:var(--ui-surface);border-color:var(--ui-edge);font-family:'Instrument Sans',sans-serif;}
+@media(hover:hover){body.glow-dashboard #editor-container :is(.tool,.editor-back-btn,.editor-add-time-btn,.menu-row):hover{background:var(--ui-hover);color:var(--ui-ink);}}
+@media(max-width:900px){body.glow-dashboard #editor-container .editor-area{margin:16px;padding:28px 24px 80px;}body.glow-dashboard #editor-container .editor-toolbar{padding:12px 16px;}}
+body.glow-dashboard #editor-container :is(#editor-edit-btn,#editor-save-edit-btn,#editor-save-btn){min-height:36px;padding:8px 16px;border:1px solid transparent;border-radius:12px;background:var(--ui-primary);color:var(--ui-on-primary);box-shadow:none;font:600 13px/1.4 'Instrument Sans',sans-serif;}
+body.glow-dashboard:has(#editor-container.active) #status-bar{background:var(--ui-surface);color:var(--ui-muted);border-color:var(--ui-edge);font-family:'DM Mono',monospace;}

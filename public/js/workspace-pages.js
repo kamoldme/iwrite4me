@@ -105,7 +105,9 @@
   function leaderboard() {
     const view = $('view-leaderboard'); view.classList.add('workspace-v2');
     const rail = $('leaderboard-rail'), card = rail.querySelector('.lb-rail-card');
-    const personal = box('workspace-rank-personal', [card.querySelector('.lb-rail-kicker'), card.querySelector('.lb-rail-rank-row'), $('lb-your-note')]);
+    const rankRow = card.querySelector('.lb-rail-rank-row');
+    rankRow.append($('lb-your-note'));
+    const personal = box('workspace-rank-personal', [card.querySelector('.lb-rail-kicker'), rankRow]);
     const details = box('workspace-rank-details', [$('lb-rail-breakdown'), card.querySelector('.lb-rail-static-note')]);
     card.replaceChildren(personal, details); view.insertBefore(rail, $('lb-tabs'));
     view.querySelector('.leaderboard-layout').classList.add('workspace-standings');
@@ -115,7 +117,7 @@
     const left = view.querySelector('.friends-left'), activity = view.querySelector('.friends-right');
     left.id = 'workspace-friends-directory'; activity.id = 'workspace-friends-activity';
     left.classList.add('workspace-panel'); activity.classList.add('workspace-panel');
-    left.prepend(make('h2', 'friends-panel-title', 'Friends & requests'));
+    left.prepend(make('h2', 'friends-panel-title', 'Friends and requests'));
     view.querySelector('.friends-header').append($('friends-add-toggle-btn'));
     const body = view.querySelector('.friends-split-layout'); body.replaceChildren(left, activity);
     view.append($('friends-add-row'), box('workspace-friends-layout', [body]));
