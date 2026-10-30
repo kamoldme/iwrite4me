@@ -1712,6 +1712,7 @@ const App = {
       track.querySelector('.audio-play-btn')?.setAttribute('aria-label', `Play or pause ${name}`);
     });
     this._closeSessionPopovers = () => {
+      this._dismissConfirm?.();
       ['editor-tools-menu', 'editor-audio-dropdown', 'editor-focus-dropdown', 'add-time-confirm', 'selection-popup'].forEach(id => {
         const panel = document.getElementById(id);
         if (panel) panel.style.display = 'none';
