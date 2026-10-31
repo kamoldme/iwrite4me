@@ -2612,6 +2612,25 @@ const App = {
           this._renderDocumentsView();
         }
       };
+      folderContainer.ondragover = (e) => {
+        const folder = e.target.closest('.folder-card[data-folder-id]');
+        if (!folder || !this._dragDocumentId) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        folderContainer.querySelectorAll('.folder-card.is-drop-target').forEach(el => { if (el !== folder) el.classList.remove('is-drop-target'); });
+        folder.classList.add('is-drop-target');
+      };
+      folderContainer.ondragleave = (e) => {
+        const folder = e.target.closest('.folder-card[data-folder-id]');
+        if (folder && !folder.contains(e.relatedTarget)) folder.classList.remove('is-drop-target');
+      };
+      folderContainer.ondrop = (e) => {
+        const folder = e.target.closest('.folder-card[data-folder-id]');
+        if (!folder || !this._dragDocumentId) return;
+        e.preventDefault();
+        folder.classList.remove('is-drop-target');
+        this._moveDraggedDocument(this._dragDocumentId, folder.dataset.folderId);
+      };
     } else {
       folderContainer.innerHTML = activeFilter === 'folders'
         ? `<div class="folder-empty-state">
@@ -2759,7 +2778,7 @@ const App = {
       const modeGlyphClass = modeMeta.glyphClass;
       const leadingIcon = this._sessionFolderGlyph(modeGlyphClass);
       return `
-      <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}" data-session-mode="${modeMeta.key}">
+      <div class="doc-card ${isFailed ? 'doc-failed' : ''}" data-id="${doc.id}" data-session-mode="${modeMeta.key}" draggable="${!isFailed}" title="Drag to a folder, or use Options to move">
         <div class="doc-card-info">
           ${leadingIcon}
           <div class="doc-card-text">
@@ -2814,23 +2833,51 @@ const App = {
         this.openDocument(card.dataset.id);
       }
     };
+    container.ondragstart = (e) => {
+      const card = e.target.closest('.doc-card[draggable="true"]');
+      if (!card || e.target.closest('button')) { e.preventDefault(); return; }
+      this._dragDocumentId = card.dataset.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/x-iwrite-document', card.dataset.id);
+      card.classList.add('is-dragging');
+    };
+    container.ondragend = () => {
+      this._dragDocumentId = null;
+      document.querySelectorAll('.doc-card.is-dragging,.folder-card.is-drop-target').forEach(el => el.classList.remove('is-dragging', 'is-drop-target'));
+    };
+  },
+
+  async _moveDraggedDocument(docId, folderId) {
+    const doc = this.documents.find(item => item.id === docId);
+    const folder = this.folders.find(item => item.id === folderId);
+    if (!doc || !folder || doc.folder === folderId || this._folderMovesInFlight?.has(docId)) return;
+    if (!this._folderMovesInFlight) this._folderMovesInFlight = new Set();
+    this._folderMovesInFlight.add(docId);
+    try {
+      await API.moveToFolder(docId, folderId);
+      doc.folder = folderId;
+      this._renderDocumentsView();
+      this.toast(`Added to ${folder.name}`, 'success');
+    } catch {
+      this.toast('Could not move the session. Please try again.', 'error');
+    } finally {
+      this._folderMovesInFlight.delete(docId);
+    }
   },
 
   async openDocument(id) {
     try {
       const doc = await API.request(`/documents/${id}`);
       document.getElementById('editor-title').value = doc.title;
-      document.getElementById('editor-textarea').innerHTML = doc.content || '';
       Editor.documentId = id;
       Editor.active = false;
       Editor.isEditing = false;
       Editor.originalContent = doc.content || '';
+      Editor.originalTabFonts = Array.isArray(doc.tabFonts) ? doc.tabFonts.slice() : null;
       Editor.originalTitle = doc.title;
-      // Viewing a saved doc isn't a live session — show it as one tab rather
-      // than carrying over stale tab state from whatever was open before.
-      Editor._tabs = [{ name: doc.title || 'Draft', html: doc.content || '' }];
-      Editor._activeTabIdx = 0;
-      Editor._renderTabsList();
+      // Restore saved tabs and their own presentation preferences.
+      Editor._initTabs(doc.content || '', doc.tabFonts);
+      if (Editor._tabs.length === 1) { Editor._tabs[0].name = doc.title || 'Draft'; Editor._renderTabsList(); }
 
       document.getElementById('editor-container').classList.add('active');
       document.getElementById('editor-timer').textContent = '';
@@ -4448,7 +4495,7 @@ const App = {
           <div class="lb-row-writer">
             <div class="lb-row-avatar">${entry.name.charAt(0).toUpperCase()}</div>
             <div class="lb-row-writer-info">
-              <div class="lb-row-name">${nameCell}${isMe ? ' <span class="lb-you">YOU</span>' : ''}${entry.plan === 'premium' ? ' <span class="lb-pro-badge">PRO</span>' : ''}</div>
+              <div class="lb-row-name">${nameCell}${entry.plan === 'premium' ? ' <span class="lb-pro-badge">PRO</span>' : ''}${isMe ? ' <span class="lb-you">YOU</span>' : ''}</div>
               <div class="lb-row-level">Level ${this.calcXPLevel(entry.xp || 0).level}</div>
             </div>
           </div>
@@ -5934,8 +5981,8 @@ const App = {
       actionsEl.innerHTML = `<button class="btn btn-ghost btn-small" onclick="App.switchView('settings')">Edit Profile</button>`;
     } else if (this.user) {
       const isFollowing = p.isFollowing;
-      actionsEl.innerHTML = `<button class="up-follow-btn ${isFollowing ? 'following' : ''}" id="up-follow-btn" data-userid="${esc(p.id)}" data-following="${isFollowing}" aria-label="${isFollowing ? 'Unfollow' : 'Follow'} ${esc(p.name)}">${isFollowing ? 'Following' : 'Follow'}</button>`;
-      document.getElementById('up-follow-btn').addEventListener('click', (e) => this._toggleFollow(e.target, p));
+      actionsEl.innerHTML = `<button class="up-follow-btn ${isFollowing ? 'following' : ''}" id="up-follow-btn" data-userid="${esc(p.id)}" data-following="${isFollowing}" aria-label="${isFollowing ? 'Unfollow' : 'Follow'} ${esc(p.name)}">${this._followButtonContent(isFollowing)}</button>`;
+      document.getElementById('up-follow-btn').addEventListener('click', (e) => this._toggleFollow(e.currentTarget, p));
     } else {
       actionsEl.innerHTML = `<a href="/app#stories" class="btn btn-primary btn-small">Sign up to follow</a>`;
     }
@@ -6150,6 +6197,11 @@ const App = {
     `;
   },
 
+  _followButtonContent(isFollowing) {
+    if (!isFollowing) return 'Follow';
+    return '<span class="follow-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Following</span><span class="unfollow-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Unfollow</span>';
+  },
+
   async _toggleFollow(btn, profile) {
     if (btn.disabled) return;
     btn.disabled = true;
@@ -6159,7 +6211,7 @@ const App = {
         await API.request(`/follow/${profile.id}`, { method: 'DELETE' });
         btn.dataset.following = 'false';
         btn.classList.remove('following');
-        btn.textContent = 'Follow';
+        btn.innerHTML = this._followButtonContent(false);
         btn.setAttribute('aria-label', `Follow ${profile.name}`);
         const countEl = document.querySelector('.up-stats strong');
         if (countEl) countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
@@ -6167,7 +6219,7 @@ const App = {
         const res = await API.request(`/follow/${profile.id}`, { method: 'POST' });
         btn.dataset.following = 'true';
         btn.classList.add('following');
-        btn.textContent = 'Following';
+        btn.innerHTML = this._followButtonContent(true);
         btn.setAttribute('aria-label', `Unfollow ${profile.name}`);
         const countEl = document.querySelector('.up-stats strong');
         if (countEl) countEl.textContent = res.followerCount;
@@ -6351,7 +6403,7 @@ const App = {
         <div class="hc-avatar">${avatar}</div>
         <div class="hc-info">
           <div style="display:flex;align-items:center;gap:6px"><strong>${esc(profile.name)}</strong>${profile.plan === 'premium' ? '<span class="pro-nav-badge" style="font-size:8px;padding:1px 4px">PRO</span>' : ''}</div>
-          <div style="color:var(--text-muted);font-size:12px">@${esc(profile.username)}</div>
+          <div class="hc-handle">@${esc(profile.username)}</div>
         </div>
       </div>
       <div class="hc-stats">
@@ -7330,12 +7382,15 @@ const App = {
         const fPro = f.plan === 'premium' ? ' <span class="pro-inline-badge">PRO</span>' : '';
         const fHandle = f.username ? ` ${this.profileLink(f.username, null, 'friend-handle')}` : '';
         const initial = this.escapeHtml((f.name || '?').charAt(0).toUpperCase());
+        const avatarPath = typeof f.avatar === 'string' && /^\/uploads\/avatars\/[a-zA-Z0-9._-]+$/.test(f.avatar) ? f.avatar : '';
+        const avatar = avatarPath ? `<img src="${avatarPath}?t=${Number(f.avatarUpdatedAt) || 0}" alt=""><span class="friend-avatar-fallback" hidden>${initial}</span>` : `<span class="friend-avatar-fallback">${initial}</span>`;
+        const presence = f.isOnline ? 'Online' : 'Offline';
         return `
         <div class="friend-row">
           <div class="friend-row-who">
             <div class="friend-row-avatar-wrap">
-              <div class="friend-row-avatar">${initial}</div>
-              <span class="friend-row-dot"></span>
+              <div class="friend-row-avatar">${avatar}</div>
+              <span class="friend-row-dot${f.isOnline ? ' is-online' : ''}" data-presence-id="${f.id}" role="img" aria-label="${presence}" title="${presence}"></span>
             </div>
             <div class="friend-row-name-wrap">
               <div class="friend-row-name">${this.escapeHtml(f.name)}${fPro}${fHandle}</div>
@@ -7359,11 +7414,36 @@ const App = {
       }
 
       container.innerHTML = cards + pager;
+      container.querySelectorAll('.friend-row-avatar img').forEach(img => {
+        img.addEventListener('error', () => { img.hidden = true; img.nextElementSibling.hidden = false; }, { once: true });
+      });
+      if (!this._friendPresenceInterval) {
+        this._friendPresenceInterval = setInterval(() => this._refreshFriendPresence(), 60000);
+      }
       container.querySelectorAll('[data-friend-menu]').forEach(btn => {
         btn.onclick = (e) => { e.stopPropagation(); this.showFriendMenu(btn, btn.dataset.friendMenu, btn.dataset.friendName); };
       });
     } catch {
       container.innerHTML = `<div class="empty-state"><p>Failed to load friends.</p></div>`;
+    }
+  },
+
+  async _refreshFriendPresence() {
+    if (this.currentView !== 'friends' || !API.getToken()) return;
+    try {
+      const { presence } = await API.getFriendPresence();
+      document.querySelectorAll('#friends-list [data-presence-id]').forEach(dot => {
+        const online = presence?.[dot.dataset.presenceId] === true;
+        dot.classList.toggle('is-online', online);
+        dot.setAttribute('aria-label', online ? 'Online' : 'Offline');
+        dot.title = online ? 'Online' : 'Offline';
+      });
+    } catch {
+      document.querySelectorAll('#friends-list [data-presence-id]').forEach(dot => {
+        dot.classList.remove('is-online');
+        dot.setAttribute('aria-label', 'Status unavailable');
+        dot.title = 'Status unavailable';
+      });
     }
   },
 

@@ -46,6 +46,12 @@ body.glow-dashboard #editor-container .fmt-btn:not(.fmt-color-btn){color:var(--u
 body.glow-dashboard #editor-container .fmt-btn.active{background:var(--ui-selected);color:var(--ui-accent);}
 
 /* Portalled menus use the same semantic colors as the workspace. */
+body.glow-dashboard #editor-container .editor-textarea.font-serif { font-family:'Times New Roman',serif; }
+body.glow-dashboard #editor-container .editor-textarea.font-fraunces { font-family:'Fraunces',Georgia,serif; }
+body.glow-dashboard #editor-container .editor-textarea.font-palatino { font-family:Palatino,'Palatino Linotype',Georgia,serif; }
+body.glow-dashboard #editor-container .editor-textarea.font-nunito { font-family:'Nunito',sans-serif; }
+body.glow-dashboard #editor-container .editor-textarea.font-instrument { font-family:'Instrument Sans',sans-serif; }
+body.glow-dashboard #editor-container .editor-textarea.font-grotesk { font-family:'Space Grotesk',sans-serif; }
 body.glow-dashboard :is(#editor-tools-menu,#editor-audio-dropdown,#editor-focus-dropdown,#selection-popup){--text-primary:var(--ui-ink);--text-secondary:var(--ui-muted);--text-muted:var(--ui-muted);--bg-card:var(--ui-surface);--bg-elevated:var(--ui-raised);--accent:var(--ui-accent);--accent-soft:var(--ui-selected);--border:var(--ui-edge);--hover-bg:var(--ui-hover);font-family:'Instrument Sans',sans-serif;background:var(--ui-surface)!important;color:var(--ui-ink)!important;border:1px solid var(--ui-edge)!important;border-radius:16px!important;box-shadow:0 12px 36px rgb(0 0 0/.15)!important;backdrop-filter:none;-webkit-backdrop-filter:none;overflow-y:auto;overscroll-behavior:contain;max-width:calc(100vw - 24px);}
 body.glow-dashboard #editor-tools-menu{width:292px;padding:8px;}
 body.glow-dashboard .session-menu-heading{padding:12px 12px 10px;font:600 12px/1.5 'Instrument Sans',sans-serif;letter-spacing:.04em;color:var(--ui-muted);}

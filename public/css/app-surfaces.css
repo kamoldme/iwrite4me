@@ -13,6 +13,45 @@ body.glow-dashboard .app-container :is(
   .upgrade-card, .support-form
 ) { border-radius:var(--app-panel-radius)!important; }
 
+/* Session tiles are compact controls, not large dashboard panels. */
+body.glow-dashboard .app-container #view-documents #all-docs .doc-card { border-radius:21px!important; }
+
+/* Profile previews use the same surfaces as the rest of the workspace. */
+body.glow-dashboard .profile-hover-card { background:var(--ui-surface);border:1px solid var(--ui-edge);border-radius:12px;padding:16px;box-shadow:0 10px 30px rgb(0 0 0 / .14);backdrop-filter:none;color:var(--ui-ink);font-family:'Instrument Sans',sans-serif; }
+body.glow-dashboard .profile-hover-card .hc-avatar { background:var(--ui-selected); }
+body.glow-dashboard .profile-hover-card .hc-avatar-fallback { color:var(--ui-accent); }
+body.glow-dashboard .profile-hover-card .hc-info strong { color:var(--ui-ink); }
+body.glow-dashboard .profile-hover-card :is(.hc-handle,.hc-stats) { color:var(--ui-muted);font-size:12px; }
+body.glow-dashboard .profile-hover-card .hc-handle { overflow-wrap:anywhere; }
+
+body.glow-dashboard #view-friends .friend-row-avatar { overflow:hidden; }
+body.glow-dashboard #view-friends .friend-row-avatar img { display:block;width:100%;height:100%;object-fit:cover; }
+body.glow-dashboard #view-friends .friend-row-avatar img[hidden] { display:none; }
+body.glow-dashboard #view-friends .friend-row-dot { background:#667169;box-shadow:0 0 0 2px var(--ui-surface); }
+body.glow-dashboard #view-friends .friend-row-dot.is-online { background:#22864f; }
+html.dark body.glow-dashboard #view-friends .friend-row-dot { background:#85928a; }
+html.dark body.glow-dashboard #view-friends .friend-row-dot.is-online { background:#4bd184; }
+
+/* Keep the tree's streak guidance without a nested card. */
+body.glow-dashboard #view-dashboard .tree-seed-note { background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;color:var(--ui-muted); }
+
+body.glow-dashboard #view-leaderboard .lb-row-name .lb-you { margin-left:12px; }
+body.glow-dashboard .up-follow-btn.following { background:var(--ui-primary);border-color:var(--ui-primary);color:var(--ui-on-primary); }
+body.glow-dashboard .up-follow-btn :is(.follow-label,.unfollow-label) { align-items:center;justify-content:center;gap:7px; }
+body.glow-dashboard .up-follow-btn .follow-label { display:inline-flex; }
+body.glow-dashboard .up-follow-btn .unfollow-label { display:none; }
+body.glow-dashboard .up-follow-btn :is(.follow-label,.unfollow-label) svg { width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round; }
+@media(hover:hover){body.glow-dashboard .up-follow-btn.following:hover { background:#b52e31;border-color:#b52e31;color:#fff; } body.glow-dashboard .up-follow-btn.following:hover .follow-label { display:none; } body.glow-dashboard .up-follow-btn.following:hover .unfollow-label { display:inline-flex; }}
+body.glow-dashboard .up-follow-btn.following:focus-visible { background:#b52e31;border-color:#b52e31;color:#fff; }
+body.glow-dashboard .up-follow-btn.following:focus-visible .follow-label { display:none; }
+body.glow-dashboard .up-follow-btn.following:focus-visible .unfollow-label { display:inline-flex; }
+body.glow-dashboard #view-upgrade .upgrade-card-features li.feature-unavailable::before { background:#b52e31;color:#fff!important; }
+body.glow-dashboard #view-documents #all-docs .doc-card[draggable=true] { cursor:grab; }
+body.glow-dashboard #view-documents #all-docs .doc-card.is-dragging { opacity:.55;cursor:grabbing; }
+body.glow-dashboard #view-documents .workspace-library-rail .folder-card.is-drop-target { background:var(--ui-selected);border-color:var(--ui-accent); }
+body.glow-dashboard #view-documents .workspace-library-rail .folder-card.is-drop-target .folder-card-icon { color:var(--ui-accent);transform:scale(1.12); }
+@media(prefers-reduced-motion:no-preference){body.glow-dashboard #view-documents .workspace-library-rail .folder-card-icon { transition:transform 150ms ease-out; }}
+
 body.glow-dashboard.app-chrome-visible :is(
   #goal-modal, #duel-modal, #share-type-modal, #daily-limit-modal,
   #confirm-remove-friend-modal, #profile-complete-overlay, #follow-list-overlay,
