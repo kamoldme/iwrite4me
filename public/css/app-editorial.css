@@ -57,11 +57,8 @@ html:not(.dark) body.glow-dashboard #view-dashboard #glow-chart path[fill^="url"
 html:not(.dark) body.glow-dashboard #view-dashboard .glow-status-dot {box-shadow:none;background:#246244;}
 html:not(.dark) body.glow-dashboard #view-dashboard .glow-activity {height:276px;}
 html:not(.dark) body.glow-dashboard #view-dashboard .glow-activity-heading {inset:24px 26px auto;}
-html:not(.dark) body.glow-dashboard #view-dashboard .glow-reading strong {font-size:42px;letter-spacing:-.035em;}
 html:not(.dark) body.glow-dashboard #view-dashboard .glow-range {border-radius:7px;background:var(--ui-field);border-color:var(--ui-edge);}
-html:not(.dark) body.glow-dashboard #view-dashboard .glow-range select {font-size:13px;}
-html:not(.dark) body.glow-dashboard #view-dashboard .glow-chart-footer {inset:auto 24px 18px;font-size:12px;color:var(--ui-muted);}
-html:not(.dark) body.glow-dashboard #view-dashboard .glow-chart-date {font-size:12px;}
+html:not(.dark) body.glow-dashboard #view-dashboard .glow-chart-footer {inset:auto 24px 18px;color:var(--ui-muted);}
 html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-hero {min-height:0;padding:0 0 22px;}
 html:not(.dark) body.glow-dashboard #view-dashboard .dashboard-hero-kicker {font-size:14px;color:var(--ui-muted);}
 html:not(.dark) body.glow-dashboard #view-dashboard :is(.dash-stat-label,.dash-stat-sub) {font-size:13px;color:var(--ui-muted);}
