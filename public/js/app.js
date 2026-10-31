@@ -220,7 +220,7 @@ const App = {
         button.innerHTML = '';
         window.google.accounts.id.renderButton(button, {
           type: 'standard',
-          theme: 'filled_black',
+          theme: 'outline',
           size: 'large',
           shape: 'pill',
           text: 'continue_with',
