@@ -5,6 +5,18 @@ const { authenticate } = require('../middleware/auth');
 const router = express.Router();
 router.use(authenticate);
 
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
+function friendOnline(activeUsers, id, now = Date.now()) {
+  const lastSeen = activeUsers?.get(id)?.lastSeen;
+  return Number.isFinite(lastSeen) && lastSeen > now - ONLINE_WINDOW_MS;
+}
+
+// Friends need profile details, not authentication or billing metadata.
+function friendProfile(user) {
+  const fields = ['id', 'name', 'username', 'email', 'avatar', 'avatarUpdatedAt', 'xp', 'level', 'plan', 'streak', 'totalWords'];
+  return Object.fromEntries(fields.filter(key => user[key] !== undefined).map(key => [key, user[key]]));
+}
+
 router.get('/', async (req, res) => {
   try {
     const user = await findOne('users.json', u => u.id === req.user.id);
@@ -20,7 +32,8 @@ router.get('/', async (req, res) => {
     for (let i = 0; i < friendIds.length; i++) {
       const f = await findOne('users.json', u => u.id === friendIds[i]);
       if (!f) continue;
-      const { password: _, ...safe } = f;
+      const safe = friendProfile(f);
+      safe.isOnline = friendOnline(req.app.get('activeUsers'), f.id);
       safe._addedIndex = i; // preserve add-order
       friendsList.push(safe);
     }
@@ -47,6 +60,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/presence', async (req, res) => {
+  try {
+    const user = await findOne('users.json', u => u.id === req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const activeUsers = req.app.get('activeUsers');
+    const now = Date.now();
+    const presence = Object.fromEntries((user.friends || []).map(id => [id, friendOnline(activeUsers, id, now)]));
+    res.json({ presence });
+  } catch {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/requests', async (req, res) => {
   try {
     const user = await findOne('users.json', u => u.id === req.user.id);
@@ -55,7 +81,7 @@ router.get('/requests', async (req, res) => {
     for (const id of (user.friendRequests || [])) {
       const sender = await findOne('users.json', u => u.id === id);
       if (!sender) continue;
-      const { password: _, ...safe } = sender;
+      const safe = friendProfile(sender);
       requests.push(safe);
     }
     res.json(requests);
@@ -79,7 +105,7 @@ router.get('/suggestions', async (req, res) => {
         if (!suggestions.has(fofId)) {
           const fof = await findOne('users.json', u => u.id === fofId);
           if (!fof) continue;
-          const { password: _, ...safe } = fof;
+          const safe = friendProfile(fof);
           suggestions.set(fofId, { ...safe, mutualCount: 1 });
         } else {
           suggestions.get(fofId).mutualCount++;

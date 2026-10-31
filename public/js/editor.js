@@ -58,7 +58,9 @@ const Editor = {
         mode: this.mode,
         lastKeystroke: this.lastKeystroke,
         title: this.titleInput.value,
-        content: this._serializeTabs()
+        content: this._serializeTabs(),
+        tabFonts: this._serializeTabFonts(),
+        activeTabIdx: this._activeTabIdx
       }));
     } catch {}
   },
@@ -91,7 +93,7 @@ const Editor = {
   // single-tab documents load back in unchanged (no marker = one tab).
   _tabMarkerRe: /<!--iwrite-tab:([^>]*?)-->/g,
 
-  _initTabs(html) {
+  _initTabs(html, tabFonts, activeTabIdx = 0) {
     const re = new RegExp(this._tabMarkerRe.source, 'g');
     const parts = (html || '').split(re);
     if (parts.length <= 1) {
@@ -105,8 +107,11 @@ const Editor = {
         this._tabs.push({ name: parts[i] || 'Draft', html: parts[i + 1] || '' });
       }
     }
-    this._activeTabIdx = 0;
-    this.textarea.innerHTML = this._tabs[0].html;
+    const fallback = this._defaultFont();
+    this._tabs.forEach((tab, i) => { tab.font = this._validFont(tabFonts?.[i]) ? tabFonts[i] : fallback; });
+    this._activeTabIdx = Number.isInteger(activeTabIdx) && this._tabs[activeTabIdx] ? activeTabIdx : 0;
+    this.textarea.innerHTML = this._tabs[this._activeTabIdx].html;
+    this.setFont(this._tabs[this._activeTabIdx].font, { persistDefault: false, markDirty: false });
     this._renderTabsList();
   },
 
@@ -114,6 +119,10 @@ const Editor = {
     if (this._tabs && this._tabs[this._activeTabIdx]) this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
     if (!this._tabs || this._tabs.length <= 1) return (this._tabs && this._tabs[0] && this._tabs[0].html) || this.textarea.innerHTML;
     return this._tabs.map(t => `<!--iwrite-tab:${t.name}-->${t.html}`).join('');
+  },
+
+  _serializeTabFonts() {
+    return (this._tabs || []).map(tab => this._validFont(tab.font) ? tab.font : this._defaultFont());
   },
 
   _tabWordCount(html) {
@@ -140,10 +149,14 @@ const Editor = {
     if (!this._tabs || this._tabs.length <= 1 || !this._tabs[idx]) return;
     const ok = await App.showConfirm(`Delete "${this._tabs[idx].name}"? This can't be undone.`);
     if (!ok) return;
+    if (idx !== this._activeTabIdx) this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
     this._tabs.splice(idx, 1);
     if (this._activeTabIdx >= this._tabs.length) this._activeTabIdx = this._tabs.length - 1;
     else if (this._activeTabIdx > idx) this._activeTabIdx -= 1;
     this.textarea.innerHTML = this._tabs[this._activeTabIdx].html;
+    this.setFont(this._tabs[this._activeTabIdx].font, { persistDefault: false, markDirty: false });
+    if (this.isEditing) this.isDirty = true;
+    if (this.active) this._saveSessionState();
     this._renderTabsList();
     this.updateWordCount();
   },
@@ -153,6 +166,8 @@ const Editor = {
     this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
     this._activeTabIdx = idx;
     this.textarea.innerHTML = this._tabs[idx].html;
+    this.setFont(this._tabs[idx].font, { persistDefault: false, markDirty: false });
+    if (this.active) this._saveSessionState();
     this._renderTabsList();
     this.updateWordCount();
     this.textarea.focus();
@@ -161,9 +176,12 @@ const Editor = {
   _addTab() {
     if (!this._tabs) return;
     this._tabs[this._activeTabIdx].html = this.textarea.innerHTML;
-    this._tabs.push({ name: `Draft ${this._tabs.length + 1}`, html: '' });
+    this._tabs.push({ name: `Draft ${this._tabs.length + 1}`, html: '', font: this._defaultFont() });
     this._activeTabIdx = this._tabs.length - 1;
     this.textarea.innerHTML = '';
+    this.setFont(this._tabs[this._activeTabIdx].font, { persistDefault: false, markDirty: false });
+    if (this.isEditing) this.isDirty = true;
+    if (this.active) this._saveSessionState();
     this._renderTabsList();
     this.updateWordCount();
     this.textarea.focus();
@@ -191,6 +209,10 @@ const Editor = {
     input.select();
     const commit = () => {
       this._tabs[idx].name = input.value.trim() || current;
+      if (this._tabs[idx].name !== current) {
+        if (this.isEditing) this.isDirty = true;
+        if (this.active) this._saveSessionState();
+      }
       this._renderTabsList();
     };
     input.addEventListener('blur', commit, { once: true });
@@ -268,8 +290,9 @@ const Editor = {
     this.textarea.focus();
     this._baseWordCount = 0;
     this._lastSavedAt = null;
-    this._tabs = [{ name: 'Draft', html: '' }];
+    this._tabs = [{ name: 'Draft', html: '', font: this._defaultFont() }];
     this._activeTabIdx = 0;
+    this.setFont(this._tabs[0].font, { persistDefault: false, markDirty: false });
     this._renderTabsList();
     this._lastMove = Date.now();
     this.container.classList.remove('chrome-hidden');
@@ -1482,7 +1505,8 @@ const Editor = {
     try {
       await API.updateDocument(this.documentId, {
         title: this.titleInput.value,
-        content: this._serializeTabs()
+        content: this._serializeTabs(),
+        tabFonts: this._serializeTabFonts()
       });
       this._lastSavedAt = Date.now();
       // Also save session state on each auto-save
@@ -1498,7 +1522,8 @@ const Editor = {
       // Try to update the document to verify it still exists
       await API.updateDocument(state.documentId, {
         title: state.title,
-        content: state.content
+        content: state.content,
+        ...(Array.isArray(state.tabFonts) ? { tabFonts: state.tabFonts } : {})
       });
 
       // Restore session state
@@ -1515,7 +1540,7 @@ const Editor = {
       // Show editor
       this.container.classList.add('active');
       this.titleInput.value = state.title;
-      this._initTabs(state.content);
+      this._initTabs(state.content, state.tabFonts, state.activeTabIdx);
       this.textarea.contentEditable = 'true';
       this.textarea.focus();
       this.active = true;
@@ -1686,6 +1711,7 @@ const Editor = {
         earlyComplete: !!this._earlyComplete,
         title: this.titleInput.value,
         content: this._serializeTabs(),
+        tabFonts: this._serializeTabFonts(),
         activeWritingSeconds: Math.round(this._activeWritingSeconds)
       });
     } catch {
@@ -1822,12 +1848,16 @@ const Editor = {
   async saveEdits() {
     if (!this.documentId) return;
     try {
+      const content = this._serializeTabs();
+      const tabFonts = this._serializeTabFonts();
       await API.updateDocument(this.documentId, {
         title: this.titleInput.value,
-        content: this.textarea.innerHTML
+        content,
+        tabFonts
       });
       this.isDirty = false;
-      this.originalContent = this.textarea.innerHTML;
+      this.originalContent = content;
+      this.originalTabFonts = tabFonts.slice();
       this.originalTitle = this.titleInput.value;
       this.exitEditMode();
       App.toast('Document saved', 'success');
@@ -1840,7 +1870,7 @@ const Editor = {
       const idx = App.documents.findIndex(d => d.id === this.documentId);
       if (idx !== -1) {
         App.documents[idx].title = this.titleInput.value;
-        App.documents[idx].wordCount = this.getWordCount();
+        App.documents[idx].wordCount = this._totalWordCount();
         App.documents[idx].updatedAt = new Date().toISOString();
       }
     } catch {
@@ -2046,14 +2076,23 @@ const Editor = {
   },
 
   // --- Font switcher ---
-  _fontClasses: ['font-serif', 'font-mono', 'font-georgia', 'font-garamond', 'font-courier', 'font-dyslexic'],
-  setFont(font) {
+  _fontClasses: ['font-serif', 'font-mono', 'font-georgia', 'font-garamond', 'font-courier', 'font-dyslexic', 'font-fraunces', 'font-palatino', 'font-nunito', 'font-instrument', 'font-grotesk'],
+  _validFont(font) { return font === 'sans' || this._fontClasses.includes('font-' + font); },
+  _defaultFont() {
+    const saved = localStorage.getItem('iwrite_editor_font') || 'sans';
+    return this._validFont(saved) ? saved : 'sans';
+  },
+  setFont(font, { persistDefault = true, markDirty = true } = {}) {
+    if (!this._validFont(font)) font = 'sans';
     this._currentFont = font;
     this._fontClasses.forEach(c => this.textarea.classList.remove(c));
     if (font !== 'sans') this.textarea.classList.add('font-' + font);
     const sel = document.getElementById('fmt-font-select');
     if (sel) sel.value = font;
-    localStorage.setItem('iwrite_editor_font', font);
+    if (this._tabs?.[this._activeTabIdx]) this._tabs[this._activeTabIdx].font = font;
+    if (persistDefault) localStorage.setItem('iwrite_editor_font', font);
+    if (markDirty && this.isEditing) this.isDirty = true;
+    if (markDirty && this.active) this._saveSessionState();
   },
 
   // --- Writing preferences: focus mode, typewriter sounds, smart punctuation ---
@@ -2751,7 +2790,7 @@ const Editor = {
     if (this.isEditing && this.isDirty) {
       const ok = await App.showConfirm('Are you sure? New edits will not be saved.');
       if (ok) {
-        this.textarea.innerHTML = this.originalContent;
+        this._initTabs(this.originalContent, this.originalTabFonts);
         this.titleInput.value = this.originalTitle;
         this.exitEditMode();
         this.container.classList.remove('active'); document.body.classList.remove('editor-active');

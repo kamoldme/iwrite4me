@@ -1,4 +1,8 @@
 const express = require('express');
+const SESSION_FONTS = new Set(['sans', 'serif', 'mono', 'georgia', 'garamond', 'courier', 'dyslexic', 'fraunces', 'palatino', 'nunito', 'instrument', 'grotesk']);
+function validTabFonts(value) {
+  return Array.isArray(value) && value.length <= 1000 && value.every(font => typeof font === 'string' && SESSION_FONTS.has(font));
+}
 const { v4: uuid } = require('uuid');
 const { findOne, findMany, insertOne, updateOne, deleteOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
@@ -297,6 +301,7 @@ router.get('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   const doc = await findOne('documents.json', d => d.id === req.params.id && d.userId === req.user.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
+  if (req.body.tabFonts !== undefined && !validTabFonts(req.body.tabFonts)) return res.status(400).json({ error: 'Invalid tab fonts' });
 
   const updates = {};
   if (req.body.title !== undefined) {
@@ -315,6 +320,7 @@ router.patch('/:id', async (req, res) => {
     updates.content = req.body.content;
     updates.wordCount = req.body.content.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   }
+  if (req.body.tabFonts !== undefined) updates.tabFonts = req.body.tabFonts;
   if (req.body.folder !== undefined) updates.folder = req.body.folder;
   updates.updatedAt = new Date().toISOString();
 
@@ -351,8 +357,10 @@ router.post('/:id/complete', async (req, res) => {
     earlyComplete,
     content,
     title,
+    tabFonts,
     activeWritingSeconds
   } = req.body;
+  if (tabFonts !== undefined && !validTabFonts(tabFonts)) return res.status(400).json({ error: 'Invalid tab fonts' });
   const doc = await findOne('documents.json', d => d.id === req.params.id && d.userId === req.user.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
   const user = await findOne('users.json', u => u.id === req.user.id);
@@ -408,6 +416,7 @@ router.post('/:id/complete', async (req, res) => {
     updatedAt: new Date().toISOString()
   };
   if (content !== undefined) completeUpdates.content = sanitized.content;
+  if (tabFonts !== undefined) completeUpdates.tabFonts = tabFonts;
   if (title !== undefined) {
     let baseTitle = (title || '').trim() || 'Untitled';
     const userDocs = await findMany('documents.json', d => d.userId === req.user.id && !d.deleted && d.id !== req.params.id);

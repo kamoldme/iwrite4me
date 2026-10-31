@@ -173,6 +173,10 @@ const API = {
     return this.request(`/friends?page=${page}&sort=${sort}&limit=${limit}`);
   },
 
+  async getFriendPresence() {
+    return this.request('/friends/presence');
+  },
+
   async getFriendRequests() {
     return this.request('/friends/requests');
   },
