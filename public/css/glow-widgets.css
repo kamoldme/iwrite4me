@@ -184,7 +184,7 @@ body.glow-dashboard #view-dashboard .td-ach-name{font-size:13px}
 body.glow-dashboard #view-dashboard .td-ach-desc,body.glow-dashboard #view-dashboard .td-ach-count{font-size:11px;line-height:1.5;color:#c6b5d2}
 body.glow-dashboard #view-dashboard .td-ach-item{padding:5px 0}
 body.glow-dashboard #view-dashboard .td-reflection-card{padding:24px 28px;border-radius:24px}
-body.glow-dashboard #view-dashboard .td-sticky p{font-size:20px;line-height:1.5}
+body.glow-dashboard #view-dashboard .td-sticky p{font-size:23px;line-height:1.5}
 body.glow-dashboard #view-dashboard ::selection{background:#9bf2d0;color:#06150d}
 @media(hover:hover){
  body.glow-dashboard #view-dashboard .glow-document:hover{background:#13221a;border-color:#426251}

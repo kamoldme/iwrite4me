@@ -78,7 +78,7 @@ html:not(.dark) body.glow-dashboard #view-dashboard .glow-dial-knob circle:last-
 html:not(.dark) body.glow-dashboard #view-dashboard #td-edit-goal-btn {background:#e5efdf;color:#315638;border-color:#b7cbb0;}
 html:not(.dark) body.glow-dashboard #view-dashboard .td-reflection-card {grid-column:1;grid-row:2;padding:22px 24px;margin:0;}
 html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky {background:none;box-shadow:none;transform:none;padding:12px 0 0;}
-html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky p {font:400 19px/1.55 Georgia,serif;color:var(--ui-ink);}
+html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky p {font:400 21.85px/1.55 Georgia,serif;color:var(--ui-ink);}
 html:not(.dark) body.glow-dashboard #view-dashboard .td-sticky-feather {display:none;}
 html:not(.dark) body.glow-dashboard #view-dashboard .dash-panel-tabs {grid-column:2;grid-row:1/3;min-height:100%;padding:24px;}
 html:not(.dark) body.glow-dashboard #view-dashboard .glow-rhythm-mark {width:32px;height:32px;border-radius:0;background:none;box-shadow:none;color:var(--ui-accent);}

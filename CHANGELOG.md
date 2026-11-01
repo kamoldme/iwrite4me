@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.6.20] - 2026-11-01
+
+### Changed
+- Increase reflection prompt text size by 15% in light and dark modes.
+
 ## [3.6.19] - 2026-11-01
 
 ### Changed
