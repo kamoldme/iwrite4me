@@ -912,10 +912,10 @@
       this._storyAudioElement.loop = key !== 'hz40';
       if (key === 'hz40') {
         const audio = this._storyAudioElement;
-        audio.currentTime = 20;
+        audio.currentTime = 35;
         audio.onended = () => {
           if (this._storyAudioElement !== audio || this._storyAudioKey !== 'hz40') return;
-          audio.currentTime = 20;
+          audio.currentTime = 35;
           audio.play().catch(() => {});
         };
       }

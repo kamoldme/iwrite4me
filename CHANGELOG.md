@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.6.19] - 2026-11-01
+
+### Changed
+- Keep the leave-tab countdown from starting when interacting with embedded audio, and play a siren when the countdown starts.
+- Start the 40 Hz track at 35 seconds and hide the playing-sound shortcut with the idle toolbar.
+
 ## [3.6.18] - 2026-11-01
 
 ### Changed
