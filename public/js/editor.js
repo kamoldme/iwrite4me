@@ -224,6 +224,7 @@ const Editor = {
   },
 
   async start(duration, mode, opts = {}) {
+    if (mode !== 'zen') this._primeTabAlarm();
     this.duration = duration;
     this.mode = mode;
     this.abandoned = false;
@@ -569,6 +570,7 @@ const Editor = {
   },
 
   onKeydown: (e) => {
+    if (Editor.active && Editor.mode !== 'zen' && (!Editor._tabAlarmContext || Editor._tabAlarmContext.state === 'suspended')) Editor._primeTabAlarm();
     // Typewriter sound — fire on character keys, space, enter, backspace
     if (Editor._typewriterSound && e.key && (e.key.length === 1 || e.key === 'Enter' || e.key === 'Backspace')) {
       Editor._playTypeClick(e.key);
@@ -765,16 +767,21 @@ const Editor = {
     }
   },
 
-  // Fired when the browser window loses focus (any focus loss counts)
+  // Focus can move into the embedded player without leaving the browser tab.
   onWindowBlur: () => {
     if (!Editor.active || Editor.abandoned) return;
-    Editor.onTabLeave();
+    // Wait for the browser to settle focus: iframe clicks also emit window blur.
+    setTimeout(() => {
+      if (Editor.active && !Editor.abandoned && (document.hidden || !document.hasFocus())) {
+        Editor.onTabLeave();
+      }
+    }, 0);
   },
 
   // Fired when the browser window regains focus
   onWindowFocus: () => {
     if (!Editor.active || Editor.abandoned) return;
-    Editor.onTabReturn();
+    if (Editor.tabCountdown || Editor._pauseStart) Editor.onTabReturn();
   },
 
   // Periodic focus check — catches iframe focus stealing that bypasses blur/visibilitychange
@@ -799,6 +806,51 @@ const Editor = {
     return (this._pausedMs || 0) + (this._pauseStart ? Date.now() - this._pauseStart : 0);
   },
 
+  _primeTabAlarm() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = this._tabAlarmContext ||= new AudioContext();
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    } catch {}
+  },
+
+  _startTabAlarm() {
+    if (this._tabAlarmNodes) return;
+    try {
+      const ctx = this._tabAlarmContext;
+      if (!ctx || ctx.state !== 'running') return;
+      const siren = ctx.createOscillator();
+      const sweep = ctx.createOscillator();
+      const depth = ctx.createGain();
+      const volume = ctx.createGain();
+      const now = ctx.currentTime;
+      siren.type = 'sawtooth';
+      siren.frequency.value = 520;
+      sweep.frequency.value = 0.8;
+      depth.gain.value = 210;
+      volume.gain.setValueAtTime(0, now);
+      volume.gain.linearRampToValueAtTime(0.045, now + 0.1);
+      sweep.connect(depth); depth.connect(siren.frequency);
+      siren.connect(volume); volume.connect(ctx.destination);
+      siren.start(); sweep.start();
+      this._tabAlarmNodes = { siren, sweep, volume };
+    } catch {}
+  },
+
+  _stopTabAlarm() {
+    const nodes = this._tabAlarmNodes;
+    if (!nodes) return;
+    this._tabAlarmNodes = null;
+    try {
+      const now = this._tabAlarmContext.currentTime;
+      nodes.volume.gain.cancelScheduledValues(now);
+      nodes.volume.gain.setTargetAtTime(0, now, 0.02);
+      nodes.siren.stop(now + 0.1);
+      nodes.sweep.stop(now + 0.1);
+    } catch {}
+  },
+
   onTabLeave() {
     if (this.abandoned || !this.active) return;
     if (this.mode === 'zen') {
@@ -807,6 +859,7 @@ const Editor = {
       return;
     }
     if (this.tabCountdown) return;
+    this._startTabAlarm();
     this.tabLeftTime = Date.now();
     this.tabWarning.classList.add('active');
     this.tabWarningTimer.textContent = this.tabGracePeriod;
@@ -823,6 +876,7 @@ const Editor = {
   },
 
   onTabReturn() {
+    this._stopTabAlarm();
     // Accumulate paused time (zen mode)
     if (this._pauseStart) {
       this._pausedMs = (this._pausedMs || 0) + (Date.now() - this._pauseStart);
@@ -2392,7 +2446,7 @@ const Editor = {
         if (trackKey === 'hz40') {
           audio.onended = () => {
             if (this._audioElement !== audio || this._activeAudioKey !== 'hz40') return;
-            audio.currentTime = 20;
+            audio.currentTime = 35;
             audio.play().catch(() => {});
           };
         }
@@ -2416,7 +2470,7 @@ const Editor = {
       return;
     }
     if (this._activeAudioKey !== key) this.stopAudio();
-    if (key === 'hz40' && next.currentTime < 20) next.currentTime = 20;
+    if (key === 'hz40' && next.currentTime < 35) next.currentTime = 35;
     const request = ++this._audioRequest;
     const track = document.querySelector(`.audio-track[data-audio="${key}"]`);
     next.volume = Number(track?.querySelector('.audio-track-vol')?.value ?? 50) / 100;
@@ -2713,6 +2767,7 @@ const Editor = {
   },
 
   cleanup() {
+    this._stopTabAlarm();
     App._closeSessionPopovers?.();
     this.active = false;
     this._completing = false;

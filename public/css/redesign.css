@@ -1883,6 +1883,7 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
    they're outside .chrome-el. */
 .chrome-el, .chrome-dim, #editor-mode-badge, #editor-timer { transition: opacity .35s ease, transform .35s ease; }
 .editor-container.chrome-hidden .editor-toolbar-left.chrome-el,
+.editor-container.chrome-hidden .editor-playing-sound.chrome-el,
 .editor-container.chrome-hidden .tools-menu-wrap.chrome-el {
   opacity: 0; transform: translateY(-8px); pointer-events: none;
 }
