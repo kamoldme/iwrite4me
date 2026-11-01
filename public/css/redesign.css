@@ -1770,6 +1770,8 @@ html.dark .community-hero-illustration { filter: invert(1) hue-rotate(180deg) br
    toolbar — the toolbar's border-bottom just added a second, redundant
    dividing line right above it. */
 .editor-container.dangerous-active .editor-toolbar { border-bottom: none; }
+.editor-playing-sound[hidden] { display: none !important; }
+.editor-playing-sound:not([hidden]) { color: var(--accent); background: var(--accent-soft); }
 .editor-back-btn { border-radius: 10px; background: transparent; }
 .editor-title-input { font-family: var(--font-sans); }
 .editor-mode-badge {

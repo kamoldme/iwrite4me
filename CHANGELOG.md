@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.18] - 2026-11-01
+
+### Changed
+- Tighten the sound controls and add a shortcut while audio is playing.
+- Start the 40 Hz recording at 20 seconds and skip the intro when it loops.
+- Refine session pagination, settings cards, and sidebar and theme transitions.
+
 ## [3.3.0] - 2026-06-20
 
 ### Added

@@ -909,7 +909,16 @@
       if (!src) return;
       const volumeInput = document.querySelector(`[data-story-audio-vol="${key}"]`);
       this._storyAudioElement = new Audio(src);
-      this._storyAudioElement.loop = true;
+      this._storyAudioElement.loop = key !== 'hz40';
+      if (key === 'hz40') {
+        const audio = this._storyAudioElement;
+        audio.currentTime = 20;
+        audio.onended = () => {
+          if (this._storyAudioElement !== audio || this._storyAudioKey !== 'hz40') return;
+          audio.currentTime = 20;
+          audio.play().catch(() => {});
+        };
+      }
       this._storyAudioElement.crossOrigin = 'anonymous';
       this._storyAudioElement.volume = Number(volumeInput?.value || 50) / 100;
       this._storyAudioKey = key;
