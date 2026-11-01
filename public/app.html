@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png?v=1">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1">
   <link rel="stylesheet" href="/css/style.css?v=147">
-  <link rel="stylesheet" href="/css/redesign.css?v=27">
+  <link rel="stylesheet" href="/css/redesign.css?v=28">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="/css/feedback.css?v=5">
   <link rel="stylesheet" href="/css/daily-limit.css?v=2">
@@ -33,9 +33,9 @@
   <link rel="stylesheet" href="/css/staging-surfaces.css?v=3">
   <link rel="stylesheet" href="/css/sidebar-redesign.css?v=2">
   <link rel="stylesheet" href="/css/workspace-pages.css?v=4">
-  <link rel="stylesheet" href="/css/app-editorial.css?v=29">
+  <link rel="stylesheet" href="/css/app-editorial.css?v=30">
   <link rel="stylesheet" href="/css/app-surfaces.css?v=3">
-  <link rel="stylesheet" href="/css/session-workspace.css?v=10">
+  <link rel="stylesheet" href="/css/session-workspace.css?v=11">
   <link rel="stylesheet" href="/css/auth-editorial.css?v=3">
 </head>
 <body class="glow-dashboard">
@@ -1085,6 +1085,9 @@
           <span class="heart" data-idx="1">❤</span>
           <span class="heart" data-idx="2">❤</span>
         </div>
+          <button type="button" class="tool editor-playing-sound chrome-el" id="editor-playing-sound" title="Open sound controls" aria-label="Sound playing — open sound controls" aria-controls="editor-audio-dropdown" aria-expanded="false" hidden>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </button>
           <div class="editor-paper-zoom chrome-el" role="group" aria-label="Paper zoom">
             <button type="button" id="paper-zoom-out" title="Zoom paper out" aria-label="Zoom paper out">−</button>
             <button type="button" id="paper-zoom-reset" title="Reset paper to 100%" aria-label="Reset paper zoom to 100%"><span id="paper-zoom-value" aria-live="polite">100%</span></button>
@@ -1154,7 +1157,6 @@
             <span style="position:absolute;top:2px;right:1px;font-size:6px;font-weight:800;letter-spacing:.3px;color:#fff;background:var(--accent);border-radius:3px;padding:1px 2px;line-height:1;pointer-events:none">PRO</span>
           </button>
           <div class="editor-focus-dropdown" id="editor-focus-dropdown" style="display:none">
-            <div class="focus-drop-header">Focus Mode</div>
             <p class="focus-drop-desc">Dims every line except the one you're on — keeps your eyes locked to the words as they come.</p>
             <button type="button" class="focus-big-toggle" id="focus-big-toggle-btn">
               <span class="focus-toggle-track"><span class="focus-toggle-thumb"></span></span>
@@ -1889,9 +1891,9 @@
   <script src="/js/tree.js?v=18"></script>
   <script src="/js/monsters.js?v=18"></script>
   <script src="/js/feedback.js?v=optional-feedback-2"></script>
-  <script src="/js/editor.js?v=session-sound-7"></script>
-  <script src="/js/app.js?v=release-auth-5"></script>
-  <script src="/js/stories.js?v=24"></script>
+  <script src="/js/editor.js?v=session-sound-8"></script>
+  <script src="/js/app.js?v=session-ui-1"></script>
+  <script src="/js/stories.js?v=25"></script>
   <script src="/js/paper-zoom.js?v=5"></script>
   <script src="/js/glow-widgets.js?v=5"></script>
   <script src="/js/staging-chrome.js?v=6"></script>

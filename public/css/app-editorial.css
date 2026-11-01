@@ -665,7 +665,7 @@ body.glow-dashboard #dashboard-notif-dropdown .dashboard-notif-empty{display:gri
 /* The page takes its final layout once; only its visual offset animates. */
 body.glow-dashboard .app-container .main-content{transition:none!important;}
 body.glow-dashboard .app-container .sidebar{contain:layout paint;}
-@media(prefers-reduced-motion:no-preference){body.glow-dashboard .app-container.shell-motion-ready .sidebar{min-width:0;transition:width 200ms cubic-bezier(.2,0,0,1);}}
+@media(prefers-reduced-motion:no-preference){body.glow-dashboard .app-container.shell-motion-ready .sidebar{min-width:0;transition:none;}}
 html.theme-wave::view-transition-old(root),html.theme-wave::view-transition-new(root){animation:none;mix-blend-mode:normal;}
 html.theme-wave::view-transition-old(root){z-index:0;}
 html.theme-wave::view-transition-new(root){z-index:1;}
@@ -673,6 +673,12 @@ html.theme-wave::view-transition-group(root){animation:none;}
 html.theme-wave *,html.theme-wave *::before,html.theme-wave *::after{transition:none!important;}
 @media(max-width:600px){body.glow-dashboard #view-leaderboard #lb-your-note{margin-inline-start:0;}}
 @media(prefers-reduced-motion:reduce){body.glow-dashboard.app-chrome-visible #dashboard-notif-dropdown{transition:none!important;transform:none;}}
+
+/* Keep the avatar compact and give the banner more room. */
+@media(min-width:901px){body.glow-dashboard #view-settings .workspace-settings-media{grid-template-columns:minmax(0,1fr) minmax(0,2fr);}}
+body.glow-dashboard #view-settings.workspace-v2 .profile-avatar-wrap{align-items:center;text-align:center;}
+body.glow-dashboard #view-settings.workspace-v2 .profile-avatar-actions{justify-content:center;}
+body.glow-dashboard #view-settings.workspace-v2 :is(#change-password-section,.danger-zone-section){width:100%;max-width:640px;}
 /* Drafts are a compact writing list with a predictable action column. */
 body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .stories-mine-list{display:flex;flex-direction:column;gap:12px;max-width:none;margin:0;}
 body.glow-dashboard #view-stories.workspace-v2.stories-mode-feed .story-doc-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;min-height:84px;margin:0;padding:18px 20px;border-radius:14px!important;}

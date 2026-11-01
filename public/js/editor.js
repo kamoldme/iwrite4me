@@ -2387,8 +2387,15 @@ const Editor = {
       if (!audio) {
         audio = new Audio();
         audio.preload = 'metadata';
-        audio.loop = true;
+        audio.loop = trackKey !== 'hz40';
         audio.src = this._audioSources[trackKey];
+        if (trackKey === 'hz40') {
+          audio.onended = () => {
+            if (this._audioElement !== audio || this._activeAudioKey !== 'hz40') return;
+            audio.currentTime = 20;
+            audio.play().catch(() => {});
+          };
+        }
         this._audioPool.set(trackKey, audio);
       }
       // Fetch ahead only for the hovered/focused track, not every long recording.
@@ -2409,6 +2416,7 @@ const Editor = {
       return;
     }
     if (this._activeAudioKey !== key) this.stopAudio();
+    if (key === 'hz40' && next.currentTime < 20) next.currentTime = 20;
     const request = ++this._audioRequest;
     const track = document.querySelector(`.audio-track[data-audio="${key}"]`);
     next.volume = Number(track?.querySelector('.audio-track-vol')?.value ?? 50) / 100;
@@ -2623,6 +2631,8 @@ const Editor = {
 
   _updateTrackUI() {
     this._updateYTUI();
+    const shortcut = document.getElementById('editor-playing-sound');
+    if (shortcut) shortcut.hidden = !this._audioPlaying;
     document.querySelectorAll('.audio-track').forEach(track => {
       const key = track.dataset.audio;
       const btn = track.querySelector('.audio-play-btn');

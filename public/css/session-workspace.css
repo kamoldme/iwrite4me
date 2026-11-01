@@ -65,12 +65,12 @@ body.glow-dashboard #editor-tools-menu .menu-row-toggle.on{background:var(--ui-p
 body.glow-dashboard #editor-tools-menu .menu-row-toggle.on .menu-row-toggle-thumb{background:var(--ui-on-primary);}
 body.glow-dashboard :is(#editor-tools-menu,#editor-audio-dropdown,#editor-focus-dropdown) :is(button,input,select):focus-visible{outline:2px solid var(--ui-accent);outline-offset:-2px;}
 body.glow-dashboard #editor-audio-dropdown{width:350px;padding:8px;}
-body.glow-dashboard #editor-audio-dropdown .audio-section{padding:12px;border-top:1px solid var(--ui-edge-soft);}
-body.glow-dashboard #editor-audio-dropdown .audio-section-label{font:600 11px/1.4 'Instrument Sans',sans-serif;color:var(--ui-muted);letter-spacing:.06em;margin-bottom:12px;}
+body.glow-dashboard #editor-audio-dropdown .audio-section{padding:8px 12px;border-top:1px solid var(--ui-edge-soft);}
+body.glow-dashboard #editor-audio-dropdown .audio-section-label{font:600 11px/1.4 'Instrument Sans',sans-serif;color:var(--ui-muted);letter-spacing:.06em;margin-bottom:6px;}
 body.glow-dashboard #editor-audio-dropdown .typewriter-select-wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 body.glow-dashboard #editor-audio-dropdown .typewriter-select-label{font-size:13px;color:var(--ui-ink);}
 body.glow-dashboard #editor-audio-dropdown .typewriter-pack-select{min-width:116px;max-width:150px;min-height:36px;padding:6px;border:1px solid var(--ui-edge);border-radius:8px;background:var(--ui-field);color:var(--ui-ink);font:500 12px 'Instrument Sans',sans-serif;}
-body.glow-dashboard #editor-audio-dropdown .audio-track{display:grid;grid-template-columns:32px minmax(0,1fr) 80px;align-items:center;gap:12px;box-sizing:border-box;min-height:52px;padding:10px 12px;margin-block:4px;border-radius:10px;}
+body.glow-dashboard #editor-audio-dropdown .audio-track{display:grid;grid-template-columns:32px minmax(0,1fr) 80px;align-items:center;gap:12px;box-sizing:border-box;min-height:40px;padding:4px 8px;margin-block:1px;border-radius:10px;}
 body.glow-dashboard #editor-audio-dropdown .audio-track-name{font-size:13px;color:var(--ui-ink);}
 body.glow-dashboard #editor-audio-dropdown :is(.audio-play-btn,.audio-ctrl-btn){display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--ui-edge);border-radius:9px;background:var(--ui-raised);color:var(--ui-accent);}
 body.glow-dashboard #editor-audio-dropdown .audio-play-btn.playing{background:var(--ui-primary);color:var(--ui-on-primary);}
@@ -172,7 +172,7 @@ body.glow-dashboard #editor-audio-dropdown .audio-track.loading .audio-play-btn{
 body.glow-dashboard #editor-container .editor-writing-desk{align-items:stretch;}
 body.glow-dashboard #editor-container .editor-paper-stage{position:relative;flex:none;align-self:flex-start;margin:28px auto 64px;}
 body.glow-dashboard #editor-container .editor-paper-stage .editor-area{max-width:none;margin:0;transform-origin:top left;}
-body.glow-dashboard #editor-container .editor-paper-zoom{display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--ui-edge);border-radius:10px;transition:opacity 180ms ease;}
+body.glow-dashboard #editor-container .editor-paper-zoom{display:flex;align-items:center;gap:2px;height:36px;box-sizing:border-box;padding:2px;border:1px solid var(--ui-edge);border-radius:10px;transition:opacity 180ms ease;}
 body.glow-dashboard #editor-container .editor-paper-zoom button{display:grid;place-items:center;min-width:28px;height:28px;padding:0 6px;border:0;border-radius:7px;background:none;color:var(--ui-muted);font:500 13px/1 'DM Mono',monospace;cursor:pointer;}
 body.glow-dashboard #editor-container .editor-paper-zoom button:disabled{opacity:.35;cursor:default;}
 body.glow-dashboard #editor-container .editor-paper-zoom button:not(:disabled):hover{color:var(--ui-accent);background:var(--ui-selected);}

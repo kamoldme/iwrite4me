@@ -16,6 +16,21 @@ function fixture() {
   return { editor: sandbox.editorUnderTest, sandbox, media, starts, toasts };
 }
 const settle = () => new Promise(resolve => setImmediate(resolve));
+test('40 Hz starts and loops at 20 seconds, including after switching tracks', async () => {
+  const { editor, media, starts } = fixture();
+  editor.playAudio('hz40');
+  assert.equal(media[0].currentTime, 20);
+  assert.equal(media[0].loop, false);
+  starts[0].resolve(); await settle();
+  media[0].currentTime = 100;
+  media[0].onended();
+  assert.equal(media[0].currentTime, 20);
+  starts[1].resolve(); await settle();
+  editor.playAudio('rain');
+  starts[2].resolve(); await settle();
+  editor.playAudio('hz40');
+  assert.equal(media[0].currentTime, 20);
+});
 test('a previous play promise cannot mark a newly selected track as playing', async () => {
   const { editor, media, starts } = fixture();
   editor.playAudio('lofi1');

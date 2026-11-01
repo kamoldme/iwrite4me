@@ -52,7 +52,7 @@ const App = {
   _foldersCacheLoaded: false,
   _docsCacheDirty: true,
   _docsPage: 1,
-  _docsPerPage: 10,
+  _docsPerPage: 9,
   _searchQuery: '',
   sessionDuration: 15,
   sessionMode: 'normal',
@@ -1490,6 +1490,7 @@ const App = {
 
     // Editor toolbar: audio dropdown — stop propagation inside so it stays open
     const audioBtn = document.getElementById('editor-audio-btn');
+    const playingSoundBtn = document.getElementById('editor-playing-sound');
     const audioDrop = document.getElementById('editor-audio-dropdown');
     // Move dropdown to <body> so it escapes .editor-container's stacking context
     // (.editor-container is position:fixed z-index:2000, which caps everything inside
@@ -1497,19 +1498,23 @@ const App = {
     if (audioDrop.parentElement !== document.body) {
       document.body.appendChild(audioDrop);
     }
-    audioBtn.addEventListener('click', (e) => {
+    const toggleAudioDropdown = (e) => {
       e.stopPropagation();
       const willOpen = audioDrop.style.display === 'none';
       if (willOpen) {
         Editor.warmAudio();
         const focusDD = document.getElementById('editor-focus-dropdown');
         if (focusDD) focusDD.style.display = 'none';
-        const r = document.getElementById('editor-tools-btn').getBoundingClientRect();
+        const anchor = e.currentTarget === playingSoundBtn ? playingSoundBtn : document.getElementById('editor-tools-btn');
+        const r = anchor.getBoundingClientRect();
         audioDrop.style.top = (r.bottom + 6) + 'px';
         audioDrop.style.right = (window.innerWidth - r.right) + 'px';
       }
       audioDrop.style.display = willOpen ? 'block' : 'none';
-    });
+      playingSoundBtn?.setAttribute('aria-expanded', String(willOpen));
+    };
+    audioBtn.addEventListener('click', toggleAudioDropdown);
+    playingSoundBtn?.addEventListener('click', toggleAudioDropdown);
     audioDrop.addEventListener('click', (e) => {
       e.stopPropagation(); // Don't close when clicking inside the dropdown
     });
@@ -1517,6 +1522,7 @@ const App = {
     // Close audio + focus dropdowns when clicking elsewhere
     document.addEventListener('click', () => {
       audioDrop.style.display = 'none';
+      playingSoundBtn?.setAttribute('aria-expanded', 'false');
       const fd = document.getElementById('editor-focus-dropdown');
       if (fd) fd.style.display = 'none';
     });
@@ -8769,10 +8775,6 @@ const App = {
       this._requestedTheme = null;
       return;
     }
-    const bounds = trigger?.getBoundingClientRect();
-    const x = bounds ? bounds.left + bounds.width / 2 : innerWidth / 2;
-    const y = bounds ? bounds.top + bounds.height / 2 : innerHeight / 2;
-    const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
     root.classList.add('theme-wave');
     try {
       const transition = this._themeWave = document.startViewTransition(() => {
@@ -8780,11 +8782,10 @@ const App = {
       });
       await transition.ready;
       if (token !== this._themeWaveToken) return;
-      // Reveal the new snapshot from the control, keeping live layout static.
+      // Fade the new snapshot without repainting a full-screen animated clip.
       const animation = this._themeWaveAnimation = root.animate([
-        { clipPath: `circle(0px at ${x}px ${y}px)` },
-        { clipPath: `circle(${radius}px at ${x}px ${y}px)` }
-      ], { duration: 560, easing: 'cubic-bezier(.2,0,0,1)', pseudoElement: '::view-transition-new(root)' });
+        { opacity: 0 }, { opacity: 1 }
+      ], { duration: 200, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' });
       await animation.finished.catch(() => {});
       await transition.finished.catch(() => {});
     } catch {
