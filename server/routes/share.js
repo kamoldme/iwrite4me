@@ -1,4 +1,5 @@
 const express = require('express');
+const { sanitizeDocumentHtml } = require('../utils/sanitize-html');
 const { findOne, findMany, insertOne, updateOne } = require('../utils/storage');
 const { authenticate } = require('../middleware/auth');
 const { v4: uuid } = require('uuid');
@@ -20,7 +21,8 @@ router.get('/:token', async (req, res) => {
   res.json({
     id: doc.id,
     title: doc.title,
-    content: doc.content,
+    // Stored content predates sanitisation on write, so clean it on the way out too.
+    content: sanitizeDocumentHtml(doc.content || ''),
     wordCount: doc.wordCount,
     ownerName: owner ? owner.name : 'Unknown',
     ownerId: doc.userId,
