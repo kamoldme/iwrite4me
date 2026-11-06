@@ -128,7 +128,7 @@ body.glow-dashboard #view-dashboard .dashboard-hero-text{min-width:0}
 body.glow-dashboard #view-dashboard #greeting-text{font-size:clamp(26px,2.5vw,36px);font-weight:500;line-height:1.18;letter-spacing:-.025em;margin:0 0 12px;max-width:25ch}
 body.glow-dashboard #view-dashboard .dashboard-hero-kicker{display:block;color:var(--glow-dim);font-size:13px;line-height:1.5}
 body.glow-dashboard #view-dashboard .td-hero-actions{display:grid;grid-template-columns:auto 40px;gap:10px;align-items:center;justify-content:end;position:static}
-body.glow-dashboard #view-dashboard .dashboard-start-btn{min-height:48px;padding:14px 24px;font-size:13px;font-weight:650;letter-spacing:.025em;border-radius:18px}
+body.glow-dashboard #view-dashboard .dashboard-start-btn{min-height:48px;padding:14px 24px;font-size:14px;font-weight:600;letter-spacing:0;border-radius:18px}
 body.glow-dashboard #view-dashboard .dashboard-notif-btn{width:40px;height:40px;min-width:40px;border-radius:14px}
 body.glow-dashboard #view-dashboard .online-indicator{grid-column:1/-1;justify-self:end;color:var(--glow-dim);font-size:11px}
 body.glow-dashboard #view-dashboard .dashboard-session-quota{position:static;grid-column:2;text-align:right;margin:0;font-size:12px;line-height:1.5}

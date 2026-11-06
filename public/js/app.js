@@ -2056,18 +2056,22 @@ const App = {
     }
 
     const greetingEl = document.getElementById('greeting-text');
-    if (greetingEl) greetingEl.innerHTML = `Think for yourself.<br>Write for <em>yourself.</em>`;
+    if (greetingEl) {
+      const hour = new Date().getHours();
+      const part = hour < 5 ? 'Still up' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+      const firstName = String(this.user.name || '').trim().split(/\s+/)[0];
+      greetingEl.textContent = firstName ? `${part}, ${firstName}.` : `${part}.`;
+    }
 
     const kickerEl = document.getElementById('hero-kicker');
     if (kickerEl) {
-      const todayKey = new Date().toISOString().slice(0, 10);
+      const todayKey = new Date().toDateString();
       let wordsToday = 0;
       (this.documents || []).forEach(d => {
         if (!d.updatedAt || !d.wordCount || d.deletedBySystem) return;
-        if (new Date(d.updatedAt).toISOString().slice(0, 10) === todayKey) wordsToday += d.wordCount;
+        if (new Date(d.updatedAt).toDateString() === todayKey) wordsToday += d.wordCount;
       });
-      const hoursLeft = Math.max(1, 24 - new Date().getHours());
-      kickerEl.textContent = `${wordsToday.toLocaleString()} words today · ${hoursLeft}h left`;
+      kickerEl.textContent = `${wordsToday.toLocaleString()} words today.`;
     }
   },
 
@@ -3053,7 +3057,7 @@ const App = {
     if (bottomBar) bottomBar.style.display = mode ? '' : 'none';
     const startBtn = document.getElementById('modal-start');
     if (startBtn) {
-      startBtn.textContent = mode === 'duel' ? 'Find opponent' : 'START WRITING';
+      startBtn.textContent = mode === 'duel' ? 'Find opponent' : 'Start writing';
       startBtn.classList.toggle('btn-danger-solid', mode === 'dangerous');
     }
     this._renderSessionQuota(this._sessionQuota);
@@ -3714,7 +3718,7 @@ const App = {
   },
 
   _sessionStartLabel() {
-    return this.sessionMode === 'duel' ? 'Find opponent' : 'START WRITING';
+    return this.sessionMode === 'duel' ? 'Find opponent' : 'Start writing';
   },
 
   _renderSessionQuota(quota) {
@@ -3741,7 +3745,7 @@ const App = {
         : `${quota.remaining} of 3 free sessions left today`;
       reset.textContent = this._sessionResetLabel(quota.resetAt);
     }
-    start.textContent = quota.plan === 'free' && quota.remaining === 0 ? 'START WRITING' : this._sessionStartLabel();
+    start.textContent = quota.plan === 'free' && quota.remaining === 0 ? 'Start writing' : this._sessionStartLabel();
   },
 
   async refreshSessionQuota() {
@@ -4522,7 +4526,13 @@ const App = {
     const noteEl = document.getElementById('lb-your-note');
     if (rankEl) rankEl.textContent = overall?.rank ? `#${overall.rank}` : '—';
     if (ofEl) ofEl.textContent = overall?.rank ? `of ${(overall.total || total).toLocaleString()}` : '';
-    if (noteEl) noteEl.textContent = overall?.rank ? `Top ${Math.max(1, Math.ceil(overall.rank / Math.max(1, overall.total || total) * 100))}% of writers` : 'Complete a session to get ranked.';
+    if (noteEl) {
+      const field = Math.max(1, overall?.total || total || 0);
+      const pct = overall?.rank ? Math.max(1, Math.ceil(overall.rank / field * 100)) : null;
+      noteEl.textContent = !overall?.rank ? 'Complete a session to get ranked.'
+        : field < 10 ? `${field} writer${field === 1 ? '' : 's'} ranked so far`
+        : pct <= 50 ? `Top ${pct}% of writers` : `Ahead of ${100 - pct}% of writers`;
+    }
 
     const breakdownRow = (label, item, fmt) => `<div class="lb-rail-row"><span>${label}</span><span class="lb-rail-row-value">${item?.rank ? '#' + item.rank + ' · ' + fmt(item) : '—'}</span></div>`;
     const breakdownEl = document.getElementById('lb-rail-breakdown');

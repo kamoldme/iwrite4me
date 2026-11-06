@@ -61,6 +61,9 @@
     setText('glow-date-start', shortDate(activityDays[0].date));
     setText('glow-date-end', shortDate(activityDays.at(-1).date));
     readDay(length - 1);
+    // An all-zero week is not a trend; show the empty message on its own.
+    if (!total) $('glow-chart').replaceChildren();
+    const readout = $('glow-point-readout'); if (readout) readout.hidden = !total;
     $('glow-data-rows').replaceChildren(...activityDays.map(day => {
       const row = document.createElement('tr');
       for (const text of [day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }), day.words.toLocaleString()]) {

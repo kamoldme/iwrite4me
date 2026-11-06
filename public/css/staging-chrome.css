@@ -91,7 +91,7 @@ body.glow-dashboard #session-modal input{background:var(--ui-field);color:var(--
 @media(prefers-reduced-motion:reduce){body.glow-dashboard .app-container :is(.sidebar,.main-content,.sidebar-label,.user-details,.sidebar-logo-btn .logo,.sidebar-header>div),body.glow-dashboard #session-modal,body.glow-dashboard #session-modal *{transition:none!important;animation:none!important}body.glow-dashboard #session-modal .mp-shell,body.glow-dashboard #session-modal .mode-option img{transform:none!important}}
 @media(max-width:1000px){body.glow-dashboard #session-modal .mp-body.mp-body-expanded{grid-template-columns:minmax(0,1fr) 240px}body.glow-dashboard #session-modal .mp-bottom{grid-template-columns:minmax(0,1fr) 220px}}
 @media(max-width:800px){body.glow-dashboard #session-modal{padding:16px}body.glow-dashboard #session-modal .mp-shell{padding:22px;border-radius:24px}body.glow-dashboard #session-modal .mp-body.mp-body-expanded{grid-template-columns:1fr}body.glow-dashboard #session-modal .mp-detail{border-left:0;border-top:1px solid var(--border);padding:20px 0 0}body.glow-dashboard #session-modal .mp-bottom{grid-template-columns:1fr}}
-body.glow-dashboard #session-modal .mp-start-btn{text-transform:uppercase;letter-spacing:.025em}
+body.glow-dashboard #session-modal .mp-start-btn{text-transform:none;letter-spacing:0}
 body.glow-dashboard #session-modal{--danger:var(--ui-danger);--danger-soft:rgb(255 173 156 / .12);--info:var(--ui-info);--warning:var(--ui-warning)}
 /* Keep the start action in view on laptop-height screens; lore can scroll independently. */
 @media(max-height:850px) and (min-width:801px){
