@@ -1,4 +1,5 @@
 const express = require('express');
+const { sanitizeDocumentHtml, sanitizeMode } = require('../utils/sanitize-html');
 const SESSION_FONTS = new Set(['sans', 'serif', 'mono', 'georgia', 'garamond', 'courier', 'dyslexic', 'fraunces', 'palatino', 'nunito', 'instrument', 'grotesk']);
 function validTabFonts(value) {
   return Array.isArray(value) && value.length <= 1000 && value.every(font => typeof font === 'string' && SESSION_FONTS.has(font));
@@ -38,7 +39,7 @@ function countWordsFromHtml(value) {
 }
 
 function sanitizeCompletionStats({ doc, user, wordCount, duration, content, now = Date.now() }) {
-  const submittedContent = typeof content === 'string' ? content : (doc.content || '');
+  const submittedContent = sanitizeDocumentHtml(typeof content === 'string' ? content : (doc.content || ''));
   const contentWordCount = countWordsFromHtml(submittedContent);
   const fallbackWordCount = Math.max(0, Math.floor(Number(wordCount) || Number(doc.wordCount) || 0));
   const planWordLimit = user.plan === 'premium' ? 10000 : 1500;
@@ -139,7 +140,9 @@ router.post('/heartbeat', (req, res) => {
 router.get('/', async (req, res) => {
   // Include system-deleted (failed) docs for history, admin-deactivated docs, but not manually deleted
   const docs = await findMany('documents.json', d => d.userId === req.user.id && (!d.deleted || d.deletedBySystem || d.deactivatedByAdmin));
-  res.json(docs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
+  res.json(docs
+    .map(d => ({ ...d, content: sanitizeDocumentHtml(d.content || '') }))
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)));
 });
 
 router.get('/session-quota', async (req, res) => {
@@ -170,7 +173,8 @@ router.post('/session-quota/blocked-attempt', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { title, content, mode, prompt, dangerVariant, clientRequestId } = req.body;
+  const { title, mode, prompt, dangerVariant, clientRequestId } = req.body;
+  const content = sanitizeDocumentHtml(req.body.content);
   const requestId = typeof clientRequestId === 'string' && /^[a-f0-9-]{36}$/i.test(clientRequestId) ? clientRequestId : null;
   const maintenanceBypass = !!req.app.get('maintenanceState')?.active;
   try {
@@ -187,7 +191,7 @@ router.post('/', async (req, res) => {
       }
       return {
         id: uuid(), userId: req.user.id, title: finalTitle,
-        content: content || '', mode: mode || 'normal',
+        content: content || '', mode: sanitizeMode(mode || 'normal'),
         dangerVariant: mode === 'dangerous' ? (dangerVariant === 'chill' ? 'chill' : 'classic') : null,
         prompt: prompt || '',
         wordCount: (content || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length,
@@ -295,7 +299,7 @@ router.get('/:id', async (req, res) => {
   if (!isOwner && !hasAccess) {
     return res.status(403).json({ error: 'Access denied' });
   }
-  res.json(doc);
+  res.json({ ...doc, content: sanitizeDocumentHtml(doc.content || '') });
 });
 
 router.patch('/:id', async (req, res) => {
@@ -317,8 +321,8 @@ router.patch('/:id', async (req, res) => {
     updates.title = finalTitle;
   }
   if (req.body.content !== undefined) {
-    updates.content = req.body.content;
-    updates.wordCount = req.body.content.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    updates.content = sanitizeDocumentHtml(String(req.body.content || ''));
+    updates.wordCount = updates.content.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim().split(/\s+/).filter(Boolean).length;
   }
   if (req.body.tabFonts !== undefined) updates.tabFonts = req.body.tabFonts;
   if (req.body.folder !== undefined) updates.folder = req.body.folder;

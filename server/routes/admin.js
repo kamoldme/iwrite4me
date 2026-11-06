@@ -1,4 +1,5 @@
 const express = require('express');
+const { sanitizeDocumentHtml } = require('../utils/sanitize-html');
 const { findMany, findOne, updateOne, deleteOne, insertOne, write } = require('../utils/storage');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
@@ -208,7 +209,7 @@ router.patch('/users/:id', async (req, res) => {
   const allowedFields = ['name', 'username', 'email', 'role', 'plan', 'xp', 'level', 'streak', 'longestStreak', 'treeStage', 'totalWords', 'totalSessions', 'planDuration', 'planStartedAt', 'planExpiresAt'];
   const updates = {};
   for (const field of allowedFields) {
-    if (req.body[field] !== undefined) updates[field] = req.body[field];
+    if (req.body[field] !== undefined) updates[field] = field === 'content' ? sanitizeDocumentHtml(String(req.body.content || '')) : req.body[field];
   }
 
   if (req.body.password) {
@@ -463,7 +464,7 @@ router.get('/documents/:id', async (req, res) => {
   const doc = await findOne('documents.json', d => d.id === req.params.id);
   if (!doc) return res.status(404).json({ error: 'Document not found' });
   const owner = await findOne('users.json', u => u.id === doc.userId);
-  res.json({ ...doc, ownerName: owner ? owner.name : 'Unknown' });
+  res.json({ ...doc, content: sanitizeDocumentHtml(doc.content || ''), ownerName: owner ? owner.name : 'Unknown' });
 });
 
 router.patch('/documents/:id', async (req, res) => {
@@ -696,6 +697,7 @@ router.get('/stories/:id', async (req, res) => {
   const comments = await findMany('story-comments.json', c => c.storyId === story.id);
   res.json({
     ...story,
+    content: sanitizeDocumentHtml(story.content || ''),
     authorName: user ? user.name : 'Unknown',
     authorUsername: user ? (user.username || null) : null,
     authorEmail: user ? user.email : null,
