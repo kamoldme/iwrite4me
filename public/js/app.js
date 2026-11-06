@@ -5533,8 +5533,8 @@ const App = {
   },
 
   _htmlToPlainText(html) {
-    const div = document.createElement('div');
-    div.innerHTML = html || '';
+    // DOMParser documents are inert: no scripts run and no images load.
+    const div = new DOMParser().parseFromString(html || '', 'text/html').body;
     div.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
     div.querySelectorAll('div,p,h1,h2,h3,h4,h5,h6,li,blockquote').forEach(el => el.appendChild(document.createTextNode('\n')));
     return (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
@@ -5542,8 +5542,7 @@ const App = {
 
   // Lightweight HTML → Markdown for the contenteditable editor / story content.
   _htmlToMarkdown(html) {
-    const container = document.createElement('div');
-    container.innerHTML = html || '';
+    const container = new DOMParser().parseFromString(html || '', 'text/html').body;
     const walk = (node) => {
       let out = '';
       node.childNodes.forEach(child => {
@@ -5811,7 +5810,7 @@ const App = {
         </div>
         ${data.referredUsers.length ? `
           <div style="margin-top:12px;font-size:12px;color:var(--text-muted)">
-            ${data.referredUsers.map(u => `<span style="margin-right:8px">✓ ${u.name}</span>`).join('')}
+            ${data.referredUsers.map(u => `<span style="margin-right:8px">✓ ${this.escapeHtml(u.name)}</span>`).join('')}
           </div>
         ` : ''}
       `;
