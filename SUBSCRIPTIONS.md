@@ -1,9 +1,9 @@
 # iWrite4.me — Subscription Plans
 
 ## Free ($0/mo)
-- Timed writing sessions (15 min, 30 min only)
+- Timed writing sessions (30, 45, and 60 minutes)
 - Dangerous mode (fixed 6-second inactivity timer)
-- 10 sessions per week (standard + dangerous combined)
+- 3 writing sessions per day
 - Streak tracking & writing tree (12 stages)
 - XP / Level system (15% compounding thresholds)
 - Friends system & writing duels
@@ -17,11 +17,11 @@
 - No export
 - Username change once per 30 days
 
-## Pro ($1.99/mo or $9.99/6mo — ~25,000 UZS/mo)
+## Pro ($2.99/mo, $4.99/3mo, or $8.99/6mo — ~25,000 UZS/mo)
 - Everything in Free, plus:
 - All timer options (5, 15, 30, 60, 90, 120 min, untimed) + custom "+" add your own
 - Configurable dangerous mode timer (choose inactivity threshold)
-- Unlimited sessions per week
+- Unlimited writing sessions
 - 10,000 words per session
 - 20,000 words when editing
 - 15 early completes per month
@@ -33,6 +33,8 @@
 - Username change 3 times per month
 - Pro badge on leaderboard (gold gradient)
 - Priority support
+
+The landing and dashboard monthly offer shows a crossed-out 35,990 followed by bold ~25,000 UZS. Local checkout uses its configured UZS amount. Stripe checkout uses `STRIPE_PRICE_1M`; see [production billing configuration](docs/PRODUCTION.md#billing-configuration).
 
 ## Where plans are shown
 - **Sidebar badge** (`plan-badge` in app.html) — shows "Free" or "Pro"

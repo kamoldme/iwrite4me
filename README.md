@@ -70,7 +70,7 @@ It's part writing tool, part habit tracker, part community. The goal is simple: 
 | Notifications | Telegram bot (`node-telegram-bot-api`) for admin alerts |
 | Research assistant | Google Gemini API |
 | Frontend | Vanilla HTML / CSS / JavaScript — no framework, no build step |
-| Hosting | Railway (Nixpacks build, managed Postgres) |
+| Hosting | VPS with Coolify, Docker, and PostgreSQL |
 
 The frontend is a deliberately dependency-free single-page app: a handful of ES modules (`app.js`, `api.js`, `editor.js`, `tree.js`, `stories.js`, …) and one stylesheet. No bundler, no transpiler — what you see in `public/` is what ships.
 
@@ -112,15 +112,15 @@ iwrite/
 ## Getting started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20 (matches the production Dockerfile)
 - A PostgreSQL database
 
 ### Setup
 
 ```bash
 # 1. Clone
-git clone https://github.com/kamoldme/iwrite.git
-cd iwrite
+git clone https://github.com/kamoldme/iwrite4me.git
+cd iwrite4me
 
 # 2. Install dependencies
 npm install
@@ -168,10 +168,15 @@ Optional integrations degrade gracefully — leave Stripe, Google, Gemini, or Te
 |---------|--------------|
 | `npm start` | Start the server (`node server/index.js`) |
 | `npm run dev` | Start with auto-restart on changes (`node --watch`) |
+| `node --test tests/*.test.js test/*.test.js` | Run regression tests (database integration tests require isolated staging configuration) |
 | `node server/seed.js` | Seed the database |
 | `node server/migrate-to-pg.js` | Run the Postgres migration helper |
 
 ## Deployment
+
+Current production uses Coolify on a VPS. Build and deployment instructions, current pricing configuration, and rollback details are in [docs/PRODUCTION.md](docs/PRODUCTION.md). Commit and push source before building a release.
+
+### Optional Railway deployment
 
 The app is built for [Railway](https://railway.app):
 

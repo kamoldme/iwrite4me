@@ -5,3 +5,12 @@ server/data/*.json
 .DS_Store
 .gstack/
 SECURITY_FINDINGS.md
+
+# Runtime credentials and generated local files
+.env.*
+!.env.example
+.vps-secrets/
+.claude/worktrees/
+server/data/*
+!server/data/.gitkeep
+._*

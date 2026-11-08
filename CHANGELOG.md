@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.6.23] - 2026-11-08
+
+### Changed
+- Show a crossed-out 35,990 followed by bold ~25,000 UZS on landing and dashboard monthly pricing.
+- Preserve the production Docker build, source release manifest, and deployment configuration in Git.
+
+## [3.6.22] - 2026-11-07
+
+### Changed
+- Set monthly Pro pricing to USD 2.99 across the platform and configure checkout to use the new Stripe price.
+
+## [3.6.21] - 2026-11-07
+
+### Changed
+- Add personal dashboard greetings, local-day word counts, quieter stat cards, clearer calls to action, and empty-chart handling.
+
+### Fixed
+- Sanitize document HTML on reads and writes, including shared documents and administrator edits.
+- Escape administrative mode labels and referral names, and parse document exports inertly.
+
+
 ## [3.6.20] - 2026-11-01
 
 ### Changed
