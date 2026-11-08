@@ -209,7 +209,7 @@ router.patch('/users/:id', async (req, res) => {
   const allowedFields = ['name', 'username', 'email', 'role', 'plan', 'xp', 'level', 'streak', 'longestStreak', 'treeStage', 'totalWords', 'totalSessions', 'planDuration', 'planStartedAt', 'planExpiresAt'];
   const updates = {};
   for (const field of allowedFields) {
-    if (req.body[field] !== undefined) updates[field] = field === 'content' ? sanitizeDocumentHtml(String(req.body.content || '')) : req.body[field];
+    if (req.body[field] !== undefined) updates[field] = req.body[field];
   }
 
   if (req.body.password) {
@@ -471,7 +471,7 @@ router.patch('/documents/:id', async (req, res) => {
   const allowedFields = ['title', 'content', 'deleted', 'deletedBySystem'];
   const updates = {};
   for (const field of allowedFields) {
-    if (req.body[field] !== undefined) updates[field] = req.body[field];
+    if (req.body[field] !== undefined) updates[field] = field === 'content' ? sanitizeDocumentHtml(String(req.body.content || '')) : req.body[field];
   }
   // If admin is setting deleted to true (deactivating), mark it
   if (req.body.deleted === true) {
