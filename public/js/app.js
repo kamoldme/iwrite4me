@@ -6459,7 +6459,7 @@ const App = {
 
   // Stripe pricing data
   _stripePricing: {
-    '1m': { price: '1.99', period: '/month', label: '1 month', shortLabel: '1 Mo', stripeUzs: 25000, savings: null },
+    '1m': { price: '2.99', period: '/month', label: '1 month', shortLabel: '1 Mo', stripeUzs: 25000, savings: null },
     '3m': { price: '4.99', period: '/3 months', label: '3 months', shortLabel: '3 Mo', stripeUzs: 62000, savings: 'Popular' },
     '6m': { price: '8.99', period: '/6 months', label: '6 months', shortLabel: '6 Mo', stripeUzs: 112000, savings: 'Best value' }
   },
@@ -6495,9 +6495,15 @@ const App = {
     });
   },
 
+  _upgradeSomPriceMarkup(duration) {
+    if (duration === '1m') {
+      return '<span class="uzs-price-offer"><s class="uzs-price-original">35,990</s><strong>~25,000 UZS</strong></span>';
+    }
+    return this._formatSom(this._localPrice(duration));
+  },
+
   _renderUpgradePriceRows() {
     return Object.entries(this._stripePricing).map(([duration, d]) => {
-      const local = this._localPrice(duration);
       return `<button type="button" class="upgrade-price-option${duration === this._selectedDuration ? ' active' : ''}" data-upgrade-duration="${duration}" aria-pressed="${duration === this._selectedDuration}">
         <div class="upgrade-price-option-main">
           <strong>$${d.price}</strong>
@@ -6508,7 +6514,7 @@ const App = {
             ${this._paymentLogo('stripe')}
             ${this._paymentLogo('click')}
           </div>
-          <strong class="upgrade-price-som">${this._formatSom(local)}</strong>
+          <span class="upgrade-price-som">${this._upgradeSomPriceMarkup(duration)}</span>
         </div>
       </button>`;
     }).join('');
@@ -6690,7 +6696,7 @@ const App = {
 
     const comparison = document.querySelector('#upgrade-plan-cards .upgrade-payment-comparison');
     if (comparison) comparison.querySelectorAll('[data-upgrade-duration]').forEach(button => {
-      button.querySelector('.upgrade-price-som').textContent = this._formatSom(this._localPrice(button.dataset.upgradeDuration));
+      button.querySelector('.upgrade-price-som').innerHTML = this._upgradeSomPriceMarkup(button.dataset.upgradeDuration);
     });
     const trialOffer = document.querySelector('.upgrade-trial-offer');
     if (trialOffer) trialOffer.hidden = p.stripe === false;
@@ -8356,8 +8362,8 @@ const App = {
         <div class="pricing-popular">Most Popular</div>
         <div class="pricing-card-header">
           <h3>Pro</h3>
-          <div class="pricing-price"><span class="pricing-currency">$</span>1.99<span class="pricing-period">/mo</span><span class="pricing-original"><span class="pricing-original-dollar">$</span><span class="pricing-original-num">4</span></span></div>
-          <div class="pricing-uzs">~25,000 UZS</div>
+          <div class="pricing-price"><span class="pricing-currency">$</span>2.99<span class="pricing-period">/mo</span><span class="pricing-original"><span class="pricing-original-dollar">$</span><span class="pricing-original-num">4</span></span></div>
+          <div class="pricing-uzs"><span class="uzs-price-offer"><s class="uzs-price-original">35,990</s><strong>~25,000 UZS</strong></span></div>
         </div>
         <ul class="pricing-features">${proList}</ul>
         ${isPro ? `<div class="pricing-current-badge">Current Plan${this.user.planExpiresAt && this.user.planExpiresAt !== 'infinite' ? ' · expires ' + this.formatDateFull(this.user.planExpiresAt) : this.user.planExpiresAt === 'infinite' ? ' · Lifetime' : ''}</div>` : ''}

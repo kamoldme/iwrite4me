@@ -1,0 +1,148 @@
+{
+  "version": "3.6.23",
+  "source_commit": "4a6f65b23c9377d5d2e3c456208e69c7e7fcfd2d",
+  "baseline_commit": "edb92b9c1247cf3b14637c6bc4b56227e241c853",
+  "base_image": "localhost:5000/iwrite:20261107-monthly299",
+  "image": "localhost:5000/iwrite:20261108-uzs-offer",
+  "local_correction": "Sanitize admin document PATCH content before storage and response",
+  "files": {
+    "VERSION": {
+      "baseline_sha256": "59c324776313070af7aad15c5d0e78e0b1fbb846a8ddc1feb8dd4a72778250ad",
+      "sha256": "9dbd496d50e30c6153329e3a55f0f18c2aa04c34bb76724d1dee411843654147"
+    },
+    "public/admin.html": {
+      "sha256": "bafedfa5de12baaf0bd41e85fa298c17f66faa6a67240a5301dda90666f8e944",
+      "baseline_sha256": "6b894257d3a2fd8dfbdaf6e67d09b315da7455f2e2b517f953bdb66c21bc4ce6"
+    },
+    "public/app.html": {
+      "baseline_sha256": "8531c62d2242d9cf70c1988e92fc579725477e982236705ed233cbf3c2069b20",
+      "sha256": "3aaba061f8d0816e5d4337569d967a44b0ff7c605bd434d396dcbf045cc6fe11"
+    },
+    "public/css/app-editorial.css": {
+      "sha256": "099ba708333750858916b520ccb7c95b9f3e579caf860ece6bf6134af7ca4b75",
+      "baseline_sha256": "d019dd8a32f6198adc952927c4af80b2745beff10da8c4a8dcbdd0b27fdd3665"
+    },
+    "public/css/glow-widgets.css": {
+      "sha256": "e38494d6764503dde38814896ac5ccd3f19ae804ba3cf011eb782d036b39d1aa",
+      "baseline_sha256": "17e9bc7cc354cebdb680571f5dbcc9d22ed444ccc0662473aaef4589b603a919"
+    },
+    "public/css/redesign.css": {
+      "sha256": "f6a0f2ed2a1c99ec7ef0d185df1352589f002c6dcfe39259e16a2edb6ba26dfd",
+      "baseline_sha256": "260e7cad58d76990cdb4cb99f9014b97322924a379e74d2f1687c96d9a4fffb2"
+    },
+    "public/css/staging-chrome.css": {
+      "sha256": "b72d44f3708e20c02782a124327ca23f42bc8735b5f24205b28a3ba332c1bd68",
+      "baseline_sha256": "22d68ef15f9ca1bddf413a4fc7dcaa71954dd076db7279d21db8cbc9c9490038"
+    },
+    "public/js/app.js": {
+      "baseline_sha256": "2730941ad9be0c0aede3c31a8916dfb590bfd696f295820c041e8a1111352775",
+      "sha256": "4615084708ca7689193c81cf01ad9f6dad4d270c6277efa9a07ca9eae4574f64"
+    },
+    "public/js/glow-widgets.js": {
+      "sha256": "2881aba28cb36b9f021500468e450df2341e1c6187891792cef4e15682941674",
+      "baseline_sha256": "691ff662f8e7886bb089f28297bb235ab9cb1bf7c1c1fde67e52272bea30f3e7"
+    },
+    "server/routes/admin.js": {
+      "sha256": "eeea72f5c10b78bae2e09796c5a07bde1d08c11ef257329f21af32c3bbd6b14c",
+      "baseline_sha256": "665cec862a35e2f9e928e3d08a854f4786c9c75f00b5ef60353b749a10f83f64"
+    },
+    "server/routes/documents.js": {
+      "sha256": "cf2a4327c5a8b1d8df73c347b9362e28b7a2370fb4dec910d70e82ff43288f16",
+      "baseline_sha256": "67e60212685df1bce3d3bca3cdf79d42d89e3cdebb007c0d394b230656135f1f"
+    },
+    "server/routes/share.js": {
+      "sha256": "6f2bda53c776f57dfd4f50af3fa4bd9434cba38ad1354c59f2dde259ef540f64",
+      "baseline_sha256": "c5755afafd3d4f9d956fdc349fe140e9a3d246ea15265ccaacc0f9b157660b9c"
+    },
+    "server/utils/sanitize-html.js": {
+      "sha256": "f2f17ef998aff8e9e3064bf0752fbe12851dfa4c2b307a6b872702aecaf7519c",
+      "baseline_sha256": null
+    },
+    "tests/admin-bootstrap.test.js": {
+      "sha256": "39e8db1522d7a413c902c1ea3f91feaab03e8f9e74ceff520fd5ec3e91ba0b8a",
+      "baseline_sha256": "39e8db1522d7a413c902c1ea3f91feaab03e8f9e74ceff520fd5ec3e91ba0b8a"
+    },
+    "tests/admin-document-sanitize.test.js": {
+      "sha256": "761d1f31c874d7b9832381ba23cf439298623d810febc31ba26cbc67b644205b",
+      "baseline_sha256": null
+    },
+    "tests/admin-token-revocation.test.js": {
+      "sha256": "8caac20b0a4113c75b88d0536908c892a9486efc3471067854b4f2ebd1a2edac",
+      "baseline_sha256": "8caac20b0a4113c75b88d0536908c892a9486efc3471067854b4f2ebd1a2edac"
+    },
+    "tests/editor-audio.test.js": {
+      "sha256": "53b63eb4a85abfd74490f6c5d0c494cfc0f6e360a61cf7c368c4b79fdf6a7927",
+      "baseline_sha256": "53b63eb4a85abfd74490f6c5d0c494cfc0f6e360a61cf7c368c4b79fdf6a7927"
+    },
+    "tests/editor-focus.test.js": {
+      "sha256": "65a1ccca117fe978560e17dc317ef62e9822588cdc71148d8a893cc667aee7a2",
+      "baseline_sha256": "65a1ccca117fe978560e17dc317ef62e9822588cdc71148d8a893cc667aee7a2"
+    },
+    "tests/friends-presence.test.js": {
+      "sha256": "63d57ea8b81cdc93499d0a5a361f1c8c342567a5115b340818b7d0ee6af1daac",
+      "baseline_sha256": "63d57ea8b81cdc93499d0a5a361f1c8c342567a5115b340818b7d0ee6af1daac"
+    },
+    "tests/google-signin-security.test.js": {
+      "sha256": "c08927242ac929a0304d5fdb3b9b2efd91ea3aacb0226415187bf23d8f4f94e3",
+      "baseline_sha256": "c08927242ac929a0304d5fdb3b9b2efd91ea3aacb0226415187bf23d8f4f94e3"
+    },
+    "tests/local-payments.test.js": {
+      "sha256": "b16a48282cbecd6a184fa9258155e22aab0d6de54a9bc0f12a44175ceed0391f",
+      "baseline_sha256": "b16a48282cbecd6a184fa9258155e22aab0d6de54a9bc0f12a44175ceed0391f"
+    },
+    "tests/notification-policy.test.js": {
+      "sha256": "c8a0bdef4cb1689d12a1913bc8a1c628f80e5d538937d03c88bd7eda2c6685dc",
+      "baseline_sha256": "c8a0bdef4cb1689d12a1913bc8a1c628f80e5d538937d03c88bd7eda2c6685dc"
+    },
+    "tests/sanitize-html.test.js": {
+      "sha256": "7ce5bef691524520da447ca942f00797ceac9abbbb5685cf852ed3c8680d4fb9",
+      "baseline_sha256": null
+    },
+    "tests/session-tab-fonts.test.js": {
+      "sha256": "78acbce99e69ae0cdaf2e77e2ae96919859f71d760b473b0508b8d1ac8ee2ef1",
+      "baseline_sha256": "78acbce99e69ae0cdaf2e77e2ae96919859f71d760b473b0508b8d1ac8ee2ef1"
+    },
+    "tests/stripe-checkout.test.js": {
+      "sha256": "a8c5809518e8cb7c3b33da5eb1b10fd9e544e782006868f900064d16aecdc256",
+      "baseline_sha256": "a8c5809518e8cb7c3b33da5eb1b10fd9e544e782006868f900064d16aecdc256"
+    },
+    "tests/stripe-renewal.test.js": {
+      "sha256": "904acbd804e791f17fac64bfc3e342b23dcc6b1e68eb907eede3c611ab6e9bfc",
+      "baseline_sha256": "904acbd804e791f17fac64bfc3e342b23dcc6b1e68eb907eede3c611ab6e9bfc"
+    },
+    "tests/stripe-webhook.test.js": {
+      "sha256": "d126ea0bae8538a3a87151d276f2276da57b31ba0c294b64f4cb8739814f7a2a",
+      "baseline_sha256": "d126ea0bae8538a3a87151d276f2276da57b31ba0c294b64f4cb8739814f7a2a"
+    },
+    "tests/telegram-compat.test.js": {
+      "sha256": "327d1aadd55f6cae190e7b63738b30ae1a51699436a573b489ccc80cd264924c",
+      "baseline_sha256": "327d1aadd55f6cae190e7b63738b30ae1a51699436a573b489ccc80cd264924c"
+    },
+    "public/index.html": {
+      "baseline_sha256": "c471430268b19d8cd161cbc54f8859b779fe032b328ba12991a1885f8897d1e7",
+      "sha256": "1494cd55b00ebd5083ff75e3d0b0e7a28758e1b641def681051f7f6d07704069"
+    },
+    "public/social-posts.html": {
+      "baseline_sha256": "081dc0ce7f6e79258beb67b4d9ee5f600dbc8a34967d560cbb814e11d040b581",
+      "sha256": "208309759af0e9cd2f8fcd8bb74abd3ecaf8ad1a103cf9244794b16a6d60b6f8",
+      "replacements": 1
+    },
+    "server/routes/announcements.js": {
+      "baseline_sha256": "45e3fd801e5b99c7619602f9fb06873c53e4fbdd115da418a9877a675354dd4b",
+      "sha256": "51de99c4a283c1a51bb5f691bc0b12b130aac0d8d4910a3daa0b0acb0048ddf1",
+      "replacements": 1
+    },
+    "public/css/style.css": {
+      "baseline_sha256": "972a6851f5f29f98c59312de35a78cfc5363bd1b9e6f11cc48fe45dec0f6c4a4",
+      "sha256": "ae74f5c760274a3e9d3776c2136b6b4308751a8450eb1609779839ac49022153"
+    }
+  },
+  "pricing": {
+    "monthly_usd": 299,
+    "previous_monthly_usd": 199
+  },
+  "presentation": {
+    "monthly_uzs_previous": "35,990",
+    "monthly_uzs_current": "~25,000 UZS"
+  }
+}

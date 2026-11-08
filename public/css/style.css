@@ -21140,3 +21140,21 @@ body.landing.dream-landing .footer-bottom p:last-child {
     text-align: left;
   }
 }
+
+/* Monthly local-currency price offer. */
+.uzs-price-offer {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35em 0.55em;
+  line-height: 1.35;
+}
+.uzs-price-offer .uzs-price-original {
+  color: var(--text-muted);
+  font-size: 0.82em;
+  font-weight: 400;
+  text-decoration-thickness: 1.5px;
+}
+.uzs-price-offer strong {
+  font-weight: 700;
+}

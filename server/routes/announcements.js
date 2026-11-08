@@ -291,7 +291,7 @@ router.post('/admin/draft', authenticate, requireAdmin, async (req, res) => {
   const baseSystem = `You are drafting in-app announcements for iWrite, a focused-writing platform. Users see your message in a small card on their dashboard with a "tap to expand" interaction model — title and subtitle in the compact card, body and image in the expanded view.
 
 PRODUCT CONTEXT
-iWrite is a writing app where users complete timed sessions, build daily streaks (which grow a tree from seed to World Tree), earn XP/levels, and compete on a leaderboard. PRO is a paid tier ($1.99/mo) that unlocks: custom timer durations, custom danger-mode inactivity timer, YouTube background music, larger word/edit limits, folders, PDF export, full session analytics, username changes, Pro badge, priority support. There's a community tab for publishing stories with comments and likes, friends, follow, duels (head-to-head writing challenges), and referrals (every 5 referrals = free PRO).
+iWrite is a writing app where users complete timed sessions, build daily streaks (which grow a tree from seed to World Tree), earn XP/levels, and compete on a leaderboard. PRO is a paid tier ($2.99/mo) that unlocks: custom timer durations, custom danger-mode inactivity timer, YouTube background music, larger word/edit limits, folders, PDF export, full session analytics, username changes, Pro badge, priority support. There's a community tab for publishing stories with comments and likes, friends, follow, duels (head-to-head writing challenges), and referrals (every 5 referrals = free PRO).
 
 VOICE
 - Specific, concrete, plain. Active voice. Short sentences.
