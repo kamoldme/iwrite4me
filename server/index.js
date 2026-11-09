@@ -777,6 +777,9 @@ app.get('/shared/:token', (req, res) => {
 app.get('/story/:id', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'story.html'));
 });
+app.get('/writing-sprint', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'writing-sprint.html'));
+});
 app.get('/privacy', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'privacy.html'));
 });

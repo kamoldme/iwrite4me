@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.6.24.1] - 2026-11-09
+
+### Added
+- Publish a practical writing sprint guide with an agenda and original prompts.
+- Show privacy-conscious signup cohorts, seven-day activation, guest preview saves and payment indicators in the admin dashboard.
+
 ## [3.6.24.0] - 2026-11-09
 
 ### Added
