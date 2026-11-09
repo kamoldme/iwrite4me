@@ -474,6 +474,7 @@ app.get('/join/:code', async (req, res) => {
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/documents', require('./routes/documents'));
+app.use('/api/guest-trial', require('./routes/guest-trial'));
 app.use('/api/friends', require('./routes/friends'));
 app.use('/api/stories', require('./routes/stories'));
 app.use('/api/admin', require('./routes/admin'));

@@ -48,6 +48,16 @@ const Editor = {
   get tabWarningTimer() { return document.getElementById('tab-warning-timer'); },
 
   _saveSessionState() {
+    if (this._guestTrial && this.active) {
+      try {
+        const trial = JSON.parse(localStorage.getItem('iwrite_guest_trial') || '{}');
+        if (!trial.token) return;
+        Object.assign(trial, { title: this.titleInput.value, content: this._serializeTabs(), tabFonts: this._serializeTabFonts(), activeTabIdx: this._activeTabIdx });
+        localStorage.setItem('iwrite_guest_trial', JSON.stringify(trial));
+        this._lastSavedAt = Date.now();
+        return true;
+      } catch { App.toast('Could not save the draft on this device. Copy your writing before leaving.', 'error'); return false; }
+    }
     if (!this.active || !this.documentId) return;
     try {
       localStorage.setItem('editor_session', JSON.stringify({
@@ -224,6 +234,7 @@ const Editor = {
   },
 
   async start(duration, mode, opts = {}) {
+    this._guestTrial = !!opts.guestTrial;
     if (mode !== 'zen') this._primeTabAlarm();
     this.duration = duration;
     this.mode = mode;
@@ -245,7 +256,9 @@ const Editor = {
     this._chillExpiring = false;
     if (typeof CommentSystem !== 'undefined') CommentSystem.destroy();
 
-    try {
+    if (this._guestTrial) {
+      this.documentId = null;
+    } else try {
       this._createRequestId = this._createRequestId || (window.crypto?.randomUUID?.() || null);
       const doc = await API.createDocument(this.titleInput.value || 'Untitled', '', mode, this.sessionTopic, this.dangerVariant, this._createRequestId);
       this.documentId = doc.id;
@@ -264,7 +277,7 @@ const Editor = {
 
     // Enter fullscreen for Time + Dangerous (Zen has no tab-lock)
     this._fullscreenActive = false;
-    if (mode !== 'zen') {
+    if (mode !== 'zen' && !this._guestTrial) {
       try {
         const el = document.documentElement;
         const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
@@ -278,7 +291,7 @@ const Editor = {
       await this.runCountdown();
     }
 
-    this.startTime = Date.now();
+    this.startTime = this._guestTrial ? new Date(opts.guestTrial.startedAt).getTime() : Date.now();
     this.lastKeystroke = Date.now();
     this._pausedMs = 0;
     this._pauseStart = null;
@@ -293,7 +306,8 @@ const Editor = {
     this._lastSavedAt = null;
     this._tabs = [{ name: 'Draft', html: '', font: this._defaultFont() }];
     this._activeTabIdx = 0;
-    this.setFont(this._tabs[0].font, { persistDefault: false, markDirty: false });
+    if (this._guestTrial && opts.guestTrial.content) this._initTabs(opts.guestTrial.content, opts.guestTrial.tabFonts, opts.guestTrial.activeTabIdx);
+    this.setFont(this._tabs[this._activeTabIdx].font, { persistDefault: false, markDirty: false });
     this._renderTabsList();
     this._lastMove = Date.now();
     this.container.classList.remove('chrome-hidden');
@@ -346,7 +360,7 @@ const Editor = {
     document.getElementById('editor-timer').style.display = '';
     document.getElementById('editor-timer-toggle').style.display = '';
     // Hide +1m/+5m for duels (fixed window) and Zen (no timer pressure / no XP — pointless)
-    document.querySelector('.editor-add-time').style.display = (isDuel || mode === 'zen') ? 'none' : '';
+    document.querySelector('.editor-add-time').style.display = (isDuel || mode === 'zen' || this._guestTrial) ? 'none' : '';
     document.getElementById('duel-add-time-btn').style.display = isDuel ? '' : 'none';
     this._timerHidden = false;
     this._timerMasked = false;
@@ -384,27 +398,32 @@ const Editor = {
     this.autoSaveInterval = setInterval(() => this.autoSave(), 10000);
 
     this.textarea.addEventListener('input', this.onInput);
+    if (this._guestTrial) this.titleInput.addEventListener('input', this._guestTitleSave = () => this._saveSessionState());
     this.textarea.addEventListener('keydown', this.onKeydown);
     this.textarea.addEventListener('paste', this.onPaste);
     this.loadWritingPrefs();
-    document.addEventListener('visibilitychange', this.onVisibilityChange);
-    document.addEventListener('fullscreenchange', this.onFullscreenChange);
-    window.addEventListener('blur', this.onWindowBlur);
-    window.addEventListener('focus', this.onWindowFocus);
-    this._startFocusCheck();
+    if (!this._guestTrial) {
+      document.addEventListener('visibilitychange', this.onVisibilityChange);
+      document.addEventListener('fullscreenchange', this.onFullscreenChange);
+      window.addEventListener('blur', this.onWindowBlur);
+      window.addEventListener('focus', this.onWindowFocus);
+      this._startFocusCheck();
+    }
     if (mode !== 'dangerous') this.bindFormatting();
     this.updateWordCount();
 
     // Block all copying during active session
-    this._blockCopy();
+    if (!this._guestTrial) this._blockCopy();
 
     // Save session state periodically so it survives page refresh
     this.sessionSaveInterval = setInterval(() => this._saveSessionState(), 5000);
     this._saveSessionState();
 
     // Heartbeat: tell server this user is actively writing (for "Writing Now" counter)
-    this._heartbeatInterval = setInterval(() => this._sendHeartbeat(), 5000);
-    this._sendHeartbeat();
+    if (!this._guestTrial) {
+      this._heartbeatInterval = setInterval(() => this._sendHeartbeat(), 5000);
+      this._sendHeartbeat();
+    }
 
     // Show target word count in status bar
     this._updateWordsRemaining();
@@ -558,6 +577,7 @@ const Editor = {
     }
 
     Editor.updateWordCount();
+    if (Editor._guestTrial) Editor._saveSessionState();
     Editor._updateWordsRemaining();
     Editor._checkMotivation();
     Editor.textarea.style.color = '';
@@ -1555,6 +1575,7 @@ const Editor = {
   },
 
   async autoSave() {
+    if (this._guestTrial) { this._saveSessionState(); return; }
     if (!this.active || !this.documentId || this.abandoned) return;
     try {
       await API.updateDocument(this.documentId, {
@@ -1672,6 +1693,10 @@ const Editor = {
 
   async completeSession(timerExpired) {
     if (!this.active || this.abandoned) return;
+    if (this._guestTrial) {
+      if (!this._finishGuestTrial() && timerExpired) clearInterval(this.timerInterval);
+      return;
+    }
     // Guard re-entrancy: the 100ms timer keeps firing updateTimer (which calls
     // completeSession) while we await the title prompt — without this, an expired
     // session resumed on page load awards XP many times over.
@@ -1814,6 +1839,25 @@ const Editor = {
     SessionFeedback.show(result.document?.id);
     // Show admin-awarded PRO congrats after session wraps up
     setTimeout(() => App.checkPendingProCongrats(), 1200);
+  },
+
+  _finishGuestTrial() {
+    if (this._guestCompleting) return false;
+    this._guestCompleting = true;
+    try {
+      if (!this._saveSessionState()) return false;
+      const trial = JSON.parse(localStorage.getItem('iwrite_guest_trial') || '{}');
+      trial.readyToClaim = true;
+      localStorage.setItem('iwrite_guest_trial', JSON.stringify(trial));
+      this.cleanup();
+      window.location.href = '/register?guest=save';
+      return true;
+    } catch {
+      App.toast('Could not save the draft on this device. Copy your writing before leaving.', 'error');
+      return false;
+    } finally {
+      this._guestCompleting = false;
+    }
   },
 
   showComplete(words, duration, xp, user) {
@@ -2782,7 +2826,7 @@ const Editor = {
     clearInterval(this.sessionSaveInterval);
     clearInterval(this._heartbeatInterval);
     if (this._duelPollInterval) clearInterval(this._duelPollInterval);
-    this._clearSessionState();
+    if (!this._guestTrial) this._clearSessionState();
     if (typeof App !== 'undefined' && typeof App._closeResearch === 'function') {
       try { App._closeResearch(); } catch {}
     }
@@ -2796,6 +2840,7 @@ const Editor = {
     this.textarea.style.color = '';
     this.textarea.style.opacity = '1';
     this.textarea.removeEventListener('input', this.onInput);
+    if (this._guestTitleSave) { this.titleInput.removeEventListener('input', this._guestTitleSave); this._guestTitleSave = null; }
     this.textarea.removeEventListener('keydown', this.onKeydown);
     this.textarea.removeEventListener('paste', this.onPaste);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
@@ -2832,6 +2877,10 @@ const Editor = {
   },
 
   async abort() {
+    if (this._guestTrial) {
+      this._finishGuestTrial();
+      return;
+    }
     // Active writing session — back arrow always abandons without saving
     if (this.active) {
       const ok = await App.showConfirm('Are you sure? Leaving will discard your writing — it won\'t be saved.');

@@ -1,6 +1,6 @@
 # Production release and repository parity
 
-The current source release is **v3.6.23**. It was reconciled with the running iwrite4.me container on 2026-11-08. `main` includes Claude's design and stored-XSS fixes, the admin document-write correction, USD pricing, and the landing/dashboard UZS offer.
+The prior source release, **v3.6.23**, was reconciled with the running iwrite4.me container on 2026-11-08. This source adds the v3.6.24.0 guest writing session; deploy only after the release's integration tests pass.
 
 ## Build from Git
 
@@ -30,4 +30,4 @@ The 3-month and 6-month prices remain USD 4.99 and USD 8.99. Local-payment amoun
 
 Unit/browser-logic tests run with the command above. Database integration tests are opt-in with `RUN_STAGING_DB_TESTS=1` and `STAGING_MODE=1`; they assert that the database is `iwrite_staging`. Use only the isolated staging database and test-only service credentials. The database suite must never point at production.
 
-After deployment, verify `/api/version`, `/api/health`, the landing and dashboard pricing, and the new container's checkout Price ID. The reconciliation also compares application file hashes with the running production snapshot.
+After deployment, verify `/api/version`, `/api/health`, the landing and dashboard pricing, and the new container's checkout Price ID. Confirm the guest editor, draft preservation and account saving against staging first; avoid consuming a visitor's live weekly allowance for routine monitoring. The reconciliation also compares application file hashes with the running production snapshot.

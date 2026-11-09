@@ -56,6 +56,19 @@ async function initDB() {
     )
   `);
   await pool.query('ALTER TABLE session_daily_usage ADD COLUMN IF NOT EXISTS limit_notified BOOLEAN NOT NULL DEFAULT FALSE');
+  await pool.query(`CREATE TABLE IF NOT EXISTS guest_trial_limits (
+    ip_hash TEXT PRIMARY KEY,
+    started_at TIMESTAMPTZ NOT NULL
+  )`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS guest_trial_claims (
+    token_hash TEXT PRIMARY KEY,
+    document_id UUID NOT NULL,
+    started_at TIMESTAMPTZ NOT NULL,
+    claimed_by UUID,
+    expires_at TIMESTAMPTZ NOT NULL
+  )`);
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_guest_trial_limit_started ON guest_trial_limits (started_at)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_guest_trial_claim_expires ON guest_trial_claims (expires_at)');
   await pool.query(`CREATE TABLE IF NOT EXISTS stripe_renewal_invoices (
     invoice_id TEXT PRIMARY KEY,
     processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
