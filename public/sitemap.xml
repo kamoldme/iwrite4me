@@ -6,6 +6,10 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://iwrite4.me/writing-sprint</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://iwrite4.me/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>

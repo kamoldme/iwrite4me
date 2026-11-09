@@ -369,6 +369,10 @@
             </button>
           </div>
           <div class="admin-stats-grid" id="admin-stats"></div>
+          <div class="admin-chart-card" style="margin-bottom:24px;overflow-x:auto">
+            <h3 class="admin-chart-title">Growth funnel by signup week (UTC)</h3>
+            <div id="growth-funnel">Loading funnel…</div>
+          </div>
           <div class="admin-charts-row">
             <div class="admin-chart-card">
               <h3 class="admin-chart-title">Writing Activity (7 Days)</h3>
@@ -1437,7 +1441,7 @@
       const hashTab = location.hash ? location.hash.slice(1) : '';
       const savedTab = hashTab || localStorage.getItem('iwrite_admin_tab') || 'overview';
       switchAdminTab(savedTab);
-      await Promise.all([loadOverview(), loadUsers(), loadDocs(), loadLogs(), loadSupport(), loadDuels(), loadStoriesAdmin()]);
+      await Promise.all([loadOverview(), loadGrowthFunnel(), loadUsers(), loadDocs(), loadLogs(), loadSupport(), loadDuels(), loadStoriesAdmin()]);
       renderAdminCharts();
     }
 
@@ -1511,6 +1515,17 @@
       } catch { toast('Failed to load stats', 'error'); }
     }
 
+    async function loadGrowthFunnel() {
+      const el = document.getElementById('growth-funnel');
+      try {
+        const data = await adminRequest('/admin/growth-funnel');
+        const rows = data.cohorts.map(r => `<tr><td>${r.week}</td><td>${r.signups}</td><td>${r.started}</td><td>${r.completed}</td><td>${r.returned}</td><td>${r.checkout}</td><td>${r.paid}</td><td>${r.mature}</td></tr>`).join('');
+        el.innerHTML = `<p>Last 7 days: ${data.guestLast7Days.started} guest starts; ${data.guestLast7Days.saved} of those saved to an account.</p>
+          <table style="width:100%;min-width:700px;text-align:left;border-spacing:0 8px"><thead><tr><th>Signup week</th><th>Signups</th><th>Started</th><th>Completed</th><th>2+ sessions</th><th>Stripe checkout</th><th>Paid</th><th>7-day mature</th></tr></thead><tbody>${rows}</tbody></table>
+          <p style="font-size:12px;color:var(--text-secondary)">Counts are distinct signup accounts and events within seven days of signup. Newer cohorts have had less time. Paid counts confirmed Stripe subscription starts and currently paid local orders; checkout starts are Stripe only. Deleted sessions, failed starts, canceled local orders and attribution sources are not included. Guest saves can occur later than their start and count existing accounts too.</p>`;
+      } catch { el.textContent = 'Funnel data could not be loaded.'; }
+    }
+
     // Single refresh button at the top of the admin dashboard. Re-runs
     // loadOverview() which already drives every stat card on the page,
     // so Online and Writing Now counts update along with the rest.
@@ -1524,7 +1539,7 @@
       icon.textContent = '⟳';
       icon.style.animation = 'spin 0.8s linear infinite';
       try {
-        await loadOverview();
+        await Promise.all([loadOverview(), loadGrowthFunnel()]);
         // Quick green flash on the Online + Writing Now cards as a confirm
         const onlineEl = document.getElementById('active-now-count');
         const writingEl = document.getElementById('writing-now-count');

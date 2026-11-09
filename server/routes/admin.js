@@ -38,6 +38,23 @@ router.get('/feedback', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Aggregated activation cohorts from existing records; never select draft text.
+router.get('/growth-funnel', async (req, res, next) => {
+  try {
+    const { pool } = require('../utils/storage');
+    const { growthFunnel } = require('../services/growthFunnel');
+    const [users, documents, logs, payments, guests] = await Promise.all([
+      pool.query(`SELECT id::text AS id, data->>'createdAt' AS "createdAt", data->>'role' AS role, (data->>'isAdmin' = 'true') AS "isAdmin" FROM users`),
+      pool.query(`SELECT data->>'userId' AS "userId", data->>'createdAt' AS "createdAt", data->>'completedAt' AS "completedAt", (data->>'completed' = 'true') AS completed, (data->>'guestTrial' = 'true') AS "guestTrial" FROM documents WHERE COALESCE(data->>'deleted','false') != 'true' AND COALESCE(data->>'deletedBySystem','false') != 'true'`),
+      pool.query(`SELECT data->>'userId' AS "userId", data->>'timestamp' AS timestamp, data->>'action' AS action, data->'details'->>'source' AS source FROM logs WHERE data->>'action' IN ('stripe_checkout_created','stripe_subscription_created')`),
+      pool.query(`SELECT data->>'userId' AS "userId", data->>'state' AS state, data->>'paidAt' AS "paidAt" FROM payment_transactions WHERE data->>'state' = 'paid'`),
+      pool.query(`SELECT started_at AS "startedAt", (claimed_by IS NOT NULL) AS claimed FROM guest_trial_claims WHERE started_at >= NOW() - INTERVAL '7 days'`)
+    ]);
+    res.set('Cache-Control', 'no-store');
+    res.json(growthFunnel({ users: users.rows, documents: documents.rows, logs: logs.rows, payments: payments.rows, guests: guests.rows }));
+  } catch (err) { next(err); }
+});
+
 // ===== STATS =====
 router.get('/stats', async (req, res) => {
   const users = await findMany('users.json');
