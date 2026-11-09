@@ -47,117 +47,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000);
   }
 
-  const trialModal = document.getElementById('trial-writing-modal');
   const trialOpen = document.getElementById('try-writing-here');
-  const trialClose = document.getElementById('trial-close');
-  const trialArea = document.getElementById('trial-writing-area');
-  const trialTimer = document.getElementById('trial-timer');
-  const trialWordCount = document.getElementById('trial-word-count');
-  const trialLock = document.getElementById('trial-lock');
-  const trialCopy = document.getElementById('trial-copy');
-  let trialStarted = false;
-  let trialLocked = false;
-  let trialSecondsLeft = 60;
-  let trialInterval = null;
-
-  function countTrialWords() {
-    if (!trialArea) return 0;
-    return trialArea.value.trim().split(/\s+/).filter(Boolean).length;
-  }
-
-  function updateTrialMeta() {
-    if (trialWordCount) {
-      const words = countTrialWords();
-      trialWordCount.textContent = `${words} ${words === 1 ? 'word' : 'words'}`;
-    }
-    if (trialTimer) {
-      const minutes = Math.floor(trialSecondsLeft / 60);
-      const seconds = String(trialSecondsLeft % 60).padStart(2, '0');
-      trialTimer.textContent = `${String(minutes).padStart(2, '0')}:${seconds}`;
-    }
-  }
-
-  function lockTrial() {
-    if (trialLocked) return;
-    trialLocked = true;
-    if (trialInterval) window.clearInterval(trialInterval);
-    if (trialArea) trialArea.readOnly = true;
-    if (trialLock) trialLock.setAttribute('aria-hidden', 'false');
-  }
-
-  function startTrialTimer() {
-    if (trialStarted || trialLocked) return;
-    trialStarted = true;
-    trialInterval = window.setInterval(() => {
-      trialSecondsLeft -= 1;
-      updateTrialMeta();
-      if (trialSecondsLeft <= 0) lockTrial();
-    }, 1000);
-  }
-
-  function resetTrial() {
-    trialStarted = false;
-    trialLocked = false;
-    trialSecondsLeft = 60;
-    if (trialInterval) window.clearInterval(trialInterval);
-    trialInterval = null;
-    if (trialArea) {
-      trialArea.value = '';
-      trialArea.readOnly = false;
-    }
-    if (trialLock) trialLock.setAttribute('aria-hidden', 'true');
-    updateTrialMeta();
-  }
-
-  function openTrial() {
-    if (!trialModal) return;
-    resetTrial();
-    trialModal.classList.add('active');
-    trialModal.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('trial-open');
-    window.setTimeout(() => trialArea?.focus(), 80);
-  }
-
-  function closeTrial() {
-    if (!trialModal) return;
-    trialModal.classList.remove('active');
-    trialModal.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('trial-open');
-    if (trialInterval) window.clearInterval(trialInterval);
-  }
-
   if (trialOpen) {
     trialOpen.addEventListener('click', () => {
-      window.location.href = '/app?intent=try-writing';
-    });
-  }
-  if (trialClose) trialClose.addEventListener('click', closeTrial);
-  if (trialModal) {
-    trialModal.addEventListener('click', (event) => {
-      if (event.target === trialModal) closeTrial();
-    });
-  }
-  if (trialArea) {
-    trialArea.addEventListener('input', () => {
-      startTrialTimer();
-      updateTrialMeta();
-      if (countTrialWords() >= 120) lockTrial();
-    });
-  }
-  if (trialCopy) {
-    trialCopy.addEventListener('click', async () => {
-      const text = trialArea?.value || '';
-      if (!text) return;
-      try {
-        await navigator.clipboard.writeText(text);
-        trialCopy.textContent = 'Copied';
-        window.setTimeout(() => { trialCopy.textContent = 'Copy my text'; }, 1400);
-      } catch {
-        trialArea?.select();
+      if (window.matchMedia('(max-width: 768px)').matches) {
+        alert('The writing workspace currently works on a laptop or desktop. Your free preview has not been used.');
+        return;
       }
+      if (!localStorage.getItem('iwrite_guest_trial') && !window.confirm('Try a 30-minute writing session. One preview is available per network every 7 days. Your draft stays on this device until you register or sign in to save it.')) return;
+      window.location.href = '/app?guest=1';
     });
   }
-  updateTrialMeta();
 
   const dreamToggle = document.getElementById('dream-style-toggle');
   const dreamStorageKey = 'iwrite_landing_design';

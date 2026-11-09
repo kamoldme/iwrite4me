@@ -84,6 +84,10 @@ const App = {
   async init() {
     // Check for token in URL (from Google OAuth redirect)
     const params = new URLSearchParams(window.location.search);
+    if (params.get('guest') === '1') {
+      await this.startGuestTrial();
+      return;
+    }
     const urlToken = params.get('token');
     if (urlToken) {
       API.setToken(urlToken);
@@ -182,11 +186,93 @@ const App = {
     }).catch(() => {});
   },
 
+  async startGuestTrial() {
+    // The existing app is desktop-only. Do not consume the weekly preview on
+    // a screen where the app's mobile gate prevents the writer from using it.
+    if (window.matchMedia('(max-width: 768px)').matches) return;
+    let trial;
+    try {
+      trial = JSON.parse(localStorage.getItem('iwrite_guest_trial') || 'null');
+      if (!trial) {
+        // Verify storage before consuming the visitor's weekly allowance.
+        localStorage.setItem('iwrite_guest_storage_check', '1');
+        localStorage.removeItem('iwrite_guest_storage_check');
+        trial = await API.request('/guest-trial/start', { method: 'POST', body: '{}' });
+        localStorage.setItem('iwrite_guest_trial', JSON.stringify(trial));
+      }
+    } catch (error) {
+      alert(error.message || 'The preview could not start. Please enable browser storage and try again.');
+      window.location.href = '/';
+      return;
+    }
+    this.user = { name: 'Guest', plan: 'premium', earlyCompletes: 0 };
+    document.getElementById('auth-view').style.display = 'none';
+    document.getElementById('app-view').style.display = 'block';
+    this.bindAppEvents();
+    document.getElementById('tools-research-row').style.display = 'none';
+    document.getElementById('editor-research-btn').style.display = 'none';
+    const focusBadge = document.querySelector('#tools-focus-row .menu-row-badge');
+    if (focusBadge) focusBadge.style.display = 'none';
+    document.getElementById('editor-title').value = trial.title || '';
+    document.getElementById('editor-save-btn').textContent = 'Save your writing';
+    await Editor.start(30, 'normal', { guestTrial: trial });
+  },
+
+  async claimGuestTrial() {
+    let trial;
+    try { trial = JSON.parse(localStorage.getItem('iwrite_guest_trial') || 'null'); } catch { return; }
+    if (!trial?.token || !trial.readyToClaim) return;
+    try {
+      await API.request('/guest-trial/claim', {
+        method: 'POST',
+        body: JSON.stringify({ token: trial.token, title: trial.title || '', content: trial.content || '', tabFonts: trial.tabFonts || [] })
+      });
+      localStorage.removeItem('iwrite_guest_trial');
+      this._docsCacheDirty = true;
+      this.toast('Your writing was saved to your account.', 'success');
+      try {
+        this.user = await API.getMe();
+        this.updateUserUI();
+        await this.loadDocuments(true);
+        await this.loadDashboard();
+      } catch { console.warn('Draft saved; dashboard refresh will retry later.'); }
+    } catch (error) {
+      // Keep the only local copy and offer an explicit retry on the next visit.
+      this.toast('Your draft is still on this device; we could not save it yet. Refresh to retry.', 'error');
+      const backup = document.createElement('button');
+      backup.className = 'btn btn-ghost btn-small';
+      backup.textContent = 'Copy your unsaved draft';
+      backup.addEventListener('click', () => this.copyGuestDraft());
+      document.querySelector('#view-dashboard')?.prepend(backup);
+    }
+  },
+
+  async copyGuestDraft() {
+    try {
+      const trial = JSON.parse(localStorage.getItem('iwrite_guest_trial') || '{}');
+      const text = new DOMParser().parseFromString(trial.content || '', 'text/html').body.textContent;
+      await navigator.clipboard.writeText(text);
+      alert('Your draft was copied.');
+    } catch { alert('Could not copy the draft. Please enable clipboard access and try again.'); }
+  },
+
   showAuth() {
     document.getElementById('auth-view').style.display = 'flex';
     document.getElementById('app-view').style.display = 'none';
     this.bindAuthEvents();
     this.initGoogleSignIn();
+    if (localStorage.getItem('iwrite_guest_trial')) {
+      const notice = document.createElement('p');
+      notice.className = 'auth-sub';
+      notice.textContent = 'Your writing is kept on this device. Register or sign in to save it to your account.';
+      document.querySelector('.auth-card')?.prepend(notice);
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'btn btn-ghost btn-small';
+      copy.textContent = 'Copy draft';
+      copy.addEventListener('click', () => this.copyGuestDraft());
+      notice.after(copy);
+    }
   },
 
   async initGoogleSignIn() {
@@ -359,6 +445,7 @@ const App = {
     this.bindAppEvents();
     this.startNotifPolling();
     this._applyProLocks();
+    this.claimGuestTrial();
   },
 
   // Tab focus reporting — server tracks "On Tab" separately from "Online".

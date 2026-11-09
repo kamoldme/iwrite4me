@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.6.24.0] - 2026-11-09
+
+### Added
+- Offer a 30-minute guest writing session in the existing timed editor, with locally preserved drafts and account recovery.
+- Limit guest previews to one per network every seven days without using the account's daily session allowance.
+
+### Fixed
+- Keep the desktop-only phone notice readable and avoid consuming a guest preview on phones.
+
 ## [3.6.23] - 2026-11-08
 
 ### Changed

@@ -10,12 +10,16 @@ for (const cidr of ['173.245.48.0/20','103.21.244.0/22','103.22.200.0/22','103.3
   edgeRanges.addSubnet(address, Number(prefix), isIP(address) === 6 ? 'ipv6' : 'ipv4');
 }
 function normalizeIP(value) { return String(value || '').replace(/^::ffff:/, ''); }
+function isCloudflareEdge(value) {
+  const edge = normalizeIP(value);
+  const type = isIP(edge);
+  return !!type && edgeRanges.check(edge, type === 6 ? 'ipv6' : 'ipv4');
+}
 function cloudflareVisitor(req) {
   // Express trusts exactly our immediate reverse proxy. req.ip is therefore
   // the rightmost address appended by that proxy, not an arbitrary client header.
   const edge = normalizeIP(req.ip);
-  const type = isIP(edge);
-  if (!type || !edgeRanges.check(edge, type === 6 ? 'ipv6' : 'ipv4')) return null;
+  if (!isCloudflareEdge(edge)) return null;
   const address = normalizeIP(req.headers['cf-connecting-ip']);
   if (!isIP(address)) return null;
   const country = String(req.headers['cf-ipcountry'] || '').toUpperCase();
@@ -50,4 +54,4 @@ function createTracker({ now = Date.now, maxVisitors = 20000 } = {}) {
     }
   };
 }
-module.exports = { createTracker, cloudflareVisitor, WINDOW_MS };
+module.exports = { createTracker, cloudflareVisitor, isCloudflareEdge, WINDOW_MS };

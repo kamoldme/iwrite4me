@@ -2224,6 +2224,7 @@ button.test-only { display: none; }
    Hidden on larger screens; covers everything on phones.
    ══════════════════════════════════════════════════════════════ */
 #mobile-gate { display: none; }
+.mobile-gate-mark { display: block; width: 72px; height: 72px; object-fit: contain; margin: 0 auto 18px; }
 @media (max-width: 768px) {
   #mobile-gate {
     display: flex;
